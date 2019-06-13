@@ -20,7 +20,7 @@ Make sure to have all the libraries required (see ##Requirements) and start the 
 Rscript runApp.R
 ```
 ## Walkthrough of the App through screencast
-![](www/img/scChIPseq_V1.gif)
+![](www/img/scChIPseq_App_V1.gif)
 
 
 ## Sample datasets
