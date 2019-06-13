@@ -28,6 +28,13 @@ Rscript runApp.R
 The dataset from Grosselin et al. are PDX- triple negative breast cancer tumours resistant or not to chemotherapy (respectively HBCx_22 & HBCx_95).
 Download the dataset of interest from GEO :https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE117309. To run the app up to the differential analysis step, you need the count matrices. The peak calling and gene set enrichment parts require BAM files (available at https://figshare.com/s/fb04c2b17b234aa9d5eb). 
 
+## Output
+
+The app automatically creates a directory **datasets** in which a new directory is created for each analysis with a different input name. Inside that directory are created a directory for each part of the analysis, containing RData and figures.
+  
+## Other
+
+The Gene Set Enrichment Analysis is based on MSIG database (http://software.broadinstitute.org/gsea/msigdb).
 
 ## Requirements
 
@@ -97,13 +104,17 @@ Bash packages
   macs2 2.1.2 (https://github.com/taoliu/MACS)
 ```
 
-## Output
+# Detailed walkthrough of the App:
+## Upload your matrice(s)
+## Name & compile dataset
+## Fix filters to keep most covered regions & cells
+## Vizualize data in reduced dimension
+## Correlate cells and filter out cells with low correlation scores
+## Cluster cells
+## Peak call to refine signal (optional)
+## Find differentially bound regions in each cluster
+## Find enriched gene sets in differentially bound regions
 
-In the repo, the script should have created a directory **datasets** in which a new directory is created for each run with a different input name. Inside that directory are created a directory for each part of the analysis, containing RData and figures.
-  
-## Other
-
-The Gene Set Enrichment Analysis is based on MSIG database (http://software.broadinstitute.org/gsea/msigdb).
 
 # Authors
 Please do not hesitate to post an issue or contact the authors :
