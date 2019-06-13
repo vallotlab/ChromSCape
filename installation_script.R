@@ -1,37 +1,90 @@
-BiocManager::install("scater", version = "3.8")
-BiocManager::install("scran", version = "3.8")
-BiocManager::install("edgeR", version = "3.8")
-BiocManager::install("ConsensusClusterPlus", version = "3.8")
-BiocManager::install("GenomicRanges", version = "3.8")
-BiocManager::install("IRanges", version = "3.8")
-install.packages("tibble")
-install.packages("dplyr")
-install.packages("stringr")
-install.packages("irlba")
-install.packages("reshape2")
-install.packages("Rtsne")
-install.packages("DT")
-install.packages("tidyr")
-install.packages("splitstackshape")
-install.packages("rlist")
-install.packages("shiny")
-install.packages("shinydashboard")
-install.packages("shinyjs")
-install.packages("plotly")
-install.packages("RColorBrewer")
-install.packages("colorRamps")
-install.packages("colourpicker")
-install.packages("kableExtra")
-install.packages("knitr")
-install.packages("viridis")
-install.packages("ggplot2")
-install.packages("gplots")
-install.packages("png")
-install.packages("gridExtra")
-devtools::install_github('wleepang/shiny-directory-input')
+#Install required packages for scChIP seq Shiny App if they are not installed
 
-#geco
-install.packages("geco.utils.tar.gz")
-install.packages("geco.visu.tar.gz")
-install.packages("geco.unsupervised.tar.gz")
-install.packages("geco.supervised.tar.gz")
+#Functions
+usePackageBioc <- function(p)
+{
+  if (!is.element(p, installed.packages()[, 1]))
+    BiocManager::install(p, dep = TRUE, version = "3.8")
+  require(p, character.only = TRUE)
+}
+
+usePackage <- function(p)
+{
+  if (!is.element(p, installed.packages()[, 1]))
+    install.packages(p, dep = TRUE)
+  require(p, character.only = TRUE)
+}
+usePackageGeco <- function(p)
+{
+  if (!is.element(p, installed.packages()[, 1]))
+    install.packages(p, repos = NULL, type = "source")
+  require(p, character.only = TRUE)
+}
+
+#Biocmanager
+pkgs_bioc = c("scater",
+              "scran",
+              "edgeR",
+              "ConsensusClusterPlus",
+              "GenomicRanges",
+              "IRanges")
+
+for (pkg in pkgs_bioc) {
+  usePackageBioc(pkg)
+}
+
+#R CRAN
+pkgs = c(
+  "shiny",
+  "shinyjs",
+  "shinydashboard",
+  "tibble",
+  "dplyr",
+  "stringr",
+  "irlba",
+  "reshape2",
+  "Rtsne",
+  "DT",
+  "tidyr",
+  "splitstackshape",
+  "DT",
+  "tidyr",
+  "rlist",
+  "plotly",
+  "RColorBrewer",
+  "colorRamps",
+  "colourpicker",
+  "kableExtra",
+  "knitr",
+  "viridis",
+  "ggplot2",
+  "gplots",
+  "png",
+  "gridExtra"
+)
+for (pkg in pkgs) {
+  usePackageBioR(pkg)
+}
+
+#geco local packages
+pkgs_geco = c(
+  "geco.utils.tar.gz",
+  "geco.visu.tar.gz",
+  "geco.unsupervised.tar.gz",
+  "geco.supervised.tar.gz"
+)
+for (pkg in pkgs_geco) {
+  usePackageGeco(pkg)
+}
+
+
+#ShinyDirectoryInput
+if (!is.element("shinyDirectoryInput", installed.packages()[, 1])){
+  if(!is.element("devtools", installed.packages()[, 1])){
+    install.packages("devtools")
+    devtools::install_github('wleepang/shiny-directory-input')
+  } else{
+    devtools::install_github('wleepang/shiny-directory-input')
+  }
+}
+
