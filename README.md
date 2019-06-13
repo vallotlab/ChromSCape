@@ -1,8 +1,8 @@
 # Analysis of single-cell Chromatine-ImmunoPrecipitation sequencing datasets
 ## What is scChIPseq_ShinyApp ?
-This is a ready-to-launch user-friendly Shiny App for analysis of single-cell ChIP-seq datasets from count matrices to differential analysis & gene set enrichment analysis. Sc-ChIPseq data can be produced using experimental protocol described in Grosselin et Al. (https://www.nature.com/articles/s41588-019-0424-9).  The user should input one or many count matrices (in .txt or .tsv format). 
+This is a ready-to-launch user-friendly Shiny App for analysis of single-cell ChIP-seq datasets from count matrices to differential analysis & gene set enrichment analysis. ScChIPseq data can be produced using experimental protocol described in Grosselin et Al. (https://www.nature.com/articles/s41588-019-0424-9). The user should input one or many count matrices (in .txt or .tsv format). 
 
-Note : Single-cell ATAC seq or scDNA-seq data under the same format should also workas they are of the same nature, but the application has not been tested for this type of data.
+Note : Single-cell ATAC seq or scDNA-seq data under the same format should also work, as of same nature than scChIPseq data, but the application has not been tested for this type of data.
 
 ## Launch the App 
 
@@ -13,15 +13,20 @@ Go to the directory & modify the runApp.R script to the path to the directory & 
 library(shiny)
 runApp('path/to/scChIPseq_ShinyApp', launch.browser=TRUE)
 ```
+
 Make sure to have all the libraries required (see ##Requirements) and start the App :
+
 ```
 Rscript runApp.R
 ```
+## Walkthrough of the App through screencast
+![](www/img/scChIPseq_V1.gif)
 
 
-## Download datasets
+## Sample datasets
 
-Download the dataset of interest from GEO (Grosselin et al.) (scChIP_seq count matrices (.tsv)) https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE117309. To run the script up to the differential analysis step, you need the count matrices. The peak calling and gene set enrichment parts require BAM files. 
+The dataset from Grosselin et al. are PDX- triple negative breast cancer tumours resistant or not to chemotherapy (respectively HBCx_22 & HBCx_95).
+Download the dataset of interest from GEO :https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE117309. To run the app up to the differential analysis step, you need the count matrices. The peak calling and gene set enrichment parts require BAM files (available at https://figshare.com/s/fb04c2b17b234aa9d5eb). 
 
 
 ## Requirements
