@@ -21,10 +21,10 @@ Rscript runApp.R
 ```
 ## Walkthrough of the App through screencast
 
-### 1
+### 1 - Filtering, vizualiation & correlation
 ![](www/scChIPseq_App_V1.gif)
 
-### 2
+### 2 - Clustering, differential analysis & gene set enrichment
 ![](www/scChIPseq_App_V1_2.gif)
 
 
