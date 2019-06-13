@@ -25,7 +25,7 @@ Rscript runApp.R
 ![](www/scChIPseq_App_V1.gif)
 
 ### 2
-![](www/scChIPseq_App_V2.gif)
+![](www/scChIPseq_App_V1_2.gif)
 
 
 ## Sample datasets
