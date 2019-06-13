@@ -3,7 +3,7 @@
 ui <- dashboardPage(skin='green',
                     dashboardHeader(title = "scChIP-Seq Data Mining"),
                     dashboardSidebar(
-                      sidebarUserPanel("Institut Curie - DEpiC",
+                      sidebarUserPanel("Institut Curie - Vallot Lab",
                                        subtitle = a(href = "#", icon("circle", class = "text-success"), "Online"),
                                        image = "curie.jpg"
                       ),
