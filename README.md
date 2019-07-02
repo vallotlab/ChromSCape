@@ -53,7 +53,6 @@ Before the first time you run the App, launch the **installation script** `Rscri
   library(GenomicRanges)
   library(ConsensusClusterPlus)
   library(Rtsne)
-  library(edgeR)
   
   #Data mining & utils
   library(tibble)
