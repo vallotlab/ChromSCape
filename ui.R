@@ -131,8 +131,11 @@ ui <- dashboardPage(skin='green',
                                   column(width=6,
                                          box(title="Correlation clustering on PCA", width=NULL, status="success", solidHeader=T,
                                              column(12, align="left", plotOutput("corr_clust_pca_plot", height=500, width=500),
-                                                    downloadButton("download_cor_clust_plot", "Download image")))),
-                                  column(width=6,
+                                                    downloadButton("download_cor_clust_plot", "Download image"), br(),
+                                                    tableOutput('num_cell_before_cor_filt'))
+                                             )),
+                                
+                                column(width=6,
                                          box(title="Data filtering based on inter-cell correlation", width=NULL, status="success", solidHeader=T,
                                              column(12, align="left", plotOutput("cell_cor_hist_plot", height=300, width=500),
                                                     downloadButton("download_cor_clust_hist_plot", "Download image"),

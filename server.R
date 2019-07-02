@@ -614,9 +614,39 @@ server <- function(input, output, session) {
   output$corr_filtered_hist <- renderUI({
     if(!is.null(cf$anocol_sel)){
       column(12, align="left", plotOutput("corr_clust_filter_plot", height=500, width=500),
-             downloadButton("download_cor_clust_filtered_plot", "Download image"))
+             downloadButton("download_cor_clust_filtered_plot", "Download image"), br(),
+             tableOutput('num_cell_after_cor_filt')
+             )
     }
   })
+  
+ 
+  
+  output$num_cell_before_cor_filt <- function(){
+    req(annot())
+    table <- as.data.frame(table(annot()$sample_id))
+    colnames(table) = c("Sample","#Cells")
+    rownames(table) = NULL
+    table[,1] = as.character(table[,1])
+    table = table %>% 
+      bind_rows(., tibble(Sample="",`#Cells`=sum(table[,-1])) )
+    table %>% kable(escape=F, align="c") %>% kable_styling(c("striped", "condensed"), full_width = T) %>% group_rows("Total cell count", dim(table)[1], dim(table)[1])
+  }
+  
+  output$num_cell_after_cor_filt <- function(){
+    req(annot(),cf$annot_sel)
+    table <- as.data.frame(table(annot()$sample_id))
+    table_filtered <- as.data.frame(table(cf$annot_sel$sample_id))
+    colnames(table) = c("Sample","#Cells Before Filtering")
+    rownames(table) = NULL 
+    colnames(table_filtered) = c("Sample","#Cells After Filtering")
+    rownames(table_filtered) = NULL 
+    table_both = left_join(table,table_filtered, by=c("Sample"))
+    table_both[,1] = as.character(table_both[,1])
+    table_both = table_both %>% 
+      bind_rows(., tibble(Sample="",`#Cells Before Filtering`=sum(table_both[,2]),`#Cells After Filtering`=sum(table_both[,3]) ) )
+    table_both %>% kable(escape=F, align="c") %>% kable_styling(c("striped", "condensed"), full_width = T) %>% group_rows("Total cell count", dim(table_both)[1], dim(table_both)[1])
+  }
   
   observeEvent(init$available_filtered_datasets,ignoreNULL = T,{if(length(init$available_filtered_datasets)>0){unlocked$list$filtered_datasets =TRUE}else{unlocked$list$filtered_datasets =FALSE}})
   observeEvent(unlocked$list,able_disable_tab(c("selected_reduced_dataset","cor_clust_plot","filtered_datasets"),"cons_clustering")) # if conditions are met, unlock tab Consensus Clustering on Correlated cells
