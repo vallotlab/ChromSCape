@@ -6,12 +6,12 @@ Note : Single-cell ATAC seq or scDNA-seq data under the same format should also 
 
 ## Launch the App 
 
-First download the repository in the location of your choice, either with `git clone https://github.com/vallotlab/scChIPseq.git scChIPseq` or by clicking on 'Clone or Download' -> 'Download ZIP' and unzip.
+First download the repository in the location of your choice, either with `git clone https://github.com/vallotlab/ChromSCape.git ChromSCape` or by clicking on 'Clone or Download' -> 'Download ZIP' and unzip.
 
 Go to the directory & modify the runApp.R script to the path to the directory & save file:
 ```
 library(shiny)
-runApp('path/to/scChIPseq_ShinyApp', launch.browser=TRUE)
+runApp('path/to/ChromSCape', launch.browser=TRUE)
 ```
 
 Make sure to have all the libraries required (see ##Requirements) and start the App :
@@ -43,7 +43,7 @@ The Gene Set Enrichment Analysis is based on MSIG database (http://software.broa
 
 ## Requirements
 
-Before the first time you run the App, launch the installation script `Rscript ./installation_script.R` to install all the dependencies required.
+Before the first time you run the App, launch the **installation script** `Rscript ./installation_script.R` to install all the dependencies required.
 
 ```
   #Bioinfo
@@ -94,7 +94,8 @@ Before the first time you run the App, launch the installation script `Rscript .
   
 ```
 
-Install geco packages (under packages/) : 
+Note that the geco packages are custom packages that are embedded in the application (under packages/).
+If the **installation script** didn't work, you can try to install them manually :
 ```
 install.packages("packages/geco.utils.tar.gz",repos = NULL,type = "source")
 install.packages("packages/geco.visu.tar.gz",repos = NULL,type = "source")
