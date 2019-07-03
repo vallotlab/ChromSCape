@@ -53,7 +53,6 @@ Before the first time you run the App, launch the **installation script** `Rscri
   library(GenomicRanges)
   library(ConsensusClusterPlus)
   library(Rtsne)
-  library(edgeR)
   
   #Data mining & utils
   library(tibble)
@@ -69,12 +68,6 @@ Before the first time you run the App, launch the **installation script** `Rscri
   library(rstudioapi)
   library(dplyr)
   
-  #geco
-  library(geco.utils)
-  library(geco.visu)
-  library(geco.unsupervised)
-  library(geco.supervised)
-  
   #Graphics
   library(RColorBrewer)
   library(colorRamps)
@@ -89,18 +82,8 @@ Before the first time you run the App, launch the **installation script** `Rscri
   library(gridExtra)
 
   #Modules and functions
-  source("Modules/geco.annotToCol2.R")
-  source("Modules/geco.wilcox.R")
+  source("Modules/geco_functions.R")
   
-```
-
-Note that the geco packages are custom packages that are embedded in the application (under packages/).
-If the **installation script** didn't work, you can try to install them manually :
-```
-install.packages("packages/geco.utils.tar.gz",repos = NULL,type = "source")
-install.packages("packages/geco.visu.tar.gz",repos = NULL,type = "source")
-install.packages("packages/geco.unsupervised.tar.gz",repos = NULL,type = "source")
-install.packages("packages/geco.supervised.tar.gz",repos = NULL,type = "source")
 ```
 
 Bash packages
