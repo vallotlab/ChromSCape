@@ -20,5 +20,5 @@ rm "${odir}pm.classic.bed"
 rm "${odir}pm.classic.sorted.bed"
 rm "${odir}pm.cutbywindow.bed"
 rm "${odir}pm.cutbywindow.sorted.bed"
-
+rm  $segmentation_file
 # awk '{ if ($8 <= 1000) { print } }' pm.annot.gene.bed > closer1000.bed
