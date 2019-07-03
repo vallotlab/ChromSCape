@@ -963,6 +963,7 @@ server <- function(input, output, session) {
     }else{
       myData = new.env()
       load(file.path(init$data_folder, "datasets", dataset_name(), "consclust", paste0(input$selected_filtered_dataset, '_affectation_k', input$pc_k_selection, ".RData")), envir=myData)
+      load(file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_annotFeat.RData")), envir=myData)
       dir.create(file.path(init$data_folder, "datasets", dataset_name(), "peaks"), showWarnings=FALSE)
       dir.create(file.path(init$data_folder, "datasets", dataset_name(), "peaks", paste0(input$selected_filtered_dataset, "_k", input$pc_k_selection)), showWarnings=FALSE)
       odir <- file.path(init$data_folder, "datasets", dataset_name(), "peaks", paste0(input$selected_filtered_dataset, "_k", input$pc_k_selection))
@@ -971,7 +972,7 @@ server <- function(input, output, session) {
       checkBams <- sapply(inputBams, function(x){ if(file.exists(x)){ 0 } else{ showNotification(paste0("Could not find file ", x, ". Please make sure to give a full path including the file name."), duration=7, closeButton=TRUE, type="warning"); 1}  })
       stat.value <- if(input$pc_stat=="p.value") paste("-p", input$pc_stat_value) else paste("-q", input$pc_stat_value)
       if(sum(checkBams)==0){
-        subsetBamAndCallPeaks(myData$affectation, odir, inputBams, stat.value, annotation_id())
+        subsetBamAndCallPeaks(myData$affectation, myData$annotFeat, odir, inputBams, stat.value, annotation_id())
         pc$new <- Sys.time()
         updateActionButton(session, "do_pc", label="Finished successfully", icon = icon("check-circle"))
       }
@@ -1110,52 +1111,8 @@ server <- function(input, output, session) {
         incProgress(amount=0.5, detail=paste("performing wilcoxon rank tests"))
         diff$my.res <- geco.CompareWilcox(dataMat=Counts, annot=affectation_filtered(), ref=myrefs, groups=mygps, featureTab=feature)
         
-      }else{ # pairwise one-vs-one testing for each cluster
-        incProgress(amount=0.5, detail=paste("performing wilcoxon rank tests"))
-        diff$my.res <- feature
-        count_save <- data.frame(ID=feature$ID)
-        single_results <- list()
-        pairs <- setNames(data.frame(matrix(ncol=2, nrow=0)), c("group", "ref"))
-        for(i in 1:(as.integer(input$selected_k)-1)){
-          mygps <- list(affectation_filtered()[which(affectation_filtered()$ChromatinGroup==paste0("C", i)), "cell_id"])
-          names(mygps) <- paste0('C', i)
-          groups <- names(mygps)
-          for(j in (i+1):as.integer(input$selected_k)){
-            myrefs <- list(affectation_filtered()[which(affectation_filtered()$ChromatinGroup==paste0("C", j)), "cell_id"])
-            names(myrefs) <- paste0('C', j)
-            refs <- names(myrefs)
-            tmp_result <- geco.CompareWilcox(dataMat=Counts, annot=affectation_filtered(), ref=myrefs, groups=mygps, featureTab=feature)
-            tmp_result <- tmp_result[tmp_result$ID==count_save$ID,]
-            rownames(tmp_result) <- tmp_result$ID
-            tmp_result[5] <- NULL #remove rank because it will be added later
-            colnames(tmp_result)[5:8] <- c("count", "cdiff", "p.val", "adj.p.val")
-            count_save[, paste0('C', i)] <- tmp_result$count
-            single_results <- list.append(single_results, tmp_result)
-            pairs[nrow(pairs)+1,] <- list(groups[1], refs[1])
-            tmp_mirror <- tmp_result
-            tmp_mirror$cdiff <- tmp_mirror$cdiff*(-1.0)
-            tmp_mirror$count <- 0 #not correct, but doesn't matter because it won't be used
-            single_results <- list.append(single_results, tmp_mirror)
-            pairs[nrow(pairs)+1,] <- list(refs[1], groups[1])
-          }
-        }
-        #get count for last group as the loop doesn't cover it
-        tmp.gp <- list(affectation_filtered()[which(affectation_filtered()$ChromatinGroup==paste0("C", input$selected_k)), "cell_id"])
-        count_save[, paste0('C', input$selected_k)] <- apply(Counts, 1, function(x) mean(x[as.character(tmp.gp[[1]])]))
-        combinedTests <- combineMarkers(de.lists=single_results, pairs=pairs, pval.field="p.val",
-                                        effect.field="cdiff", pval.type="any", log.p.in=FALSE,
-                                        log.p.out=FALSE, output.field="stats", full.stats=TRUE)
-        for(i in 1:as.integer(input$selected_k)){
-          cdiffs <- sapply(1:(as.integer(input$selected_k)-1), function(k){ combinedTests[[paste0("C", i)]][feature$ID, k+3]$cdiff })
-          diff$my.res[, paste0("Rank.C", i)] <- combinedTests[[paste0("C", i)]][feature$ID, "Top"]
-          diff$my.res[, paste0("Count.C", i)] <- as.numeric(count_save[, paste0("C", i)])
-          diff$my.res[, paste0("cdiff.C", i)] <- rowMeans(cdiffs)
-          diff$my.res[, paste0("pval.C", i)] <- combinedTests[[paste0("C", i)]][feature$ID, "p.value"]
-          diff$my.res[, paste0("qval.C", i)] <- combinedTests[[paste0("C", i)]][feature$ID, "FDR"]
-        }
-        groups <- paste0('C', 1:input$selected_k) #needed for following code
-        refs <- paste0('pairedTest', 1:input$selected_k)
       }
+      
       incProgress(amount=0.3, detail=paste("building summary"))
       diff$summary <- matrix(nrow=3, ncol=length(groups), dimnames=list(c("differential", "over", "under"), groups))
       for(k in 1:length(groups)){
