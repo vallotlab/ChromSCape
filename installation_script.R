@@ -14,18 +14,17 @@ usePackage <- function(p)
     install.packages(p, dep = TRUE)
   require(p, character.only = TRUE)
 }
-usePackageGeco <- function(p)
-{
-	
-  if (!is.element(gsub(".tar.gz", "",p), installed.packages()[, 1]))
-    install.packages(file.path("packages",p), repos = NULL, type = "source")
-  require(p, character.only = TRUE)
-}
+# usePackageGeco <- function(p)
+# {
+# 	
+#   if (!is.element(gsub(".tar.gz", "",p), installed.packages()[, 1]))
+#     install.packages(file.path("packages",p), repos = NULL, type = "source")
+#   require(p, character.only = TRUE)
+# }
 
 #Biocmanager
 pkgs_bioc = c("scater",
               "scran",
-              "edgeR",
               "ConsensusClusterPlus",
               "GenomicRanges",
               "IRanges")
@@ -68,15 +67,15 @@ for (pkg in pkgs) {
 }
 
 #geco local packages
-pkgs_geco = c(
-  "geco.utils.tar.gz",
-  "geco.visu.tar.gz",
-  "geco.unsupervised.tar.gz",
-  "geco.supervised.tar.gz"
-)
-for (pkg in pkgs_geco) {
-  usePackageGeco(pkg)
-}
+# pkgs_geco = c(
+#   "geco.utils.tar.gz",
+#   "geco.visu.tar.gz",
+#   "geco.unsupervised.tar.gz",
+#   "geco.supervised.tar.gz"
+# )
+# for (pkg in pkgs_geco) {
+#   usePackageGeco(pkg)
+# }
 
 
 #ShinyDirectoryInput
