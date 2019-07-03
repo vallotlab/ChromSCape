@@ -3,7 +3,7 @@
 #inputBam must be a vector
 #stat.value must be either '-p <thresh>' or '-q <thresh>'
 
-subsetBamAndCallPeaks <- function(affectation, odir, inputBam, stat.value="-p 0.01", anno_id){
+subsetBamAndCallPeaks <- function(affectation, annotFeat, odir, inputBam, stat.value="-p 0.01", anno_id){
   withProgress(message='Preparing peak data...', value=0, {
     
     incProgress(amount=0.1, detail=paste("merging BAM files"))
@@ -32,7 +32,7 @@ subsetBamAndCallPeaks <- function(affectation, odir, inputBam, stat.value="-p 0.
     # system(paste0('for i in $(cat ', file.path(odir,'barcodes.barcode_class'), '); do bamCoverage --bam ', file.path(odir,'$i.bam'), ' --outFileName ', file.path(odir,'$i.bw'), ' --binSize 50 --smoothLength 500 --extendReads 150 --ignoreForNormalization chrX --numberOfProcessors 4 --normalizeUsing RPKM; done'))
     # 
     system(paste0('rm ', file.path(odir,'*.barcode_class'), ' ', file.path(odir,'*.sam')))
-    
+
     #Peak calling with macs2
     for(class in levels(factor(affectation$ChromatinGroup))){
       incProgress(amount=(0.4/length(levels(factor(affectation$ChromatinGroup)))), detail=paste("calling peaks for cluster", class))
@@ -54,12 +54,18 @@ subsetBamAndCallPeaks <- function(affectation, odir, inputBam, stat.value="-p 0.
     unlink(file.path(odir, "*.xls"))
     unlink(file.path(odir, "*.gappedPeak"))
     unlink(file.path(odir, "*_model.r"))
-    
+
     #call makePeakAnnot file
     incProgress(amount=0.1, detail=paste("annotating peaks"))
     mergeBams <- paste(sapply(levels(factor(affectation$ChromatinGroup)), function(x){ file.path(odir, paste0(x, "_merged.bed")) }), collapse = ';')
     mergeBams <- paste0('"', mergeBams, '"')
-    system(paste("bash", file.path("Modules", "makePeakAnnot.sh"), mergeBams, file.path("annotation", anno_id, "chrom.sizes.bed"), file.path("annotation", anno_id, "50k.bed"), file.path("annotation", anno_id, "Gencode_TSS_pc_lincRNA_antisense.bed"), paste0('"', odir, .Platform$file.sep, '"')))
+
+    write.table(annotFeat[,2:4],file.path(odir,"segmentation_file.bed"),quote = F,sep = "\t",row.names = F,col.names = F)
+    system(paste0('bedtools sort -i ',file.path(odir,"segmentation_file.bed"),' > ',file.path(odir,"segmentation_file.sorted.bed")))
+    unlink(file.path(odir, "segmentation_file.bed"))
+
+    system(paste("bash", file.path("Modules", "makePeakAnnot.sh"), mergeBams, file.path("annotation", anno_id, "chrom.sizes.bed"), file.path(odir,"segmentation_file.sorted.bed"), file.path("annotation", anno_id, "Gencode_TSS_pc_lincRNA_antisense.bed"), paste0('"', odir, .Platform$file.sep, '"')))
+    
     
     incProgress(amount=0.2, detail=paste("finished"))
   })
