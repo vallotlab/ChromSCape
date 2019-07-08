@@ -3,7 +3,7 @@
 #inputBam must be a vector
 #stat.value must be either '-p <thresh>' or '-q <thresh>'
 
-subsetBamAndCallPeaks <- function(affectation, annotFeat, odir, inputBam, stat.value="-p 0.01", anno_id){
+subsetBamAndCallPeaks <- function(affectation, annotFeat, odir, inputBam, stat.value=" -p 0.05 ", anno_id){
   withProgress(message='Preparing peak data...', value=0, {
     
     incProgress(amount=0.1, detail=paste("merging BAM files"))
@@ -28,24 +28,48 @@ subsetBamAndCallPeaks <- function(affectation, annotFeat, odir, inputBam, stat.v
     system(paste0('for i in $(cat ', file.path(odir,'barcodes.barcode_class'), '); do cat ', file.path(odir, 'header.sam'), ' ', file.path(odir, '$i.sam'), ' | samtools view -b - > ', file.path(odir, '$i.bam'), ' ; done'))
     
     #BamCoverage
-    # system(paste0('for i in $(cat ', file.path(odir,'barcodes.barcode_class'), '); do samtools index ', file.path(odir,'$i.bam'), '; done'))
-    # system(paste0('for i in $(cat ', file.path(odir,'barcodes.barcode_class'), '); do bamCoverage --bam ', file.path(odir,'$i.bam'), ' --outFileName ', file.path(odir,'$i.bw'), ' --binSize 50 --smoothLength 500 --extendReads 150 --ignoreForNormalization chrX --numberOfProcessors 4 --normalizeUsing RPKM; done'))
-    # 
-    system(paste0('rm ', file.path(odir,'*.barcode_class'), ' ', file.path(odir,'*.sam')))
+    system(paste0('for i in $(cat ', file.path(odir,'barcodes.barcode_class'), '); do samtools index ', file.path(odir,'$i.bam'), '; done'))
+    system(paste0('for i in $(cat ', file.path(odir,'barcodes.barcode_class'), '); do bamCoverage --bam ', file.path(odir,'$i.bam'), ' --outFileName ', file.path(odir,'$i.bw'), ' --binSize 50 --smoothLength 500 --extendReads 150 --ignoreForNormalization chrX --numberOfProcessors 4 --normalizeUsing RPKM; done'))
+
+    #system(paste0('rm ', file.path(odir,'*.barcode_class'), ' ', file.path(odir,'*.sam')))
 
     #Peak calling with macs2
+
+    #Count properly paired mapped reads
     for(class in levels(factor(affectation$ChromatinGroup))){
       incProgress(amount=(0.4/length(levels(factor(affectation$ChromatinGroup)))), detail=paste("calling peaks for cluster", class))
-      system(paste0('macs2 callpeak ', stat.value, ' --broad -t ', file.path(odir, paste0(class,".bam")), " --outdir ", odir," --name ",class))
-      system(paste0('bedtools merge -delim "\t" -d 20000 -i ', file.path(odir, paste0(class, '_peaks.broadPeak')), ' > ', file.path(odir, paste0(class, '_merged.bed'))))
-    }
-    
-    #Extract data for peak model plots
-    for(class in levels(factor(affectation$ChromatinGroup))){
-      for(dat in c("p", "m", "xcorr", "ycorr")){
-        system(paste(file.path("Modules", "get_pc_plotData.sh"), class, dat, odir, .Platform$file.sep))
+      
+      percent_properlyPaired = as.double(system(paste0('samtools flagstat ',file.path(odir, paste0(class,".bam")),
+                                                       ' | grep "properly paired" | sed "s/.*properly paired (//g" | cut -f1 -d" " | sed "s/\\%//g"'),intern = T))
+      
+      #If there are enough paired and mapped reads -> use the model
+      if(percent_properlyPaired> 50){
+        print("Bam files provided have more than 50% of their reads properly mapped, running macs2 with default parameters...")
+        macs2_options=""
       }
+      #If there are not enough properly paired reads use --nomodel --extsize 300 & flag all reads as single end
+      else{
+        print("Bam files provided have less than 50% of their reads properly mapped, flagging all reads as single end running macs2 with --nomodel --extsize 300...")
+        macs2_options=" --nomodel --extsize 300 "
+        
+        #Transform the bam file so that all mapped reads are considered as single-end
+
+          system(paste0('samtools view -H ', file.path(odir, paste0(class,".bam")),' > ', file.path(odir, 'header.sam')))
+          system(paste0('samtools view -F4 ', file.path(odir, paste0(class,".bam")),' | awk -v OFS="\t" "{\\$2=0; print \\$0}" >> ', file.path(odir, 'header.sam')))
+          system(paste0('samtools view -b ', file.path(odir, 'header.sam'),' > ', file.path(odir, paste0(class,".bam"))))
+        
+      }
+      system(paste0('macs2 callpeak ', stat.value, macs2_options,' --keep-dup all --broad -t ', file.path(odir, paste0(class,".bam")), " --outdir ", odir," --name ",class))
+      system(paste0('bedtools merge -delim "\t" -d 20000 -i ', file.path(odir, paste0(class, '_peaks.broadPeak')), ' > ', file.path(odir, paste0(class, '_merged.bed'))))
+      
     }
+
+    #Extract data for peak model plots
+    # for(class in levels(factor(affectation$ChromatinGroup))){
+    #   for(dat in c("p", "m", "xcorr", "ycorr")){
+    #     system(paste(file.path("Modules", "get_pc_plotData.sh"), class, dat, odir, .Platform$file.sep))
+    #   }
+    # }
     
     #Clean up files
     unlink(file.path(odir, "bam_list.txt"))
@@ -54,6 +78,7 @@ subsetBamAndCallPeaks <- function(affectation, annotFeat, odir, inputBam, stat.v
     unlink(file.path(odir, "*.xls"))
     unlink(file.path(odir, "*.gappedPeak"))
     unlink(file.path(odir, "*_model.r"))
+    unlink(file.path(odir, "header.sam"))
 
     #call makePeakAnnot file
     incProgress(amount=0.1, detail=paste("annotating peaks"))
