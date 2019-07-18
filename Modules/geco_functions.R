@@ -191,12 +191,18 @@ function (annotS = NULL, annotT = NULL, missing = c("", NA),
   if (plotLegend) 
     pdf(plotLegendFile)
   if (is.null(categCol)) 
-    categCol <- c("royalblue", "palevioletred1", "red", "palegreen4", 
-                  "skyblue", "sienna2", "slateblue3", "pink2", "slategray", 
+    categCol <- c("#4285F4", "#DB4437", "#F4B400", "#0F9D58", 
+                  "#4285F4", "#DB4437", "#F4B400", "#0F9D58", "slategray", 
                   "black", "orange", "turquoise4", "yellow3", "orangered4", 
                   "orchid", "palegreen2", "orchid4", "red4", "peru", 
                   "orangered", "palevioletred4", "purple", "sienna4", 
-                  "turquoise1")
+                  "turquoise1") 
+  # categCol <- c("royalblue", "palevioletred1", "red", "palegreen4", 
+  #                 "skyblue", "sienna2", "slateblue3", "pink2", "slategray", 
+  #                 "black", "orange", "turquoise4", "yellow3", "orangered4", 
+  #                 "orchid", "palegreen2", "orchid4", "red4", "peru", 
+  #                 "orangered", "palevioletred4", "purple", "sienna4", 
+  #                 "turquoise1")
   k <- 1
   for (j in which(anotype == "categ")) {
     tmp <- as.factor(anocol[, j])
