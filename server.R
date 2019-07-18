@@ -27,6 +27,7 @@ server <- function(input, output, session) {
   reduced_datasets <- reactive({ if (is.null(init$available_reduced_datasets)) c() else gsub('.{6}$', '', basename(init$available_reduced_datasets)) })
   annotCol <- reactive({ c("sample_id","total_counts") })
   
+  
   observeEvent(dataset_name(), { # application header (tells you which data set is selected)
     req(dataset_name())
     header <- paste0('Sample : ', dataset_name())
@@ -133,7 +134,7 @@ server <- function(input, output, session) {
       dir.create(file.path(init$data_folder, "datasets", input$new_dataset_name, "supervised"))
       write.table(input$annotation, file.path(init$data_folder, 'datasets', input$new_dataset_name, 'annotation.txt'), row.names=FALSE, col.names=FALSE, quote=FALSE)
       incProgress(0.3, detail="reading data matrices")
-      print(input$datafile_matrix)
+
       for(i in 1:dim(input$datafile_matrix)[1]){
         datamatrix_single <- read.table(input$datafile_matrix$datapath[i], header=TRUE, stringsAsFactors=FALSE)
         
@@ -194,7 +195,7 @@ server <- function(input, output, session) {
     })
   })
   
-  reactVal <- reactiveValues(annotColors=NULL)
+  reactVal <- reactiveValues(annotColors=NULL, annotColors_filtered=NULL)
   
   observeEvent(input$selected_raw_dataset, {  # load precompiled dataset and update coverage plot
     if(!is.null(input$selected_raw_dataset) & input$selected_raw_dataset != ""){
@@ -211,12 +212,7 @@ server <- function(input, output, session) {
   observeEvent(input$dim_reduction, {  # perform QC filtering and dim. reduction
     annotationId <- annotation_id_norm()
     exclude_regions <- if(input$exclude_regions) setNames(read.table(input$exclude_file$datapath, header=FALSE, stringsAsFactors=FALSE), c("chr", "start", "stop")) else NULL
-    print("Filtering_and_Reduction")
-    print("min coverage")
-    print(input$min_coverage_cell)
-    print("input$min_cells_window/100.0")
-    print(input$min_cells_window/100.0)
-    print("Quant Removal")
+  
     callModule(moduleFiltering_and_Reduction, "Filtering_and_Reduction", reactive({input$selected_raw_dataset}), reactive({input$min_coverage_cell}),
                reactive({input$min_cells_window/100.0}), reactive({input$quant_removal}), reactive({init$datamatrix}), reactive({init$annot_raw}),
                reactive({init$data_folder}),reactive({annotationId}), reactive({exclude_regions}))
@@ -262,10 +258,10 @@ server <- function(input, output, session) {
     }else{
       reactVal$annotColors <- NULL
       tmp_meta <- data.frame(Sample=rownames(annot()), sample_id=annot()$sample_id) # modify if coloring should be possible for other columns
-    
-      reactVal$annotColors <- data.frame(sample_id=as.data.frame(anocol())$sample_id) %>% setNames(str_c(names(.), "_Color_Orig")) %>% rownames_to_column("Sample") %>% left_join(tmp_meta,. , by="Sample")
-    
-      }
+      reactVal$annotColors <- data.frame(sample_id=as.data.frame(anocol())$sample_id) %>% setNames(str_c(names(.), "_Color")) %>% rownames_to_column("Sample") %>% left_join(tmp_meta,. , by="Sample")
+    }
+    annotColors = reactVal$annotColors
+    save(annotColors,file = file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "reactVal_annotColors.RData")))
   })
   
   cell_cov_plot <- reactive({ggplot(cell_cov_df(), aes(x=coverage)) + geom_histogram(color="black", fill="steelblue", bins=input$coverage_bins) + labs(x="read coverage per cell") + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank(),
@@ -284,6 +280,34 @@ server <- function(input, output, session) {
       incProgress(amount=0.5, detail=paste("... finished"))
     })
     showNotification("Data set successfully deleted.", duration=5, closeButton=TRUE, type="warning")
+  })
+  
+  output$num_cell_after_QC_filt <- function(){
+    req(reduced_dataset())
+
+    table <- as.data.frame(table(init$annot_raw$sample_id))
+
+    
+    table_filtered <- as.data.frame(table(reduced_dataset()$annot$sample_id))
+
+    
+    colnames(table) = c("Sample","#Cells Before Filtering")
+    rownames(table) = NULL 
+    colnames(table_filtered) = c("Sample","#Cells After Filtering")
+    rownames(table_filtered) = NULL 
+
+    table_both = left_join(table,table_filtered, by=c("Sample"))
+    table_both[,1] = as.character(table_both[,1])
+    table_both = table_both %>% 
+      bind_rows(., tibble(Sample="",`#Cells Before Filtering`=sum(table_both[,2]),`#Cells After Filtering`=sum(table_both[,3]) ) )
+    table_both %>% kable(escape=F, align="c") %>% kable_styling(c("striped", "condensed"), full_width = T) %>% group_rows("Total cell count", dim(table_both)[1], dim(table_both)[1])
+  }
+  
+  output$table_QC_filt_box <- renderUI({
+    if(!is.null(reduced_dataset())){
+          column(12, align="left", tableOutput("num_cell_after_QC_filt"))
+      
+    }
   })
   
   observeEvent(input$selected_reduced_dataset,{if(nchar(input$selected_reduced_dataset)>0){unlocked$list$selected_reduced_dataset=T}else{for(i in names(unlocked$list)){unlocked$list[[i]]=F}}})
@@ -322,6 +346,8 @@ server <- function(input, output, session) {
       names(cols) <- lev
       p <- p + scale_color_manual(values = cols)
     }
+    levelsSelectedAnnot_pca = levelsSelectedAnnot_pca()
+    save(levelsSelectedAnnot_pca,file=file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_levelsSelectedAnnot_pca.RData")) )
     unlocked$list$pca=T
     p
   })
@@ -377,8 +403,8 @@ server <- function(input, output, session) {
     cols <- eval(parse(text = cols))
     lev <- sort(unique(levelsSelectedAnnot_pca()))
     names(cols) <- lev
-    annot_Color_Custom <- as.data.frame(cols) %>% rownames_to_column(input$pca_color_2D)%>% setNames(c(input$pca_color_2D, str_interp("${input$pca_color_2D}_Color_Orig") ))
-    reactVal$annotColors <- reactVal$annotColors %>% select(-c(str_interp("${input$pca_color_2D}_Color_Orig"))) %>% right_join(annot_Color_Custom, by=input$pca_color_2D  )
+    annot_Color_Custom <- as.data.frame(cols) %>% rownames_to_column(input$pca_color_2D)%>% setNames(c(input$pca_color_2D, str_interp("${input$pca_color_2D}_Color") ))
+    reactVal$annotColors <- reactVal$annotColors %>% select(-c(str_interp("${input$pca_color_2D}_Color"))) %>% right_join(annot_Color_Custom, by=input$pca_color_2D  )
     annotColors_save <- reactVal$annotColors
     save(annotColors_save, file=file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_annotColors.RData")))
   })
@@ -388,8 +414,8 @@ server <- function(input, output, session) {
     cols <- eval(parse(text = cols))
     lev <- sort(unique(levelsSelectedAnnot_tSNE()))
     names(cols) <- lev
-    annot_Color_Custom <- as.data.frame(cols) %>% rownames_to_column(input$tsne_color)%>% setNames(c(input$tsne_color, str_interp("${input$tsne_color}_Color_Orig") ))
-    reactVal$annotColors <- reactVal$annotColors %>% select(-c(str_interp("${input$tsne_color}_Color_Orig"))) %>% right_join(annot_Color_Custom, by=input$tsne_color  )
+    annot_Color_Custom <- as.data.frame(cols) %>% rownames_to_column(input$tsne_color)%>% setNames(c(input$tsne_color, str_interp("${input$tsne_color}_Color") ))
+    reactVal$annotColors <- reactVal$annotColors %>% select(-c(str_interp("${input$tsne_color}_Color"))) %>% right_join(annot_Color_Custom, by=input$tsne_color  )
     annotColors_save <- reactVal$annotColors
     save(annotColors_save, file=file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_annotColors.RData")))
   })
@@ -398,7 +424,7 @@ server <- function(input, output, session) {
     req(annot(),dataset_name())
     ac <- geco.annotToCol2(annotS=annot()[, annotCol()], annotT=annot(), plotLegend=T, plotLegendFile=file.path(init$data_folder, "datasets", dataset_name(), "Annotation_legends.pdf"), categCol=NULL)
     if(!is.null(reactVal$annotColors)){
-      lapply(colnames(ac), function(col){ if(col != "total_counts"){ ac[, col] <<- as.character(reactVal$annotColors[order(match(reactVal$annotColors$Sample, rownames(ac))), paste0(col, '_Color_Orig')]) } })
+      lapply(colnames(ac), function(col){ if(col != "total_counts"){ ac[, col] <<- as.character(reactVal$annotColors[which(reactVal$annotColors$Sample %in% rownames(ac)), paste0(col, '_Color')]) } })
     }
     ac
   })
@@ -429,23 +455,18 @@ server <- function(input, output, session) {
   
   output$pca_colorPicker <- renderUI({
     lev <- sort(unique(levelsSelectedAnnot_pca()))
-    if(str_interp("${input$pca_color_2D}_Color") %in% colnames(reactVal$annotColors)) {
-      colsModif <- reactVal$annotColors %>% dplyr::select(one_of( str_interp("${input$pca_color_2D}_Color")) ) %>% distinct() %>% pull( str_interp("${input$pca_color_2D}_Color"))
-    }else {
-      colsModif <- reactVal$annotColors %>% dplyr::select(one_of( str_interp("${input$pca_color_2D}_Color_Orig")) ) %>% distinct() %>% pull( str_interp("${input$pca_color_2D}_Color_Orig"))
-    }
+    colsModif <- reactVal$annotColors %>% dplyr::select(one_of( str_interp("${input$pca_color_2D}_Color")) ) %>% distinct() %>% pull( str_interp("${input$pca_color_2D}_Color"))
+   
     lapply(seq_along(lev), function(i) {
       colourpicker::colourInput(inputId=paste0("pca_col", lev[i]), label=paste0("Choose colour for ", lev[i]), value=colsModif[i], returnName=TRUE) ## Add ", palette = "limited"" to get selectable color panel       
     })
+
   })
   
   output$tsne_colorPicker <- renderUI({
     lev <- sort(unique(levelsSelectedAnnot_tSNE()))
-    if(str_interp("${input$tsne_color}_Color") %in% colnames(reactVal$annotColors)) {
-      colsModif <- reactVal$annotColors %>% dplyr::select(one_of( str_interp("${input$tsne_color}_Color")) ) %>% distinct() %>% pull( str_interp("${input$tsne_color}_Color"))
-    }else {
-      colsModif <- reactVal$annotColors %>% dplyr::select(one_of( str_interp("${input$tsne_color}_Color_Orig")) ) %>% distinct() %>% pull( str_interp("${input$tsne_color}_Color_Orig"))
-    }
+    colsModif <- reactVal$annotColors %>% dplyr::select(one_of( str_interp("${input$tsne_color}_Color")) ) %>% distinct() %>% pull( str_interp("${input$tsne_color}_Color"))
+    
     lapply(seq_along(lev), function(i) {
       colourpicker::colourInput(inputId=paste0("tsne_col", lev[i]), label=paste0("Choose colour for ", lev[i]), value=colsModif[i], returnName=TRUE) ## Add ", palette = "limited"" to get selectable color panel       
     })
@@ -459,14 +480,21 @@ server <- function(input, output, session) {
   
   corColors <- colorRampPalette(c("royalblue","white","indianred1"))(256)
   mati <- reactive({t(pca()[,1:50]) })
-  hc_cor <- reactive({hclust(as.dist(1 - cor(mati())), method="ward.D") })
+  
+  hc_cor <- reactive({
+    tmp = hclust(as.dist(1 - cor(mati())), method="ward.D") 
+    tmp$labels = rep("",length(tmp$labels))
+    tmp
+    })
+  
   mat.so.cor <- reactive({ mati()[,hc_cor()$order] })
+  
+  
+
   
   
   hc_pca_plot <- reactive({
     req(mat.so.cor(), hc_cor(), anocol())
-    # print(dev.cur())
-    # print(dev.list())
     dev.set(4)  # this is a very weird fix, but it seems to work. If it causes problems, delete it and figure out another way.
     unlocked$list$cor_clust_plot=TRUE;
     geco.hclustAnnotHeatmapPlot(x=cor(mat.so.cor()),
@@ -486,7 +514,7 @@ server <- function(input, output, session) {
   output$download_cor_clust_plot <- downloadHandler(
     filename=function(){ paste0("correlation_clustering_", input$selected_reduced_dataset, ".png")},
     content=function(file){
-      png(file, width=900, height=1000, res=150)
+      png(file, width=900, height=1000, res=300)
       geco.hclustAnnotHeatmapPlot(x=cor(mat.so.cor()),
                                                 hc=hc_cor(),
                                                 hmColors=corColors,
@@ -522,7 +550,7 @@ server <- function(input, output, session) {
   output$download_cor_clust_hist_plot <- downloadHandler(
     filename=function(){ paste0("correlation_distribution_", input$selected_reduced_dataset, ".png")},
     content=function(file){
-      png(file, width=1000, height=700, res=150)
+      png(file, width=1000, height=700, res=300)
       hist(corChIP(), prob=TRUE, col=alpha("steelblue", 0.8), breaks=50, ylim=c(0,4), main="Distribution of cell to cell correlation scores", xlab="Pearson Corr Scores")
       lines(density(corChIP()), col="blue", lwd=2)
       lines(density(cor(z())), col="black", lwd=2)
@@ -545,37 +573,31 @@ server <- function(input, output, session) {
       
       correlation_values$limitC_mean = mean(correlation_values$limitC,na.rm = T)
       
-      print("input$corr_thresh")
-      print(input$corr_thresh)
-      print("thresh2")
-      print(thresh2)
-      print("Correlation limit to define Pearson threshold ")
-      print(correlation_values$limitC_mean)
-      print("Minimum cells to be correlated with (proportion) ")
-      print(input$percent_corr*0.01)
-      
       cf$sel2 <- (apply(corChIP(), 1, function(x) length(which(x>correlation_values$limitC_mean)))) > (input$percent_corr*0.01)*dim(corChIP())[1]
       cf$mati2 <- mati()[, cf$sel2]
       cf$hc_cor2 <- hclust(as.dist(1 - cor(cf$mati2)), method="ward.D")
+      cf$hc_cor2$labels = rep("",length(cf$hc_cor2$labels))
       cf$mat.so.cor2 <- cf$mati2[, cf$hc_cor2$order]
       cf$annot_sel <- annot()[cf$sel2,]
       cf$anocol_sel <- geco.annotToCol2(annotS=cf$annot_sel[, annotCol()], annotT=cf$annot_sel, plotLegend=T, plotLegendFile=file.path(init$data_folder, "datasets", dataset_name(),"Annotation_legends_reclustering.pdf"), categCol=NULL)
-      #lapply(colnames(cf$anocol_sel), function(col){ if(col != "total_counts"){ cf$anocol_sel[, col] <<- as.character(reactVal$annotColors[order(match(reactVal$annotColors[reactVal$annotColors$Sample %in% rownames(cf$anocol_sel),]$Sample, rownames(cf$anocol_sel))), paste0(col, '_Color_Orig')]) } })
+      lapply(colnames(cf$anocol_sel), function(col){ if(col != "total_counts"){ cf$anocol_sel[, col] <<- as.character(reactVal$annotColors[which(reactVal$annotColors$Sample %in% rownames(cf$anocol_sel)), paste0(col, '_Color')]) } })
       
       mati2 <- cf$mati2
       annot_sel <- cf$annot_sel
       mat.so.cor2 <- cf$mat.so.cor2
       anocol_sel <- cf$anocol_sel
-      hc_cor2 <- cf$hc_cor2
+
+      
       limitC_mean= correlation_values$limitC_mean
       corChIP = corChIP()
       mati = mati()
-      save(mati2,limitC_mean,mati, corChIP,annot_sel, mat.so.cor2, anocol_sel, hc_cor2, file=file.path(init$data_folder, "datasets", dataset_name(), "cor_filtered_data", paste0(input$selected_reduced_dataset, "_", input$corr_thresh, "_", input$percent_corr, ".RData")))
-      init$available_filtered_datasets <- get.available.filtered.datasets(dataset_name(), input$selected_reduced_dataset)
+      
+      hc_cor2 <- cf$hc_cor2
+      hc_cor = hc_cor()
+      save(mati2, annot_sel, mat.so.cor2, anocol_sel,hc_cor,hc_cor2, file=file.path(init$data_folder, "datasets", dataset_name(), "cor_filtered_data", paste0(input$selected_reduced_dataset, "_", input$corr_thresh, "_", input$percent_corr, ".RData")))
       incProgress(amount=0.2, detail=paste("finished"))
       updateActionButton(session, "filter_corr_cells", label="Saved", icon = icon("check-circle"))
-      print(head(cf$anocol_sel[cf$hc_cor2$order,]))
-      print(head(cf$hc_cor2$order))
+  
     })
   })
   
@@ -593,12 +615,13 @@ server <- function(input, output, session) {
                                                                           dendro.cex=0.04,
                                                                           xlab.cex=0.8,
                                                                           hmRowNames=FALSE))
-
+  
+  
   
   output$download_cor_clust_filtered_plot <- downloadHandler(
     filename=function(){ paste0("correlation_clustering_filtered_", input$selected_reduced_dataset, ".png")},
     content=function(file){
-      png(file, width=900, height=1000, res=150)
+      png(file, width=900, height=1000, res=300)
       geco.hclustAnnotHeatmapPlot(x=cor(cf$mat.so.cor2),
                                                 hc=cf$hc_cor2,
                                                 hmColors=corColors,
@@ -627,10 +650,17 @@ server <- function(input, output, session) {
     table <- as.data.frame(table(annot()$sample_id))
     colnames(table) = c("Sample","#Cells")
     rownames(table) = NULL
+    
+    #Retrieve sample colors from user specified colors & add to table
+    colors = unique(reactVal$annotColors[,c("sample_id","sample_id_Color")])
+    colors = as.vector(as.character(left_join(table,colors,by=c("Sample"="sample_id"))[,"sample_id_Color"]))
+    colors = c(col2hex(colors),"")
+    
+
     table[,1] = as.character(table[,1])
-    table = table %>% 
-      bind_rows(., tibble(Sample="",`#Cells`=sum(table[,-1])) )
-    table %>% kable(escape=F, align="c") %>% kable_styling(c("striped", "condensed"), full_width = T) %>% group_rows("Total cell count", dim(table)[1], dim(table)[1])
+    table = table %>% bind_rows(., tibble(Sample="",`#Cells`=sum(table[,-1])) )
+    
+    table %>% mutate(Sample=cell_spec(Sample, color="white", bold=T, background=colors)) %>% kable(escape=F, align="c") %>% kable_styling(c("striped", "condensed"), full_width = T) %>% group_rows("Total cell count", dim(table)[1], dim(table)[1])
   }
   
   output$num_cell_after_cor_filt <- function(){
@@ -641,12 +671,19 @@ server <- function(input, output, session) {
     rownames(table) = NULL 
     colnames(table_filtered) = c("Sample","#Cells After Filtering")
     rownames(table_filtered) = NULL 
+    
+    #Retrieve sample colors from user specified colors & add to table
+    colors = unique(reactVal$annotColors[,c("sample_id","sample_id_Color")])
+    colors = as.vector(as.character(left_join(table,colors,by=c("Sample"="sample_id"))[,"sample_id_Color"]))
+    colors = c(col2hex(colors),"")
+    
     table_both = left_join(table,table_filtered, by=c("Sample"))
     table_both[,1] = as.character(table_both[,1])
-    table_both = table_both %>% 
-      bind_rows(., tibble(Sample="",`#Cells Before Filtering`=sum(table_both[,2]),`#Cells After Filtering`=sum(table_both[,3]) ) )
-    table_both %>% kable(escape=F, align="c") %>% kable_styling(c("striped", "condensed"), full_width = T) %>% group_rows("Total cell count", dim(table_both)[1], dim(table_both)[1])
+    table_both = table_both %>% bind_rows(., tibble(Sample="",`#Cells Before Filtering`=sum(table_both[,2]),`#Cells After Filtering`=sum(table_both[,3]) ) )
+    
+    table_both %>% mutate(Sample=cell_spec(Sample, color="white", bold=T, background=colors)) %>% kable(escape=F, align="c") %>% kable_styling(c("striped", "condensed"), full_width = T) %>% group_rows("Total cell count", dim(table_both)[1], dim(table_both)[1])
   }
+  
   
   observeEvent(init$available_filtered_datasets,ignoreNULL = T,{if(length(init$available_filtered_datasets)>0){unlocked$list$filtered_datasets =TRUE}else{unlocked$list$filtered_datasets =FALSE}})
   observeEvent(unlocked$list,able_disable_tab(c("selected_reduced_dataset","cor_clust_plot","filtered_datasets"),"cons_clustering")) # if conditions are met, unlock tab Consensus Clustering on Correlated cells
@@ -666,6 +703,21 @@ server <- function(input, output, session) {
       load(file.path(init$data_folder, "datasets", dataset_name(), "cor_filtered_data", paste0(input$selected_filtered_dataset, ".RData")), envir = myData)
       clust$available_k=get_available_k()
       myData
+    }
+  })
+  
+  
+  observeEvent(input$do_final_figs, {  # load coloring used for PCA, tSNE etc.
+    print("LOADING ANNOT COLOR FILTERED 0000000000000000000000")
+    req(input$selected_filtered_dataset)
+    if(file.exists(file.path(init$data_folder, "datasets", dataset_name(), "consclust", paste0(input$selected_filtered_dataset,"_k_",input$nclust, "_annotColors_filtered.RData")))){
+      print("LOADING ANNOT COLOR FILTERED")
+      myData = new.env()
+      load(file.path(init$data_folder, "datasets", dataset_name(), "consclust", paste0(input$selected_filtered_dataset, "_k_",input$nclust,"_annotColors_filtered.RData")), envir=myData)
+      reactVal$annotColors_filtered <- myData$annotColors_filtered_save
+    }
+    else{
+      reactVal$annotColors_filtered <- NULL
     }
   })
   
@@ -741,7 +793,22 @@ server <- function(input, output, session) {
         clust$annot_sel2 <- isolate(annot_sel())
         clust$annot_sel2[, clustCol] <- paste("C", match(cc, hcc$order), sep="")
         clust$cc.col <- cbind(ChromatinGroup=conscol[match(clust$annot_sel2[so, clustCol], paste("C", 1:as.integer(input$nclust), sep=""))], anocol_sel()[so,])
-        lapply(colnames(clust$cc.col), function(col){ if(col != "total_counts"){ clust$cc.col[, col] <<- as.character(reactVal_tsneAnno$annotColors()[order(match(reactVal_tsneAnno$annotColors()[reactVal_tsneAnno$annotColors()$Sample %in% rownames(clust$cc.col),]$Sample, rownames(clust$cc.col))), paste0(col, '_Color_Orig')]) } })
+        
+        
+        if( is.null(reactVal$annotColors_filtered) ){
+          reactVal$annotColors_filtered <- NULL
+          tmp_meta <- data.frame(Sample=rownames(clust$annot_sel2), sample_id=clust$annot_sel2$sample_id, ChromatinGroup=clust$annot_sel2[, clustCol]) # modify if coloring should be possible for other columns
+          tmp_meta =data.frame(ChromatinGroup=as.data.frame(clust$cc.col)[,c("ChromatinGroup")]) %>% setNames(str_c(names(.), "_Color")) %>% rownames_to_column("Sample") %>% left_join(tmp_meta,. , by="Sample")
+          reactVal$annotColors_filtered = reactVal$annotColors
+          reactVal$annotColors_filtered <- inner_join(reactVal$annotColors_filtered,tmp_meta,by=c("Sample","sample_id"))
+          
+        } 
+        # else{
+        #   lapply(colnames(clust$cc.col), function(col){ if(col != "total_counts"){ clust$cc.col[, col] <<- as.character(reactVal$annotColors_filtered[which(reactVal$annotColors_filtered$Sample %in% rownames(clust$cc.col)), paste0(col, '_Color')]) } })
+        #   }
+        # 
+
+        
         tmp <- lapply(paste("C", 1:as.integer(input$nclust), sep=""), function(k){
           colnames(mati2())[which(clust$annot_sel2[, clustCol]==k)]
         })
@@ -757,13 +824,14 @@ server <- function(input, output, session) {
       })
     }
   })
+  
 
     output$cons_clust_anno_plot <- renderPlot({
-    colors <- clust$cc.col[names(consclust()[[as.integer(input$nclust)]]$consensusClass),"ChromatinGroup"]
-    heatmap(clust$consclust.mat, Colv=as.dendrogram(clust$hc), Rowv=NA, symm=FALSE, scale="none",
-                                                    col=colorRampPalette(c("white", "blue"))(100), na.rm=TRUE, labRow=F, labCol=F, mar=c(5, 5),
-                                                    main=paste("consensus matrix k=", input$nclust, sep=""), ColSideCol=colors)
-    #legend("topright", legend=paste0("C", 1:length(unique(colors))), fill=unique(colors), horiz=FALSE)
+      colors <- cc.col()[names(consclust()[[as.integer(input$nclust)]]$consensusClass),"ChromatinGroup"]
+
+      heatmap(clust$consclust.mat, Colv=as.dendrogram(clust$hc), Rowv=NA, symm=FALSE, scale="none",
+              col=colorRampPalette(c("white", "blue"))(100), na.rm=TRUE, labRow=F, labCol=F, mar=c(5, 5),
+              main=paste("consensus matrix k=", input$nclust, sep=""), ColSideCol=colors)
     })
   
   output$anno_cc_box <- renderUI({
@@ -777,16 +845,17 @@ server <- function(input, output, session) {
   output$download_anno_cc_plot <- downloadHandler(
     filename=function(){ paste0("consensus_clustering_k", input$nclust, "_", input$selected_filtered_dataset, ".png")},
     content=function(file){
-      png(file, width=1200, height=800, res=150)
-      colors <- clust$cc.col[names(consclust()[[as.integer(input$nclust)]]$consensusClass),"ChromatinGroup"]
+      png(file, width=1200, height=800, res=300)
+      colors <- cc.col()[names(consclust()[[as.integer(input$nclust)]]$consensusClass),"ChromatinGroup"]
       heatmap(clust$consclust.mat, Colv=as.dendrogram(clust$hc), Rowv=NA, symm=FALSE, scale="none",
               col=colorRampPalette(c("white", "blue"))(100), na.rm=TRUE, labRow=F, labCol=F, mar=c(5, 5),
               main = paste("consensus matrix k=", input$nclust, sep=""), ColSideCol=colors)
+      
       dev.off()
   })
   
   output$cor_clust_anno_plot <- renderPlot(geco.hclustAnnotHeatmapPlot(x=cor(mat.so.cor2()), hc=hc_cor2(), hmColors=corColors,
-                                                                       anocol=clust$cc.col[,ncol(clust$cc.col):1], xpos=c(0.15,0.9,0.164,0.885),
+                                                                       anocol=cc.col()[,ncol(cc.col()):1], xpos=c(0.15,0.9,0.164,0.885),
                                                                        ypos=c(0.1,0.5,0.5,0.6,0.62,0.95), dendro.cex=0.05,
                                                                        xlab.cex=0.5, hmRowNames=FALSE, hmRowNames.cex=0.01))
   
@@ -795,7 +864,7 @@ server <- function(input, output, session) {
       box(title="Annotated correlation clustering", width=NULL, status="success", solidHeader=T,
           column(12, align="left", plotOutput("cor_clust_anno_plot", height=500, width=500)),
           column(7, align="left", tableOutput("hcor_kable")),
-          column(5, align="left", br(), br(), htmlOutput("chi_info")),
+          column(3,offset = 2, align="left", br(), br(), htmlOutput("chi_info")),
           column(12, align="left", downloadButton("download_anno_hc_plot", "Download image")))
     }
   })
@@ -805,33 +874,60 @@ server <- function(input, output, session) {
     content=function(file){
       png(file, width=1200, height=1500, res=250)
       geco.hclustAnnotHeatmapPlot(x=cor(mat.so.cor2()), hc=hc_cor2(), hmColors=corColors,
-                                  anocol=clust$cc.col[,ncol(clust$cc.col):1], xpos=c(0.15,0.9,0.164,0.885),
+                                    anocol=cc.col()[,ncol(cc.col()):1], xpos=c(0.15,0.9,0.164,0.885),
                                   ypos=c(0.1,0.5,0.5,0.6,0.62,0.95), dendro.cex=0.05,
                                   xlab.cex=0.5, hmRowNames=FALSE, hmRowNames.cex=0.01)
       dev.off()
   })
-  
+
+    
   output$hcor_kable <- function(){
-    req(clust$cc.col, annot_sel(), annot_sel())
-    table_raw <- as.data.frame.matrix(table(clust$cc.col[,"ChromatinGroup"], clust$cc.col[,"sample_id"]))
+    req(cc.col(), anocol_sel())
+    table_raw <- as.data.frame.matrix(table(cc.col()[,"ChromatinGroup"], cc.col()[,"sample_id"]))
+
+     #Overall goodness of fit testing : how fairly are cells  allocated between the clusters ?
     clust$chi <- chisq.test(x=as.matrix(table_raw), correct=FALSE)
-    tab <- t(apply(table_raw, 1, function(x){ round(x/colSums(table_raw), 2)}))
+    
+    # Cluster goodness of fit testing : how fairly are cells  allocated to a particular cluster ?
+    chi_pvalues=c()
+    for(i in 1:(dim(as.matrix(table_raw))[1])){
+      contingency_tab = rbind(table_raw[i,], colSums(table_raw))
+      chi <- chisq.test(x=contingency_tab, correct=FALSE)
+      chi_pvalues[i]=chi$p.value
+    }
+
+    tab <- table_raw
     if(length(unique(annot_sel()$sample_id))==1){
+      chi_pvalues=rep(1,dim(as.matrix(table_raw))[1])
       tab <- t(tab)
     }
-    colnames(tab) <- sapply(colnames(table_raw), function(x){ annot_sel()[names(anocol_sel()[anocol_sel()[, "sample_id"]==x, "sample_id"][1]), "sample_id"] })
-    rownames(tab) <- col2hex(rownames(tab)) # necessary as kable seems to not recognize all color names so it makes everything white
+    chi_pvalues= round(chi_pvalues, 5)
+    chi_pvalues[which(chi_pvalues==0)] <- "<0.00001"
+    chi_pvalues = c(chi_pvalues,"")
+
+    #colnames(tab) <- sapply(colnames(table_raw), function(x){ annot_sel()[names(anocol_sel()[anocol_sel()[, "sample_id"]==x, "sample_id"][1]), "sample_id"] })
+    
+    colnames(tab) <- sapply(colnames(table_raw), function(x){  clust$annot_sel2[names(cc.col()[cc.col()[, "sample_id"]==x, "sample_id"][1]), "sample_id"] })
+    colors = c(col2hex(rownames(tab)),"") # necessary as kable seems to not recognize all color names so it makes everything white
+    rownames(tab) <- sapply(rownames(table_raw), function(x){  clust$annot_sel2[names(cc.col()[cc.col()[, "ChromatinGroup"]==x, "ChromatinGroup"][1]), "ChromatinGroup"] })
+    
+    
     tab <- rbind(tab, colSums(table_raw))
-    tab <- as.data.frame(cbind(Cluster=c(rownames(tab)), tab))
+    tab <- cbind(tab, "#Cells"=c(rowSums(table_raw),sum(rowSums(table_raw))))
+    tab <- cbind(tab, "p-value"=chi_pvalues)
+    tab <- as.data.frame(cbind(Cluster=c(rownames(tab)[1:length(rownames(tab))-1],""), tab))
     rownames(tab) <- NULL
     if(length(unique(annot_sel()$sample_id))==1){
-      tab[,-1] <- sapply(tab[,-1], function(x){ as.numeric(as.character(x)) })
+      tab[,-c(1,dim(tab)[2])] <- sapply(tab[,-c(1,dim(tab)[2])], function(x){ as.numeric(as.character(x)) })
     }else{
-      tab[,-1] <- apply(tab[,-1], 2, function(x){ as.numeric(x) })
+      tab[,-c(1,dim(tab)[2])] =apply(tab[,-c(1,dim(tab)[2])], 2, function(x){ as.numeric(x) })
     }
-    tab %>%
-      mutate(Cluster=cell_spec(Cluster, color="white", bold=T, background=tab$Cluster)) %>%
-      kable(escape=F, align="c") %>%
+    tab
+    ord = c(order(tab$Cluster[1:nrow(tab)-1]),nrow(tab))
+    tab = tab[ord,]
+    tab= tab %>% mutate(Cluster=cell_spec(Cluster, color="white", bold=T, background=colors[ord]))
+
+    tab %>% kable(escape=F, align="c") %>%
       kable_styling(c("striped", "condensed"), full_width = F) %>%
       group_rows("Total cell count", dim(tab)[1], dim(tab)[1])
   }
@@ -841,7 +937,7 @@ server <- function(input, output, session) {
     x2 <- round(clust$chi$statistic, 2)
     pval <- round(clust$chi$p.value, 5)
     pval <- if(pval==0) "< 0.00001" else paste0("= ", pval)
-    HTML(paste0("Chi-squared test on the contingency table:<br/>X-squared = ", x2, "<br/>degrees of freedom = ",
+    HTML(paste0("Chi-squared test on<br/>the contingency table:<br/>X-squared = ", x2, "<br/>degrees of freedom = ",
            clust$chi$parameter, "<br/>p-value ", pval))
   })
   
@@ -855,10 +951,11 @@ server <- function(input, output, session) {
     if(input$anno_tsne_color == 'total_counts'){
       p <- p + scale_color_gradientn(colours = matlab.like(100))
     }else{
-      cols <- paste0("c(", paste0("input$anno_tsne_col", sort(levelsSelectedAnnot_anno_tSNE()), collapse = ", "), ")")
+
+      cols <- paste0("c(", paste0("input$anno_tsne_col", levelsSelectedAnnot_anno_tSNE(), collapse = ", "), ")")
       cols <- eval(parse(text = cols))
       req(cols)
-      lev <- sort(unique(levelsSelectedAnnot_anno_tSNE()))
+      lev <-unique(levelsSelectedAnnot_anno_tSNE())
       names(cols) <- lev
       p <- p + scale_color_manual(values = cols)
     }
@@ -890,19 +987,34 @@ server <- function(input, output, session) {
     }
   })
   
+  cc.col <- reactive({
+    if(!is.null(clust$cc.col) && !is.null(reactVal_tsneAnno$annotColors_filtered()) ){
+      
+      tmp_col = reactVal_tsneAnno$annotColors_filtered() %>% select(Sample,sample_id_Color,ChromatinGroup_Color)
+      tmp = as.data.frame(clust$cc.col)
+      names <-rownames(tmp)
+      tmp[,"Sample"] = names
+      tmp = left_join(tmp,tmp_col,by=c("Sample")) %>% select(ChromatinGroup_Color,sample_id_Color,total_counts)
+      colnames(tmp) =c("ChromatinGroup","sample_id","total_counts")
+      tmp = as.matrix(tmp)
+      rownames(tmp)= names
+      cc.col=tmp
+      save(cc.col, file=file.path(init$data_folder, "datasets", dataset_name(), "consclust", paste0(input$selected_reduced_dataset, "cc.col.RData")))
+      tmp
+    }
+  })
+
   observeEvent(input$saveColors_anno_tsne, {  # [anno_tsne] change modified colors for all plots where it applies and save RData locally
-    if(input$anno_tsne_color == "ChromatinGroup"){
-      showNotification("Cannot save colors for chromatin group.", duration=5, closeButton=TRUE, type="warning")
-    }else{
+
       cols <- paste0("c(", paste0("input$anno_tsne_col", sort(levelsSelectedAnnot_anno_tSNE()), collapse = ", "), ")")
       cols <- eval(parse(text = cols))
       lev <- sort(unique(levelsSelectedAnnot_anno_tSNE()))
       names(cols) <- lev
-      annot_Color_Custom <- as.data.frame(cols) %>% rownames_to_column(input$anno_tsne_color)%>% setNames(c(input$anno_tsne_color, str_interp("${input$anno_tsne_color}_Color_Orig") ))
-      reactVal$annotColors <- reactVal$annotColors %>% select(-c(str_interp("${input$anno_tsne_color}_Color_Orig"))) %>% right_join(annot_Color_Custom, by=input$anno_tsne_color  )
-      annotColors_save <- reactVal$annotColors
-      save(annotColors_save, file=file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_annotColors.RData")))
-    }
+      annot_Color_Custom <- as.data.frame(cols) %>% rownames_to_column(input$anno_tsne_color) %>% setNames(c(input$anno_tsne_color, str_interp("${input$anno_tsne_color}_Color") ))
+      reactVal$annotColors_filtered <- isolate(reactVal_tsneAnno$annotColors_filtered()) %>% select(-c(str_interp("${input$anno_tsne_color}_Color"))) %>% right_join(annot_Color_Custom, by=input$anno_tsne_color  )
+      annotColors_filtered_save <- reactVal$annotColors_filtered
+      save(annotColors_filtered_save, file=file.path(init$data_folder, "datasets", dataset_name(), "consclust", paste0(input$selected_filtered_dataset,"_k_",input$nclust, "_annotColors_filtered.RData")))
+
   })
   
   observeEvent(input$anno_tSNEColReset, {
@@ -915,25 +1027,34 @@ server <- function(input, output, session) {
   
   output$anno_tsne_colorPicker <- renderUI({
     lev <- sort(unique(levelsSelectedAnnot_anno_tSNE()))
-    if(str_interp("${input$anno_tsne_color}_Color") %in% colnames(isolate(reactVal_tsneAnno$annotColors()))) {
-      colsModif <- isolate(reactVal_tsneAnno$annotColors()) %>% dplyr::select(one_of( str_interp("${input$anno_tsne_color}_Color")) ) %>% distinct() %>% pull( str_interp("${input$anno_tsne_color}_Color"))
-    }else {
-      colsModif <- isolate(reactVal_tsneAnno$annotColors()) %>% dplyr::select(one_of( str_interp("${input$anno_tsne_color}_Color_Orig")) ) %>% distinct() %>% pull( str_interp("${input$anno_tsne_color}_Color_Orig"))
-    }
-    lapply(seq_along(lev), function(i) {
-      colourpicker::colourInput(inputId=paste0("anno_tsne_col", lev[i]), label=paste0("Choose colour for ", lev[i]), value=colsModif[i], returnName=TRUE) ## Add ", palette = "limited"" to get selectable color panel       
-    })
+    print("output$anno_tsne_colorPicker <- renderUI({")
+  
+      colsModif <- isolate(reactVal_tsneAnno$annotColors_filtered()) %>% dplyr::select(one_of( str_interp("${input$anno_tsne_color}_Color")) ) %>% distinct() %>% pull( str_interp("${input$anno_tsne_color}_Color"))
+        
+      lapply(seq_along(lev), function(i) {
+        colourpicker::colourInput(inputId=paste0("anno_tsne_col", lev[i]), label=paste0("Choose colour for ", lev[i]), value=colsModif[i], returnName=TRUE) ## Add ", palette = "limited"" to get selectable color panel       
+      })
+     # }s
   })
   
   anocol_sel_tsne <- reactive({ geco.annotToCol2(clust$annot_sel2[, c(annotCol(), "ChromatinGroup")], annotT=clust$annot_sel2, plotLegend=T, plotLegendFile=file.path(init$data_folder, "datasets", dataset_name(),"Annotation_legends_tsne_anno.pdf"), categCol=NULL) })
   
-  annot_tsneAnno_Color_Orig <- reactive({
-    df <- reactVal$annotColors[reactVal$annotColors$Sample %in% rownames(clust$annot_sel2), ]
-    df$ChromatinGroup <- clust$annot_sel2$ChromatinGroup
-    df$ChromatinGroup_Color_Orig <- as.data.frame(anocol_sel_tsne())$ChromatinGroup
+  annot_tsneAnno_Color <- reactive({
+    df <- reactVal$annotColors_filtered[reactVal$annotColors_filtered$Sample %in% rownames(clust$annot_sel2), ]
+    annot_tsneAnno_Color=df
+    save(annot_tsneAnno_Color, file=file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_annot_tsneAnno_Color.RData")))
     df
   })
-  reactVal_tsneAnno <- reactiveValues(annotColors=reactive({annot_tsneAnno_Color_Orig()}))
+  
+  # annot_tsneAnno_Color_Chrom_Orig <- reactive({
+  #   df <- reactVal$annotColors_filtered_Chrom[reactVal$annotColors_filtered_Chrom$Sample %in% rownames(clust$annot_sel2), ]
+  #   df$ChromatinGroup <- clust$annot_sel2$ChromatinGroup
+  #   df$ChromatinGroup_Color <- as.data.frame(anocol_sel_tsne())$ChromatinGroup
+  #   df
+  # })
+
+  
+  reactVal_tsneAnno <- reactiveValues(annotColors_filtered=reactive({annot_tsneAnno_Color()}) )#,annotColors_filtered_Chrom=reactive({annot_tsneAnno_Color_Chrom_Orig()}))
   
   observeEvent(input$selected_filtered_dataset ,{if(length(input$selected_filtered_dataset)>0 & !is.null(clust$available_k))
                    {unlocked$list$affectation =T}else{unlocked$list$affectation =F}})
@@ -972,7 +1093,7 @@ server <- function(input, output, session) {
       checkBams <- sapply(inputBams, function(x){ if(file.exists(x)){ 0 } else{ showNotification(paste0("Could not find file ", x, ". Please make sure to give a full path including the file name."), duration=7, closeButton=TRUE, type="warning"); 1}  })
       stat.value <- if(input$pc_stat=="p.value") paste("-p", input$pc_stat_value) else paste("-q", input$pc_stat_value)
       if(sum(checkBams)==0){
-        subsetBamAndCallPeaks(myData$affectation, myData$annotFeat, odir, inputBams, stat.value, annotation_id())
+        subsetBamAndCallPeaks(myData$affectation, myData$annotFeat, odir, inputBams, stat.value, annotation_id(),input$peak_distance_to_merge)
         pc$new <- Sys.time()
         updateActionButton(session, "do_pc", label="Finished successfully", icon = icon("check-circle"))
       }
@@ -1111,6 +1232,51 @@ server <- function(input, output, session) {
         incProgress(amount=0.5, detail=paste("performing wilcoxon rank tests"))
         diff$my.res <- geco.CompareWilcox(dataMat=Counts, annot=affectation_filtered(), ref=myrefs, groups=mygps, featureTab=feature)
         
+      }else{ # pairwise one-vs-one testing for each cluster
+        incProgress(amount=0.5, detail=paste("performing wilcoxon rank tests"))
+        diff$my.res <- feature
+        count_save <- data.frame(ID=feature$ID)
+        single_results <- list()
+        pairs <- setNames(data.frame(matrix(ncol=2, nrow=0)), c("group", "ref"))
+        for(i in 1:(as.integer(input$selected_k)-1)){
+          mygps <- list(affectation_filtered()[which(affectation_filtered()$ChromatinGroup==paste0("C", i)), "cell_id"])
+          names(mygps) <- paste0('C', i)
+          groups <- names(mygps)
+          for(j in (i+1):as.integer(input$selected_k)){
+            myrefs <- list(affectation_filtered()[which(affectation_filtered()$ChromatinGroup==paste0("C", j)), "cell_id"])
+            names(myrefs) <- paste0('C', j)
+            refs <- names(myrefs)
+            tmp_result <- geco.CompareWilcox(dataMat=Counts, annot=affectation_filtered(), ref=myrefs, groups=mygps, featureTab=feature)
+            tmp_result <- tmp_result[tmp_result$ID==count_save$ID,]
+            rownames(tmp_result) <- tmp_result$ID
+            tmp_result[5] <- NULL #remove rank because it will be added later
+            colnames(tmp_result)[5:8] <- c("count", "cdiff", "p.val", "adj.p.val")
+            count_save[, paste0('C', i)] <- tmp_result$count
+            single_results <- list.append(single_results, tmp_result)
+            pairs[nrow(pairs)+1,] <- list(groups[1], refs[1])
+            tmp_mirror <- tmp_result
+            tmp_mirror$cdiff <- tmp_mirror$cdiff*(-1.0)
+            tmp_mirror$count <- 0 #not correct, but doesn't matter because it won't be used
+            single_results <- list.append(single_results, tmp_mirror)
+            pairs[nrow(pairs)+1,] <- list(refs[1], groups[1])
+          }
+        }
+        #get count for last group as the loop doesn't cover it
+        tmp.gp <- list(affectation_filtered()[which(affectation_filtered()$ChromatinGroup==paste0("C", input$selected_k)), "cell_id"])
+        count_save[, paste0('C', input$selected_k)] <- apply(Counts, 1, function(x) mean(x[as.character(tmp.gp[[1]])]))
+        combinedTests <- combineMarkers(de.lists=single_results, pairs=pairs, pval.field="p.val",
+                                        effect.field="cdiff", pval.type="any", log.p.in=FALSE,
+                                        log.p.out=FALSE, output.field="stats", full.stats=TRUE)
+        for(i in 1:as.integer(input$selected_k)){
+          cdiffs <- sapply(1:(as.integer(input$selected_k)-1), function(k){ combinedTests[[paste0("C", i)]][feature$ID, k+3]$cdiff })
+          diff$my.res[, paste0("Rank.C", i)] <- combinedTests[[paste0("C", i)]][feature$ID, "Top"]
+          diff$my.res[, paste0("Count.C", i)] <- as.numeric(count_save[, paste0("C", i)])
+          diff$my.res[, paste0("cdiff.C", i)] <- rowMeans(cdiffs)
+          diff$my.res[, paste0("pval.C", i)] <- combinedTests[[paste0("C", i)]][feature$ID, "p.value"]
+          diff$my.res[, paste0("qval.C", i)] <- combinedTests[[paste0("C", i)]][feature$ID, "FDR"]
+        }
+        groups <- paste0('C', 1:input$selected_k) #needed for following code
+        refs <- paste0('pairedTest', 1:input$selected_k)
       }
       
       incProgress(amount=0.3, detail=paste("building summary"))
@@ -1171,7 +1337,7 @@ server <- function(input, output, session) {
   output$download_da_barplot <- downloadHandler(
     filename=function(){ paste0("diffAnalysis_numRegions_barplot_", input$selected_filtered_dataset, "_", input$selected_k, "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".png")},
     content=function(file){
-      png(file, width=500, height=400, res=150)
+      png(file, width=500, height=400, res=300)
       myylim <- range(c(diff$summary["over",], -diff$summary["under", ]))
       barplot(diff$summary["over",], col="red", las=1, ylim=myylim, main="Differentially bound regions",
               ylab="Number of regions", axes=F)
@@ -1220,7 +1386,7 @@ server <- function(input, output, session) {
   output$download_h1_plot <- downloadHandler(
     filename=function(){ paste0("diffAnalysis_numRegions_barplot_", input$selected_filtered_dataset, "_", input$selected_k, "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, "_", input$gpsamp, ".png")},
     content=function(file){
-      png(file, width=1000, height=600, res=150)
+      png(file, width=1000, height=600, res=300)
       tmp <- geco.H1proportion(diff$my.res[, paste("pval", input$gpsamp, sep=".")])
       hist(diff$my.res[, paste("pval", input$gpsamp, sep=".")], breaks=seq(0, 1, by=0.05), xlab="P-value",
            ylab="Frequency", main=paste(input$gpsamp, "vs the rest", "\n", "H1 proportion:", round(tmp, 3)))
@@ -1242,7 +1408,7 @@ server <- function(input, output, session) {
   output$download_da_volcano <- downloadHandler(
     filename=function(){ paste0("diffAnalysis_numRegions_barplot_", input$selected_filtered_dataset, "_", input$selected_k, "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, "_", input$gpsamp, ".png")},
         content=function(file){
-        png(file, width=900, height=900, res=150)
+        png(file, width=900, height=900, res=300)
         mycol <- rep("black", nrow(diff$my.res))
         mycol[which(diff$my.res[, paste("qval", input$gpsamp, sep=".")] <= input$qval.th & diff$my.res[, paste("cdiff", input$gpsamp, sep=".")] > input$cdiff.th)] <- "red"
         mycol[which(diff$my.res[, paste("qval", input$gpsamp, sep=".")] <= input$qval.th & diff$my.res[, paste("cdiff", input$gpsamp, sep=".")] < -input$cdiff.th)] <- "forestgreen"
@@ -1269,6 +1435,7 @@ server <- function(input, output, session) {
   })
   MSIG.ls <- reactive({ msig_db()$MSIG.ls })
   MSIG.gs <- reactive({ msig_db()$MSIG.gs })
+  MSIG.classes <- reactive({unique(MSIG.gs()$Class)})
   
   annotFeat <- reactive({
     myData = new.env()
@@ -1385,39 +1552,43 @@ server <- function(input, output, session) {
   })
   
   output$enr_clust_sel <- renderUI({ selectInput("enr_clust_sel", "Select cluster:", choices=diff$groups) })
+  output$enr_class_sel <- renderUI({shiny::checkboxGroupInput(inputId = "enr_class_sel",inline = T,label =  "Select classes to display:",selected = MSIG.classes() ,choiceNames=MSIG.classes(), choiceValues=MSIG.classes())})
   
   output$all_enrich_table <- DT::renderDataTable({
-    req(enr$Both)
-    table <- enr$Both[[match(input$enr_clust_sel, diff$groups)]][, -c(2)]
-    if(is.null(table)){ return(setNames(data.frame(matrix(ncol=5, nrow=0)), c("Gene_set", "Num_deregulated_genes", "p.value", "q.value", "Deregulated_genes"))) }
+    req(enr$Both,input$enr_class_sel)
+    table <- enr$Both[[match(input$enr_clust_sel, diff$groups)]]
+    table <- table[which(table[,"Class"] %in% input$enr_class_sel),]
+    if(is.null(table)){ return(setNames(data.frame(matrix(ncol=6, nrow=0)), c("Gene_set","Class", "Num_deregulated_genes", "p.value", "q.value", "Deregulated_genes"))) }
     table <- unite(table, "dereg_genes", c("Nb_of_deregulated_genes", "Nb_of_genes"), sep="/")
-    colnames(table) <- c("Gene_set", "Num_deregulated_genes", "p.value", "adj.p.value", "Deregulated_genes")
-    table[, 3] <- round(table[, 3], 9)
+    colnames(table) <- c("Gene_set","Class", "Num_deregulated_genes", "p.value", "adj.p.value", "Deregulated_genes")
     table[, 4] <- round(table[, 4], 9)
+    table[, 5] <- round(table[, 5], 9)
     table <- table[order(table$adj.p.value, table$p.value),]
     DT::datatable(table, options=list(dom='tpi'))
   })
   
   output$over_enrich_table <- DT::renderDataTable({
-    req(enr$Overexpressed)
-    table <- enr$Overexpressed[[match(input$enr_clust_sel, diff$groups)]][, -c(2)]
-    if(is.null(table)){ return(setNames(data.frame(matrix(ncol=5, nrow=0)), c("Gene_set", "Num_deregulated_genes", "p.value", "q.value", "Deregulated_genes"))) }
+    req(enr$Overexpressed,input$enr_class_sel)
+    table <- enr$Overexpressed[[match(input$enr_clust_sel, diff$groups)]]
+    table <- table[which(table[,"Class"] %in% input$enr_class_sel),]
+    if(is.null(table)){ return(setNames(data.frame(matrix(ncol=6, nrow=0)), c("Gene_set","Class", "Num_deregulated_genes", "p.value", "q.value", "Deregulated_genes"))) }
     table <- unite(table, "dereg_genes", c("Nb_of_deregulated_genes", "Nb_of_genes"), sep="/")
-    colnames(table) <- c("Gene_set", "Num_deregulated_genes", "p.value", "adj.p.value", "Deregulated_genes")
-    table[, 3] <- round(table[, 3], 9)
+    colnames(table) <- c("Gene_set","Class", "Num_deregulated_genes", "p.value", "adj.p.value", "Deregulated_genes")
     table[, 4] <- round(table[, 4], 9)
+    table[, 5] <- round(table[, 5], 9)
     table <- table[order(table$adj.p.value, table$p.value),]
     DT::datatable(table, options=list(dom='tpi'))
   })
   
   output$under_enrich_table <- DT::renderDataTable({
-    req(enr$Underexpressed)
-    table <- enr$Underexpressed[[match(input$enr_clust_sel, diff$groups)]][, -c(2)]
-    if(is.null(table)){ return(setNames(data.frame(matrix(ncol=5, nrow=0)), c("Gene_set", "Num_deregulated_genes", "p.value", "q.value", "Deregulated_genes"))) }
+    req(enr$Underexpressed,input$enr_class_sel)
+    table <- enr$Underexpressed[[match(input$enr_clust_sel, diff$groups)]]
+    table <- table[which(table[,"Class"] %in% input$enr_class_sel),]
+    if(is.null(table)){ return(setNames(data.frame(matrix(ncol=6, nrow=0)), c("Gene_set","Class", "Num_deregulated_genes", "p.value", "q.value", "Deregulated_genes"))) }
     table <- unite(table, "dereg_genes", c("Nb_of_deregulated_genes", "Nb_of_genes"), sep="/")
-    colnames(table) <- c("Gene_set", "Num_deregulated_genes", "p.value", "adj.p.value", "Deregulated_genes")
-    table[, 3] <- round(table[, 3], 9)
+    colnames(table) <- c("Gene_set","Class", "Num_deregulated_genes", "p.value", "adj.p.value", "Deregulated_genes")
     table[, 4] <- round(table[, 4], 9)
+    table[, 5] <- round(table[, 5], 9)
     table <- table[order(table$adj.p.value, table$p.value),]
     DT::datatable(table, options=list(dom='tpi'))
   })
@@ -1449,11 +1620,9 @@ server <- function(input, output, session) {
   
   output$gene_sel <- renderUI({
     req(enr$Both, enr$Overexpressed, enr$Underexpressed)
-    genes <- if(is.null(enr$Both)) c() else unlist(sapply(enr$Both, function(x) unlist(strsplit(as.character(x$Deregulated_genes), split=";"))))
-    genes <- if(is.null(enr$Overexpressed)) genes else c(genes, unlist(sapply(enr$Overexpressed, function(x) unlist(strsplit(as.character(x$Deregulated_genes), split=";")))))
-    genes <- if(is.null(enr$Underexpressed)) genes else c(genes, unlist(sapply(enr$Underexpressed, function(x) unlist(strsplit(as.character(x$Deregulated_genes), split=";")))))
-    genes <- unique(genes)
+    genes <- unique(GencodeGenes())
     genes <- genes[order(genes)]
+    genes = genes[which(genes %in% peak_gene()$Gene_name)]
     selectInput("gene_sel", "Select gene:", choices=genes)
   })
   
