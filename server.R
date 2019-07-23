@@ -137,7 +137,7 @@ server <- function(input, output, session) {
 
       for(i in 1:dim(input$datafile_matrix)[1]){
         datamatrix_single <- read.table(input$datafile_matrix$datapath[i], header=TRUE, stringsAsFactors=FALSE)
-        
+
         #perform some checks on data format
         # matchingRN <- grep("[[:alnum:]]+:[[:digit:]]+-[[:digit:]]+", rownames(datamatrix_single)) # check rowname format
         # if(length(matchingRN) < length(rownames(datamatrix_single))){
@@ -154,13 +154,20 @@ server <- function(input, output, session) {
         #   unlink(file.path(init$data_folder, "datasets", input$new_dataset_name), recursive=TRUE)
         #   return()
         # }
-        
+        #########################
+        #TO REMOVE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        names = datamatrix_single$X0
+        datamatrix_single = datamatrix_single[,-1]
+        rownames(datamatrix_single) = names
+        #TO REMOVE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #########################
         datamatrix_single <- datamatrix_single[!duplicated(rownames(datamatrix_single)),] #put IN for new format
+        
         
         rownames(datamatrix_single) <- gsub(":", "_", rownames(datamatrix_single))
         rownames(datamatrix_single) <- gsub("-", "_", rownames(datamatrix_single))
         
-        
+
         total_cell <- length(datamatrix_single[1,])
         sample_name <- gsub('.{4}$', '', input$datafile_matrix$name[i])
         annot_single <- data.frame(barcode=colnames(datamatrix_single), cell_id=paste0(sample_name, "_c", 1:total_cell), sample_id=rep(sample_name, total_cell), batch_id=i)
@@ -260,8 +267,6 @@ server <- function(input, output, session) {
       tmp_meta <- data.frame(Sample=rownames(annot()), sample_id=annot()$sample_id) # modify if coloring should be possible for other columns
       reactVal$annotColors <- data.frame(sample_id=as.data.frame(anocol())$sample_id) %>% setNames(str_c(names(.), "_Color")) %>% rownames_to_column("Sample") %>% left_join(tmp_meta,. , by="Sample")
     }
-    annotColors = reactVal$annotColors
-    save(annotColors,file = file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "reactVal_annotColors.RData")))
   })
   
   cell_cov_plot <- reactive({ggplot(cell_cov_df(), aes(x=coverage)) + geom_histogram(color="black", fill="steelblue", bins=input$coverage_bins) + labs(x="read coverage per cell") + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank(),
@@ -455,21 +460,24 @@ server <- function(input, output, session) {
   
   output$pca_colorPicker <- renderUI({
     lev <- sort(unique(levelsSelectedAnnot_pca()))
+    if(str_interp("${input$pca_color_2D}_Color") %in% colnames(reactVal$annotColors)) {
     colsModif <- reactVal$annotColors %>% dplyr::select(one_of( str_interp("${input$pca_color_2D}_Color")) ) %>% distinct() %>% pull( str_interp("${input$pca_color_2D}_Color"))
-   
+    
     lapply(seq_along(lev), function(i) {
       colourpicker::colourInput(inputId=paste0("pca_col", lev[i]), label=paste0("Choose colour for ", lev[i]), value=colsModif[i], returnName=TRUE) ## Add ", palette = "limited"" to get selectable color panel       
     })
-
+    }
   })
   
   output$tsne_colorPicker <- renderUI({
     lev <- sort(unique(levelsSelectedAnnot_tSNE()))
+    if(str_interp("${input$tsne_color}_Color") %in% colnames(reactVal$annotColors)) {
     colsModif <- reactVal$annotColors %>% dplyr::select(one_of( str_interp("${input$tsne_color}_Color")) ) %>% distinct() %>% pull( str_interp("${input$tsne_color}_Color"))
     
     lapply(seq_along(lev), function(i) {
       colourpicker::colourInput(inputId=paste0("tsne_col", lev[i]), label=paste0("Choose colour for ", lev[i]), value=colsModif[i], returnName=TRUE) ## Add ", palette = "limited"" to get selectable color panel       
     })
+    }
   })
   observeEvent(unlocked$list,able_disable_tab(c("selected_reduced_dataset","pca","tsne"),"cor_clustering")) # if conditions are met, unlock tab Correlation Clustering
   
@@ -488,10 +496,6 @@ server <- function(input, output, session) {
     })
   
   mat.so.cor <- reactive({ mati()[,hc_cor()$order] })
-  
-  
-
-  
   
   hc_pca_plot <- reactive({
     req(mat.so.cor(), hc_cor(), anocol())
@@ -514,7 +518,7 @@ server <- function(input, output, session) {
   output$download_cor_clust_plot <- downloadHandler(
     filename=function(){ paste0("correlation_clustering_", input$selected_reduced_dataset, ".png")},
     content=function(file){
-      png(file, width=900, height=1000, res=300)
+      png(file, width=1200, height=1400, res=300,pointsize = 8)
       geco.hclustAnnotHeatmapPlot(x=cor(mat.so.cor()),
                                                 hc=hc_cor(),
                                                 hmColors=corColors,
@@ -522,7 +526,7 @@ server <- function(input, output, session) {
                                                 xpos=c(0.15, 0.9, 0.164, 0.885),
                                                 ypos=c(0.1, 0.5, 0.5, 0.6, 0.62, 0.95),
                                                 dendro.cex=0.04,
-                                                xlab.cex=0.8,
+                                                xlab.cex=0.5,
                                                 hmRowNames=FALSE)
       dev.off()
 
@@ -550,8 +554,8 @@ server <- function(input, output, session) {
   output$download_cor_clust_hist_plot <- downloadHandler(
     filename=function(){ paste0("correlation_distribution_", input$selected_reduced_dataset, ".png")},
     content=function(file){
-      png(file, width=1000, height=700, res=300)
-      hist(corChIP(), prob=TRUE, col=alpha("steelblue", 0.8), breaks=50, ylim=c(0,4), main="Distribution of cell to cell correlation scores", xlab="Pearson Corr Scores")
+      png(file, width=2000, height=1400, res=300)
+      hist(corChIP(), prob=TRUE, col=alpha("steelblue", 0.8), breaks=50, ylim=c(0,4),cex=0.4, main="Distribution of cell to cell correlation scores", xlab="Pearson Corr Scores")
       lines(density(corChIP()), col="blue", lwd=2)
       lines(density(cor(z())), col="black", lwd=2)
       abline(v=limitC(), lwd=2, col="red", lty=2)
@@ -621,7 +625,7 @@ server <- function(input, output, session) {
   output$download_cor_clust_filtered_plot <- downloadHandler(
     filename=function(){ paste0("correlation_clustering_filtered_", input$selected_reduced_dataset, ".png")},
     content=function(file){
-      png(file, width=900, height=1000, res=300)
+      png(file,  width=1200, height=1400, res=300,pointsize = 8)
       geco.hclustAnnotHeatmapPlot(x=cor(cf$mat.so.cor2),
                                                 hc=cf$hc_cor2,
                                                 hmColors=corColors,
@@ -708,10 +712,8 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$do_final_figs, {  # load coloring used for PCA, tSNE etc.
-    print("LOADING ANNOT COLOR FILTERED 0000000000000000000000")
     req(input$selected_filtered_dataset)
     if(file.exists(file.path(init$data_folder, "datasets", dataset_name(), "consclust", paste0(input$selected_filtered_dataset,"_k_",input$nclust, "_annotColors_filtered.RData")))){
-      print("LOADING ANNOT COLOR FILTERED")
       myData = new.env()
       load(file.path(init$data_folder, "datasets", dataset_name(), "consclust", paste0(input$selected_filtered_dataset, "_k_",input$nclust,"_annotColors_filtered.RData")), envir=myData)
       reactVal$annotColors_filtered <- myData$annotColors_filtered_save
@@ -785,7 +787,7 @@ server <- function(input, output, session) {
       withProgress(message='Preparing final figures...', value = 0, {
         incProgress(amount=0.2, detail=paste("annotating"))
         so <- colnames(mat.so.cor2())
-        conscol <- c("#1F78B4", "#33A02C","#A6CEE3", "#B2DF8A", "#FB9A99", "#E31A1C", "#FDBF6F", "#FF7F00", "#CAB2D6", "#6A3D9A", "#FFFF99", "#B15928", "#bd18ea", "#2ef4ca", "#f4cced", "#f4cc03", "#05188a", "#e5a25a", "#06f106", "#85848f", "#000000", "#076f25", "#93cd7f", "#4d0776", "#ffffff")
+        conscol <- c("#4285F4", "#F4B400","#DB4437", "#0F9D58", "#FB9A99", "#E31A1C", "#FDBF6F", "#FF7F00", "#CAB2D6", "#6A3D9A", "#FFFF99", "#B15928", "#bd18ea", "#2ef4ca", "#f4cced", "#f4cc03", "#05188a", "#e5a25a", "#06f106", "#85848f", "#000000", "#076f25", "#93cd7f", "#4d0776", "#ffffff")
         cc <- consclust()[[as.integer(input$nclust)]]$consensusClass
         cc. <- lapply(unique(cc), function(z) names(which(cc==z)))
         mat.cc <- geco.groupMat(mati2(), margin=1, groups=cc., method="mean")
@@ -863,8 +865,8 @@ server <- function(input, output, session) {
     if(!is.null(clust$hc)){
       box(title="Annotated correlation clustering", width=NULL, status="success", solidHeader=T,
           column(12, align="left", plotOutput("cor_clust_anno_plot", height=500, width=500)),
-          column(7, align="left", tableOutput("hcor_kable")),
-          column(3,offset = 2, align="left", br(), br(), htmlOutput("chi_info")),
+          column(12, align="left", tableOutput("hcor_kable")),
+          column(5,offset = 2, align="left", br(), htmlOutput("chi_info"),br()),
           column(12, align="left", downloadButton("download_anno_hc_plot", "Download image")))
     }
   })
@@ -872,7 +874,7 @@ server <- function(input, output, session) {
   output$download_anno_hc_plot <- downloadHandler(
     filename=function(){ paste0("hierarchical_clustering_k", input$nclust, "_", input$selected_filtered_dataset, ".png")},
     content=function(file){
-      png(file, width=1200, height=1500, res=250)
+      png(file,  width=1200, height=1400, res=300,pointsize = 8)
       geco.hclustAnnotHeatmapPlot(x=cor(mat.so.cor2()), hc=hc_cor2(), hmColors=corColors,
                                     anocol=cc.col()[,ncol(cc.col()):1], xpos=c(0.15,0.9,0.164,0.885),
                                   ypos=c(0.1,0.5,0.5,0.6,0.62,0.95), dendro.cex=0.05,
@@ -923,10 +925,10 @@ server <- function(input, output, session) {
       tab[,-c(1,dim(tab)[2])] =apply(tab[,-c(1,dim(tab)[2])], 2, function(x){ as.numeric(x) })
     }
     tab
-    ord = c(order(tab$Cluster[1:nrow(tab)-1]),nrow(tab))
-    tab = tab[ord,]
-    tab= tab %>% mutate(Cluster=cell_spec(Cluster, color="white", bold=T, background=colors[ord]))
-
+    # ord = c(order(tab$Cluster[1:nrow(tab)-1]),nrow(tab))
+    # tab = tab[ord,]
+    tab= tab %>% mutate(Cluster=cell_spec(Cluster, color="white", bold=T, background=colors))
+      
     tab %>% kable(escape=F, align="c") %>%
       kable_styling(c("striped", "condensed"), full_width = F) %>%
       group_rows("Total cell count", dim(tab)[1], dim(tab)[1])
@@ -1026,33 +1028,24 @@ server <- function(input, output, session) {
   })
   
   output$anno_tsne_colorPicker <- renderUI({
+   if(str_interp("${input$anno_tsne_color}_Color") %in% colnames(isolate(reactVal_tsneAnno$annotColors_filtered()))) {
     lev <- sort(unique(levelsSelectedAnnot_anno_tSNE()))
-    print("output$anno_tsne_colorPicker <- renderUI({")
-  
+
       colsModif <- isolate(reactVal_tsneAnno$annotColors_filtered()) %>% dplyr::select(one_of( str_interp("${input$anno_tsne_color}_Color")) ) %>% distinct() %>% pull( str_interp("${input$anno_tsne_color}_Color"))
         
       lapply(seq_along(lev), function(i) {
         colourpicker::colourInput(inputId=paste0("anno_tsne_col", lev[i]), label=paste0("Choose colour for ", lev[i]), value=colsModif[i], returnName=TRUE) ## Add ", palette = "limited"" to get selectable color panel       
       })
-     # }s
+    }
   })
   
   anocol_sel_tsne <- reactive({ geco.annotToCol2(clust$annot_sel2[, c(annotCol(), "ChromatinGroup")], annotT=clust$annot_sel2, plotLegend=T, plotLegendFile=file.path(init$data_folder, "datasets", dataset_name(),"Annotation_legends_tsne_anno.pdf"), categCol=NULL) })
   
   annot_tsneAnno_Color <- reactive({
     df <- reactVal$annotColors_filtered[reactVal$annotColors_filtered$Sample %in% rownames(clust$annot_sel2), ]
-    annot_tsneAnno_Color=df
-    save(annot_tsneAnno_Color, file=file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_annot_tsneAnno_Color.RData")))
     df
   })
   
-  # annot_tsneAnno_Color_Chrom_Orig <- reactive({
-  #   df <- reactVal$annotColors_filtered_Chrom[reactVal$annotColors_filtered_Chrom$Sample %in% rownames(clust$annot_sel2), ]
-  #   df$ChromatinGroup <- clust$annot_sel2$ChromatinGroup
-  #   df$ChromatinGroup_Color <- as.data.frame(anocol_sel_tsne())$ChromatinGroup
-  #   df
-  # })
-
   
   reactVal_tsneAnno <- reactiveValues(annotColors_filtered=reactive({annot_tsneAnno_Color()}) )#,annotColors_filtered_Chrom=reactive({annot_tsneAnno_Color_Chrom_Orig()}))
   
@@ -1620,14 +1613,23 @@ server <- function(input, output, session) {
   
   output$gene_sel <- renderUI({
     req(enr$Both, enr$Overexpressed, enr$Underexpressed)
-    genes <- unique(GencodeGenes())
-    genes <- genes[order(genes)]
-    genes = genes[which(genes %in% peak_gene()$Gene_name)]
-    selectInput("gene_sel", "Select gene:", choices=genes)
+    
+    diff$my.res
+    most_diff = diff$my.res %>% select(ID,starts_with("qval."))
+    most_diff[,"qval"]= rowMeans2(as.matrix(most_diff[,-1]))
+    most_diff = left_join(most_diff[order(most_diff$qval),],annotFeat_long(),by = c("ID") )
+    most_diff = most_diff %>% filter(!is.na(Gene)) 
+    print("output$gene_sel")
+    genes <- intersect(most_diff$Gene,unique(GencodeGenes()))
+    
+    # genes = genes[which(genes %in% peak_gene()$Gene_name)]
+    selectizeInput(inputId = "gene_sel", "Select gene:",options= list(maxOptions = 250),genes)
   })
   
   output$region_sel <- renderUI({
     req(input$gene_sel)
+    print("output$region_sel")
+    
     subset <- annotFeat_long()[annotFeat_long()$Gene==input$gene_sel, ]
     subset <- subset[order(subset$distance),]
     regions <- paste0(subset$ID, " (distance to gene TSS: ", subset$distance, ")")
@@ -1647,15 +1649,23 @@ server <- function(input, output, session) {
   gene_tsne_p <- reactive({
     req(input$gene_sel, input$region_sel)
     region <- strsplit(input$region_sel, " ")[[1]][1]
-    p <- ggplot(as.data.frame(enr_tsne_res()$Y), aes(x=V1, y=V2)) +
-      geom_point(alpha=0.5, aes(color=norm_mat()[region, rownames(affectation_filtered())], shape=affectation_filtered()$ChromatinGroup)) +
-      labs(color="norm. count for region", shape="Cluster", x="t-SNE 1", y="t-SNE 2") +
-      theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank(),
-            panel.background=element_blank(), axis.line=element_line(colour="black"),
-            panel.border=element_rect(colour="black", fill=NA)) +
-      scale_color_viridis(direction=-1)
+    if(region %in% rownames(norm_mat())){
+      p <- ggplot(as.data.frame(enr_tsne_res()$Y), aes(x=V1, y=V2)) +
+        geom_point(alpha=0.5, aes(color=norm_mat()[region, rownames(affectation_filtered())], shape=affectation_filtered()$ChromatinGroup)) +
+        labs(color="norm. count for region", shape="Cluster", x="t-SNE 1", y="t-SNE 2") +
+        theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank(),
+              panel.background=element_blank(), axis.line=element_line(colour="black"),
+              panel.border=element_rect(colour="black", fill=NA)) +
+        scale_color_viridis(direction=-1)
+    }
   })
-  output$gene_tsne_plot <- renderPlotly(ggplotly(gene_tsne_p(), tooltip="Sample", dynamicTicks=T))
+  output$gene_tsne_plot <- renderPlotly({
+      req(input$gene_sel, input$region_sel)
+      region <- strsplit(input$region_sel, " ")[[1]][1]
+      if(region %in% rownames(norm_mat())){
+      ggplotly(gene_tsne_p(), tooltip="Sample", dynamicTicks=T)
+      }
+  })
   
   
   ###############################################################

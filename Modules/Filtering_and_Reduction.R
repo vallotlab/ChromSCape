@@ -37,14 +37,9 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
     bina_counts[bina_counts<2] <-0
     bina_counts[bina_counts>1] <-1
     fixedWin <- names(which((rowSums(bina_counts) > (percentMin()*(dim(bina_counts)[2])) ))) # window selection
-    print(paste0(percentMin(),"% of all cells :"))
-    print(100*percentMin()*(dim(bina_counts)[2]))
-    print("Dim SelMatCov after removing regions")
-    print(length(fixedWin))
     
     SelMatCov <- counts(umi)[,sel]
-    print("Dim SelMatCov after removing cells")
-    print(dim(SelMatCov))
+   
     
     annot <- colData(umi)
     annot <- as.data.frame(annot[sel,])
@@ -52,8 +47,6 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
       
     SelMatCov <- SelMatCov[fixedWin,]
     
-    print("Dim SelMatCov after removing regions")
-    print(dim(SelMatCov))
     
     
     # Filtering based on exclude-regions from bed file, if provided
