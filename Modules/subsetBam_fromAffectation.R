@@ -3,7 +3,7 @@
 #inputBam must be a vector
 #stat.value must be either '-p <thresh>' or '-q <thresh>'
 
-subsetBamAndCallPeaks <- function(affectation, annotFeat, odir, inputBam, stat.value=" -p 0.05 ", anno_id,peak_distance_to_merge=20000){
+subsetBamAndCallPeaks <- function(affectation, annotFeat, odir, inputBam, stat.value=" -p 0.05 ", anno_id,peak_distance_to_merge=10000){
   withProgress(message='Preparing peak data...', value=0, {
     
     incProgress(amount=0.1, detail=paste("merging BAM files"))
@@ -75,8 +75,8 @@ subsetBamAndCallPeaks <- function(affectation, annotFeat, odir, inputBam, stat.v
     
     #Clean up files
     unlink(file.path(odir, "bam_list.txt"))
-    # unlink(file.path(odir, "*.bam"))
-    # unlink(file.path(odir, "*.bam.bai"))
+    unlink(file.path(odir, "*.bam"))
+    unlink(file.path(odir, "*.bam.bai"))
     unlink(file.path(odir, "*.xls"))
     unlink(file.path(odir, "*.gappedPeak"))
     unlink(file.path(odir, "*_model.r"))
