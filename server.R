@@ -220,8 +220,6 @@ server <- function(input, output, session) {
     req(input$selected_raw_dataset)
     
     if(!is.null(input$selected_reduced_dataset)){
-      print(gsub(pattern ="_\\d*_\\d*_\\d*_\\w*","",input$selected_reduced_dataset))
-      print(input$selected_raw_dataset)
       delay(1500, {
         if(gsub(pattern ="_\\d*_\\d*_\\d*_\\w*","",input$selected_reduced_dataset) != input$selected_raw_dataset){
           
@@ -550,9 +548,6 @@ server <- function(input, output, session) {
   thresh2 <- reactive({quantile(cor(z()), probs=seq(0,1,0.01))})
   limitC <- reactive({thresh2()[input$corr_thresh+1]})
   
-    
-
-
   cell_cor_hist <- reactive({
     hist(corChIP(), prob=TRUE, col=alpha("steelblue", 0.8), breaks=50, ylim=c(0,4), main="Distribution of cell to cell correlation scores", xlab="Pearson Corr Scores")
     lines(density(corChIP()), col="blue", lwd=2)
@@ -808,7 +803,6 @@ server <- function(input, output, session) {
         clust$annot_sel2[, clustCol] <- paste("C", match(cc, hcc$order), sep="")
         clust$cc.col <- cbind(ChromatinGroup=conscol[match(clust$annot_sel2[so, clustCol], paste("C", 1:as.integer(input$nclust), sep=""))], anocol_sel()[so,])
         
-        
         if( is.null(reactVal$annotColors_filtered) ){
           reactVal$annotColors_filtered <- NULL
           tmp_meta <- data.frame(Sample=rownames(clust$annot_sel2), sample_id=clust$annot_sel2$sample_id, ChromatinGroup=clust$annot_sel2[, clustCol]) # modify if coloring should be possible for other columns
@@ -817,6 +811,7 @@ server <- function(input, output, session) {
           reactVal$annotColors_filtered <- inner_join(reactVal$annotColors_filtered,tmp_meta,by=c("Sample","sample_id"))
           
         } 
+        
         # else{
         #   lapply(colnames(clust$cc.col), function(col){ if(col != "total_counts"){ clust$cc.col[, col] <<- as.character(reactVal$annotColors_filtered[which(reactVal$annotColors_filtered$Sample %in% rownames(clust$cc.col)), paste0(col, '_Color')]) } })
         #   }
@@ -1626,12 +1621,10 @@ server <- function(input, output, session) {
   output$gene_sel <- renderUI({
     req(enr$Both, enr$Overexpressed, enr$Underexpressed)
     
-    diff$my.res
     most_diff = diff$my.res %>% select(ID,starts_with("qval."))
     most_diff[,"qval"]= rowMeans2(as.matrix(most_diff[,-1]))
     most_diff = left_join(most_diff[order(most_diff$qval),],annotFeat_long(),by = c("ID") )
     most_diff = most_diff %>% filter(!is.na(Gene)) 
-    print("output$gene_sel")
     genes <- intersect(most_diff$Gene,unique(GencodeGenes()))
     
     # genes = genes[which(genes %in% peak_gene()$Gene_name)]
@@ -1640,8 +1633,7 @@ server <- function(input, output, session) {
   
   output$region_sel <- renderUI({
     req(input$gene_sel)
-    print("output$region_sel")
-    
+
     subset <- annotFeat_long()[annotFeat_long()$Gene==input$gene_sel, ]
     subset <- subset[order(subset$distance),]
     regions <- paste0(subset$ID, " (distance to gene TSS: ", subset$distance, ")")
