@@ -216,6 +216,20 @@ server <- function(input, output, session) {
       }
   })
   
+  observeEvent(input$selected_raw_dataset,{
+    req(input$selected_raw_dataset)
+    
+    if(!is.null(input$selected_reduced_dataset)){
+      print(gsub(pattern ="_\\d*_\\d*_\\d*_\\w*","",input$selected_reduced_dataset))
+      print(input$selected_raw_dataset)
+      delay(1500, {
+        if(gsub(pattern ="_\\d*_\\d*_\\d*_\\w*","",input$selected_reduced_dataset) != input$selected_raw_dataset){
+          
+          showNotification(paste0("Warning : Selected raw dataset '",input$selected_raw_dataset, "' is different from selected reduced dataset '", input$selected_reduced_dataset,"'"), duration=5, closeButton=TRUE, type="warning")
+        }
+      })
+    }
+  })
   observeEvent(input$dim_reduction, {  # perform QC filtering and dim. reduction
     annotationId <- annotation_id_norm()
     exclude_regions <- if(input$exclude_regions) setNames(read.table(input$exclude_file$datapath, header=FALSE, stringsAsFactors=FALSE), c("chr", "start", "stop")) else NULL
@@ -240,7 +254,7 @@ server <- function(input, output, session) {
   
   reduced_dataset <- eventReactive(input$selected_reduced_dataset, { # load reduced data set to work with on next pages
     req(input$selected_reduced_dataset)
-
+    
     init$available_filtered_datasets <- get.available.filtered.datasets(dataset_name(), input$selected_reduced_dataset)
     file_index <- match(c(input$selected_reduced_dataset), reduced_datasets())
     filename_sel <- file.path(init$data_folder, "datasets", init$available_reduced_datasets[file_index])
@@ -250,14 +264,15 @@ server <- function(input, output, session) {
     
   })
   
-  print("load pca, annot, tsne")
-  
   pca <- reactive({ reduced_dataset()$pca })
   annot <- reactive({ reduced_dataset()$annot })
   tsne <- reactive({ reduced_dataset()$tsne })
   
   observeEvent(input$selected_reduced_dataset, {  # load coloring used for PCA, tSNE etc.
     req(input$selected_reduced_dataset)
+    
+    updateSelectInput(session, "selected_raw_dataset", label = "Select data set :", choices = init$available_raw_datasets,selected = gsub(pattern = "_\\d*_\\d*_\\d*_\\w*", "",input$selected_reduced_dataset))
+    
     if(file.exists(file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_annotColors.RData")))){
       myData = new.env()
       load(file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_annotColors.RData")), envir=myData)
@@ -291,10 +306,7 @@ server <- function(input, output, session) {
     req(reduced_dataset())
 
     table <- as.data.frame(table(init$annot_raw$sample_id))
-
-    
     table_filtered <- as.data.frame(table(reduced_dataset()$annot$sample_id))
-
     
     colnames(table) = c("Sample","#Cells Before Filtering")
     rownames(table) = NULL 
