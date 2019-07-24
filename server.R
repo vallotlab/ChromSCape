@@ -156,9 +156,9 @@ server <- function(input, output, session) {
         # }
         #########################
         #TO REMOVE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        names = datamatrix_single$X0
-        datamatrix_single = datamatrix_single[,-1]
-        rownames(datamatrix_single) = names
+        # names = datamatrix_single$X0
+        # datamatrix_single = datamatrix_single[,-1]
+        # rownames(datamatrix_single) = names
         #TO REMOVE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         #########################
         datamatrix_single <- datamatrix_single[!duplicated(rownames(datamatrix_single)),] #put IN for new format
