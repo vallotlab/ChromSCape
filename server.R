@@ -931,7 +931,7 @@ server <- function(input, output, session) {
     }else{
       tab[,-c(1,dim(tab)[2])] =apply(tab[,-c(1,dim(tab)[2])], 2, function(x){ as.numeric(x) })
     }
-    tab
+    print(tab)
     # ord = c(order(tab$Cluster[1:nrow(tab)-1]),nrow(tab))
     # tab = tab[ord,]
     tab= tab %>% mutate(Cluster=cell_spec(Cluster, color="white", bold=T, background=colors))
@@ -964,7 +964,7 @@ server <- function(input, output, session) {
       cols <- paste0("c(", paste0("input$anno_tsne_col", levelsSelectedAnnot_anno_tSNE(), collapse = ", "), ")")
       cols <- eval(parse(text = cols))
       req(cols)
-      lev <-unique(levelsSelectedAnnot_anno_tSNE())
+      lev <- unique(levelsSelectedAnnot_anno_tSNE())
       names(cols) <- lev
       p <- p + scale_color_manual(values = cols)
     }
@@ -1015,9 +1015,9 @@ server <- function(input, output, session) {
 
   observeEvent(input$saveColors_anno_tsne, {  # [anno_tsne] change modified colors for all plots where it applies and save RData locally
 
-      cols <- paste0("c(", paste0("input$anno_tsne_col", sort(levelsSelectedAnnot_anno_tSNE()), collapse = ", "), ")")
+      cols <- paste0("c(", paste0("input$anno_tsne_col", levelsSelectedAnnot_anno_tSNE(), collapse = ", "), ")")
       cols <- eval(parse(text = cols))
-      lev <- sort(unique(levelsSelectedAnnot_anno_tSNE()))
+      lev <- unique(levelsSelectedAnnot_anno_tSNE())
       names(cols) <- lev
       annot_Color_Custom <- as.data.frame(cols) %>% rownames_to_column(input$anno_tsne_color) %>% setNames(c(input$anno_tsne_color, str_interp("${input$anno_tsne_color}_Color") ))
       reactVal$annotColors_filtered <- isolate(reactVal_tsneAnno$annotColors_filtered()) %>% select(-c(str_interp("${input$anno_tsne_color}_Color"))) %>% right_join(annot_Color_Custom, by=input$anno_tsne_color  )
@@ -1027,7 +1027,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$anno_tSNEColReset, {
-    lev <- sort(unique(levelsSelectedAnnot_anno_tSNE()))
+    lev <- unique(levelsSelectedAnnot_anno_tSNE())
     cols <- gg_fill_hue(length(lev))
     lapply(seq_along(lev), function(i) {
       do.call(what="updateColourInput", args=list(session=session, inputId=paste0("anno_tsne_col", lev[i]), value=cols[i]))
@@ -1036,7 +1036,7 @@ server <- function(input, output, session) {
   
   output$anno_tsne_colorPicker <- renderUI({
    if(str_interp("${input$anno_tsne_color}_Color") %in% colnames(isolate(reactVal_tsneAnno$annotColors_filtered()))) {
-    lev <- sort(unique(levelsSelectedAnnot_anno_tSNE()))
+    lev <- unique(levelsSelectedAnnot_anno_tSNE())
 
       colsModif <- isolate(reactVal_tsneAnno$annotColors_filtered()) %>% dplyr::select(one_of( str_interp("${input$anno_tsne_color}_Color")) ) %>% distinct() %>% pull( str_interp("${input$anno_tsne_color}_Color"))
         
