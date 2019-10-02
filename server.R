@@ -765,9 +765,14 @@ server <- function(input, output, session) {
       clust$clust_pdf <- NULL  # needed in order to update the pdf output
       clust$clust_pdf <- paste0("images/consClust_", input$selected_filtered_dataset, ".pdf")
       save(consclust, icl, file=file.path(init$data_folder, "datasets", dataset_name(), "consclust", paste0(input$selected_filtered_dataset, ".RData")))
+      
+      
+      
       incProgress(amount=0.2, detail=paste("finished"))
     })
   })
+  
+
   
   consData <- eventReactive(c(input$selected_filtered_dataset,  # load consclust and icl if it exists already for this filtered dataset
     input$do_cons_clust),{
