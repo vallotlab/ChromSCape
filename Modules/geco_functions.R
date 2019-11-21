@@ -2,6 +2,7 @@ distPearson <- function(m)
 {
   as.dist(1-cor(t(m),method="pearson"))
 }
+
 geco.CompareWilcox <- function(dataMat=NULL, annot=NULL, ref=NULL, groups=NULL, featureTab=NULL){
   res <- featureTab
   res = res[ order(res$ID), ]
@@ -10,12 +11,10 @@ geco.CompareWilcox <- function(dataMat=NULL, annot=NULL, ref=NULL, groups=NULL, 
   {
     if(length(ref)==1){refsamp <- ref[[1]]}else{refsamp <- ref[[k]]}
     gpsamp <- groups[[k]]
+    
     annot. <- annot[c(refsamp, gpsamp), 1:2]
     annot.$Condition <- c(rep("ref", length(refsamp)), rep("gpsamp", length(gpsamp)))
-    # print(dim(dataMat))
-    # print(head(colnames(dataMat)))
-    # print(refsamp)
-    # print(gpsamp)
+
     mat. <- dataMat[, c(as.character(refsamp), as.character(gpsamp))]
     
     testWilc <- apply(dataMat, 1, function(x) wilcox.test(as.numeric(x[as.character(refsamp)]), as.numeric(x[as.character(gpsamp)])))
