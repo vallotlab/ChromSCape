@@ -758,17 +758,17 @@ server <- function(input, output, session) {
     withProgress(message='Performing consensus clustering...', value = 0, {
       incProgress(amount=0.4, detail=paste("part one"))
       consclust <- ConsensusClusterPlus(mati2(), maxK=10, reps=1000, pItem=0.8, pFeature=1,
-                                      title=file.path(init$data_folder, "datasets", dataset_name(), "consclust","Consensus_clustering_dir"), clusterAlg="hc", distance="pearson",
+                                      title="Consensus_clustering_dir", clusterAlg="hc", distance="pearson",
                                       innerLinkage="ward.D", finalLinkage="ward.D", seed=3.14, plot="png")
       incProgress(amount=0.4, detail=paste("part two"))
-      icl <- calcICL(consclust, plot="png", title=file.path(init$data_folder, "datasets", dataset_name(), "consclust","Consensus_clustering_dir"))
-      consPlots <- lapply(c('01','02','03','04','05','06','07','08','09','10','11','12'), function(i){ rasterGrob(readPNG(file.path(init$data_folder, "datasets", dataset_name(), "consclust","Consensus_clustering_dir", paste0("consensus0", i, ".png")), native=FALSE), interpolate=FALSE, width=c(1))})
-      consPlots <- list.append(consPlots, rasterGrob(readPNG(file.path(init$data_folder, "datasets", dataset_name(), "consclust","Consensus_clustering_dir", "icl004.png"), native=FALSE), interpolate=FALSE, width=c(1)))
+      icl <- calcICL(consclust, plot="png", title="Consensus_clustering_dir")
+      consPlots <- lapply(c('01','02','03','04','05','06','07','08','09','10','11','12'), function(i){ rasterGrob(readPNG(file.path("Consensus_clustering_dir", paste0("consensus0", i, ".png")), native=FALSE), interpolate=FALSE, width=c(1))})
+      consPlots <- list.append(consPlots, rasterGrob(readPNG(file.path("Consensus_clustering_dir", "icl004.png"), native=FALSE), interpolate=FALSE, width=c(1)))
       layout <- matrix(rep(1, 13), ncol=1, nrow=13)
       pdf(paste0("www/images/consClust_", input$selected_filtered_dataset, ".pdf"))
       print(do.call("marrangeGrob", list(grobs=consPlots, ncol=1, nrow=13, layout_matrix=layout, top="")))
       dev.off()
-      unlink(file.path(init$data_folder, "datasets", dataset_name(), "consclust","Consensus_clustering_dir"), recursive=TRUE)
+      unlink("Consensus_clustering_dir", recursive=TRUE)
       file.copy(paste0("www/images/consClust_", input$selected_filtered_dataset, ".pdf"), file.path(init$data_folder, "datasets"))  # copy pdf into local dir on computer
       clust$clust_pdf <- NULL  # needed in order to update the pdf output
       clust$clust_pdf <- paste0("images/consClust_", input$selected_filtered_dataset, ".pdf")
