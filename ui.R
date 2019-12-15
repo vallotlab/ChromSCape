@@ -57,7 +57,7 @@ ui <- dashboardPage(skin='green',
                                   extendShinyjs(script = file.path("Modules", "shiny_js_functions.js"), functions = c("init_directory","save_cookie","disableTab","enableTab")),                                  #Left Panel                                
                                   column(width=6,
                                          box(title="Select local data directory", width = NULL, status="warning", solidHeader=T,
-                                             column(12, align="left", directoryInput('data_folder', label = 'select a directory', value = '~')),
+                                             column(12, align="left", directoryInput('data_folder', label = 'select a directory', value = '/var/lib/shiny-server/')),
                                              column(12, align="left", textOutput("data_folder_info"))),
                                          box(title="Select preprocessed data set", width = NULL, status="warning", solidHeader=T,
                                              column(12, align="left",

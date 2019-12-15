@@ -22,7 +22,7 @@ server <- function(input, output, session) {
   annotation_id <- reactive({ read.table(file.path(init$data_folder, 'datasets', dataset_name(), 'annotation.txt'), header=FALSE, stringsAsFactors=FALSE)[[1]] })
   
   #Global Functions
-  init <- reactiveValues(data_folder=NULL, datamatrix=data.frame(), annot_raw=data.frame(), available_raw_datasets = NULL,
+  init <- reactiveValues(data_folder="/var/lib/shiny-server/", datamatrix=data.frame(), annot_raw=data.frame(), available_raw_datasets = NULL,
                          available_reduced_datasets=NULL, available_filtered_datasets=NULL)
   reduced_datasets <- reactive({ if (is.null(init$available_reduced_datasets)) c() else gsub('.{6}$', '', basename(init$available_reduced_datasets)) })
   annotCol <- reactive({ c("sample_id","total_counts") })
@@ -40,6 +40,10 @@ server <- function(input, output, session) {
   get.available.filtered.datasets <- function(name, preproc){
     list.files(path=file.path(init$data_folder, "datasets", name, "cor_filtered_data"), full.names=FALSE, recursive=FALSE, pattern=paste0(preproc, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?.RData"))
   }
+  observe({
+    init$available_raw_datasets <- list.dirs(path=file.path(init$data_folder, "datasets"), full.names=FALSE, recursive=FALSE)
+    init$available_reduced_datasets <- get.available.reduced.datasets()
+  })
   able_disable_tab <- function(variables_to_check, tab_id) {
       able_or_disable=c()
       for(var in variables_to_check){
@@ -75,58 +79,62 @@ server <- function(input, output, session) {
   
   
   #Look for existing cookie
-  observeEvent(
-    ignoreNULL = TRUE,
-    eventExpr = {
-      input$path_cookie  
-    },
-    handlerExpr = {
-       if ( (input$path_cookie != "[null]") && !is.null(input$path_cookie) && !is.na(input$path_cookie)) {
-          #Uploading the name displayed in Data Folder
-          updateDirectoryInput(session, 'data_folder', value =  input$path_cookie)
-          init$data_folder <- gsub(pattern = "\"|\\[|\\]|\\\\", "",as.character(input$path_cookie))
-          
-          init$available_raw_datasets <- list.dirs(path=file.path(init$data_folder, "datasets"), full.names=FALSE, recursive=FALSE)
-          init$available_reduced_datasets <- get.available.reduced.datasets()
-          
-          unlink(file.path("www", "images", "*"))  # delete all images produced in the last run
-          unlink(file.path(".", "*.csv"))
-          file.copy(list.files(file.path(init$data_folder, "datasets"), ".pdf$", full.names=TRUE), file.path("www", "images"))  # copy saved images into app
-        }
-      })
+  # observeEvent(
+  #   ignoreNULL = TRUE,
+  #   eventExpr = {
+  #     input$path_cookie
+  #   },
+  #   handlerExpr = {
+  #      if ( (input$path_cookie != "[null]") && !is.null(input$path_cookie) && !is.na(input$path_cookie)) {
+  #         #Uploading the name displayed in Data Folder
+  #         updateDirectoryInput(session, 'data_folder', value =  input$path_cookie)
+  #         init$data_folder <- gsub(pattern = "\"|\\[|\\]|\\\\", "",as.character(input$path_cookie))
+  # 
+  #         init$available_raw_datasets <- list.dirs(path=file.path(init$data_folder, "datasets"), full.names=FALSE, recursive=FALSE)
+  #         init$available_reduced_datasets <- get.available.reduced.datasets()
+  # 
+  #         unlink(file.path("www", "images", "*"))  # delete all images produced in the last run
+  #         unlink(file.path(".", "*.csv"))
+  #         file.copy(list.files(file.path(init$data_folder, "datasets"), ".pdf$", full.names=TRUE), file.path("www", "images"))  # copy saved images into app
+  #       }
+  #     })
   
   #Selecting a working directory using readDirectoryInput(input$data_folder) and saving cookie
-  observeEvent(
-    ignoreNULL = TRUE,
-    eventExpr = {
-      input$data_folder  
-    },
-    handlerExpr = {
-      if (input$data_folder > 0) {
-        # launch the directory selection dialog with initial path read from the widget
-        folder = choose.dir() #default = readDirectoryInput(session, 'data_folder')
-        js$save_cookie(folder)
-        if (!is.na(folder)){
-          init$data_folder <- folder
-          init$available_raw_datasets <- list.dirs(path=file.path(init$data_folder, "datasets"), full.names=FALSE, recursive=FALSE)
-          init$available_reduced_datasets <- get.available.reduced.datasets()
-          unlink(file.path("www", "images", "*"))  # delete all images produced in the last run
-          unlink(file.path(".", "*.csv"))
-          file.copy(list.files(file.path(init$data_folder, "datasets"), ".pdf$", full.names=TRUE), file.path("www", "images"))  # copy saved images into app
-          
-          updateDirectoryInput(session, 'data_folder', value = folder)
-          js$save_cookie(folder)
-        }
-      }
-    }
-  )
+  # observeEvent(
+  #   ignoreNULL = TRUE,
+  #   eventExpr = {
+  #     input$data_folder
+  #   },
+  #   handlerExpr = {
+  #     if (input$data_folder > 0) {
+  #       # launch the directory selection dialog with initial path read from the widget
+  #       print("OPENING DIR, LOOKING INTO SHINY SERVER")
+  #       print(list.files("/home/"))
+  #       folder = "/var/lib/shiny-server/" #default = readDirectoryInput(session, 'data_folder')
+  #       print(list.files(folder))
+  #       js$save_cookie(folder)
+  #       if (!is.na(folder)){
+  #         init$data_folder <- folder
+  #         init$available_raw_datasets <- list.dirs(path=file.path(init$data_folder, "datasets"), full.names=FALSE, recursive=FALSE)
+  #         init$available_reduced_datasets <- get.available.reduced.datasets()
+  #         unlink(file.path("www", "images", "*"))  # delete all images produced in the last run
+  #         unlink(file.path(".", "*.csv"))
+  #         file.copy(list.files(file.path(init$data_folder, "datasets"), ".pdf$", full.names=TRUE), file.path("www", "images"))  # copy saved images into app
+  # 
+  #         updateDirectoryInput(session, 'data_folder', value = folder)
+  #         js$save_cookie(folder)
+  #       }
+  #     }
+  #   }
+  # )
   
   observeEvent(input$compile_dataset, {  # save new dataset
     req(input$new_dataset_name, input$annotation, input$datafile_matrix)
     datamatrix <- NULL
     annot_raw <- NULL
     withProgress(message='Compiling new data set...',value = 0, {
-      dir.create(file.path(init$data_folder, "datasets"), showWarnings = FALSE)
+      print(paste0("init$data_folder",init$data_folder))
+      dir.create(file.path(init$data_folder, "datasets"))
       dir.create(file.path(init$data_folder, "datasets", input$new_dataset_name))
       dir.create(file.path(init$data_folder, "datasets", input$new_dataset_name, "reduced_data"))
       dir.create(file.path(init$data_folder, "datasets", input$new_dataset_name, "cor_filtered_data"))
@@ -750,17 +758,17 @@ server <- function(input, output, session) {
     withProgress(message='Performing consensus clustering...', value = 0, {
       incProgress(amount=0.4, detail=paste("part one"))
       consclust <- ConsensusClusterPlus(mati2(), maxK=10, reps=1000, pItem=0.8, pFeature=1,
-                                      title="Consensus_clustering_dir", clusterAlg="hc", distance="pearson",
+                                      title=file.path(init$data_folder, "datasets", dataset_name(), "consclust","Consensus_clustering_dir"), clusterAlg="hc", distance="pearson",
                                       innerLinkage="ward.D", finalLinkage="ward.D", seed=3.14, plot="png")
       incProgress(amount=0.4, detail=paste("part two"))
-      icl <- calcICL(consclust, plot="png", title="Consensus_clustering_dir")
-      consPlots <- lapply(c('01','02','03','04','05','06','07','08','09','10','11','12'), function(i){ rasterGrob(readPNG(file.path("Consensus_clustering_dir", paste0("consensus0", i, ".png")), native=FALSE), interpolate=FALSE, width=c(1))})
-      consPlots <- list.append(consPlots, rasterGrob(readPNG(file.path("Consensus_clustering_dir", "icl004.png"), native=FALSE), interpolate=FALSE, width=c(1)))
+      icl <- calcICL(consclust, plot="png", title=file.path(init$data_folder, "datasets", dataset_name(), "consclust","Consensus_clustering_dir"))
+      consPlots <- lapply(c('01','02','03','04','05','06','07','08','09','10','11','12'), function(i){ rasterGrob(readPNG(file.path(init$data_folder, "datasets", dataset_name(), "consclust","Consensus_clustering_dir", paste0("consensus0", i, ".png")), native=FALSE), interpolate=FALSE, width=c(1))})
+      consPlots <- list.append(consPlots, rasterGrob(readPNG(file.path(init$data_folder, "datasets", dataset_name(), "consclust","Consensus_clustering_dir", "icl004.png"), native=FALSE), interpolate=FALSE, width=c(1)))
       layout <- matrix(rep(1, 13), ncol=1, nrow=13)
       pdf(paste0("www/images/consClust_", input$selected_filtered_dataset, ".pdf"))
       print(do.call("marrangeGrob", list(grobs=consPlots, ncol=1, nrow=13, layout_matrix=layout, top="")))
       dev.off()
-      unlink("Consensus_clustering_dir", recursive=TRUE)
+      unlink(file.path(init$data_folder, "datasets", dataset_name(), "consclust","Consensus_clustering_dir"), recursive=TRUE)
       file.copy(paste0("www/images/consClust_", input$selected_filtered_dataset, ".pdf"), file.path(init$data_folder, "datasets"))  # copy pdf into local dir on computer
       clust$clust_pdf <- NULL  # needed in order to update the pdf output
       clust$clust_pdf <- paste0("images/consClust_", input$selected_filtered_dataset, ".pdf")
