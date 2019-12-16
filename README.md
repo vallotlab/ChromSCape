@@ -66,6 +66,18 @@ sudo docker run --rm  -p 3838:3838  -v /path/to/ChromSCape_docker_app/:/srv/shin
 ```
 Open a browser and go to http://localhost:3838/, you should see the application running.
 
+If there is an error as follow:
+
+```
+[2019-12-16T14:53:23.724] [ERROR] shiny-server - Bookmark state directory creation failed: /var/lib/shiny-server/bookmarks
+[2019-12-16T14:53:23.726] [WARN] shiny-server - ENOENT: no such file or directory, stat '/var/lib/shiny-server/bookmarks
+```
+
+You must create the bookmarks/shiny directory first inside /path/to/Data_ChromScape/ : 
+
+```
+sudo mkdir -r /path/to/Data_ChromScape/bookmarks/shiny/
+```
 Note that the peak calling is disabled for now in the docker application.
 
 ## Requirements
