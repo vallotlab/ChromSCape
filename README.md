@@ -56,6 +56,7 @@ On Linux / Mac OS:
 ```
 sudo chown -R 999:999 /path/to/Data_ChromScape/
 sudo chown -R 999:999 /path/to/ChromSCape_docker_app/
+sudo mkdir -r /path/to/Data_ChromScape/bookmarks/shiny/
 ```
 
 Then, download & install Docker (https://hub.docker.com/?overlay=onboarding).
