@@ -1,5 +1,6 @@
 # ChromSCape: Analysis of single-cell ChIP-seq data in a Shiny App
 ## What is ChromSCape ?
+
 ChromSCape - Single-Cell Chromatin Landscape profiling - is a ready-to-launch user-friendly Shiny App for analysis of single-cell ChIP-seq datasets from count matrices to differential analysis & gene set enrichment analysis. ScChIPseq data can be produced using experimental protocol described in Grosselin et Al. (https://www.nature.com/articles/s41588-019-0424-9). The user should input one or many count matrices (in .txt or .tsv format). 
 
 Note : Single-cell ATAC seq or scDNA-seq data under the same format should also work, as of same nature than scChIPseq data, but the application has not been tested for this type of data.
@@ -40,6 +41,45 @@ The app automatically creates a directory **datasets** in which a new directory 
 ## Other
 
 The Gene Set Enrichment Analysis is based on MSIG database (http://software.broadinstitute.org/gsea/msigdb).
+
+## Docker version 
+
+Docker is a software platform that allows you to build, test, and deploy applications quickly. Docker packages software into standardized units called containers that have everything the software needs to run including libraries, system tools, code, and runtime. Using Docker, you can quickly deploy ChromScape without any need for requirements library and programm installation.
+
+First, go to the branch "docker" of this repository, download or clone this repository on your local in the directory of your choice (e.g. /path/to/ChromSCape_docker_app/ ).
+Then create a data folder (e.g. /path/to/Data_ChromScape/ ) that will be linked to the docker environment, and where you will be able to retrieve all of your data after closing the application.
+
+### Change ownership of the data folders 
+In order for the docker container to be able to write into the data folder you created, as well as the application folder for temporary files, the ownership of your directory must be changed for the container user 999 (shiny user) :
+
+On Linux / Mac OS:
+```
+sudo chown -R 999:999 /path/to/Data_ChromScape/
+sudo chown -R 999:999 /path/to/ChromSCape_docker_app/
+sudo mkdir -r /path/to/Data_ChromScape/bookmarks/shiny/
+```
+
+Then, download & install Docker (https://hub.docker.com/?overlay=onboarding).
+
+Then open the terminal and run the following command, replacing the path to application & data folder by your own :
+```
+sudo docker run --rm  -p 3838:3838  -v /path/to/ChromSCape_docker_app/:/srv/shiny-server/ -v /path/to/Data_ChromScape/:/var/lib/shiny-server/ -u shiny:shiny pacomito/chromscape:latest
+```
+Open a browser and go to http://localhost:3838/, you should see the application running.
+
+If there is an error as follow:
+
+```
+[2019-12-16T14:53:23.724] [ERROR] shiny-server - Bookmark state directory creation failed: /var/lib/shiny-server/bookmarks
+[2019-12-16T14:53:23.726] [WARN] shiny-server - ENOENT: no such file or directory, stat '/var/lib/shiny-server/bookmarks
+```
+
+You must create the bookmarks/shiny directory first inside /path/to/Data_ChromScape/ : 
+
+```
+sudo mkdir -r /path/to/Data_ChromScape/bookmarks/shiny/
+```
+Note that the peak calling is disabled for now in the docker application.
 
 ## Requirements
 
