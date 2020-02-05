@@ -361,8 +361,6 @@ server <- function(input, output, session) {
       names(cols) <- lev
       p <- p + scale_color_manual(values = cols)
     }
-    levelsSelectedAnnot_pca = levelsSelectedAnnot_pca()
-    save(levelsSelectedAnnot_pca,file=file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_levelsSelectedAnnot_pca.RData")) )
     unlocked$list$pca=T
     p
   })
@@ -414,9 +412,9 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$saveColors_pca, {  # [pca] change modified colors for all plots where it applies and save RData locally
-    cols <- paste0("c(", paste0("input$pca_col", sort(levelsSelectedAnnot_pca()), collapse = ", "), ")")
+    cols <- paste0("c(", paste0("input$pca_col", levelsSelectedAnnot_pca(), collapse = ", "), ")")
     cols <- eval(parse(text = cols))
-    lev <- sort(unique(levelsSelectedAnnot_pca()))
+    lev <- unique(levelsSelectedAnnot_pca())
     names(cols) <- lev
     annot_Color_Custom <- as.data.frame(cols) %>% rownames_to_column(input$pca_color_2D)%>% setNames(c(input$pca_color_2D, str_interp("${input$pca_color_2D}_Color") ))
     reactVal$annotColors <- reactVal$annotColors %>% select(-c(str_interp("${input$pca_color_2D}_Color"))) %>% right_join(annot_Color_Custom, by=input$pca_color_2D  )
@@ -425,12 +423,15 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$saveColors_tsne, {  # [tsne] change modified colors for all plots where it applies and save RData locally
-    cols <- paste0("c(", paste0("input$tsne_col", sort(levelsSelectedAnnot_tSNE()), collapse = ", "), ")")
+    cols <- paste0("c(", paste0("input$tsne_col", levelsSelectedAnnot_tSNE(), collapse = ", "), ")")
     cols <- eval(parse(text = cols))
-    lev <- sort(unique(levelsSelectedAnnot_tSNE()))
+    lev <- unique(levelsSelectedAnnot_tSNE())
     names(cols) <- lev
+    print(lev)
     annot_Color_Custom <- as.data.frame(cols) %>% rownames_to_column(input$tsne_color)%>% setNames(c(input$tsne_color, str_interp("${input$tsne_color}_Color") ))
+    print(head(annot_Color_Custom))
     reactVal$annotColors <- reactVal$annotColors %>% select(-c(str_interp("${input$tsne_color}_Color"))) %>% right_join(annot_Color_Custom, by=input$tsne_color  )
+    print(table(reactVal$annotColors[,str_interp("${input$tsne_color}_Color")]))
     annotColors_save <- reactVal$annotColors
     save(annotColors_save, file=file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_annotColors.RData")))
   })
@@ -469,7 +470,7 @@ server <- function(input, output, session) {
   })
   
   output$pca_colorPicker <- renderUI({
-    lev <- sort(unique(levelsSelectedAnnot_pca()))
+    lev <- unique(levelsSelectedAnnot_pca())
     if(str_interp("${input$pca_color_2D}_Color") %in% colnames(reactVal$annotColors)) {
     colsModif <- reactVal$annotColors %>% dplyr::select(one_of( str_interp("${input$pca_color_2D}_Color")) ) %>% distinct() %>% pull( str_interp("${input$pca_color_2D}_Color"))
     
@@ -480,7 +481,7 @@ server <- function(input, output, session) {
   })
   
   output$tsne_colorPicker <- renderUI({
-    lev <- sort(unique(levelsSelectedAnnot_tSNE()))
+    lev <- unique(levelsSelectedAnnot_tSNE())
     if(str_interp("${input$tsne_color}_Color") %in% colnames(reactVal$annotColors)) {
     colsModif <- reactVal$annotColors %>% dplyr::select(one_of( str_interp("${input$tsne_color}_Color")) ) %>% distinct() %>% pull( str_interp("${input$tsne_color}_Color"))
     
@@ -1042,9 +1043,9 @@ server <- function(input, output, session) {
   output$anno_tsne_colorPicker <- renderUI({
    if(str_interp("${input$anno_tsne_color}_Color") %in% colnames(isolate(reactVal_tsneAnno$annotColors_filtered()))) {
     lev <- unique(levelsSelectedAnnot_anno_tSNE())
-
+    print("lev"); print(lev)
       colsModif <- isolate(reactVal_tsneAnno$annotColors_filtered()) %>% dplyr::select(one_of( str_interp("${input$anno_tsne_color}_Color")) ) %>% distinct() %>% pull( str_interp("${input$anno_tsne_color}_Color"))
-        
+      print("colsModif"); print(colsModif)  
       lapply(seq_along(lev), function(i) {
         colourpicker::colourInput(inputId=paste0("anno_tsne_col", lev[i]), label=paste0("Choose colour for ", lev[i]), value=colsModif[i], returnName=TRUE) ## Add ", palette = "limited"" to get selectable color panel       
       })
