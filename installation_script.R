@@ -1,17 +1,9 @@
 #Install required packages for scChIP seq Shiny App if they are not installed
 
-#Functions
-usePackageBioc <- function(p)
-{
-  if (!is.element(p, installed.packages()[, 1]))
-    BiocManager::install(p, dep = TRUE, version = "3.8")
-  require(p, character.only = TRUE)
-}
-
 usePackage <- function(p)
 {
   if (!is.element(p, installed.packages()[, 1]))
-    install.packages(p, dep = TRUE)
+    install.packages(p,repos='http://cran.rstudio.com/', dep = TRUE)
   require(p, character.only = TRUE)
 }
 # usePackageGeco <- function(p)
@@ -22,19 +14,11 @@ usePackage <- function(p)
 #   require(p, character.only = TRUE)
 # }
 
-#Biocmanager
-pkgs_bioc = c("scater",
-              "scran",
-              "ConsensusClusterPlus",
-              "GenomicRanges",
-              "IRanges")
 
-for (pkg in pkgs_bioc) {
-  usePackageBioc(pkg)
-}
 
 #R CRAN
 pkgs = c(
+  "BiocManager",
   "shiny",
   "shinyjs",
   "shinydashboard",
@@ -63,7 +47,26 @@ pkgs = c(
   "gridExtra"
 )
 for (pkg in pkgs) {
-  usePackageBioR(pkg)
+  usePackage(pkg)
+}
+
+#Functions
+usePackageBioc <- function(p)
+{
+  if (!is.element(p, installed.packages()[, 1]))
+    BiocManager::install(p, dep = TRUE, version = "3.8")
+  require(p, character.only = TRUE)
+}
+
+#Biocmanager
+  pkgs_bioc = c("scater",
+              "scran",
+              "ConsensusClusterPlus",
+              "GenomicRanges",
+              "IRanges")
+
+for (pkg in pkgs_bioc) {
+#  usePackageBioc(pkg)
 }
 
 #geco local packages
@@ -81,10 +84,10 @@ for (pkg in pkgs) {
 #ShinyDirectoryInput
 if (!is.element("shinyDirectoryInput", installed.packages()[, 1])){
   if(!is.element("devtools", installed.packages()[, 1])){
-    install.packages("devtools")
-    devtools::install_github('wleepang/shiny-directory-input')
+ #   install.packages("devtools")
+ #   devtools::install_github('wleepang/shiny-directory-input')
   } else{
-    devtools::install_github('wleepang/shiny-directory-input')
+ #  devtools::install_github('wleepang/shiny-directory-input')
   }
 }
 
