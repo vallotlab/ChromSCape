@@ -1,9 +1,7 @@
 # ChromSCape: Analysis of single-cell ChIP-seq data in a Shiny App
 ## What is ChromSCape ?
 
-ChromSCape - Single-Cell Chromatin Landscape profiling - is a ready-to-launch user-friendly Shiny App for analysis of single-cell ChIP-seq datasets from count matrices to differential analysis & gene set enrichment analysis. ScChIPseq data can be produced using experimental protocol described in Grosselin et Al. (https://www.nature.com/articles/s41588-019-0424-9). The user should input one or many count matrices (in .txt or .tsv format). 
-
-Note : Single-cell ATAC seq or scDNA-seq data under the same format should also work, as of same nature than scChIPseq data, but the application has not been tested for this type of data.
+ChromSCape - Single-Cell Chromatin Landscape profiling - is a ready-to-launch user-friendly Shiny App for analysis of single-cell epigenomic datasets (scChIP-seq, scATAC-seq...) from count matrices to differential analysis & gene set enrichment analysis. ScChIPseq data can be produced using experimental protocol described in Grosselin et Al. (https://www.nature.com/articles/s41588-019-0424-9). The user should input one or many count matrices (in .txt or .tsv format). 
 
 ## Launch the App 
 
@@ -46,7 +44,7 @@ The Gene Set Enrichment Analysis is based on MSIG database (http://software.broa
 
 Docker is a software platform that allows you to build, test, and deploy applications quickly. Docker packages software into standardized units called containers that have everything the software needs to run including libraries, system tools, code, and runtime. Using Docker, you can quickly deploy ChromScape without any need for requirements library and programm installation.
 
-First, go to the branch "docker" of this repository, download or clone this repository on your local in the directory of your choice (e.g. /path/to/ChromSCape_docker_app/ ).
+First, go to the branch "docker" of this repository, download or clone this repository on your local in the directory of your choice (e.g. /path/to/ChromSCape/ ).
 Then create a data folder (e.g. /path/to/Data_ChromScape/ ) that will be linked to the docker environment, and where you will be able to retrieve all of your data after closing the application.
 
 ### Change ownership of the data folders 
@@ -55,15 +53,15 @@ In order for the docker container to be able to write into the data folder you c
 On Linux / Mac OS:
 ```
 sudo chown -R 999:999 /path/to/Data_ChromScape/
-sudo chown -R 999:999 /path/to/ChromSCape_docker_app/
-sudo mkdir -r /path/to/Data_ChromScape/bookmarks/shiny/
+sudo chown -R 999:999 /path/to/ChromSCape/
+sudo mkdir -p /path/to/Data_ChromScape/bookmarks/shiny/
 ```
 
 Then, download & install Docker (https://hub.docker.com/?overlay=onboarding).
 
 Then open the terminal and run the following command, replacing the path to application & data folder by your own :
 ```
-sudo docker run --rm  -p 3838:3838  -v /path/to/ChromSCape_docker_app/:/srv/shiny-server/ -v /path/to/Data_ChromScape/:/var/lib/shiny-server/ -u shiny:shiny pacomito/chromscape:latest
+sudo docker run --rm  -p 3838:3838  -v /path/to/ChromSCape/:/srv/shiny-server/ -v /path/to/Data_ChromScape/:/var/lib/shiny-server/ -u shiny:shiny pacomito/chromscape:latest
 ```
 Open a browser and go to http://localhost:3838/, you should see the application running.
 
