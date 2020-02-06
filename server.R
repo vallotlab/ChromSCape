@@ -442,6 +442,7 @@ server <- function(input, output, session) {
     if(!is.null(reactVal$annotColors)){
       lapply(colnames(ac), function(col){ if(col != "total_counts"){ ac[, col] <<- as.character(reactVal$annotColors[which(reactVal$annotColors$Sample %in% rownames(ac)), paste0(col, '_Color')]) } })
     }
+    anocol = ac; save(anocol,file=file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_anocol.RData")))
     ac
   })
   
@@ -834,6 +835,7 @@ server <- function(input, output, session) {
         clust$consclust.mat <- clust$consclust.mat[clust$hc$order,]
         incProgress(amount=0.4, detail=paste("performing tSNE"))
         clust$tsne_corr <- Rtsne(t(mati2()), dims=2, pca=FALSE, theta=0.0, perplexity=choose_perplexity(t(mati2())), verbose=TRUE, max_iter = 1000)
+        tsne_filtered=clust$tsne_corr; save(tsne_filtered,file=file.path(init$data_folder, "datasets", dataset_name(), "consclust", paste0(input$selected_filtered_dataset, "_tsne_filtered.RData")))
         clust$available_k=get_available_k()
         incProgress(amount=0.4, detail=paste("finished"))
       })
