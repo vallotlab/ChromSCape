@@ -45,38 +45,34 @@ The Gene Set Enrichment Analysis is based on MSIG database (http://software.broa
 Docker is a software platform that allows you to build, test, and deploy applications quickly. Docker packages software into standardized units called containers that have everything the software needs to run including libraries, system tools, code, and runtime. Using Docker, you can quickly deploy ChromScape without any need for requirements library and programm installation.
 
 First, go to the branch "docker" of this repository, download or clone this repository on your local in the directory of your choice (e.g. /path/to/ChromSCape/ ).
-Then create a data folder (e.g. /path/to/Data_ChromScape/ ) that will be linked to the docker environment, and where you will be able to retrieve all of your data after closing the application.
+Then create a data folder (e.g. /path/to/Data_ChromSCape/ ) that will be linked to the docker environment, and where you will be able to retrieve all of your data after closing the application.
 
 ### Change ownership of the data folders 
 In order for the docker container to be able to write into the data folder you created, as well as the application folder for temporary files, the ownership of your directory must be changed for the container user 999 (shiny user) :
 
 On Linux / Mac OS:
 ```
-sudo chown -R 999:999 /path/to/Data_ChromScape/
+sudo chown -R 999:999 /path/to/Data_ChromSCape/
 sudo chown -R 999:999 /path/to/ChromSCape/
-sudo mkdir -p /path/to/Data_ChromScape/bookmarks/shiny/
+sudo mkdir -p /path/to/Data_ChromSCape/bookmarks/shiny/
 ```
 
 Then, download & install Docker (https://hub.docker.com/?overlay=onboarding).
 
 Then open the terminal and run the following command, replacing the path to application & data folder by your own :
 ```
-sudo docker run --rm  -p 3838:3838  -v /path/to/ChromSCape/:/srv/shiny-server/ -v /path/to/Data_ChromScape/:/var/lib/shiny-server/ -u shiny:shiny pacomito/chromscape:latest
+sudo docker run --rm  -p 3838:3838  -v /path/to/ChromSCape/:/srv/shiny-server/ -v /path/to/Data_ChromSCape/:/var/lib/shiny-server/ -u shiny:shiny pacomito/chromscape:latest
 ```
-Open a browser and go to http://localhost:3838/, you should see the application running.
+Open a browser and go to http://localhost:3838/, you should see the application running.  
 
-If there is an error as follow:
-
-```
-[2019-12-16T14:53:23.724] [ERROR] shiny-server - Bookmark state directory creation failed: /var/lib/shiny-server/bookmarks
-[2019-12-16T14:53:23.726] [WARN] shiny-server - ENOENT: no such file or directory, stat '/var/lib/shiny-server/bookmarks
-```
-
-You must create the bookmarks/shiny directory first inside /path/to/Data_ChromScape/ : 
+The user can't select a directory as of the data will be written directly in /path/to/Data_ChromSCape/. In the end of your analysis, if you want to retrieve your data run :
 
 ```
-sudo mkdir -r /path/to/Data_ChromScape/bookmarks/shiny/
+sudo cp /path/to/Data_ChromSCape/datasets/your_dataset /path/to/your_dataset_local
+sudo chown username:username -R /path/to/your_dataset_local
 ```
+Where your_dataset is the name you your dataset, /path/to/your_dataset_local is the path where you want to copy your dataset, username is your username.
+  
 Note that the peak calling is disabled for now in the docker application.
 
 ## Requirements
