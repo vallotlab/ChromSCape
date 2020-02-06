@@ -64,10 +64,10 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
     mat <- mean(colSums(SelMatCov))*t(t(SelMatCov)/colSums(SelMatCov))
     
     norm_mat <- mat
-    
+    mat <- mat-apply(mat, 1, mean)
     save(norm_mat, file=file.path(data_folder(), "datasets", raw_dataset_name(), "reduced_data", paste0(paste(raw_dataset_name(), min_cov_cell(), (percentMin()*100), quant_removal(), batch_string, sep="_"), "_normMat.RData"))) # used for supervised analysis
     
-    mat <- mat-apply(mat, 1, mean)
+    
     
     ###############################################################
     # 3. Feature annotation
@@ -177,6 +177,6 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
     # 7. Save data
     ###############################################################
     
-    save(pca, mat,annot, tsne, file=file.path(data_folder(), "datasets", raw_dataset_name(), "reduced_data", paste0(paste(raw_dataset_name(), min_cov_cell(), (percentMin()*100), quant_removal(), batch_string, sep="_"), ".RData")))
+    save(pca, annot, tsne, file=file.path(data_folder(), "datasets", raw_dataset_name(), "reduced_data", paste0(paste(raw_dataset_name(), min_cov_cell(), (percentMin()*100), quant_removal(), batch_string, sep="_"), ".RData")))
   })
 }

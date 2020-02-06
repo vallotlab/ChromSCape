@@ -369,8 +369,6 @@ server <- function(input, output, session) {
       names(cols) <- lev
       p <- p + scale_color_manual(values = cols)
     }
-    levelsSelectedAnnot_pca = levelsSelectedAnnot_pca()
-    save(levelsSelectedAnnot_pca,file=file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_levelsSelectedAnnot_pca.RData")) )
     unlocked$list$pca=T
     p
   })
@@ -422,9 +420,9 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$saveColors_pca, {  # [pca] change modified colors for all plots where it applies and save RData locally
-    cols <- paste0("c(", paste0("input$pca_col", sort(levelsSelectedAnnot_pca()), collapse = ", "), ")")
+    cols <- paste0("c(", paste0("input$pca_col", levelsSelectedAnnot_pca(), collapse = ", "), ")")
     cols <- eval(parse(text = cols))
-    lev <- sort(unique(levelsSelectedAnnot_pca()))
+    lev <- unique(levelsSelectedAnnot_pca())
     names(cols) <- lev
     annot_Color_Custom <- as.data.frame(cols) %>% rownames_to_column(input$pca_color_2D)%>% setNames(c(input$pca_color_2D, str_interp("${input$pca_color_2D}_Color") ))
     reactVal$annotColors <- reactVal$annotColors %>% select(-c(str_interp("${input$pca_color_2D}_Color"))) %>% right_join(annot_Color_Custom, by=input$pca_color_2D  )
@@ -433,9 +431,9 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$saveColors_tsne, {  # [tsne] change modified colors for all plots where it applies and save RData locally
-    cols <- paste0("c(", paste0("input$tsne_col", sort(levelsSelectedAnnot_tSNE()), collapse = ", "), ")")
+    cols <- paste0("c(", paste0("input$tsne_col", levelsSelectedAnnot_tSNE(), collapse = ", "), ")")
     cols <- eval(parse(text = cols))
-    lev <- sort(unique(levelsSelectedAnnot_tSNE()))
+    lev <- unique(levelsSelectedAnnot_tSNE())
     names(cols) <- lev
     annot_Color_Custom <- as.data.frame(cols) %>% rownames_to_column(input$tsne_color)%>% setNames(c(input$tsne_color, str_interp("${input$tsne_color}_Color") ))
     reactVal$annotColors <- reactVal$annotColors %>% select(-c(str_interp("${input$tsne_color}_Color"))) %>% right_join(annot_Color_Custom, by=input$tsne_color  )
@@ -449,6 +447,7 @@ server <- function(input, output, session) {
     if(!is.null(reactVal$annotColors)){
       lapply(colnames(ac), function(col){ if(col != "total_counts"){ ac[, col] <<- as.character(reactVal$annotColors[which(reactVal$annotColors$Sample %in% rownames(ac)), paste0(col, '_Color')]) } })
     }
+    anocol = ac; save(anocol,file=file.path(init$data_folder, "datasets", dataset_name(), "reduced_data", paste0(input$selected_reduced_dataset, "_anocol.RData")))
     ac
   })
   
@@ -477,7 +476,7 @@ server <- function(input, output, session) {
   })
   
   output$pca_colorPicker <- renderUI({
-    lev <- sort(unique(levelsSelectedAnnot_pca()))
+    lev <- unique(levelsSelectedAnnot_pca())
     if(str_interp("${input$pca_color_2D}_Color") %in% colnames(reactVal$annotColors)) {
     colsModif <- reactVal$annotColors %>% dplyr::select(one_of( str_interp("${input$pca_color_2D}_Color")) ) %>% distinct() %>% pull( str_interp("${input$pca_color_2D}_Color"))
     
@@ -488,7 +487,7 @@ server <- function(input, output, session) {
   })
   
   output$tsne_colorPicker <- renderUI({
-    lev <- sort(unique(levelsSelectedAnnot_tSNE()))
+    lev <- unique(levelsSelectedAnnot_tSNE())
     if(str_interp("${input$tsne_color}_Color") %in% colnames(reactVal$annotColors)) {
     colsModif <- reactVal$annotColors %>% dplyr::select(one_of( str_interp("${input$tsne_color}_Color")) ) %>% distinct() %>% pull( str_interp("${input$tsne_color}_Color"))
     
@@ -841,6 +840,7 @@ server <- function(input, output, session) {
         clust$consclust.mat <- clust$consclust.mat[clust$hc$order,]
         incProgress(amount=0.4, detail=paste("performing tSNE"))
         clust$tsne_corr <- Rtsne(t(mati2()), dims=2, pca=FALSE, theta=0.0, perplexity=choose_perplexity(t(mati2())), verbose=TRUE, max_iter = 1000)
+        tsne_filtered=clust$tsne_corr; save(tsne_filtered,file=file.path(init$data_folder, "datasets", dataset_name(), "consclust", paste0(input$selected_filtered_dataset, "_tsne_filtered.RData")))
         clust$available_k=get_available_k()
         incProgress(amount=0.4, detail=paste("finished"))
       })
