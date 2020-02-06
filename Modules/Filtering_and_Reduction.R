@@ -178,6 +178,6 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
     # 7. Save data
     ###############################################################
     
-    save(pca, mat,annot, tsne, file=file.path(data_folder(), "datasets", raw_dataset_name(), "reduced_data", paste0(paste(raw_dataset_name(), min_cov_cell(), (percentMin()*100), quant_removal(), batch_string, sep="_"), ".RData")))
+    save(pca, annot, tsne, file=file.path(data_folder(), "datasets", raw_dataset_name(), "reduced_data", paste0(paste(raw_dataset_name(), min_cov_cell(), (percentMin()*100), quant_removal(), batch_string, sep="_"), ".RData")))
   })
 }
