@@ -1,9 +1,7 @@
 # ChromSCape: Analysis of single-cell ChIP-seq data in a Shiny App
 ## What is ChromSCape ?
 
-ChromSCape - Single-Cell Chromatin Landscape profiling - is a ready-to-launch user-friendly Shiny App for analysis of single-cell ChIP-seq datasets from count matrices to differential analysis & gene set enrichment analysis. ScChIPseq data can be produced using experimental protocol described in Grosselin et Al. (https://www.nature.com/articles/s41588-019-0424-9). The user should input one or many count matrices (in .txt or .tsv format). 
-
-Note : Single-cell ATAC seq or scDNA-seq data under the same format should also work, as of same nature than scChIPseq data, but the application has not been tested for this type of data.
+ChromSCape - Single-Cell Chromatin Landscape profiling - is a ready-to-launch user-friendly Shiny App for analysis of single-cell epigenomic datasets (scChIP-seq, scATAC-seq...) from count matrices to differential analysis & gene set enrichment analysis. ScChIPseq data can be produced using experimental protocol described in Grosselin et Al. (https://www.nature.com/articles/s41588-019-0424-9). The user should input one or many count matrices (in .txt or .tsv format). 
 
 ## Launch the App 
 
