@@ -59,7 +59,9 @@ sudo mkdir -p /path/to/Data_ChromScape/bookmarks/shiny/
 
 Then, download & install Docker (https://hub.docker.com/?overlay=onboarding).
 
-Then open the terminal and run the following command, replacing the path to application & data folder by your own :
+Then open the terminal and run the following command, replacing the path to application & data folder by your own :  
+**Make sure to use full path**
+
 ```
 sudo docker run --rm  -p 3838:3838  -v /path/to/ChromSCape/:/srv/shiny-server/ -v /path/to/Data_ChromScape/:/var/lib/shiny-server/ -u shiny:shiny pacomito/chromscape:latest
 ```
