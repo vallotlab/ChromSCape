@@ -13,32 +13,16 @@ library(shiny)
 runApp('path/to/ChromSCape', launch.browser=TRUE)
 ```
 
-Make sure to have all the libraries required (see ##Requirements) and start the App :
+Make sure to have all the libraries required, or use :
+```
+Rscript ./installation_script.R
+```
+  
+and start the App :
 
 ```
 Rscript runApp.R
 ```
-## Walkthrough of the App through screencast
-
-### 1 - Filtering, vizualiation & correlation
-![](www/scChIPseq_App_V1.gif)
-
-### 2 - Clustering, differential analysis & gene set enrichment
-![](www/scChIPseq_App_V1_2.gif)
-
-
-## Sample datasets
-
-The dataset from Grosselin et al. are PDX- triple negative breast cancer tumours resistant or not to chemotherapy (respectively HBCx_22 & HBCx_95).
-Download the dataset of interest from GEO :https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE117309. To run the app up to the differential analysis step, you need the count matrices. The peak calling and gene set enrichment parts require BAM files (available at https://figshare.com/s/fb04c2b17b234aa9d5eb). 
-
-## Output
-
-The app automatically creates a directory **datasets** in which a new directory is created for each analysis with a different input name. Inside that directory are created a directory for each part of the analysis, containing RData and figures.
-  
-## Other
-
-The Gene Set Enrichment Analysis is based on MSIG database (http://software.broadinstitute.org/gsea/msigdb).
 
 ## Docker version 
 
@@ -74,6 +58,29 @@ sudo chown username:username -R /path/to/your_dataset_local
 Where your_dataset is the name you your dataset, /path/to/your_dataset_local is the path where you want to copy your dataset, username is your username.
   
 Note that the peak calling is disabled for now in the docker application.
+
+## Walkthrough of the App through screencast
+
+### 1 - Filtering, vizualiation & correlation
+![](www/scChIPseq_App_V1.gif)
+
+### 2 - Clustering, differential analysis & gene set enrichment
+![](www/scChIPseq_App_V1_2.gif)
+
+
+## Sample datasets
+
+The dataset from Grosselin et al. are PDX- triple negative breast cancer tumours resistant or not to chemotherapy (respectively HBCx_22 & HBCx_95).
+Download the dataset of interest from GEO :https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE117309. To run the app up to the differential analysis step, you need the count matrices. The peak calling and gene set enrichment parts require BAM files (available at https://figshare.com/s/fb04c2b17b234aa9d5eb). 
+
+## Output
+
+The app automatically creates a directory **datasets** in which a new directory is created for each analysis with a different input name. Inside that directory are created a directory for each part of the analysis, containing RData and figures.
+  
+## Other
+
+The Gene Set Enrichment Analysis is based on MSIG database (http://software.broadinstitute.org/gsea/msigdb).
+
 
 ## Requirements
 
