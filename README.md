@@ -51,7 +51,8 @@ sudo docker run --rm  -p 3838:3838  -v /path/to/ChromSCape/:/srv/shiny-server/ -
 ```
 Open a browser and go to http://localhost:3838/, you should see the application running.  
 
-The user can't select a directory as of the data will be written directly in /path/to/Data_ChromSCape/. In the end of your analysis, if you want to retrieve your data run :
+The user can't select a directory as of the data will be written directly in /path/to/Data_ChromSCape/.  
+In the end of your analysis, if you want to retrieve your data run :
 
 ```
 sudo cp /path/to/Data_ChromSCape/datasets/your_dataset /path/to/your_dataset_local
