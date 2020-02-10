@@ -26,7 +26,7 @@ Rscript runApp.R
 
 ## Docker version 
 
-Docker is a software platform that allows you to build, test, and deploy applications quickly. Docker packages software into standardized units called containers that have everything the software needs to run including libraries, system tools, code, and runtime. Using Docker, you can quickly deploy ChromScape without any need for requirements library and programm installation.
+Docker is a software platform that allows you to build, test, and deploy applications quickly. In order for you to run the application without installing all R libraries on your computer, a docker container was created containing all libraries required to run ChromSCape. In order to use this docker environment, you need the admin rights of your computer.
 
 First, go to the branch "docker" of this repository, download or clone this repository on your local in the directory of your choice (e.g. /path/to/ChromSCape/ ).
 Then create a data folder (e.g. /path/to/Data_ChromSCape/ ) that will be linked to the docker environment, and where you will be able to retrieve all of your data after closing the application.
