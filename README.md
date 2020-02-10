@@ -62,6 +62,11 @@ Where your_dataset is the name you your dataset, /path/to/your_dataset_local is 
   
 Note that the peak calling is disabled for now in the docker application.
 
+## Sample datasets
+
+The dataset from Grosselin et al. are PDX- triple negative breast cancer tumours resistant or not to chemotherapy (respectively HBCx_22 & HBCx_95).
+Download the dataset of interest from GEO :https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE117309. To run the app up to the differential analysis step, you need the count matrices. The peak calling and gene set enrichment parts require BAM files (available at https://figshare.com/s/fb04c2b17b234aa9d5eb). 
+
 ## Walkthrough of the App through screencast
 
 ### 1 - Filtering, vizualiation & correlation
@@ -69,12 +74,6 @@ Note that the peak calling is disabled for now in the docker application.
 
 ### 2 - Clustering, differential analysis & gene set enrichment
 ![](www/scChIPseq_App_V1_2.gif)
-
-
-## Sample datasets
-
-The dataset from Grosselin et al. are PDX- triple negative breast cancer tumours resistant or not to chemotherapy (respectively HBCx_22 & HBCx_95).
-Download the dataset of interest from GEO :https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE117309. To run the app up to the differential analysis step, you need the count matrices. The peak calling and gene set enrichment parts require BAM files (available at https://figshare.com/s/fb04c2b17b234aa9d5eb). 
 
 ## Output
 
