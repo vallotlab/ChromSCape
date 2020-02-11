@@ -66,7 +66,7 @@ usePackageBioc <- function(p)
               "IRanges")
 
 for (pkg in pkgs_bioc) {
-#  usePackageBioc(pkg)
+ usePackageBioc(pkg)
 }
 
 #geco local packages
@@ -84,10 +84,10 @@ for (pkg in pkgs_bioc) {
 #ShinyDirectoryInput
 if (!is.element("shinyDirectoryInput", installed.packages()[, 1])){
   if(!is.element("devtools", installed.packages()[, 1])){
- #   install.packages("devtools")
- #   devtools::install_github('wleepang/shiny-directory-input')
+   install.packages("devtools")
+   devtools::install_github('wleepang/shiny-directory-input')
   } else{
- #  devtools::install_github('wleepang/shiny-directory-input')
+  devtools::install_github('wleepang/shiny-directory-input')
   }
 }
 
