@@ -154,13 +154,7 @@ server <- function(input, output, session) {
         #   unlink(file.path(init$data_folder, "datasets", input$new_dataset_name), recursive=TRUE)
         #   return()
         # }
-        #########################
-        #TO REMOVE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # names = datamatrix_single$X0
-        # datamatrix_single = datamatrix_single[,-1]
-        # rownames(datamatrix_single) = names
-        #TO REMOVE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #########################
+
         datamatrix_single <- datamatrix_single[!duplicated(rownames(datamatrix_single)),] #put IN for new format
         
         
@@ -605,6 +599,9 @@ server <- function(input, output, session) {
       hc_cor2 <- cf$hc_cor2
       hc_cor = hc_cor()
       save(mati2, annot_sel, mat.so.cor2, anocol_sel,hc_cor,hc_cor2, file=file.path(init$data_folder, "datasets", dataset_name(), "cor_filtered_data", paste0(input$selected_reduced_dataset, "_", input$corr_thresh, "_", input$percent_corr, ".RData")))
+      
+      init$available_filtered_datasets <- get.available.filtered.datasets(dataset_name(), input$selected_reduced_dataset)
+      
       incProgress(amount=0.2, detail=paste("finished"))
       updateActionButton(session, "filter_corr_cells", label="Saved", icon = icon("check-circle"))
   
@@ -695,8 +692,8 @@ server <- function(input, output, session) {
   }
   
   
-  observeEvent(init$available_filtered_datasets,ignoreNULL = T,{if(length(init$available_filtered_datasets)>0){unlocked$list$filtered_datasets =TRUE}else{unlocked$list$filtered_datasets =FALSE}})
-  observeEvent(unlocked$list,able_disable_tab(c("selected_reduced_dataset","cor_clust_plot","filtered_datasets"),"cons_clustering")) # if conditions are met, unlock tab Consensus Clustering on Correlated cells
+  observeEvent(init$available_filtered_datasets,{if(length(init$available_filtered_datasets)>0){unlocked$list$filtered_datasets =TRUE}else{unlocked$list$filtered_datasets =FALSE}})
+  observeEvent(unlocked$list,{able_disable_tab(c("selected_reduced_dataset","cor_clust_plot","filtered_datasets"),"cons_clustering")}) # if conditions are met, unlock tab Consensus Clustering on Correlated cells
   
   ###############################################################
   # 4. Consensus clustering on correlated cells
@@ -1231,11 +1228,11 @@ server <- function(input, output, session) {
         myrefs <- lapply(1:input$selected_k, function(i){ affectation_filtered()[which(affectation_filtered()$ChromatinGroup!=paste0("C", i)), "cell_id"]})
         names(myrefs) <- paste0('notC', 1:input$selected_k)
         refs <- names(myrefs)
-        incProgress(amount=0.5, detail=paste("performing wilcoxon rank tests"))
+        incProgress(amount=0.5, detail=paste("Performing wilcoxon rank tests - One vs Rest"))
         diff$my.res <- geco.CompareWilcox(dataMat=Counts, annot=affectation_filtered(), ref=myrefs, groups=mygps, featureTab=feature)
         
       }else{ # pairwise one-vs-one testing for each cluster
-        incProgress(amount=0.5, detail=paste("performing wilcoxon rank tests"))
+        incProgress(amount=0.5, detail=paste("Performing wilcoxon rank tests - Pairwise"))
         diff$my.res <- feature
         count_save <- data.frame(ID=feature$ID)
         single_results <- list()
@@ -1290,12 +1287,6 @@ server <- function(input, output, session) {
         diff$summary["differential", gpsamp] <- sum(diff$my.res[, paste("qval", gpsamp, sep=".")] <= input$qval.th & abs(diff$my.res[, paste("cdiff", gpsamp, sep=".")]) > input$cdiff.th, na.rm=T)
         diff$summary["over", gpsamp] <- sum(diff$my.res[, paste("qval", gpsamp, sep=".")] <= input$qval.th & diff$my.res[, paste("cdiff", gpsamp, sep=".")] > input$cdiff.th, na.rm=T)
         diff$summary["under", gpsamp] <- sum(diff$my.res[, paste("qval", gpsamp, sep=".")] <= input$qval.th & diff$my.res[, paste("cdiff", gpsamp, sep=".")] < -input$cdiff.th, na.rm=T)
-
-
-        #For mean(x1) - 2 mean(x2) > 0 || mean(x1) - 0.5 mean(x2) < 0
-        # diff$summary["over", gpsamp] <- sum(diff$my.res[, paste("qval", gpsamp, sep=".")] <= input$qval.th & diff$my.res[, paste("cdiff1", gpsamp, sep=".")] > input$cdiff.th, na.rm=T)
-        # diff$summary["under", gpsamp] <- sum(diff$my.res[, paste("qval", gpsamp, sep=".")] <= input$qval.th & diff$my.res[, paste("cdiff2", gpsamp, sep=".")] < -input$cdiff.th, na.rm=T)
-        # diff$summary["differential", gpsamp] <- diff$summary["over", gpsamp] + diff$summary["under", gpsamp]
 
         }
       diff$groups <- groups
