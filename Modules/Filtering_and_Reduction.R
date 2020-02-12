@@ -59,12 +59,25 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
       SelMatCov <- SelMatCov[-unique(ovrlps), ]
     }
     
+    
 
-    mat <- NULL
+    mat <- SelMatCov
+    
+    #Normalize by window size 
+    if(length(grep("chr",rownames(mat)[1:10],perl = T)) >= 9 ){
+      ID <- rownames(mat)
+      chr <- unlist(lapply(strsplit(ID, split= "_"), FUN=function(x) unlist(x)[1]))
+      start <- unlist(lapply(strsplit(ID, split= "_"), FUN=function(x) unlist(x)[2]))
+      end <- unlist(lapply(strsplit(ID, split= "_"), FUN=function(x) unlist(x)[3]))
+      size=as.numeric(end)-as.numeric(start)
+      
+      mat <- mat/size
+    }
     
     mat <- mean(colSums(SelMatCov))*t(t(SelMatCov)/colSums(SelMatCov))
     
     norm_mat <- mat
+    
     mat <- mat-apply(mat, 1, mean)
     save(norm_mat, file=file.path(data_folder(), "datasets", raw_dataset_name(), "reduced_data", paste0(paste(raw_dataset_name(), min_cov_cell(), (percentMin()*100), quant_removal(), batch_string, sep="_"), "_normMat.RData"))) # used for supervised analysis
     
