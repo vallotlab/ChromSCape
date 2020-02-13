@@ -154,7 +154,12 @@ server <- function(input, output, session) {
         #   unlink(file.path(init$data_folder, "datasets", input$new_dataset_name), recursive=TRUE)
         #   return()
         # }
-
+        if(rownames(datamatrix_single)[1] == "1"){
+          names = datamatrix_single$X0
+          datamatrix_single = datamatrix_single[,-1]
+          rownames(datamatrix_single) = names
+        }
+        
         datamatrix_single <- datamatrix_single[!duplicated(rownames(datamatrix_single)),] #put IN for new format
         
         
