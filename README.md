@@ -64,8 +64,10 @@ Note that the peak calling is disabled for now in the docker application.
 
 ## Sample datasets
 
-The dataset from Grosselin et al. are PDX- triple negative breast cancer tumours resistant or not to chemotherapy (respectively HBCx_22 & HBCx_95).
-Download the dataset of interest from GEO :https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE117309. To run the app up to the differential analysis step, you need the count matrices. The peak calling and gene set enrichment parts require BAM files (available at https://figshare.com/s/fb04c2b17b234aa9d5eb). 
+The dataset from Grosselin et al. are PDX- triple negative breast cancer tumours resistant or not to chemotherapy (respectively HBCx_22 & HBCx_95). 
+Download the count matrices of the dataset from: https://figshare.com/projects/Single-Cell_ChIP-seq_of_Mouse_Stromal_Cells_in_PDX_tumour_models_of_resistance/66419. The optional peak calling step to have a more accurate gene set enrichment require the BAM files (also available on Figshare). 
+
+A ready-to-use compiled analysis of HBCx22 & HBCx95 mouse H3K27me3 scChIP-seq, as well as single-cell ATAC seq from (Buenrostro et al., 2015, Corces et al., 2016, Schep et al., 2017) is available at : https://figshare.com/articles/ChromSCape_scChIP_scATAC_compiled_datasets/11854371. Download and uncompress the directory. Once in ChromSCape, select the directory containing the "dataset" folder and start exploring.    
 
 ## Walkthrough of the App through screencast
 
