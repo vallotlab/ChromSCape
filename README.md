@@ -26,7 +26,7 @@ Rscript runApp.R
 
 ## Docker version 
 
-Docker is a software platform that allows you to build, test, and deploy applications quickly. In order for you to run the application without installing all R libraries on your computer, a docker container was created containing all libraries required to run ChromSCape. In order to use this docker environment, you need the admin rights of your computer.  
+Docker is a software platform that allows you to build, test, and deploy applications quickly. In order for you to run the application without installing all R libraries on your computer, a docker container was created containing all libraries required to run ChromSCape. In order to use this docker environment, you need the admin rights of your computer. Please note that the total size of the docker environment is 3.0Gb.   
 
 First, download & install Docker (https://hub.docker.com/?overlay=onboarding).  
 
