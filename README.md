@@ -7,19 +7,19 @@ ChromSCape - Single-Cell Chromatin Landscape profiling - is a ready-to-launch us
 
 First download the repository in the location of your choice, either with `git clone https://github.com/vallotlab/ChromSCape.git ChromSCape` or by clicking on 'Clone or Download' -> 'Download ZIP' and unzip.
 
-Go to the directory & modify the runApp.R script to the path to the directory & save file:
-```
-library(shiny)
-runApp('path/to/ChromSCape', launch.browser=TRUE)
-```
+ChromSCape requires R version 3.5 or higher.
 
-Make sure to have all the libraries required, or use :
+Make sure to have all the required libraries, to do so run in terminal :
 ```
 Rscript ./installation_script.R
 ```
-  
-and start the App :
 
+Go to the downloaded directory & modify the runApp.R script by indicating the path to ChromSCape directory & save file:
+```
+runApp('path/to/ChromSCape', launch.browser=TRUE)
+```
+
+and start the App from terminal:
 ```
 Rscript runApp.R
 ```
@@ -62,14 +62,14 @@ Where your_dataset is the name you your dataset, /path/to/your_dataset_local is 
   
 Note that the peak calling is disabled for now in the docker application.
 
-## Sample datasets
+## Test datasets
 
-The dataset from Grosselin et al. are PDX- triple negative breast cancer tumours resistant or not to chemotherapy (respectively HBCx_22 & HBCx_95). 
-Download the count matrices of the dataset (made with latest version of data treatment) from: https://figshare.com/projects/Single-Cell_ChIP-seq_of_Mouse_Stromal_Cells_in_PDX_tumour_models_of_resistance/66419. The optional peak calling step to have a more accurate gene set enrichment require the BAM files (also available on Figshare). 
+The datasets correspond to mouse cells from 2 PDX models, luminal and triple negative breast cancer tumours resistant or not to cancer therapy (respectively HBCx_22 & HBCx_95, see Grosselin et al., 2019). 
+Download count matrices from: https://figshare.com/projects/Single-Cell_ChIP-seq_of_Mouse_Stromal_Cells_in_PDX_tumour_models_of_resistance/66419 (theses count matrices have been processed using our latest data engineering pipeline, see https://github.com/vallotlab/scChIPseq_DataEngineering). The optional peak calling step requires  BAM files (also available on Figshare) to improve gene set enrichment analysis. 
 
 A ready-to-use compiled analysis of HBCx22 & HBCx95 mouse H3K27me3 scChIP-seq, as well as single-cell ATAC seq from (Buenrostro et al., 2015, Corces et al., 2016, Schep et al., 2017) is available at : https://figshare.com/articles/ChromSCape_scChIP_scATAC_compiled_datasets/11854371. Download and uncompress the directory. Once in ChromSCape, select the directory containing the "dataset" folder and start exploring.    
 
-## Walkthrough of the App through screencast
+## Walkthrough of the App with screencast
 
 ### 1 - Filtering, vizualiation & correlation
 ![](www/scChIPseq_App_V1.gif)
