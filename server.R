@@ -182,11 +182,12 @@ server <- function(input, output, session) {
       }
       incProgress(0.7, detail="saving raw data")
       
-      #Removing weird chromosomes
+      # Removing non-canonical chromosomes
       splitID <- sapply(rownames(datamatrix), function(x) strsplit(as.character(x), split="_"))
       normalChr <- which(sapply(splitID, length) <= 3) # weird chromosomes contain underscores in the name
       datamatrix <- datamatrix[normalChr,]
-      
+     
+    
       #Remove chrM from mat if it is inside
       if(length(grep("chrM",rownames(datamatrix)))>0)  datamatrix <- datamatrix[-grep("chrM",rownames(datamatrix)),]
       
@@ -1444,11 +1445,13 @@ server <- function(input, output, session) {
   
   output$enr_info <- renderText({"Enrichment will be performed based on the significant genes per cluster that were computed on the previous page. 
     Please make sure that you have run the differential analysis on the clustering that you prefer before running the enrichment analysis."})
+  
   canUsePeaks <- reactive({
     print("File peak calling exist ?")
     print(paste(init$data_folder, 'datasets', dataset_name(), 'peaks', paste0(input$selected_filtered_dataset, '_k', input$selected_k), 'pm.annot.gene.bed',sep="/"))
     print(file.exists(file.path(init$data_folder, 'datasets', dataset_name(), 'peaks', paste0(input$selected_filtered_dataset, '_k', input$selected_k), 'pm.annot.gene.bed')))
-    file.exists(file.path(init$data_folder, 'datasets', dataset_name(), 'peaks', paste0(input$selected_filtered_dataset, '_k', input$selected_k), 'pm.annot.gene.bed')) })
+    file.exists(file.path(init$data_folder, 'datasets', dataset_name(), 'peaks', paste0(input$selected_filtered_dataset, '_k', input$selected_k), 'pm.annot.gene.bed')) 
+    })
   
   output$use_peaks <- renderUI({
     if(canUsePeaks()){ checkboxInput("use_peaks", "use peak calling results to refine analysis", value=TRUE) }
