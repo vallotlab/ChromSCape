@@ -67,7 +67,7 @@ Note that the peak calling is disabled for now in the docker application.
 The datasets correspond to mouse cells from 2 PDX models, luminal and triple negative breast cancer tumours resistant or not to cancer therapy (respectively HBCx_22 & HBCx_95, see Grosselin et al., 2019). 
 Download count matrices from: https://figshare.com/projects/Single-Cell_ChIP-seq_of_Mouse_Stromal_Cells_in_PDX_tumour_models_of_resistance/66419 (theses count matrices have been processed using our latest data engineering pipeline, see https://github.com/vallotlab/scChIPseq_DataEngineering). The optional peak calling step requires  BAM files (also available on Figshare) to improve gene set enrichment analysis. 
 
-A ready-to-use compiled analysis of HBCx22 & HBCx95 mouse H3K27me3 scChIP-seq, as well as single-cell ATAC seq from (Buenrostro et al., 2015, Corces et al., 2016, Schep et al., 2017) is available at : https://figshare.com/articles/ChromSCape_scChIP_scATAC_compiled_datasets/11854371. Download and uncompress the directory. Once in ChromSCape, select the directory containing the "dataset" folder and start exploring.    
+Alternatively, a ready-to-use pre-compiled analysis folder for HBCx22 & HBCx95 mouse H3K27me3 datasets is available at : https://figshare.com/articles/ChromSCape_scChIP_scATAC_compiled_datasets/11854371. A similar pre-compiled folder is available for the analysis of single-cell ATAC seq datasets from (Buenrostro et al., 2015, Corces et al., 2016, Schep et al., 2017). Download and uncompress the directory. Once in ChromSCape, select the directory containing the "dataset" folder and start exploring.    
 
 ## Walkthrough of the App with screencast
 
