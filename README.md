@@ -2,7 +2,7 @@
 
 ## Contents
 
-- [What is ChromSCape ?](#What-is-ChromSCape-?)
+- [What is ChromSCape ?](#What-is-ChromSCape?)
 - [Launch the App](#Launch-the-App)
 - [Docker version ](#Docker-version)
 - [Test datasets](#Test-datasets)
