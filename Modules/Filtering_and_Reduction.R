@@ -33,9 +33,13 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
 
     
     SelMatCov1000 <- counts(umi)[,sel1000]
+    
     bina_counts <- SelMatCov1000  
-    bina_counts[bina_counts<2] <-0
-    bina_counts[bina_counts>1] <-1
+    #If matrix is non binary, bina_counts = binarized(SelMatCov1000)
+    if(max(bina_counts)>1){
+      bina_counts[bina_counts<2] <-0
+      bina_counts[bina_counts>1] <-1
+    }
     fixedWin <- names(which((rowSums(bina_counts) > (percentMin()*(dim(bina_counts)[2])) ))) # window selection
     
     SelMatCov <- counts(umi)[,sel]
@@ -47,7 +51,7 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
       
     SelMatCov <- SelMatCov[fixedWin,]
     
-    
+
     
     # Filtering based on exclude-regions from bed file, if provided
     if(!is.null(exclude_regions())){
