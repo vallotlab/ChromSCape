@@ -160,40 +160,37 @@ Pacome Prompsy : pacome.prompsy@curie.fr
 
 # Session Info
 ```
-R version 3.5.2 (2018-12-20)
+R version 3.6.2 (2019-12-12)
 Platform: x86_64-pc-linux-gnu (64-bit)
-Running under: Ubuntu 16.04.6 LTS
+Running under: Ubuntu 16.10
 
 Matrix products: default
-BLAS: /usr/lib/libblas/libblas.so.3.6.0
-LAPACK: /usr/lib/lapack/liblapack.so.3.6.0
+BLAS:   /usr/lib/libblas/libblas.so.3.6.1
+LAPACK: /usr/lib/lapack/liblapack.so.3.6.1
 
 locale:
- [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C               LC_TIME=fr_FR.UTF-8        LC_COLLATE=en_US.UTF-8     LC_MONETARY=fr_FR.UTF-8    LC_MESSAGES=en_US.UTF-8   
- [7] LC_PAPER=fr_FR.UTF-8       LC_NAME=C                  LC_ADDRESS=C               LC_TELEPHONE=C             LC_MEASUREMENT=fr_FR.UTF-8 LC_IDENTIFICATION=C       
+ [1] LC_CTYPE=fr_FR.UTF-8       LC_NUMERIC=C               LC_TIME=fr_FR.UTF-8        LC_COLLATE=fr_FR.UTF-8     LC_MONETARY=fr_FR.UTF-8    LC_MESSAGES=fr_FR.UTF-8    LC_PAPER=fr_FR.UTF-8      
+ [8] LC_NAME=C                  LC_ADDRESS=C               LC_TELEPHONE=C             LC_MEASUREMENT=fr_FR.UTF-8 LC_IDENTIFICATION=C       
 
 attached base packages:
  [1] grid      parallel  stats4    stats     graphics  grDevices utils     datasets  methods   base     
 
 other attached packages:
- [1] DT_0.5                      gridExtra_2.3               png_0.1-7                   gplots_3.0.1                viridis_0.5.1               viridisLite_0.3.0          
- [7] knitr_1.22                  kableExtra_1.1.0            colourpicker_1.0            colorRamps_2.3              RColorBrewer_1.1-2          shinyDirectoryInput_0.2.0  
-[13] plotly_4.8.0                shinyjs_1.0                 shinydashboard_0.7.1        rlist_0.4.6.1               splitstackshape_1.4.6       tidyr_0.8.3                
-[19] ConsensusClusterPlus_1.46.0 Rtsne_0.15                  reshape2_1.4.3              irlba_2.3.3                 Matrix_1.2-15               stringr_1.4.0              
-[25] dplyr_0.8.0.1               tibble_2.1.1                scran_1.10.2                scater_1.10.1               ggplot2_3.1.0               SingleCellExperiment_1.4.1 
-[31] SummarizedExperiment_1.12.0 DelayedArray_0.8.0          BiocParallel_1.16.6         matrixStats_0.54.0          Biobase_2.42.0              GenomicRanges_1.34.0       
-[37] GenomeInfoDb_1.18.2         IRanges_2.16.0              S4Vectors_0.20.1            BiocGenerics_0.28.0         shiny_1.2.0                
+ [1] DT_0.12                     gridExtra_2.3               png_0.1-7                   gplots_3.0.1.2              viridis_0.5.1               viridisLite_0.3.0           knitr_1.28                 
+ [8] kableExtra_1.1.0            colourpicker_1.0            colorRamps_2.3              RColorBrewer_1.1-2          shinyDirectoryInput_0.2.0   plotly_4.9.2                shinyjs_1.1                
+[15] shinydashboard_0.7.1        shiny_1.4.0                 rlist_0.4.6.1               splitstackshape_1.4.8       tidyr_1.0.2                 ConsensusClusterPlus_1.48.0 Rtsne_0.15                 
+[22] reshape2_1.4.3              irlba_2.3.3                 Matrix_1.2-18               stringr_1.4.0               dplyr_0.8.4                 tibble_2.1.3                scran_1.12.1               
+[29] scater_1.12.2               ggplot2_3.2.1               SingleCellExperiment_1.6.0  SummarizedExperiment_1.14.1 DelayedArray_0.10.0         BiocParallel_1.18.1         matrixStats_0.55.0         
+[36] Biobase_2.44.0              GenomicRanges_1.36.1        GenomeInfoDb_1.20.0         IRanges_2.18.3              S4Vectors_0.22.1            BiocGenerics_0.30.0        
 
 loaded via a namespace (and not attached):
- [1] bitops_1.0-6             webshot_0.5.1            httr_1.4.0               dynamicTreeCut_1.63-1    tools_3.5.2              R6_2.4.0                 KernSmooth_2.23-15      
- [8] HDF5Array_1.10.1         vipor_0.4.5              lazyeval_0.2.2           colorspace_1.4-1         withr_2.1.2              tidyselect_0.2.5         compiler_3.5.2          
-[15] rvest_0.3.2              BiocNeighbors_1.0.0      Cairo_1.5-10             xml2_1.2.0               labeling_0.3             caTools_1.17.1.2         scales_1.0.0            
-[22] readr_1.3.1              digest_0.6.18            rmarkdown_1.12           XVector_0.22.0           pkgconfig_2.0.2          htmltools_0.3.6          limma_3.38.3            
-[29] htmlwidgets_1.3          rlang_0.3.3              rstudioapi_0.10          DelayedMatrixStats_1.4.0 jsonlite_1.6             crosstalk_1.0.0          gtools_3.8.1            
-[36] RCurl_1.95-4.12          magrittr_1.5             GenomeInfoDbData_1.2.0   Rcpp_1.0.1               ggbeeswarm_0.6.0         munsell_0.5.0            Rhdf5lib_1.4.3          
-[43] stringi_1.4.3            yaml_2.2.0               edgeR_3.24.3             zlibbioc_1.28.0          rhdf5_2.26.2             plyr_1.8.4               gdata_2.18.0            
-[50] promises_1.0.1           crayon_1.3.4             miniUI_0.1.1.1           lattice_0.20-38          hms_0.4.2                locfit_1.5-9.1           pillar_1.3.1            
-[57] igraph_1.2.4             glue_1.3.1               evaluate_0.13            data.table_1.12.0        httpuv_1.5.0             gtable_0.3.0             purrr_0.3.2             
-[64] assertthat_0.2.1         xfun_0.6                 mime_0.6                 xtable_1.8-3             later_0.8.0              beeswarm_0.2.3           cluster_2.0.7-1         
-[71] statmod_1.4.30
+ [1] ggbeeswarm_0.6.0         colorspace_1.4-1         dynamicTreeCut_1.63-1    XVector_0.24.0           BiocNeighbors_1.2.0      rstudioapi_0.11          RSpectra_0.16-0          xml2_1.2.2              
+ [9] jsonlite_1.6.1           cluster_2.1.0            BiocManager_1.30.10      readr_1.3.1              compiler_3.6.2           httr_1.4.1               dqrng_0.2.1              assertthat_0.2.1        
+[17] fastmap_1.0.1            lazyeval_0.2.2           limma_3.40.6             later_1.0.0              BiocSingular_1.0.0       htmltools_0.4.0          tools_3.6.2              rsvd_1.0.3              
+[25] igraph_1.2.4.2           gtable_0.3.0             glue_1.3.1               GenomeInfoDbData_1.2.1   Rcpp_1.0.3               vctrs_0.2.3              gdata_2.18.0             DelayedMatrixStats_1.6.1
+[33] xfun_0.12                rvest_0.3.5              mime_0.9                 miniUI_0.1.1.1           lifecycle_0.1.0          gtools_3.8.1             statmod_1.4.34           edgeR_3.26.8            
+[41] zlibbioc_1.30.0          scales_1.1.0             hms_0.5.3                promises_1.1.0           stringi_1.4.6            caTools_1.18.0           rlang_0.4.4              pkgconfig_2.0.3         
+[49] bitops_1.0-6             evaluate_0.14            lattice_0.20-38          purrr_0.3.3              htmlwidgets_1.5.1        tidyselect_1.0.0         plyr_1.8.5               magrittr_1.5            
+[57] R6_2.4.1                 pillar_1.4.3             withr_2.1.2              RCurl_1.98-1.1           crayon_1.3.4             KernSmooth_2.23-16       rmarkdown_2.1            locfit_1.5-9.1          
+[65] data.table_1.12.8        digest_0.6.25            webshot_0.5.2            xtable_1.8-4             httpuv_1.5.2             munsell_0.5.0            beeswarm_0.2.3           vipor_0.4.5
 ```
