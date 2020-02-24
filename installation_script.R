@@ -54,7 +54,11 @@ for (pkg in pkgs) {
 usePackageBioc <- function(p)
 {
   if (!is.element(p, installed.packages()[, 1]))
-    BiocManager::install(p, dep = TRUE, version = "3.8")
+    if(as.numeric(R.Version()$minor) < 6) {
+      BiocManager::install(p, dep = TRUE, version = "3.8")
+    } else {
+      BiocManager::install(p, dep = TRUE, version = "3.9")
+    }
   require(p, character.only = TRUE)
 }
 
