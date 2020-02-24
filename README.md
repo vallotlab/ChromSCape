@@ -7,7 +7,7 @@ ChromSCape - Single-Cell Chromatin Landscape profiling - is a ready-to-launch us
 
 First download the repository in the location of your choice, either with `git clone https://github.com/vallotlab/ChromSCape.git ChromSCape` or by clicking on 'Clone or Download' -> 'Download ZIP' and unzip.
 
-ChromSCape requires R version 3.5 or higher as well as bedtools v2.25.0 (https://github.com/arq5x/bedtools2/releases/tag/v2.25.0). 
+ChromSCape requires R version 3.5 or higher as well as bedtools v2.25.0 or higher (https://github.com/arq5x/bedtools2/releases/tag/v2.25.0). 
 
 Make sure to have all the required libraries, to do so run in terminal :
 ```
