@@ -2,16 +2,16 @@
 
 ## Contents
 
-- [What is ChromSCape ?] (#What-is-ChromSCape-?)
-- [Launch the App] (#Launch-the-App)
-- [Docker version ] (#Docker-version)
-- [Test datasets] (#Test-datasets)
-- [Run Time] (#Run-Time)
-- [Walkthrough of the App with screencast] (#Walkthrough-of-the-App-with-screencast)
-- [Output] (#Output )
-- [Detailed walkthrough of the App] (#Detailed-walkthrough-of-the-App)
-- [Authors] (#Authors)
-- [Session Info] (#Session-Info)
+- [What is ChromSCape ?](#What-is-ChromSCape-?)
+- [Launch the App](#Launch-the-App)
+- [Docker version ](#Docker-version)
+- [Test datasets](#Test-datasets)
+- [Run Time](#Run-Time)
+- [Walkthrough of the App with screencast](#Walkthrough-of-the-App-with-screencast)
+- [Output](#Output)
+- [Detailed walkthrough of the App](#Detailed-walkthrough-of-the-App)
+- [Authors](#Authors)
+- [Session Info](#Session-Info)
 
 ## What is ChromSCape ?
 
