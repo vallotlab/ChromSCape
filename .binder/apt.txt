@@ -1,6 +1,0 @@
-libv8-dev
-libudunits2-dev
-libproj-dev 
-libgeos++-dev
-libgdal-dev
-bedtools
