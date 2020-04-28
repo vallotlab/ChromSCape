@@ -279,7 +279,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   #   }
   # })
   
-  observeEvent(input$selected_analysis,{print(input$selected_analysis);if(nchar(input$selected_analysis)>0){unlocked$list$selected_analysis=T}else{for(i in names(unlocked$list)){unlocked$list[[i]]=F}}})
+  observeEvent(input$new_analysis_name, {  # reset label on actionButtion when new dataset is added
+    updateActionButton(session, "create_analysis", label="Create Analysis", icon = character(0))
+  })
+  
+  observeEvent(input$selected_analysis,{if(nchar(input$selected_analysis)>0){unlocked$list$selected_analysis=T}else{for(i in names(unlocked$list)){unlocked$list[[i]]=F}}})
   observeEvent(unlocked$list,{able_disable_tab("selected_analysis","filter_normalize")}) 
   
   ###############################################################
@@ -334,18 +338,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                 reactive({batch_sels}), reactive({input$run_tsne}), reactive({subsample_n}))
     init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
     updateActionButton(session, "filter_normalize_reduce", label="Processed and saved successfully", icon = icon("check-circle"))
+    
   })
-  
-  observeEvent(input$new_analysis_name, {  # reset label on actionButtion when new dataset is added
-    updateActionButton(session, "create_analysis", label="Create Analysis", icon = character(0))
-  })
-  
+
   observeEvent({input$selected_analysis  # reset label on actionButtion when new filtering should be filtered
    input$min_coverage_cell
    input$quant_removal
    input$min_cells_window
    input$do_batch_corr}, {
-   updateActionButton(session, "filter_normalize_reduce", label="Apply and save data set", icon = character(0))
+   updateActionButton(session, "filter_normalize_reduce", label="Filter, Normalize & Reduce", icon = character(0))
   })
   
   reduced_dataset <- eventReactive(input$selected_reduced_dataset, { # load reduced data set to work with on next pages
@@ -367,9 +368,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(input$selected_reduced_dataset, {  # load scExp, add colors, add correlation
     req(input$selected_reduced_dataset, reduced_dataset())
     
-    updateSelectInput(session, "selected_analysis", label = "Select data set :",
-                      choices = init$available_raw_datasets,selected = gsub(pattern = "_\\d*_\\d*_\\d*_\\w*", "",
-                                                                            input$selected_reduced_dataset))
     # Retrieve the scExp filtered
     scExp. = reduced_dataset()$scExp # retrieve filtered scExp
     scExp. = correlation_and_hierarchical_clust_scExp(scExp.)
@@ -411,8 +409,17 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
   
-  observeEvent(input$selected_reduced_dataset,{if(nchar(input$selected_reduced_dataset)>0){unlocked$list$selected_reduced_dataset=T}else{for(i in names(unlocked$list)){unlocked$list[[i]]=F}}})
-  observeEvent(unlocked$list,{able_disable_tab(c("selected_analysis","selected_reduced_dataset"),"vizualize_dim_red")}) 
+  observeEvent(input$selected_reduced_dataset,{
+    print("input$selected_reduced_dataset"); 
+    print(input$selected_reduced_dataset);
+    if(suppressWarnings(nchar(input$selected_reduced_dataset)>0)){
+      print("unlocking T");
+      unlocked$list$selected_reduced_dataset=T
+      }else{
+        for(i in names(unlocked$list)){unlocked$list[[i]]=F}
+        }
+    })
+  observeEvent(unlocked$list,{print("Unlocking vizualise_dim_red");able_disable_tab(c("selected_reduced_dataset"),"vizualize_dim_red")}) 
   
   
   ###############################################################
@@ -498,7 +505,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     levels_selected = SummarizedExperiment::colData(scExp())[,input$color_by] %>% unique() %>% as.vector()
   })
 
-  observeEvent(unlocked$list,able_disable_tab(c("selected_analysis","selected_reduced_dataset","pca"),"cor_clustering")) # if conditions are met, unlock tab Correlation Clustering
+  observeEvent(unlocked$list,able_disable_tab(c("selected_reduced_dataset","pca"),"cor_clustering")) # if conditions are met, unlock tab Correlation Clustering
   
   
   ###############################################################
