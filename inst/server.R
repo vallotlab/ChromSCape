@@ -35,26 +35,30 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     js$disableTab(tab) #Disabling all tabs but the first one
   }
   
+  observeEvent(input$startHelp,{
+    print("Started help")
+    # on click, send custom message to start help
+    session$sendCustomMessage(type = 'startHelp', message = list(""))
+  })
+  
   #Global reactives values
   scExp = reactiveVal(NULL)
   scExp_cf = reactiveVal(NULL)
   
   cell_cov_df <- reactive ({data.frame(coverage = sort(unname(Matrix::colSums(init$datamatrix)))) })  # used for plotting cell coverage on first page
-  analysis_name <- reactive({
-    if(!is.null(input$selected_reduced_dataset)){
-      gsub("_\\d+_\\d+(\\.\\d+)?_\\d+_[A-z]+$", "", input$selected_reduced_dataset)
-    } else {
-      input$selected_analysis
-    }
-  })
+  analysis_name <- reactive({ input$selected_analysis })
   annotation_id_norm <- reactive({ read.table(file.path(init$data_folder, 'datasets', input$selected_analysis, 'annotation.txt'), header = FALSE, stringsAsFactors = FALSE)[[1]] })
   annotation_id <- reactive({ read.table(file.path(init$data_folder, 'datasets', analysis_name(), 'annotation.txt'), header = FALSE, stringsAsFactors = FALSE)[[1]] })
   
   #Global Functions
   init <- reactiveValues(data_folder =  getwd(), datamatrix = data.frame(), annot_raw = data.frame(), available_raw_datasets = NULL,
                          available_reduced_datasets = NULL, available_filtered_datasets = NULL)
-  reduced_datasets <- reactive({ if (is.null(init$available_reduced_datasets)) c() else gsub('.{6}$', '', basename(init$available_reduced_datasets)) })
+  reduced_datasets <- reactive({ print("reduced_datasets"); print(init$available_reduced_datasets)
+    if (is.null(init$available_reduced_datasets)) c() else gsub('.{6}$', '', basename(init$available_reduced_datasets)) })
   
+  observeEvent({analysis_name()},{
+    init$available_reduced_datasets = get.available.reduced.datasets(analysis_name())
+  })
   annotCol <- reactive({ c("sample_id","total_counts","batch_id") })
   
   
@@ -64,8 +68,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     shinyjs::html("pageHeader", header)
   })
   
-  get.available.reduced.datasets <- function(){
-    list.files(path = file.path(init$data_folder, "datasets"), full.names = FALSE, recursive = TRUE,
+  get.available.reduced.datasets <- function(selected_analysis){
+    print("get.available.reduced.datasets")
+    print(selected_analysis)
+    list.files(path = file.path(init$data_folder, "datasets", selected_analysis), full.names = FALSE, recursive = TRUE,
                pattern="[[:print:]]+_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+_(uncorrected|batchCorrected).RData")
   }
   
@@ -105,14 +111,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$data_folder_info <- renderText({
     "All your analyses will be saved in this folder."
     })
-  
-  output$selected_reduced_dataset <- renderUI({ selectInput("selected_reduced_dataset", "Select filtered & normalized set :", choices = reduced_datasets()) })
-  output$red_data_selection_info <- renderText({"The selected data set is automatically loaded and will be used for all subsequent analysis. 
-    If you try different filtering parameters for one analysis, you can select the results using each parameter set here."})
-  output$red_data_selection_format <- renderText({"The name of the filtered & normalized 
-    dataset is composed of the following information: analysis name, upper percentile
-    of cells to remove (potential doublets), min percentage of cells to support a window,
-    quantile of cell read counts to keep and batch correction type."})
+
   output$data_matrices_info <- renderText({"The filename of each selected matrix must be the sample name, e.g. T23_K4me3.txt (Must contain only alpha-numeric charachter and underscore !)"})
   
   
@@ -141,7 +140,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                     as.character(input$path_cookie))
            
            init$available_raw_datasets <- list.dirs(path = file.path(init$data_folder, "datasets"), full.names = FALSE, recursive = FALSE)
-           init$available_reduced_datasets <- get.available.reduced.datasets()
+           init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
          }
        }
       })
@@ -162,7 +161,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       init$available_raw_datasets <- list.dirs(
         path = file.path(init$data_folder, "datasets"),
         full.names = FALSE, recursive = FALSE)
-      init$available_reduced_datasets <- get.available.reduced.datasets()
+      init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
 
       if(.Platform$OS.type != "windows"){
         js$save_cookie(init$data_folder)
@@ -288,6 +287,17 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   # 2. Filter and Normalize dataset
   ###############################################################
   
+  output$selected_reduced_dataset <- renderUI({ 
+    selectInput("selected_reduced_dataset", "Select filtered & normalized set :",
+                choices = reduced_datasets()) 
+    })
+  output$red_data_selection_info <- renderText({"The selected data set is automatically loaded and will be used for all subsequent analysis. 
+    If you try different filtering parameters for one analysis, you can select the results using each parameter set here."})
+  output$red_data_selection_format <- renderText({"The name of the filtered & normalized 
+    dataset is composed of the following information: analysis name, upper percentile
+    of cells to remove (potential doublets), min percentage of cells to support a window,
+    quantile of cell read counts to keep and batch correction type."})
+  
   output$exclude_file <- renderUI({ if(input$exclude_regions){
     fileInput("exclude_file", ".bed file containing the regions to exclude from data set:", multiple = FALSE, accept = c(".bed",".txt"))
   }})
@@ -320,7 +330,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                reactive({input$min_cells_window}), reactive({input$quant_removal}), reactive({init$datamatrix}), reactive({init$annot_raw}),
                reactive({init$data_folder}),reactive({annotationId}), reactive({exclude_regions}), reactive({annotCol()}),reactive({input$do_batch_corr}),
                 reactive({batch_sels}))
-    init$available_reduced_datasets <- get.available.reduced.datasets()
+    init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
     updateActionButton(session, "filter_normalize_reduce", label="Processed and saved successfully", icon = icon("check-circle"))
   })
   
@@ -345,7 +355,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       addResourcePath('Plots', file.path(init$data_folder, "datasets", analysis_name(), "correlation_clustering","Plots"))
 
     file_index <- match(c(input$selected_reduced_dataset), reduced_datasets())
-    filename_sel <- file.path(init$data_folder, "datasets", init$available_reduced_datasets[file_index])
+    filename_sel <- file.path(init$data_folder, "datasets", analysis_name(),init$available_reduced_datasets[file_index])
     myData = new.env()
     load(filename_sel, envir = myData)
     myData
@@ -819,7 +829,8 @@ output$anno_cc_box <- renderUI({
     req(scExp_cf(), input$color_by_cf)
     p = plot_reduced_dim_scExp(scExp_cf(),input$color_by_cf, "TSNE",
                                select_x = "Component_1",
-                               select_y = "Component_2")
+                               select_y = "Component_2") +
+      ggtitle("t-SNE")
     p
   })
   output$tsne_plot_cf <- plotly::renderPlotly( plotly::ggplotly(tsne_p_cf(), tooltip="Sample", dynamicTicks = T) )
@@ -828,7 +839,8 @@ output$anno_cc_box <- renderUI({
     req(scExp_cf(), input$color_by_cf)
     p = plot_reduced_dim_scExp(scExp_cf(),input$color_by_cf, "UMAP",
                                select_x = "Component_1",
-                               select_y = "Component_2")
+                               select_y = "Component_2") +
+      ggtitle("UMAP")
     p
   })
   output$umap_plot_cf <- plotly::renderPlotly( plotly::ggplotly(umap_p_cf(), tooltip="Sample", dynamicTicks = T) )
@@ -841,7 +853,7 @@ output$anno_cc_box <- renderUI({
   output$plot_cf_box <- renderUI({
     if(! is.null(scExp_cf())){
       if("chromatin_group" %in% colnames(SummarizedExperiment::colData(scExp_cf())) ){
-        shinydashboard::box(title="Annotated tSNE", width = NULL, status="success", solidHeader = T,
+        shinydashboard::box(title="Vizualisation in reduced dimensions", width = NULL, status="success", solidHeader = T,
             column(6, align="left", selectInput("color_by_cf", "Color by", choices = c('sample_id', 'total_counts', 'chromatin_group','batch_id'))),
             column(12, align="left", plotly::plotlyOutput("tsne_plot_cf")),
             column(12, align="left", plotly::plotlyOutput("umap_plot_cf")))
@@ -1374,7 +1386,7 @@ output$anno_cc_box <- renderUI({
     region <- strsplit(input$region_sel, " ")[[1]][1]
     if(region %in% rownames(scExp_cf())){
       p <- ggplot(as.data.frame(SingleCellExperiment::reducedDim(scExp_cf(), "TSNE")),
-                  aes(x = "Component_1", y = "Component_2")) +
+                  aes(x = Component_1, y = Component_2)) +
         geom_point(alpha = 0.5, aes(color = SingleCellExperiment::normcounts(scExp_cf())[region, ],
                                     shape = SummarizedExperiment::colData(scExp_cf())$chromatin_group)) +
         labs(color="norm. count for region", shape="Cluster", x="t-SNE 1", y="t-SNE 2") +
@@ -1406,7 +1418,7 @@ output$anno_cc_box <- renderUI({
       incProgress(amount=0.5, detail=paste("..."))
       unlink(file.path(init$data_folder, "datasets", input$selected_delete_analysis), recursive=TRUE)
       init$available_raw_datasets <- list.dirs(path=file.path(init$data_folder, "datasets"), full.names=FALSE, recursive=FALSE)
-      init$available_reduced_datasets <- get.available.reduced.datasets()
+      init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
       incProgress(amount=0.5, detail=paste("... finished"))
     })
     showNotification("Data set successfully deleted.", duration=5, closeButton=TRUE, type="warning")

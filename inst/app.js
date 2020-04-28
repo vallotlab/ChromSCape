@@ -2,24 +2,7 @@
 var intro = introJs();
 
 $(document).ready(function() {
-  
-
-});
-window.addEventListener('load', (event) => {
-    console.log('The page has fully loaded');
-});
-
-window.addEventListener('load', function () {
-    var doneTour = localStorage.getItem('EventTour') === 'Completed';
-    console.log("doneTour")
-    console.log(doneTour)
-    console.log(intro)
-    if (doneTour) {
-        return;
-    }
-    else {
-      console.log("intro.start()")
-      tabs = $('a[data-toggle="tab"]')
+  tabs = $('a[data-toggle="tab"]')
     intro.setOptions({
         steps: [
           {
@@ -103,13 +86,31 @@ window.addEventListener('load', function () {
           }
           ]
 });
-        intro.start();
 
+});
+
+window.addEventListener('load', (event) => {
+    console.log('The page has fully loaded');
+});
+
+window.addEventListener('load', function () {
+    var doneTour = localStorage.getItem('EventTour') === 'Completed';
+    console.log("doneTour")
+    console.log(doneTour)
+    console.log(intro)
+    if (doneTour) {
+        return;
+    }
+    else {  
+      console.log("intro.start()")
+        intro.start();
         intro.oncomplete(function () {
+             console.log("Completed - complete");
             localStorage.setItem('EventTour', 'Completed');
         });
 
         intro.onexit(function () {
+            console.log("Completed -exit");
             localStorage.setItem('EventTour', 'Completed');
         });
     }
