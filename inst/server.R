@@ -26,7 +26,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   unlocked = reactiveValues(list = list(selected_analysis = FALSE,
                                         selected_reduced_dataset = FALSE,
                                         pca = FALSE,
-                                        tsne = FALSE,
                                         cor_clust_plot = FALSE,
                                         filtered_datasets = FALSE,
                                         affectation = FALSE,
@@ -315,13 +314,16 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       selectInput(paste0('batch_sel_', i), paste0('Select samples for batch ', i, ':'), choices=batch_choice(), multiple=TRUE)
     })
   }})
+  output$do_subsample <- renderUI({ if(input$do_subsample){
+    sliderInput("subsample_n", "Select number of cells to subsample for each sample:", min=100, max=5000, value=500, step=10) }})
   
   observeEvent(input$filter_normalize_reduce, {  # perform QC filtering and dim. reduction
     num_batches <- if(is.null(input$num_batches)) 0 else input$num_batches
     batch_names <- if(is.null(input$num_batches)) c() else sapply(1:input$num_batches, function(i){ input[[paste0('batch_name_', i)]] })
     batch_sels <- if(is.null(input$num_batches)) list() else lapply(1:input$num_batches, function(i){ input[[paste0('batch_sel_', i)]] })
     names(batch_sels) = batch_names
-      
+    subsample_n <- if(input$do_subsample){input$subsample_n}
+    
     annotationId <- annotation_id_norm()
     exclude_regions <- if(input$exclude_regions) setNames(read.table(
       input$exclude_file$datapath, header = FALSE, stringsAsFactors = FALSE), c("chr", "start", "stop")) else NULL
@@ -329,7 +331,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     callModule(Module_preprocessing_filtering_and_reduction, "Module_preprocessing_filtering_and_reduction", reactive({input$selected_analysis}), reactive({input$min_coverage_cell}),
                reactive({input$min_cells_window}), reactive({input$quant_removal}), reactive({init$datamatrix}), reactive({init$annot_raw}),
                reactive({init$data_folder}),reactive({annotationId}), reactive({exclude_regions}), reactive({annotCol()}),reactive({input$do_batch_corr}),
-                reactive({batch_sels}))
+                reactive({batch_sels}), reactive({input$run_tsne}), reactive({subsample_n}))
     init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
     updateActionButton(session, "filter_normalize_reduce", label="Processed and saved successfully", icon = icon("check-circle"))
   })
@@ -433,14 +435,17 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   output$pca_plot <- plotly::renderPlotly( plotly::ggplotly(pca_plot(), tooltip="Sample", dynamicTicks=T) )
   
-  tsne_plot <- reactive({
+  output$tsne_box <- renderUI({
     req(scExp(), input$color_by)
-    p = plot_reduced_dim_scExp(scExp(),input$color_by, "TSNE"
-    )
-    unlocked$list$tsne = T
-    p
+    if("TSNE" %in% SingleCellExperiment::reducedDimNames(scExp())){
+      p = plot_reduced_dim_scExp(scExp(),input$color_by, "TSNE")
+      output$tsne_plot = plotly::renderPlotly( plotly::ggplotly(p, tooltip="Sample", dynamicTicks=T) )
+      shinydashboard::box(title="tSNE visualization", width = NULL, status="success", solidHeader=T,
+                          column(12, align="left", plotly::plotlyOutput("tsne_plot") %>%
+                                   shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                       content = "tsne_plot")))
+    }
   })
-  output$tsne_plot <- plotly::renderPlotly( plotly::ggplotly(tsne_plot(), tooltip="Sample", dynamicTicks=T) )
   
   umap_plot <- reactive({
     req(scExp(), input$color_by)
@@ -493,7 +498,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     levels_selected = SummarizedExperiment::colData(scExp())[,input$color_by] %>% unique() %>% as.vector()
   })
 
-  observeEvent(unlocked$list,able_disable_tab(c("selected_analysis","selected_reduced_dataset","pca","tsne"),"cor_clustering")) # if conditions are met, unlock tab Correlation Clustering
+  observeEvent(unlocked$list,able_disable_tab(c("selected_analysis","selected_reduced_dataset","pca"),"cor_clustering")) # if conditions are met, unlock tab Correlation Clustering
   
   
   ###############################################################
@@ -796,7 +801,7 @@ output$anno_cc_box <- renderUI({
   output$anno_corc_box <- renderUI({
     if(! is.null(scExp_cf())){
       if("chromatin_group" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
-        shinydashboard::box(title="Annotated correlation clustering", width = NULL, status="success", solidHeader = T,
+        shinydashboard::box(title="Correlation Heatmap & clustering", width = NULL, status="success", solidHeader = T,
             column(12, align="left", plotOutput("cor_clust_anno_plot", height = 500, width = 500)),
             column(12, align="left", tableOutput("hcor_kable")),
             column(5,offset = 2, align="left", br(), htmlOutput("chi_info"),br()),
@@ -825,15 +830,19 @@ output$anno_cc_box <- renderUI({
     } else NULL
   }
  
-  tsne_p_cf <- reactive({
-    req(scExp_cf(), input$color_by_cf)
-    p = plot_reduced_dim_scExp(scExp_cf(),input$color_by_cf, "TSNE",
-                               select_x = "Component_1",
-                               select_y = "Component_2") +
-      ggtitle("t-SNE")
-    p
+  output$tsne_box_cf <- renderUI({
+    if("TSNE" %in% SingleCellExperiment::reducedDimNames(scExp_cf())){
+      req(scExp_cf(), input$color_by_cf)
+      p = plot_reduced_dim_scExp(scExp_cf(),input$color_by_cf, "TSNE",
+                                 select_x = "Component_1",
+                                 select_y = "Component_2") +
+        ggtitle("t-SNE")
+      output$tsne_plot_cf <- plotly::renderPlotly(
+        plotly::ggplotly(p, tooltip="Sample", dynamicTicks = T))
+      shinydashboard::box(title="tSNE visualization", width = NULL, status="success", solidHeader=T,
+                          column(12, align="left", plotly::plotlyOutput("tsne_plot_cf")))
+    }
   })
-  output$tsne_plot_cf <- plotly::renderPlotly( plotly::ggplotly(tsne_p_cf(), tooltip="Sample", dynamicTicks = T) )
   
   umap_p_cf <- reactive({
     req(scExp_cf(), input$color_by_cf)
@@ -850,12 +859,11 @@ output$anno_cc_box <- renderUI({
     levels_selected_cf = SummarizedExperiment::colData(scExp_cf())[,input$color_by_cf] %>% unique() %>% as.vector()
   })
   
-  output$plot_cf_box <- renderUI({
+  output$umap_box_cf <- renderUI({
     if(! is.null(scExp_cf())){
       if("chromatin_group" %in% colnames(SummarizedExperiment::colData(scExp_cf())) ){
         shinydashboard::box(title="Vizualisation in reduced dimensions", width = NULL, status="success", solidHeader = T,
             column(6, align="left", selectInput("color_by_cf", "Color by", choices = c('sample_id', 'total_counts', 'chromatin_group','batch_id'))),
-            column(12, align="left", plotly::plotlyOutput("tsne_plot_cf")),
             column(12, align="left", plotly::plotlyOutput("umap_plot_cf")))
       }
     }
