@@ -236,6 +236,12 @@ create_scExp <- function(datamatrix,
         datamatrix <- as.matrix(datamatrix)
     }
     
+    cat(
+        "ChromSCape::create_scExp - the matrix has",
+        dim(datamatrix)[2],
+        "cells and ",dim(datamatrix)[1], "features.\n"
+    )
+    
     scExp <- SingleCellExperiment::SingleCellExperiment(
         assays = list(counts = datamatrix),colData = annot)
     
@@ -1024,12 +1030,12 @@ reduce_dims_scExp <-
 #' @examples
 pca_irlba_for_sparseMatrix <- function(x, n_comp)
 {
-    system.time({
-        x.means <- Matrix::colMeans(x)
-        svd.0 <- irlba::irlba(x, center = x.means, nv = n_comp)
-        x. <- sweep(x, 2, x.means, "-")
-        pca <- x. %*% svd.0$v
-    })
+    
+    x.means <- Matrix::colMeans(x)
+    svd.0 <- irlba::irlba(x, center = x.means, nv = n_comp)
+    x. <- sweep(x, 2, x.means, "-")
+    pca <- x. %*% svd.0$v
+    
     return(pca)
 }
 
@@ -1076,4 +1082,58 @@ num_cell_after_QC_filt_scExp <- function(scExp, annot)
                                     "condensed"), full_width = T) %>%
         kableExtra::group_rows("Total cell count",
                                dim(table_both)[1], dim(table_both)[1])
+}
+
+#' Subsample scExp
+#'
+#' Randomly sample x cells from each sample in a SingleCellExperiment to return
+#' a subsampled SingleCellExperiment with all samples having maximum n cells. If
+#' n is higher than the number of cell in a sample, this sample will not be
+#' subsampled.
+#'
+#' @param scExp A SingleCellExperiment
+#' @param n_cells An integer number of cells to subsample for each sample [500]
+#'
+#' @return
+#' @export
+#'
+#' @importFrom SingleCellExperiment colData
+#' @examples
+subsample_scExp <- function(scExp, n_cells = 500) {
+    stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(n_cells))
+    
+    annot = as.data.frame(SingleCellExperiment::colData(scExp))
+    counts = SingleCellExperiment::counts(scExp)
+    samples = as.character(unique(annot$sample_id))
+    counts. = NULL
+    annot. = NULL
+    
+    for (samp in samples) {
+        cells = as.character(annot$cell_id[which(annot$sample_id == samp)])
+        cells = sample(cells, min(n_cells, length(cells)), replace = F)
+        if (is.null(counts.))
+            counts. = counts[, cells]
+        else
+            counts. = Matrix::cbind2(counts., counts[, cells])
+        if (is.null(annot.))
+            annot. = annot[cells, ]
+        else
+            annot. = Matrix::rbind2(annot., annot[cells, ])
+    }
+    cat("ChromSCape::subsample_scExp -")
+    print(table(annot.$sample_id))
+    ord = order(colnames(counts.))
+    ord2 = order(rownames(annot.))
+    counts. = counts.[, ord]
+    annot. = annot.[ord2, ]
+    scExp. = create_scExp(
+        counts.,
+        annot.,
+        remove_zero_cells = F,
+        remove_zero_features = F,
+        remove_non_canonical = F,
+        remove_chr_M = F
+    )
+    
+    return(scExp.)
 }
