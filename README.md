@@ -2,7 +2,7 @@
 
 ## Contents
 
-- [What is ChromSCape ?](#What-is-ChromSCape-?)
+- [What is ChromSCape ?](#what-is-chromscape-)
 - [Launch the App](#Launch-the-App)
 - [Docker version ](#Docker-version)
 - [Test datasets](#Test-datasets)
@@ -108,48 +108,8 @@ The Gene Set Enrichment Analysis is based on MSIG database (http://software.broa
 
 Before the first time you run the App, launch the **installation script** `Rscript ./installation_script.R` to install all the dependencies required.
 
-```
-  #Bioinfo
-  library(scater)
-  library(scran)
-  library(IRanges)
-  library(GenomicRanges)
-  library(ConsensusClusterPlus)
-  library(Rtsne)
-  
-  #Data mining & utils
-  library(tibble)
-  library(dplyr)
-  library(stringr)
-  library(irlba)
-  library(reshape2)
-  library(DT)
-  library(tidyr)
-  library(splitstackshape)
-  library(rlist)
-  library(envDocument)
-  library(rstudioapi)
-  library(dplyr)
-  
-  #Graphics
-  library(RColorBrewer)
-  library(colorRamps)
-  library(colourpicker)
-  library(kableExtra)
-  library(knitr)
-  library(viridis)
-  library(ggplot2)
-  library(gplots)
-  library(png)
-  library(grid)
-  library(gridExtra)
+Some softwares are required. Bedtools is necessary to run the Filtering step while you only need Macs2 & Samtools for the optional peak calling step.
 
-  #Modules and functions
-  source("Modules/geco_functions.R")
-  
-```
-
-Bash packages
 ```
   samtools 1.9 (Using htslib 1.9) (http://www.htslib.org/doc/samtools.html)
   bedtools v2.25.0 (https://github.com/arq5x/bedtools2/releases/tag/v2.25.0)
