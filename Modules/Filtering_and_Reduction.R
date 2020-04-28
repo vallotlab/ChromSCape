@@ -7,6 +7,8 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
                                           annotation_id, exclude_regions) {
   withProgress(message='Processing data set...', value = 0, {
     
+    set.seed(47)
+    
     batch_string <- "uncorrected"
     
     ###############################################################
@@ -20,6 +22,10 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
     umi <- umi[rowSums(counts(umi)>0)>0, ] # remove windows that do not have any read in any cells
     umi <- scater::calculateQCMetrics(umi)
     thresh <- quantile(colSums(counts(umi)), probs=seq(0, 1, 0.01))
+    
+    #To remove
+    save(umi,
+         file = "/media/pacome/LaCie/InstitutCurie/Documents/GitLab/ChromSCape/tests/test_scChIP/filter_red_01.RData")
     
     ###############################################################
     # 2. Filtering & Window selection
@@ -41,7 +47,8 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
       bina_counts[bina_counts>1] <-1
     }
     fixedWin <- names(which((rowSums(bina_counts) > (percentMin()*(dim(bina_counts)[2])) ))) # window selection
-    
+    print("length(fixedWin")
+    print(length(fixedWin))
     SelMatCov <- counts(umi)[,sel]
    
     
@@ -50,9 +57,11 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
 
       
     SelMatCov <- SelMatCov[fixedWin,]
+    #To remove
+    save(SelMatCov,
+         file = "/media/pacome/LaCie/InstitutCurie/Documents/GitLab/ChromSCape/tests/test_scChIP/filter_red_02.RData")
     
-
-    
+   
     # Filtering based on exclude-regions from bed file, if provided
     if(!is.null(exclude_regions())){
       regions <- data.frame(loc=rownames(SelMatCov))
@@ -66,6 +75,9 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
     
 
     mat <- SelMatCov
+    #To remove
+    save(SelMatCov,
+         file = "/media/pacome/LaCie/InstitutCurie/Documents/GitLab/ChromSCape/tests/test_scChIP/filter_red_03.RData")
     
     #Normalize by window size 
     if(length(grep("chr",rownames(mat)[1:10],perl = T)) >= 9 ){
@@ -78,10 +90,11 @@ moduleFiltering_and_Reduction <- function(input, output, session, raw_dataset_na
       mat <- mat/size
     }
     
-    mat <- mean(colSums(SelMatCov))*t(t(SelMatCov)/colSums(SelMatCov))
+    mat <- 10^6*t(t(SelMatCov)/colSums(SelMatCov))
     
     norm_mat <- mat
-    
+    save(norm_mat,
+         file = "/media/pacome/LaCie/InstitutCurie/Documents/GitLab/ChromSCape/tests/test_scChIP/filter_red_04.RData")
     mat <- mat-apply(mat, 1, mean)
     save(norm_mat, file=file.path(data_folder(), "datasets", raw_dataset_name(), "reduced_data", paste0(paste(raw_dataset_name(), min_cov_cell(), (percentMin()*100), quant_removal(), batch_string, sep="_"), "_normMat.RData"))) # used for supervised analysis
     

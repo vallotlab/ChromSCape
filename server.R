@@ -169,7 +169,7 @@ server <- function(input, output, session) {
 
         total_cell <- length(datamatrix_single[1,])
         sample_name <- gsub('.{4}$', '', input$datafile_matrix$name[i])
-        annot_single <- data.frame(barcode=colnames(datamatrix_single), cell_id=paste0(sample_name, "_c", 1:total_cell), sample_id=rep(sample_name, total_cell), batch_id=i)
+        annot_single <- data.frame(cell_id=paste0(sample_name, "_c", 1:total_cell), sample_id=rep(sample_name, total_cell), batch_id=i)
         
         colnames(datamatrix_single) <- annot_single$cell_id
               
@@ -336,9 +336,9 @@ server <- function(input, output, session) {
   output$pc_select_x <- renderUI({ selectInput("pc_select_x", "X",choices=paste0("PC", c(1:15)), selected="PC1") })
   output$pc_select_y <- renderUI({ selectInput("pc_select_y", "Y",choices=paste0("PC", c(1:15)), selected="PC2") })
   output$pca_color_2D <- renderUI({selectInput("pca_color_2D", "Color by", choices=c('sample_id', 'total_counts')) })
-  output$pca_anno_2D <- renderUI({selectInput("pca_anno_2D", "Labels", choices=c('none', 'barcode', 'cell_id', 'sample_id', 'total_counts')) })
+  output$pca_anno_2D <- renderUI({selectInput("pca_anno_2D", "Labels", choices=c('none','cell_id', 'sample_id', 'total_counts')) })
   output$tsne_color <- renderUI({ selectInput("tsne_color", "Color by", choices=c('sample_id', 'total_counts')) })
-  output$tsne_anno <- renderUI({selectInput("tsne_anno", "Labels", choices=c('none', 'barcode', 'cell_id', 'sample_id', 'total_counts')) })
+  output$tsne_anno <- renderUI({selectInput("tsne_anno", "Labels", choices=c('none', 'cell_id', 'sample_id', 'total_counts')) })
   
 
   
@@ -496,6 +496,7 @@ server <- function(input, output, session) {
   ###############################################################
   
   corColors <- colorRampPalette(c("royalblue","white","indianred1"))(256)
+  
   mati <- reactive({t(pca()[,1:50]) })
   
   hc_cor <- reactive({
@@ -522,7 +523,7 @@ server <- function(input, output, session) {
     
     })
 
-    output$corr_clust_pca_plot <- renderPlot(hc_pca_plot())
+  output$corr_clust_pca_plot <- renderPlot(hc_pca_plot())
   
   output$download_cor_clust_plot <- downloadHandler(
     filename=function(){ paste0("correlation_clustering_", input$selected_reduced_dataset, ".png")},
@@ -548,12 +549,14 @@ server <- function(input, output, session) {
   limitC <- reactive({thresh2()[input$corr_thresh+1]})
   
   cell_cor_hist <- reactive({
-    hist(corChIP(), prob=TRUE, col=alpha("steelblue", 0.8), breaks=50, ylim=c(0,4), main="Distribution of cell to cell correlation scores", xlab="Pearson Corr Scores")
-    lines(density(corChIP()), col="blue", lwd=2)
-    lines(density(cor(z())), col="black", lwd=2)
-    abline(v=limitC(), lwd=2, col="red", lty=2)
-    legend("topleft", legend=c("dataset", "randomized data", "correlation threshold"), col=c("blue", "black", "red"), lty=c(1, 1, 2), cex=0.8)
-  })
+    z_save = isolate(z())
+    mati_save = isolate(mati())
+    correlation_values_save = isolate(correlation_values)
+    thresh2_save = isolate(thresh2())
+    limitC_save = isolate(limitC())
+    save(z_save, mati_save, correlation_values_save, thresh2_save, limitC_save, file = "/media/pacome/LaCie/InstitutCurie/Documents/GitLab/ChromSCape/tests/test_scChIP/z.RData")
+    
+     })
   
   output$cell_cor_hist_plot <- renderPlot( cell_cor_hist() )
   
@@ -574,6 +577,7 @@ server <- function(input, output, session) {
   observeEvent(input$filter_corr_cells, {  # retreiveing cells with low correlation score
     withProgress(message='Filtering correlated cells...', value = 0, {
       incProgress(amount=0.8, detail=paste("filtering"))
+      set.seed(47)
         for(i in 1:500){
         random_mat <-  matrix(sample(mati()), nrow=dim(mati())[1])
         thresh2 <- quantile(cor(random_mat), probs=seq(0,1,0.01))
@@ -806,7 +810,9 @@ server <- function(input, output, session) {
         cc. <- lapply(unique(cc), function(z) names(which(cc==z)))
         mat.cc <- geco.groupMat(mati2(), margin=1, groups=cc., method="mean")
         hcc <- hclust(distPearson(t(mat.cc)), method="ward.D")
+        
         clust$annot_sel2 <- isolate(annot_sel())
+        print(colnames( clust$annot_sel2))
         clust$annot_sel2[, clustCol] <- paste("C", match(cc, hcc$order), sep="")
         clust$cc.col <- cbind(ChromatinGroup=conscol[match(clust$annot_sel2[so, clustCol], paste("C", 1:as.integer(input$nclust), sep=""))], anocol_sel()[so,])
         
@@ -818,7 +824,7 @@ server <- function(input, output, session) {
           reactVal$annotColors_filtered <- inner_join(reactVal$annotColors_filtered,tmp_meta,by=c("Sample","sample_id"))
           
         } 
-        
+
         # else{
         #   lapply(colnames(clust$cc.col), function(col){ if(col != "total_counts"){ clust$cc.col[, col] <<- as.character(reactVal$annotColors_filtered[which(reactVal$annotColors_filtered$Sample %in% rownames(clust$cc.col)), paste0(col, '_Color')]) } })
         #   }
@@ -828,12 +834,14 @@ server <- function(input, output, session) {
         tmp <- lapply(paste("C", 1:as.integer(input$nclust), sep=""), function(k){
           colnames(mati2())[which(clust$annot_sel2[, clustCol]==k)]
         })
-        affectation <- clust$annot_sel2[,c("barcode", "cell_id", "ChromatinGroup", "sample_id")]
+       
+        affectation <- clust$annot_sel2[,c("cell_id", "ChromatinGroup", "sample_id")]
         save(affectation, file=file.path(init$data_folder, "datasets", dataset_name(), "consclust", paste0(input$selected_filtered_dataset, '_affectation_k', input$nclust, ".RData")))
         clust$consclust.mat <- consclust()[[as.integer(input$nclust)]]$ml
         clust$hc <- hclust(as.dist(1 - clust$consclust.mat), method="ward.D")
         clust$consclust.mat <- clust$consclust.mat[clust$hc$order,]
         incProgress(amount=0.4, detail=paste("performing tSNE"))
+        set.seed(47)
         clust$tsne_corr <- Rtsne(t(mati2()), dims=2, pca=FALSE, theta=0.0, perplexity=choose_perplexity(t(mati2())), verbose=TRUE, max_iter = 1000)
         tsne_filtered=clust$tsne_corr; save(tsne_filtered,file=file.path(init$data_folder, "datasets", dataset_name(), "consclust", paste0(input$selected_filtered_dataset, "_tsne_filtered.RData")))
         clust$available_k=get_available_k()
@@ -987,7 +995,7 @@ server <- function(input, output, session) {
     if(!is.null(clust$tsne_corr)){
         box(title="Annotated tSNE", width=NULL, status="success", solidHeader=T,
             column(6, align="left", selectInput("anno_tsne_color", "Color by", choices=c('sample_id', 'total_counts', 'ChromatinGroup'))),
-            column(6, align="left", selectInput("anno_tsne_anno", "Labels", choices=c('none', 'barcode', 'cell_id', 'sample_id', 'total_counts'))),
+            column(6, align="left", selectInput("anno_tsne_anno", "Labels", choices=c('none', 'cell_id', 'sample_id', 'total_counts'))),
             column(12, align="left", plotlyOutput("anno_tsne_plot")))
       
     }
@@ -1548,6 +1556,8 @@ server <- function(input, output, session) {
       enr$Both <- Both
       enr$Overexpressed <- Overexpressed
       enr$Underexpressed <- Underexpressed
+     
+      save(Both,Overexpressed,Underexpressed, file = file.path(init$data_folder, "datasets", dataset_name(), "supervised", paste0(input$selected_filtered_dataset, "_", input$selected_k, "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, "_GSEA.RData")))
       incProgress(amount=0.1, detail=paste("finished"))
     })
   })
