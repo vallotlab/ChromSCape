@@ -15,8 +15,6 @@ geco.CompareWilcox <- function(dataMat=NULL, annot=NULL, ref=NULL, groups=NULL, 
     annot. <- annot[c(refsamp, gpsamp), 1:2]
     annot.$Condition <- c(rep("ref", length(refsamp)), rep("gpsamp", length(gpsamp)))
 
-    mat. <- dataMat[, c(as.character(refsamp), as.character(gpsamp))]
-    
     testWilc <- apply(dataMat, 1, function(x) wilcox.test(as.numeric(x[as.character(refsamp)]), as.numeric(x[as.character(gpsamp)])))
     pval.gpsamp <- unlist(lapply(testWilc, function(x) x$p.value))
     qval.gpsamp <- p.adjust(pval.gpsamp, method = "BH")
