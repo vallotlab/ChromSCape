@@ -1,3 +1,8 @@
+---
+output: 
+  html_document: 
+    self_contained: no
+---
 # ChromSCape: Analysis of single-cell ChIP-seq data in a Shiny App
 
 
@@ -62,10 +67,6 @@ as rows. The first line should be cell names, the first column should be feature
 names. Feature names can be either genomic coordinate in the format 'chr:start-end'
 or 'chr_start_end' or gene symbols (e.g: A1BG, A1BG-AS1 for hg38 or Rab23, Bag2 
 for mm10). 
-Example matrix :
-
-![](inst/www/example_matrix_format.png)
-
 
 ## Output
 
