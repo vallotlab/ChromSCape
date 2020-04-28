@@ -123,6 +123,13 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                                                               content = "filtering_parameters"),
                                                                                       sliderInput("quant_removal", "Select the upper percentile of cells to remove (potential doublets):", min=80, max=100, value=95, step=1),
                                                                                       sliderInput("min_cells_window", "Select minimum percentage of cells to support a window :", min=0, max=20, value=1, step=0.25),
+                                                                                      checkboxInput("run_tsne", "Run T-SNE", value= TRUE) %>%
+                                                                                          shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                                                              content = "run_tsne"),
+                                                                                      checkboxInput("do_subsample", "Perform subsampling", value=FALSE)%>%
+                                                                                          shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                                                              content = "subsampling"),
+                                                                                      htmlOutput("do_subsample"),
                                                                                       checkboxInput("exclude_regions", "exclude specific genomic regions", value=FALSE)  %>%
                                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                                               content = "exclude_region"),
@@ -159,15 +166,18 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                   column(width=6,
                                          shinydashboard::box(title="PCA visualization", width = NULL, status="success", solidHeader=T,
                                              column(6, align="left", htmlOutput("color_by")),
-                                             column(12, align="left", plotly::plotlyOutput("pca_plot")),
+                                             column(12, align="left", plotly::plotlyOutput("pca_plot") %>%
+                                                        shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                            content = "pca_plot")),
                                              column(3, align="left", htmlOutput("pc_select_x")),
                                              column(3, align="left", htmlOutput("pc_select_y"))),
                                          uiOutput("color_box")),
                                   column(width=6,
-                                         shinydashboard::box(title="tSNE visualization", width = NULL, status="success", solidHeader=T,
-                                             column(12, align="left", plotly::plotlyOutput("tsne_plot"))),
+                                         uiOutput("tsne_box"),
                                          shinydashboard::box(title="UMAP visualization", width = NULL, status="success", solidHeader=T,
-                                                             column(12, align="left", plotly::plotlyOutput("umap_plot"))),
+                                                             column(12, align="left", plotly::plotlyOutput("umap_plot") %>%
+                                                                        shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                                            content = "umap_plot"))),
                                          )
                                 )
                         ),
@@ -179,11 +189,13 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                         shinydashboard::tabItem(tabName = "cor_clustering",
                                 fluidPage(
                                   column(width=6,
-                                         shinydashboard::box(title="Correlation clustering on PCA", width=NULL, status="success", solidHeader=T,
-                                             column(12, align="left", plotOutput("corr_clust_pca_plot", height=500, width=500) %>%
+                                         shinydashboard::box(title="Correlation Heatmap & clustering table", width=NULL, status="success", solidHeader=T,
+                                             column(12, align="center", plotOutput("corr_clust_pca_plot", height=500, width=500) %>%
                                                         shinyhelper::helper(type = 'markdown', icon ="info-circle",
-                                                                            content = "correlation_clustering"),
-                                                    downloadButton("download_cor_clust_plot", "Download image"), br(),
+                                                                            content = "correlation_clustering")),
+                                             column(12, align="left", 
+                                                    downloadButton("download_cor_clust_plot", "Download image"), br()),
+                                             column(12, align="left", 
                                                     tableOutput('num_cell_before_cor_filt'))
                                              )),
                                 
@@ -211,7 +223,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                 fluidPage(
                                   column(width=6,
                                          shinydashboard::box(title="Selection of filtered dataset", width=NULL, status="warning",
-                                                             solidHeader=T, collapsible = T,collapsed = T,
+                                                             solidHeader=T,
                                              column(12, align="left", htmlOutput("selected_filtered_dataset"),
                                                     textOutput("filtered_data_selection_format"))),
                                          shinydashboard::box(title="Clustering results", width=NULL, status="warning", solidHeader=T,
@@ -231,7 +243,8 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                              column(12, align="left", textOutput("nclust_selection_info"))),
                                          uiOutput("anno_cc_box"),
                                          uiOutput("anno_corc_box"),
-                                         uiOutput("plot_cf_box"),
+                                         uiOutput("tsne_box_cf"),
+                                         uiOutput("umap_box_cf"),
                                          uiOutput("color_box_cf")))
                         ),
                         
