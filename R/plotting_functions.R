@@ -318,7 +318,9 @@ gg_fill_hue <- function(n)
 }
 
 
-#' Title
+#' Col2Hex
+#'
+#' Transform character color to hexadecimal color code.
 #'
 #' @param cname 
 #'
@@ -331,4 +333,42 @@ col2hex <- function(cname)
     colMat <- grDevices::col2rgb(cname)
     grDevices::rgb(red = colMat[1, ]/255, green = colMat[2, ]/255, blue = colMat[3, 
         ]/255)
+}
+
+#' Plot cluster consensus
+#'
+#' Plot cluster consensus score for each k as a bargraph.
+#'
+#' @param cname 
+#'
+#' @return
+#' @importFrom dplyr as_tiblle
+#' @import ggplot2
+#' 
+#' @export
+#'
+#' @examples
+plot_cluster_consensus_scExp <- function(scExp)
+{
+    stopifnot(is(scExp,"SingleCellExperiment"))
+    if(!"icl" %in% names(scExp@metadata))
+        stop("plot_cluster_consensus_scExp - please run consensus_clustering_scExp 
+             first.")
+    
+    if(!"consclust" %in% names(scExp@metadata))
+        stop("plot_cluster_consensus_scExp - please run consensus_clustering_scExp 
+             first.")
+    cc = dplyr::as_tibble(scExp@metadata$icl$clusterConsensus)
+    colors = unique(as.character(scExp@metadata$consclust[[1]]))
+    colors = c(colors,"#B55274")
+    cc$k = factor(paste0("k=",cc$k), levels=unique(paste0("k=",cc$k)))
+    cc$cluster =  factor(paste0("C",cc$cluster), levels = unique(paste0("C",cc$cluster)))
+    p = cc %>% ggplot(aes(x=cluster, y=clusterConsensus, fill=cluster)) +
+        geom_bar(stat = "identity", position=position_dodge(width=0.9)) +
+        facet_grid(.~as.factor(k), scale="free_x", space="free") +
+        theme_minimal() + theme(panel.grid = element_blank(),
+                                axis.text.x = element_blank()) +
+        scale_fill_manual(values=unique(colors)) + ylab("Consensus Score")
+
+    return(p)
 }

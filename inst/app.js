@@ -14,60 +14,38 @@ $(document).ready(function() {
             
           },
           {
-            element: '#new_dataset_name',
+            element: '#new_analysis_name',
             intro:'Give a name to your analysis & select a reference genome (hg38 or mm10).',
             position:'auto'},
           {
-            element:'#datafile_matrix_progress',
-            intro:'Browse your computer to upload one or multiple matrice(s). The matrices should be tab-separated and in .tsv or .txt format. The first column must be cell-barcode names, the first row must be  genomic location (chr:start-end) or gene name. The matrices must all be placed in the same folder and uploaded simultaneously.',position:'auto'},{step:5,element:'#compile_dataset',
-            intro:'Click here to load & compile your dataset.',
+            element:document.getElementsByClassName("input-group-btn")[0],
+            intro:'Browse your computer to upload one or multiple matrice(s). The matrices should be tab-separated and in .tsv or .txt format. The first column must be cell-barcode names, the first row must be  genomic location (chr:start-end) or gene name. The matrices must all be placed in the same folder and uploaded simultaneously.',position:'auto'},
+          {
+            element:'#create_analysis',
+            intro:'Click here to create analysis & upload the selected matrices.',
             position:'auto'},
           {
-            element:'#selected_raw_dataset',
-            intro:'All compiled raw dataset will appear here.',
+            element:'#selected_analysis',
+            intro:'All the analysis you created in the output directory will be available here.',
             position:'auto'},
-          {
-            element:'#table_QC_filt_box',
-            intro:'Adjust filtering parameters. If you try multiple combinations of parameters, all the results will be saved to allow you to select the optimal combination of parameter for your datasets.  You can first try with default parameters.',
-            position:'auto'},
-          {
-            element:'#exclude_regions',
-            intro:'If your samples contain known amplified / deleted regions, you might want to exclude some of the regions by uploading a BED file of those regions.',
-            position:'auto'},
-          {
-            element:'#do_batch_corr',
-            intro:'If you observe strong differences between known batch, you might want to specify to which batches each sample belongs and perform batch correction (using fastMNN algorithm from scran).',
-            position:'auto'},
-          {
-            element:'#dim_reduction',
-            intro:'Click here to perform QC filtering, and you are good to go !',
-            position:'auto'
-            
-          },
-          {
-            element:'#selected_reduced_dataset',
-            intro:'All the datasets you already filtered will be available here. Select the filtered dataset of your choice and continue to all the steps one by one.',
-            position:'auto'
-            
-          },
           {
             element: tabs[1],
-            intro: "<b>Dimensionality Reduction:</b> <br> On this tab, you will be able to vizualize your cells in different feature spaces: PCA, T-SNE or UMAP space.",
+            intro: "<b>Filter & Normalize:</b> <br> On this tab, you will apply various filters to remove lowly covered cells, also normalize and reduce dimensions of your dataset.",
             position: 'right'
           },
           {
             element: tabs[2],
-            intro: "<b>Correlation Clustering:</b> <br> Some of the cells are not correlated with enough other cells and will disturb clustering, filter them out in this tab.",
+            intro: "<b>Visualize Cells:</b> In this tab, you can visualize cells dispersion in reduced feature space by methods such as PCA, UMAP or TSNE.<br> ",
             position: 'right'
           },
           {
             element: tabs[3],
-            intro: "<b>Consensus Clustering:</b> <br> Cluster your cells in an unsupervised manner to find the optimal number of epigenomic subpopulations.",
+            intro: "<b>Cluster Cells:</b> <br> Cluster your cells in an unsupervised manner to find the optimal number of epigenomic subpopulations. Optionally filter lowly correlated cells before clustering.",
             position: 'right'
           },
           {
             element: tabs[4],
-            intro: "<b>Peak Calling:</b> <br> This tab is reserved for advanced users on a Unix machine that have installed MACS2 & samtools. Using BAM sequencing files as input for peak calling of each cell cluster, this allows to refine the annotation of genes to genomic bins.",
+            intro: "<b>Peak Call:</b> <br> This tab is reserved for advanced users on a Unix machine that have installed MACS2 & samtools. Using BAM sequencing files as input for peak calling of each cell cluster, this allows to refine the annotation of genes to genomic bins.",
             position: 'right'
           },
           {
