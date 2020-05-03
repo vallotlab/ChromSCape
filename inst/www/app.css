@@ -17,3 +17,9 @@
   -webkit-justify-content: center;
   justify-content: center;
 }
+
+.introjs-helperNumberLayer {
+    font-size: 15px;
+    width: 30px;
+    height: 30px;
+}

@@ -131,7 +131,7 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 50, corr_threshold
     hc_cor_cor_filtered$labels = rep("", length(hc_cor_cor_filtered$labels))
     scExp@metadata$hc_cor = hc_cor_cor_filtered
     
-    scExp@metadata$limitC = limitC_mean
+    scExp@metadata$limitC = limitC_mean #specific to filtered scExp
     
     return(scExp)
 }
@@ -309,24 +309,35 @@ consensus_clustering_scExp <- function(scExp, prefix = NULL, maxK = 10, reps = 1
 #' @importFrom Matrix t
 #' @importFrom stats hclust as.dist
 
-choose_cluster_scExp <- function(scExp, nclust = 3, hc_linkage = "ward.D")
+choose_cluster_scExp <- function(scExp, nclust = 3, consensus = T, hc_linkage = "ward.D")
 {
     
-    stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(nclust), is.character(hc_linkage))
+    stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(nclust),
+              is.logical(consensus), is.character(hc_linkage))
     
     if (is.null(SingleCellExperiment::reducedDim(scExp, "PCA"))) 
         stop("ChromSCape::choose_cluster_scExp - No PCA, run reduced_dim before filtering.")
     
-    if (!"consclust" %in% names(scExp@metadata)) 
+    if(consensus & !"consclust" %in% names(scExp@metadata)) 
         stop("ChromSCape::choose_cluster_scExp - No consclust, run consensus_clustering_scExp before choosing cluster.")
     
-    if (!"icl" %in% names(scExp@metadata)) 
+    if (consensus & !"icl" %in% names(scExp@metadata)) 
         stop("ChromSCape::choose_cluster_scExp - No icl, run consensus_clustering_scExp before choosing cluster.")
     
     pca_t = as.data.frame(Matrix::t(SingleCellExperiment::reducedDim(scExp, "PCA")))
     pca_t_ordered = pca_t[, scExp@metadata$hc_cor$order]
     
-    cell_clusters = scExp@metadata$consclust[[nclust]]$consensusClass
+    print("Choosing cluster - consensus ?")
+    print(consensus)
+    if(consensus) 
+        cell_clusters = scExp@metadata$consclust[[nclust]]$consensusClass[as.character(scExp$cell_id)]
+    else {
+        cell_clusters = stats::cutree(scExp@metadata$hc_cor, k = nclust)
+        names(cell_clusters) = colData(scExp)$cell_id
+    }
+    
+    print(dim(scExp))
+    print(length(cell_clusters))
     SummarizedExperiment::colData(scExp)[, "chromatin_group"] = paste("C", cell_clusters, 
         sep = "")
     
@@ -339,9 +350,13 @@ choose_cluster_scExp <- function(scExp, nclust = 3, hc_linkage = "ward.D")
     scExp = colors_scExp(scExp = scExp, annotCol = "chromatin_group", color_by = "chromatin_group", 
         color_df = NULL)
     
-    SingleCellExperiment::reducedDim(scExp, "ConsensusAssociation") = scExp@metadata$consclust[[nclust]]$ml
-    scExp@metadata$hc_consensus_association = stats::hclust(stats::as.dist(1 - SingleCellExperiment::reducedDim(scExp, 
-        "ConsensusAssociation")), method = "ward.D")
+    if(consensus){
+        ml  =  scExp@metadata$consclust[[nclust]]$ml
+        rownames(ml) = colnames(ml) = names(scExp@metadata$consclust[[2]]$consensusClass)
+        SingleCellExperiment::reducedDim(scExp, "ConsensusAssociation") = ml[as.character(scExp$cell_id),as.character(scExp$cell_id)]
+        scExp@metadata$hc_consensus_association = stats::hclust(stats::as.dist(1 - SingleCellExperiment::reducedDim(scExp, 
+        "ConsensusAssociation")), method = hc_linkage)
+    }
     
     return(scExp)
 }

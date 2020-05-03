@@ -11,10 +11,9 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                               shinydashboard::sidebarMenu(id="tabs", style = "position: fixed; overflow: visible;",
                                           shinydashboard::menuItem("Select & Import", tabName = "select_import", icon=icon("upload")),
                                           shinydashboard::menuItem("Filter & Normalize", tabName = "filter_normalize", icon=icon("fas fa-filter")),
-                                          shinydashboard::menuItem("Vizualizing Cells", tabName = "vizualize_dim_red", icon=icon("fas fa-image")),
-                                          shinydashboard::menuItem("Correlation clustering", tabName = "cor_clustering", icon=icon("sitemap")),
-                                          shinydashboard::menuItem("Consensus clustering", tabName = "cons_clustering", icon=icon("th")),
-                                          shinydashboard::menuItem("Peak calling", tabName = "peak_calling", icon=icon("chart-area")), #mountain
+                                          shinydashboard::menuItem("Vizualize Cells", tabName = "vizualize_dim_red", icon=icon("fas fa-image")),
+                                          shinydashboard::menuItem("Cluster Cells", tabName = "cons_clustering", icon=icon("th")),
+                                          shinydashboard::menuItem("Peak Call", tabName = "peak_calling", icon=icon("chart-area")), #mountain
                                           shinydashboard::menuItem("Differential analysis", tabName = "diff_analysis", icon=icon("chart-bar")),
                                           shinydashboard::menuItem("Enrichment analysis", tabName = "enrich_analysis", icon=icon("code-branch")),
                                           shinydashboard::menuItem("Close App & Save Analysis", tabName = "close_and_save", icon=icon("close"))
@@ -81,7 +80,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                                               content = "datamatrix_input"),
                                                                       fileInput("datafile_matrix", "Upload all data matrices (.txt or .tsv) :",
                                                                                 multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv")),
-                                                                      actionButton("create_analysis", "Create analysis"))),
+                                                                      actionButton("create_analysis", "Create analysis")))
                                     ),
                                     column(width=6, align="right",
                                            actionButton("startHelp","Help", icon = icon("question-circle"))),
@@ -91,7 +90,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                            column(width=12,
                                            shinydashboard::box(title="Select Analysis", width = NULL, status="success", solidHeader=T,
                                                                column(12, align="left",
-                                                                      uiOutput("selected_analysis"),
+                                                                      uiOutput("selected_analysis")
                                                                ))
                                            )
                                     )
@@ -177,74 +176,61 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                          shinydashboard::box(title="UMAP visualization", width = NULL, status="success", solidHeader=T,
                                                              column(12, align="left", plotly::plotlyOutput("umap_plot") %>%
                                                                         shinyhelper::helper(type = 'markdown', icon ="info-circle",
-                                                                                            content = "umap_plot"))),
+                                                                                            content = "umap_plot")))
                                          )
                                 )
                         ),
                         
-                        ###############################################################
-                        # 3. Correlation clustering
-                        ###############################################################
-                        
-                        shinydashboard::tabItem(tabName = "cor_clustering",
-                                fluidPage(
-                                  column(width=6,
-                                         shinydashboard::box(title="Correlation Heatmap & clustering table", width=NULL, status="success", solidHeader=T,
-                                             column(12, align="center", plotOutput("corr_clust_pca_plot", height=500, width=500) %>%
-                                                        shinyhelper::helper(type = 'markdown', icon ="info-circle",
-                                                                            content = "correlation_clustering")),
-                                             column(12, align="left", 
-                                                    downloadButton("download_cor_clust_plot", "Download image"), br()),
-                                             column(12, align="left", 
-                                                    tableOutput('num_cell_before_cor_filt'))
-                                             )),
-                                
-                                column(width=6,
-                                         shinydashboard::box(title="Data filtering based on inter-cell correlation", width=NULL, status="warning", solidHeader=T,
-                                             column(12, align="left", plotOutput("cell_cor_hist_plot", height=300, width=500) %>%
-                                                        shinyhelper::helper(type = 'markdown', icon ="info-circle",
-                                                                            content = "filter_correlation_distrib"),
-                                                    downloadButton("download_cor_clust_hist_plot", "Download image"),
-                                                    hr(),
-                                                    sliderInput("corr_threshold", "correlation threshold quantile:", min=75, max=99, value=99, step=1),
-                                                    sliderInput("percent_correlation", "min percent correlation of cells to others in data set:", min=0, max=15, value=1, step=0.25)),
-                                             column(3, align="left", br(),
-                                                    actionButton("filter_corr_cells", "Filter & save")),
-                                             ),
-                                       uiOutput("corr_filtered_hist")
-                                       ))
-                        ),
                         
                         ###############################################################
                         # 4. Consensus clustering on correlated cells
                         ###############################################################
-                        
+                               
                         shinydashboard::tabItem(tabName = "cons_clustering",
                                 fluidPage(
                                   column(width=6,
-                                         shinydashboard::box(title="Selection of filtered dataset", width=NULL, status="warning",
-                                                             solidHeader=T,
-                                             column(12, align="left", htmlOutput("selected_filtered_dataset"),
-                                                    textOutput("filtered_data_selection_format"))),
-                                         shinydashboard::box(title="Clustering results", width=NULL, status="warning", solidHeader=T,
-                                             column(4, align="left", actionButton("do_cons_clust", "Perform clustering"),
-                                                    br()),
-                                             column(12, align="left", textOutput("cluster_consensus_info"),
-                                                    br())
-                                             ),
-                                         shinydashboard::box(title="Clustering results", width=NULL, status="success", solidHeader=T,
-                                             column(12, align="left", uiOutput("cluster_consensus_png")),
-                                             column(12, align="left", uiOutput("cons_clust_pdf")))),
+                                         shinydashboard::box(title="Clustering", width=NULL, status="warning", solidHeader=T,
+                                                             column(4, align="left", selectInput("nclust", br("Select number of clusters:"), choices=c(2:10))),
+                                                             shinydashboard::tabBox(
+                                                                 side = "left", width = 12,
+                                                                 title = "",
+                                                                 tabPanel(title = tagList(shiny::icon("cube"),"Hierarchical Clustering"),
+                                                                          column(12, align ="center",                                                                          plotOutput("corr_clust_pca_plot", height=500, width=500) %>%
+                                                                              shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                                                  content = "correlation_clustering"))
+                                                                 ),
+                                                                 tabPanel(title = tagList(shiny::icon("cubes"),
+                                                                                         "Consensus Hierarchical Clustering"),
+                                                                          column(12, actionButton("do_cons_clust", "Launch Consensus Clustering"),
+                                                                          br()),
+                                                                          column(12, align="left", uiOutput("cluster_consensus_plot")),
+                                                                          column(12,hr()),
+                                                                          column(12, align="left", uiOutput("cons_clust_pdf"))
+                                                                 )
+                                                             )
+                                         ),
+                                         shinydashboard::box(title="Filter lowly correlated cells", width=NULL, status="warning", solidHeader=T,
+                                                             collapsible = T, collapsed = T,
+                                                             column(12, align="center",
+                                                                    plotOutput("cell_cor_hist_plot", height=300, width=500) %>%
+                                                                        shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                                            content = "filter_correlation_distrib")),
+                                                             column(12, align = "left",
+                                                                    hr(),
+                                                                    sliderInput("corr_threshold", "correlation threshold quantile:", min=75, max=99, value=99, step=1),
+                                                                    sliderInput("percent_correlation", "min percent correlation of cells to others in data set:", min=0, max=15, value=1, step=0.25)),
+                                                             column(3, align="left", br(),
+                                                                    actionButton("filter_corr_cells", "Filter & save")),
+                                                             column(12,  uiOutput("table_cor_filtered")
+                                                             )
+                                         )
+                                  ),
+   
                                   column(width=6,
-                                         shinydashboard::box(title="Choose number of cluster", width=NULL, status="warning", solidHeader=T,
-                                             column(5, align="left", selectInput("nclust", "Select number of clusters:", choices=c(2:10))),
-                                             column(3, align="left", br(),
-                                                    actionButton("choose_cluster", "Select & visualize")),
-                                             column(12, align="left", textOutput("nclust_selection_info"))),
                                          uiOutput("anno_cc_box"),
-                                         uiOutput("anno_corc_box"),
-                                         uiOutput("tsne_box_cf"),
+                                         uiOutput("contingency_table_cluster"),
                                          uiOutput("umap_box_cf"),
+                                         uiOutput("tsne_box_cf"),
                                          uiOutput("color_box_cf")))
                         ),
                         
