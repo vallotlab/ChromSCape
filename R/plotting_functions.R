@@ -196,7 +196,8 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (grDevices
     
     anocol = as.matrix(SingleCellExperiment::colData(scExp)[, grep("_color", colnames(SingleCellExperiment::colData(scExp))), 
         drop = F])
-    
+    colnames(anocol) = gsub("_color","",colnames(anocol))
+
     geco.hclustAnnotHeatmapPlot(x = SingleCellExperiment::reducedDim(scExp, "Cor")[scExp@metadata[[name_hc]]$order, 
         scExp@metadata[[name_hc]]$order], hc = scExp@metadata[[name_hc]], hmColors = corColors, 
         anocol = as.matrix(anocol[scExp@metadata[[name_hc]]$order, ]), xpos = c(0.15, 
@@ -234,36 +235,36 @@ plot_differential_summary_scExp <- function(scExp_cf)
 #' Differential H1 distribution plot
 #'
 #' @param scExp_cf 
-#' @param chromatin_group 
+#' @param cell_cluster 
 #'
 #' @return
 #' @export
 #'
 #' @examples
-plot_differential_H1_scExp <- function(scExp_cf, chromatin_group = "C1")
+plot_differential_H1_scExp <- function(scExp_cf, cell_cluster = "C1")
 {
     
     # make a variety of sanity check
-    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(chromatin_group))
+    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(cell_cluster))
     if (is.null(scExp_cf@metadata$diff)) 
         stop("ChromSCape::differential_H1_plot_scExp - No DA, please run differential_analysis_scExp first.")
     
-    if (!chromatin_group %in% scExp_cf@metadata$diff$groups) 
+    if (!cell_cluster %in% scExp_cf@metadata$diff$groups) 
         stop("ChromSCape::differential_H1_plot_scExp - Chromatin group specified doesn't correspond to differential 
          analysis, please rerun run_differential_analysis_scExp first with correct parameters.")
     
     res = scExp_cf@metadata$diff$res
     
-    tmp <- geco.H1proportion(res[, paste("pval", chromatin_group, sep = ".")])
-    hist(res[, paste("pval", chromatin_group, sep = ".")], breaks = seq(0, 1, by = 0.05), 
-        xlab = "P-value", ylab = "Frequency", main = paste(chromatin_group, "vs the rest", 
+    tmp <- geco.H1proportion(res[, paste("pval", cell_cluster, sep = ".")])
+    hist(res[, paste("pval", cell_cluster, sep = ".")], breaks = seq(0, 1, by = 0.05), 
+        xlab = "P-value", ylab = "Frequency", main = paste(cell_cluster, "vs the rest", 
             "\n", "H1 proportion:", round(tmp, 3)))
 }
 
 #' Volcano plot of differential features
 #'
 #' @param scExp_cf 
-#' @param chromatin_group 
+#' @param cell_cluster 
 #' @param cdiff.th 
 #' @param qval.th 
 #'
@@ -271,18 +272,18 @@ plot_differential_H1_scExp <- function(scExp_cf, chromatin_group = "C1")
 #' @export
 #'
 #' @examples
-plot_differential_volcano_scExp <- function(scExp_cf, chromatin_group = "C1", cdiff.th = 1, 
+plot_differential_volcano_scExp <- function(scExp_cf, cell_cluster = "C1", cdiff.th = 1, 
     qval.th = 0.01)
     {
     
     # make a variety of sanity check
-    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(chromatin_group), 
+    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(cell_cluster), 
         is.numeric(qval.th), is.numeric(cdiff.th))
     
     if (is.null(scExp_cf@metadata$diff)) 
         stop("ChromSCape::differential_volcano_plot_scExp - No DA, please run differential_analysis_scExp first.")
     
-    if (!chromatin_group %in% scExp_cf@metadata$diff$groups) 
+    if (!cell_cluster %in% scExp_cf@metadata$diff$groups) 
         stop("ChromSCape::differential_volcano_plot_scExp - Chromatin group specified doesn't correspond to differential 
          analysis, please rerun differential_analysis_scExp first with correct parameters.")
     
@@ -290,15 +291,15 @@ plot_differential_volcano_scExp <- function(scExp_cf, chromatin_group = "C1", cd
     summary = scExp_cf@metadata$diff$summary
     
     mycol <- rep("black", nrow(res))
-    mycol[which(res[, paste("qval", chromatin_group, sep = ".")] <= qval.th & res[, 
-        paste("cdiff", chromatin_group, sep = ".")] > cdiff.th)] <- "red"
-    mycol[which(res[, paste("qval", chromatin_group, sep = ".")] <= qval.th & res[, 
-        paste("cdiff", chromatin_group, sep = ".")] < -cdiff.th)] <- "forestgreen"
-    plot(res[, paste("cdiff", chromatin_group, sep = ".")], -log10(res[, paste("qval", 
-        chromatin_group, sep = ".")]), col = mycol, cex = 0.7, pch = 16, xlab = "count difference", 
-        ylab = "-log10(adjusted p-value)", las = 1, main = paste(chromatin_group, 
-            "vs the rest", "\n", summary["over", chromatin_group], "enriched,", summary["under", 
-                chromatin_group], "depleted"))
+    mycol[which(res[, paste("qval", cell_cluster, sep = ".")] <= qval.th & res[, 
+        paste("cdiff", cell_cluster, sep = ".")] > cdiff.th)] <- "red"
+    mycol[which(res[, paste("qval", cell_cluster, sep = ".")] <= qval.th & res[, 
+        paste("cdiff", cell_cluster, sep = ".")] < -cdiff.th)] <- "forestgreen"
+    plot(res[, paste("cdiff", cell_cluster, sep = ".")], -log10(res[, paste("qval", 
+        cell_cluster, sep = ".")]), col = mycol, cex = 0.7, pch = 16, xlab = "count difference", 
+        ylab = "-log10(adjusted p-value)", las = 1, main = paste(cell_cluster, 
+            "vs the rest", "\n", summary["over", cell_cluster], "enriched,", summary["under", 
+                cell_cluster], "depleted"))
     abline(v = cdiff.th, lty = 2)
     abline(h = -log10(qval.th), lty = 2)
     abline(v = -cdiff.th, lty = 2)

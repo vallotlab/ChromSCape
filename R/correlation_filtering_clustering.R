@@ -338,7 +338,7 @@ choose_cluster_scExp <- function(scExp, nclust = 3, consensus = T, hc_linkage = 
     
     print(dim(scExp))
     print(length(cell_clusters))
-    SummarizedExperiment::colData(scExp)[, "chromatin_group"] = paste("C", cell_clusters, 
+    SummarizedExperiment::colData(scExp)[, "cell_cluster"] = paste("C", cell_clusters, 
         sep = "")
     
     cell_clusters_list <- lapply(unique(cell_clusters), function(z) names(which(cell_clusters == 
@@ -347,7 +347,7 @@ choose_cluster_scExp <- function(scExp, nclust = 3, consensus = T, hc_linkage = 
     mat.cc <- geco.groupMat(pca_t, margin = 1, groups = cell_clusters_list, method = "mean")
     hcc <- stats::hclust(geco.distPearson(Matrix::t(mat.cc)), method = hc_linkage)
     
-    scExp = colors_scExp(scExp = scExp, annotCol = "chromatin_group", color_by = "chromatin_group", 
+    scExp = colors_scExp(scExp = scExp, annotCol = "cell_cluster", color_by = "cell_cluster", 
         color_df = NULL)
     
     if(consensus){
@@ -380,7 +380,7 @@ num_cell_in_cluster_scExp <- function(scExp)
     stopifnot(is(scExp, "SingleCellExperiment"))
     
     table_raw <- as.data.frame.matrix(table(as.data.frame(SingleCellExperiment::colData(scExp))[, 
-        c("chromatin_group", "sample_id")]))
+        c("cell_cluster", "sample_id")]))
     
     # Overall goodness of fit testing : how fairly are cells allocated between the
     # clusters ?
