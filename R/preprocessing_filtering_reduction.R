@@ -197,13 +197,14 @@ import_scExp <- function(file_names,
                          ){
     
     stopifnot(is.character(file_names))
-    
+    print(file_names)
+    print(path_to_matrix)
     if(length(grep("(.tsv$)|(.txt$)",file_names)) < length(file_names))
         stop(paste0("ChromSCape::import_scExp - Matrix files must be in .txt or .tsv format."))
     
     if(is.null(path_to_matrix)) path_to_matrix = file_names
     
-    if( FALSE %in% sapply(file_names,file.exists)) 
+    if( FALSE %in% sapply(path_to_matrix,file.exists)) 
         stop(paste0("ChromSCape::import_scExp - can't find one of the matrix files."))
     
     datamatrix = annot_raw = NULL
