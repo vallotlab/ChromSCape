@@ -686,9 +686,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       myData = new.env()
       load(filename, envir = myData)
       scExp_cf(myData$data$scExp_cf)
-      if("chromatin_group" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
+      if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
         updateSelectInput(session, inputId = "nclust", label = "Select number of clusters:", choices=c(2:10),
-                            selected = dplyr::n_distinct(SummarizedExperiment::colData(scExp_cf())$chromatin_group))
+                            selected = dplyr::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster))
       }
     } else {
       NULL
@@ -799,7 +799,7 @@ output$anno_cc_box <- renderUI({
   
   output$contingency_table_cluster <- renderUI({
     if(! is.null(scExp_cf())){
-      if("chromatin_group" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
+      if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
         shinydashboard::box(title="Samples & Cluster table", width = NULL, status="success", solidHeader = T,
             column(12, align="left", tableOutput("hcor_kable")),
             column(5,offset = 2, align="left", htmlOutput("chi_info"),br())
@@ -812,7 +812,7 @@ output$anno_cc_box <- renderUI({
   output$hcor_kable <- function(){
     req(scExp_cf())
     if(! is.null(scExp_cf())){
-      if("chromatin_group" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
+      if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
         num_cell_in_cluster_scExp(scExp_cf())
       } else{
         NULL
@@ -858,14 +858,14 @@ output$anno_cc_box <- renderUI({
   output$umap_box_cf <- renderUI({
     if(! is.null(scExp_cf())){
       print("Umap color box")
-      print("chromatin_group" %in% colnames(SummarizedExperiment::colData(scExp_cf())))
-      if("chromatin_group" %in% colnames(SummarizedExperiment::colData(scExp_cf())) ){
+      print("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf())))
+      if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf())) ){
         shinydashboard::box(title="Vizualisation in reduced dimensions", width = NULL, status="success", solidHeader = T,
                             column(6, align="left",
                                    selectInput("color_by_cf", "Color by",
-                                               selected = "chromatin_group",
+                                               selected = "cell_cluster",
                                                choices = c('sample_id', 'total_counts',
-                                                           'chromatin_group','batch_id'))),
+                                                           'cell_cluster','batch_id'))),
                             column(12, align="left", plotly::plotlyOutput("umap_plot_cf")))
       }
     }
@@ -874,7 +874,7 @@ output$anno_cc_box <- renderUI({
   output$color_box_cf <- renderUI({
     req(input$color_by_cf)
     if(! is.null(scExp_cf())){
-      if("chromatin_group" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
+      if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
         if(input$color_by_cf != 'total_counts'){
           shinydashboard::box(title=tagList("Color settings ",shiny::icon("palette")), width = NULL, status = "warning", solidHeader = T,
                               column(6, htmlOutput("color_picker_cf")),
@@ -921,7 +921,7 @@ output$anno_cc_box <- renderUI({
   },
   {
     if(length(selected_filtered_dataset())>0 & !is.null(scExp_cf())){
-      if("chromatin_group" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
+      if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
         unlocked$list$affectation = T
       } else {
         unlocked$list$affectation = F
@@ -964,7 +964,7 @@ output$anno_cc_box <- renderUI({
     }
     })
   output$pc_k_selection <- renderText({
-    paste0( "Number of clusters selected  = ", dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$chromatin_group))
+    paste0( "Number of clusters selected  = ", dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster))
   })
   
   output$bam_upload <- renderUI({
@@ -1072,7 +1072,7 @@ output$anno_cc_box <- renderUI({
     go to this page and first perform the clustering, then select the preferred number of clusters in the box on the right in order to display and save the data. 
     It will then appear here for selection."})
   output$selected_k <- renderText({
-    paste0( "Number of clusters selected  = ", dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$chromatin_group))
+    paste0( "Number of clusters selected  = ", dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster))
   })
   output$contrib_hist <- renderUI({ if(input$only_contrib_cells){ plotOutput("contrib_hist_p", height = 250, width = 500) }})
   output$contrib_hist_p <- renderPlot(contrib_hist_plot())
@@ -1216,7 +1216,7 @@ output$anno_cc_box <- renderUI({
   output$da_volcano <- renderPlot({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
-        plot_differential_volcano_scExp(scExp_cf(),chromatin_group = input$gpsamp,
+        plot_differential_volcano_scExp(scExp_cf(),cell_cluster = input$gpsamp,
                                         cdiff.th = input$cdiff.th, qval.th = input$qval.th)
       }
     }
@@ -1226,7 +1226,7 @@ output$anno_cc_box <- renderUI({
     filename = function(){ paste0("diffAnalysis_numRegions_barplot_", selected_filtered_dataset(), "_", input$selected_k, "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, "_", input$gpsamp, ".png")},
         content = function(file){
         grDevices::png(file, width = 900, height = 900, res = 300)
-          plot_differential_volcano_scExp(scExp_cf(),chromatin_group = input$gpsamp,
+          plot_differential_volcano_scExp(scExp_cf(),cell_cluster = input$gpsamp,
                                           cdiff.th = input$cdiff.th, qval.th = input$qval.th)
         grDevices::dev.off()
     })
@@ -1324,7 +1324,7 @@ output$anno_cc_box <- renderUI({
   output$all_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr) && !is.null(input$enr_clust_sel) && !is.null(input$enr_class_sel)){
-        table_enriched_genes_scExp(scExp_cf(),set = "Both", chromatin_group = input$enr_clust_sel, input$enr_class_sel)
+        table_enriched_genes_scExp(scExp_cf(),set = "Both", cell_cluster = input$enr_clust_sel, input$enr_class_sel)
       }
     }
   })
@@ -1332,7 +1332,7 @@ output$anno_cc_box <- renderUI({
   output$over_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
-        table_enriched_genes_scExp(scExp_cf(), set = "Overexpressed", chromatin_group = input$enr_clust_sel, input$enr_class_sel)
+        table_enriched_genes_scExp(scExp_cf(), set = "Overexpressed", cell_cluster = input$enr_clust_sel, input$enr_class_sel)
       }
     }
   })
@@ -1340,7 +1340,7 @@ output$anno_cc_box <- renderUI({
   output$under_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
-        table_enriched_genes_scExp(scExp_cf(), set = "Underexpressed", chromatin_group = input$enr_clust_sel, input$enr_class_sel)
+        table_enriched_genes_scExp(scExp_cf(), set = "Underexpressed", cell_cluster = input$enr_clust_sel, input$enr_class_sel)
       }
     }
   })
@@ -1400,7 +1400,7 @@ output$anno_cc_box <- renderUI({
       p <- ggplot(as.data.frame(SingleCellExperiment::reducedDim(scExp_cf(), "TSNE")),
                   aes(x = Component_1, y = Component_2)) +
         geom_point(alpha = 0.5, aes(color = SingleCellExperiment::normcounts(scExp_cf())[region, ],
-                                    shape = SummarizedExperiment::colData(scExp_cf())$chromatin_group)) +
+                                    shape = SummarizedExperiment::colData(scExp_cf())$cell_cluster)) +
         labs(color="norm. count for region", shape="Cluster", x="t-SNE 1", y="t-SNE 2") +
         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
               panel.background = element_blank(), axis.line = element_line(colour="black"),

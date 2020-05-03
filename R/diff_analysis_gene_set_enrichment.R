@@ -39,7 +39,7 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest", qval.th =
     if (!de_type %in% c("one_vs_rest", "pairwise")) 
         stop("ChromSCape::run_differential_analysis_scExp - de_type must be 'one_vs_rest' or 'pairwise'.")
     
-    if (!"chromatin_group" %in% colnames(SingleCellExperiment::colData(scExp))) 
+    if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))) 
         stop("ChromSCape::run_differential_analysis_scExp - scExp object must have selected number of clusters.")
     
     if (FALSE %in% (c("chr", "start", "end") %in% colnames(SingleCellExperiment::rowData(scExp)))) 
@@ -47,7 +47,7 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest", qval.th =
     
     if (isFALSE(block)) 
         block = NULL
-    nclust = length(unique(SingleCellExperiment::colData(scExp)$chromatin_group))
+    nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
     
     counts = SingleCellExperiment::normcounts(scExp)
     feature = data.frame(ID = SingleCellExperiment::rowData(scExp)[, "ID"], chr = SingleCellExperiment::rowData(scExp)[, 
@@ -62,13 +62,13 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest", qval.th =
         # compare each cluster to all the rest
         mygps = lapply(1:nclust, function(i)
         {
-            affectation[which(affectation$chromatin_group == paste0("C", i)), "cell_id"]
+            affectation[which(affectation$cell_cluster == paste0("C", i)), "cell_id"]
         })
         names(mygps) = paste0("C", 1:nclust)
         groups = names(mygps)
         myrefs = lapply(1:nclust, function(i)
         {
-            affectation[which(affectation$chromatin_group != paste0("C", i)), "cell_id"]
+            affectation[which(affectation$cell_cluster != paste0("C", i)), "cell_id"]
         })
         names(myrefs) = paste0("notC", 1:nclust)
         refs = names(myrefs)
@@ -85,13 +85,13 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest", qval.th =
         pairs = setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("group", "ref"))
         for (i in 1:(as.integer(nclust) - 1))
         {
-            mygps = list(affectation[which(affectation$chromatin_group == paste0("C", 
+            mygps = list(affectation[which(affectation$cell_cluster == paste0("C", 
                 i)), "cell_id"])
             names(mygps) = paste0("C", i)
             groups = names(mygps)
             for (j in (i + 1):as.integer(nclust))
             {
-                myrefs = list(affectation[which(affectation$chromatin_group == paste0("C", 
+                myrefs = list(affectation[which(affectation$cell_cluster == paste0("C", 
                   j)), "cell_id"])
                 names(myrefs) = paste0("C", j)
                 refs = names(myrefs)
@@ -112,7 +112,7 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest", qval.th =
             }
         }
         # get count for last group as the loop doesn't cover it
-        tmp.gp = list(affectation[which(affectation$chromatin_group == paste0("C", 
+        tmp.gp = list(affectation[which(affectation$cell_cluster == paste0("C", 
             nclust)), "cell_id"])
         count_save[, paste0("C", nclust)] = apply(counts, 1, function(x) mean(x[as.character(tmp.gp[[1]])]))
         combinedTests = scran::combineMarkers(de.lists = single_results, pairs = pairs, 
@@ -212,7 +212,7 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
     if (use_peaks & (!"refined_annotation" %in% names(scExp@metadata))) 
         stop("ChromSCape::gene_set_enrichment_analysis_scExp - When use_peaks is TRUE, metadata must contain refined_annotation object.")
     
-    if (!"chromatin_group" %in% colnames(SingleCellExperiment::colData(scExp))) 
+    if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))) 
         stop("ChromSCape::gene_set_enrichment_analysis_scExp - scExp object must have selected number of clusters.")
     
     if ((!ref %in% c("hg38", "mm10")) & (is.null(GeneSets) | is.null(GeneSetsDf) | 
@@ -240,7 +240,7 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
         GenePool = unique(as.character(GenePool[, "gene"]))
     }
     
-    nclust = length(unique(SingleCellExperiment::colData(scExp)$chromatin_group))
+    nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
     
     enr = list(Both = NULL, Overexpressed = NULL, Underexpressed = NULL)
     
@@ -354,7 +354,7 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
 #'
 #' @param scExp  A SingleCellExperiment object containing list of enriched gene sets.
 #' @param set A character vector, either 'Both', 'Overexpressed' or 'Underexpressed'. ['Both']
-#' @param chromatin_group Cell cluster. ['C1']
+#' @param cell_cluster Cell cluster. ['C1']
 #' @param enr_class_sel Which classes of gene sets to show. [c('c1_positional', 'c2_curated', ...)]
 #'
 #' @return A DT::data.table of enriched gene sets.
@@ -362,12 +362,12 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
 #'
 #' @importFrom DT datatable
 #' @importFrom tidyr unite
-table_enriched_genes_scExp <- function(scExp, set = "Both", chromatin_group = "C1", 
+table_enriched_genes_scExp <- function(scExp, set = "Both", cell_cluster = "C1", 
     enr_class_sel = c("c1_positional", "c2_curated", "c3_motif", "c4_computational", 
         "c5_GO", "c6_oncogenic", "c7_immunologic", "hallmark"))
         {
     
-    stopifnot(is(scExp, "SingleCellExperiment"), is.character(set), is.character(chromatin_group), 
+    stopifnot(is(scExp, "SingleCellExperiment"), is.character(set), is.character(cell_cluster), 
         is.character(enr_class_sel))
     
     if (is.null(scExp@metadata$enr)) 
@@ -376,11 +376,11 @@ table_enriched_genes_scExp <- function(scExp, set = "Both", chromatin_group = "C
     if (!set %in% c("Both", "Overexpressed", "Underexpressed")) 
         stop("ChromSCape::table_enriched_genes_scExp - set variable must be 'Both', 'Overexpressed' or 'Underexpressed'.")
     
-    if (!chromatin_group %in% scExp@metadata$diff$groups) 
+    if (!cell_cluster %in% scExp@metadata$diff$groups) 
         stop("ChromSCape::table_enriched_genes_scExp - No GSEA, please run gene_set_enrichment_analysis_scExp first.")
     
     
-    table <- scExp@metadata$enr[[set]][[match(chromatin_group, scExp@metadata$diff$groups)]]
+    table <- scExp@metadata$enr[[set]][[match(cell_cluster, scExp@metadata$diff$groups)]]
     table <- table[which(table[, "Class"] %in% enr_class_sel), ]
     if (is.null(table))
     {
