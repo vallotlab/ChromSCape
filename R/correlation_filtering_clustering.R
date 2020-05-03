@@ -407,7 +407,7 @@ num_cell_in_cluster_scExp <- function(scExp)
     chi_pvalues = c(chi_pvalues, "")
     
     colors_chromatin_group = col2hex(unique(SingleCellExperiment::colData(scExp)[, 
-        "chromatin_group_color"]))
+        "cell_cluster_color"]))
     colors_sample_id = col2hex(unique(SingleCellExperiment::colData(scExp)[, "sample_id_color"]))
     
     tab <- rbind(tab, colSums(table_raw))

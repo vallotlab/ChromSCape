@@ -107,7 +107,6 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                     #Right Panel
                                                     column(width=6,
                                                            shinydashboard::box(title="Filter & Normalize panel", width = NULL, status="warning", solidHeader=T,
-                                                                               column(4, align="left"),
                                                                                column(8, align="left",
                                                                                       sliderInput("coverage_bins", "modify bin size of histogram :",
                                                                                                   min=5, max=100, value=50, step=5)),

@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotting_functions.R
 \name{col2hex}
 \alias{col2hex}
-\title{Title}
+\title{Col2Hex}
 \usage{
 col2hex(cname)
 }
@@ -13,5 +13,5 @@ col2hex(cname)
 
 }
 \description{
-Title
+Transform character color to hexadecimal color code.
 }

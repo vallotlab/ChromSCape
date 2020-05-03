@@ -4,12 +4,12 @@
 \alias{plot_differential_H1_scExp}
 \title{Differential H1 distribution plot}
 \usage{
-plot_differential_H1_scExp(scExp_cf, chromatin_group = "C1")
+plot_differential_H1_scExp(scExp_cf, cell_cluster = "C1")
 }
 \arguments{
 \item{scExp_cf}{}
 
-\item{chromatin_group}{}
+\item{cell_cluster}{}
 }
 \value{
 
