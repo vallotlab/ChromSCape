@@ -7,7 +7,7 @@
 table_enriched_genes_scExp(
   scExp,
   set = "Both",
-  chromatin_group = "C1",
+  cell_cluster = "C1",
   enr_class_sel = c("c1_positional", "c2_curated", "c3_motif", "c4_computational",
     "c5_GO", "c6_oncogenic", "c7_immunologic", "hallmark")
 )
@@ -17,7 +17,7 @@ table_enriched_genes_scExp(
 
 \item{set}{A character vector, either 'Both', 'Overexpressed' or 'Underexpressed'. ['Both']}
 
-\item{chromatin_group}{Cell cluster. ['C1']}
+\item{cell_cluster}{Cell cluster. ['C1']}
 
 \item{enr_class_sel}{Which classes of gene sets to show. [c('c1_positional', 'c2_curated', ...)]}
 }

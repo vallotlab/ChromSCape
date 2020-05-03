@@ -176,7 +176,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "diff_analysis_GSEA"))
       write.table(input$annotation, file.path(init$data_folder, 'ChromSCape_analyses', input$new_analysis_name, 'annotation.txt'), row.names = FALSE, col.names = FALSE, quote = FALSE)
       incProgress(0.3, detail="reading data matrices")
-
+  
       for(i in 1:dim(input$datafile_matrix)[1]){
         print(input$datafile_matrix$datapath[i])
         datamatrix_single <- scater::readSparseCounts(input$datafile_matrix$datapath[i], sep="\t")
@@ -764,7 +764,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 output$cons_clust_anno_plot <- renderPlot({
   if(! is.null(scExp_cf())){
     if("ConsensusAssociation" %in% names(scExp_cf()@metadata)){
-      colors <- SummarizedExperiment::colData(scExp_cf())[scExp_cf()@metadata$hc_consensus_association$order,"chromatin_group_color"]
+      colors <- SummarizedExperiment::colData(scExp_cf())[scExp_cf()@metadata$hc_consensus_association$order,"cell_cluster_color"]
       heatmap(SingleCellExperiment::reducedDim(scExp_cf(),"ConsensusAssociation")[scExp_cf()@metadata$hc_consensus_association$order,],
               Colv = as.dendrogram(scExp_cf()@metadata$hc_consensus_association),
               Rowv = NA, symm = FALSE, scale="none", col = grDevices::colorRampPalette(c("white", "blue"))(100),
@@ -788,7 +788,7 @@ output$anno_cc_box <- renderUI({
     filename = function(){ paste0("consensus_clustering_k", input$nclust, "_", selected_filtered_dataset(), ".png")},
     content = function(file){
       grDevices::png(file, width = 1200, height = 800, res = 300)
-      colors <- SummarizedExperiment::colData(scExp_cf())[scExp_cf()@metadata$hc_consensus_association$order,"chromatin_group_color"]
+      colors <- SummarizedExperiment::colData(scExp_cf())[scExp_cf()@metadata$hc_consensus_association$order,"cell_cluster_color"]
       heatmap(SingleCellExperiment::reducedDim(scExp_cf(),"ConsensusAssociation")[scExp_cf()@metadata$hc_consensus_association$order,],
               Colv = as.dendrogram(scExp_cf()@metadata$hc_consensus_association),
               Rowv = NA, symm = FALSE, scale="none", col = colorRampPalette(c("white", "blue"))(100),

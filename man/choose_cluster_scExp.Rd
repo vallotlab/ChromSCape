@@ -4,7 +4,7 @@
 \alias{choose_cluster_scExp}
 \title{Choose a number of clusters}
 \usage{
-choose_cluster_scExp(scExp, nclust = 3, hc_linkage = "ward.D")
+choose_cluster_scExp(scExp, nclust = 3, consensus = T, hc_linkage = "ward.D")
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment object containing consclust in metadata.}

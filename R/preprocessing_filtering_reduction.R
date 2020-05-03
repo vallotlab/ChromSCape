@@ -173,6 +173,116 @@ create_scDataset_raw <- function(cells = 300,
     ))
 }
 
+
+#' Read single-cell matrix(ces) into scExp
+#'
+#' Combine one or multiple matrices together to create a sparse matrix and cell
+#' annotation data.frame.
+#' 
+#' @param file_names A character vector of file names towards single cell 
+#' epigenomic matrices (features x cells) (must be .txt / .tsv)
+#' @param path_to_matrix In case matrices are stored in temporary folder, 
+#' a character vector of path towards temporary files. [NULL]
+#'
+#' @return a list containing spa
+#'  * datamatrix: a sparseMatrix of features x cells
+#'  * annot_raw: an annotation of cells as data.frame
+#'  
+#' @export
+#'
+#' @importFrom scater readSparseCounts
+#' @examples
+import_scExp <- function(file_names,
+                         path_to_matrix = NULL
+                         ){
+    
+    stopifnot(is.character(file_names))
+    
+    if(length(grep("(.tsv$)|(.txt$)",file_names)) < length(file_names))
+        stop(paste0("ChromSCape::import_scExp - Matrix files must be in .txt or .tsv format."))
+    
+    if(is.null(path_to_matrix)) path_to_matrix = file_names
+    
+    if( FALSE %in% sapply(file_names,file.exists)) 
+        stop(paste0("ChromSCape::import_scExp - can't find one of the matrix files."))
+    
+    datamatrix = annot_raw = NULL
+    
+    for(i in 1:length(file_names)){
+        print(file_names[i])
+        sample_name <- gsub('.{4}$', '', basename(file_names[i]))
+        print(sample_name)
+        datamatrix_single <- scater::readSparseCounts(path_to_matrix[i], sep="\t")
+        gc()
+        #perform some checks on data format
+        matchingRN <- grep("[[:alnum:]]+(:|_)[[:digit:]]+(-|_)[[:digit:]]+",
+                           rownames(datamatrix_single)) # check rowname format
+        
+        if(length(matchingRN) < length(rownames(datamatrix_single))){
+            warning(paste0("ChromSCape::import_scExp - ",sample_name, " contains ",
+                           (length(rownames(datamatrix_single))-length(matchingRN)),
+                           " rownames that do not conform to the required format.
+                           Please check your data matrix and try again."))
+            if(length(matchingRN) < 5){ # almost all rownames are wrong
+                stop("ChromSCape::import_scExp - Maybe your rownames are contained
+                in the first column instead? In this case, remove the header of
+                this column so that they are interpreted as rownames.")
+            }
+            return()
+        }
+        
+        numericC <- apply(datamatrix_single[1:5,1:5],MARGIN=2,is.numeric) # check if matrix is numeric
+        if(sum(numericC) < 5){
+            stop(paste0("ChromSCape::import_scExp - ",sample_name,
+                        " contains non-numeric columns at the following indices: ",
+                        which(numericC==FALSE), ". Please check your data matrix and try again."))
+        }
+        
+        if(all.equal(rownames(datamatrix_single)[1:5], c("1","2","3","4","5")) == TRUE){
+            warning(paste0("ChromSCape::import_scExp - ", sample_name,
+                        " contains numeric rownames, taking first column as rownames."))
+            names = datamatrix_single$X0
+            datamatrix_single = datamatrix_single[,-1]
+            rownames(datamatrix_single) = names
+        }
+        
+        datamatrix_single <- datamatrix_single[!duplicated(rownames(datamatrix_single)),] 
+        
+        if(length(grep("chr",rownames(datamatrix_single)[1:10],perl = T)) >= 9){
+            rownames(datamatrix_single) <- gsub(":", "_", rownames(datamatrix_single))
+            rownames(datamatrix_single) <- gsub("-", "_", rownames(datamatrix_single))
+        }
+        gc()
+        total_cell <- length(datamatrix_single[1,])
+        annot_single <- data.frame(barcode = colnames(datamatrix_single),
+                                   cell_id = paste0(sample_name, "_c", 1:total_cell),
+                                   sample_id = rep(sample_name, total_cell),
+                                   batch_id = i)
+        colnames(datamatrix_single) <- annot_single$cell_id
+        if(is.null(datamatrix)){
+            datamatrix <- datamatrix_single
+        }else{
+            common_regions <- intersect(rownames(datamatrix), rownames(datamatrix_single))
+            if(length(common_regions)>0){
+                datamatrix <- Matrix::cbind2(datamatrix[common_regions,], datamatrix_single[common_regions,])
+            } else{
+               stop(paste0("ChromSCape::import_scExp - ",file_names[i], " contains no common regions with ",file_names[i-1])) 
+            }
+        }
+        rm(datamatrix_single)
+        gc()
+        if(is.null(annot_raw)){
+            annot_raw <- annot_single
+        } else {
+            annot_raw <- rbind(annot_raw, annot_single)
+        }
+        rm(annot_single)
+        gc()
+    }
+    out = list("datamatrix" = datamatrix, "annot_raw" = annot_raw)
+    return(out)
+}
+
 #' Wrapper to create the single cell experiment from count matrix and feature
 #'  dataframe
 #'

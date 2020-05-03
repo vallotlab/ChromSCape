@@ -6,7 +6,7 @@
 \usage{
 plot_differential_volcano_scExp(
   scExp_cf,
-  chromatin_group = "C1",
+  cell_cluster = "C1",
   cdiff.th = 1,
   qval.th = 0.01
 )
@@ -14,7 +14,7 @@ plot_differential_volcano_scExp(
 \arguments{
 \item{scExp_cf}{}
 
-\item{chromatin_group}{}
+\item{cell_cluster}{}
 
 \item{cdiff.th}{}
 
