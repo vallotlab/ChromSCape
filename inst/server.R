@@ -177,66 +177,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       write.table(input$annotation, file.path(init$data_folder, 'ChromSCape_analyses', input$new_analysis_name, 'annotation.txt'), row.names = FALSE, col.names = FALSE, quote = FALSE)
       incProgress(0.3, detail="reading data matrices")
   
-      for(i in 1:dim(input$datafile_matrix)[1]){
-        print(input$datafile_matrix$datapath[i])
-        datamatrix_single <- scater::readSparseCounts(input$datafile_matrix$datapath[i], sep="\t")
-        gc()
-        #perform some checks on data format
-
-        matchingRN <- grep("[[:alnum:]]+(:|_)[[:digit:]]+(-|_)[[:digit:]]+", rownames(datamatrix_single)) # check rowname format
-        if(length(matchingRN) < length(rownames(datamatrix_single))){
-          showNotification(paste0(input$datafile_matrix$name, " contains ", (length(rownames(datamatrix_single))-length(matchingRN)),
-                                  " rownames that do not conform to the required format. Please check your data matrix and try again."),
-                           duration = NULL, closeButton = TRUE, type="warning")
-          if(length(matchingRN) < 5){ # almost all rownames are wrong
-            showNotification("Maybe your rownames are contained in the first column instead? 
-                             In this case, remove the header of this column so that they are
-                             interpreted as rownames.", duration = NULL, closeButton = TRUE, type="warning")
-          }
-          unlink(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name), recursive = TRUE)
-          return()
-        }
-        
-        numericC <- apply(datamatrix_single[1:5,1:5],MARGIN=2,is.numeric) # check if matrix is numeric
-        if(sum(numericC) < 5){
-          showNotification(paste0(input$datafile_matrix$name, " contains non-numeric columns at the following indices: ", which(numericC==FALSE), ". Please check your data matrix and try again."), duration=NULL, closeButton=TRUE, type="warning")
-          unlink(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name), recursive=TRUE)
-          return()
-        }
-
-        if(rownames(datamatrix_single)[1] == "1"){
-          names = datamatrix_single$X0
-          datamatrix_single = datamatrix_single[,-1]
-          rownames(datamatrix_single) = names
-        }
-
-        datamatrix_single <- datamatrix_single[!duplicated(rownames(datamatrix_single)),] #put IN for new format
-
-        if(length(grep("chr",rownames(datamatrix_single)[1:10],perl = T)) >= 9){
-          rownames(datamatrix_single) <- gsub(":", "_", rownames(datamatrix_single))
-          rownames(datamatrix_single) <- gsub("-", "_", rownames(datamatrix_single))
-        }
-        gc()
-        total_cell <- length(datamatrix_single[1,])
-
-        sample_name <- gsub('.{4}$', '', input$datafile_matrix$name[i])
-    
-        annot_single <- data.frame(barcode = colnames(datamatrix_single),
-                                   cell_id = paste0(sample_name, "_c", 1:total_cell),
-                                   sample_id = rep(sample_name, total_cell),
-                                   batch_id = i)
-        colnames(datamatrix_single) <- annot_single$cell_id
-        if(is.null(datamatrix)){
-          datamatrix <- datamatrix_single
-        }else{
-          
-          common_regions <- intersect(rownames(datamatrix), rownames(datamatrix_single))
-          datamatrix <- Matrix::cbind2(datamatrix[common_regions,], datamatrix_single[common_regions,])
-        }
-        rm(datamatrix_single);gc();
-        if(is.null(annot_raw)){ annot_raw <- annot_single} else{ annot_raw <- rbind(annot_raw, annot_single)}
-        rm(annot_single);gc();
-      }
+      tmp_list = import_scExp(file_names = input$datafile_matrix$name,
+                   path_to_matrix = input$datafile_matrix$datapath)
+      datamatrix = tmp_list$datamatrix
+      annot_raw = tmp_list$annot_raw
       incProgress(0.7, detail="saving raw data")
       save(datamatrix, annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "scChIP_raw.RData"))
       init$available_raw_datasets <- list.dirs(path = file.path(init$data_folder, "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE)

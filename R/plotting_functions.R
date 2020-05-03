@@ -343,7 +343,7 @@ col2hex <- function(cname)
 #' @param cname 
 #'
 #' @return
-#' @importFrom dplyr as_tiblle
+#' @importFrom dplyr as_tibble
 #' @import ggplot2
 #' 
 #' @export
