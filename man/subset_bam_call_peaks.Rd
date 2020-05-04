@@ -47,7 +47,7 @@ defined by user [default to 10000bp]. Then,
 }
 \details{
 This function takes as input a SingleCellExperiment, that must contain 
-a 'chromatin_group' column in it's colData, an output directory where to 
+a 'cell_cluster' column in it's colData, an output directory where to 
 store temporary files, the list of BAM files corresponding to each sample and 
 containing the cell barcode information as a tag (for instance tag CB:Z:xxx, XB:Z:xxx or
  else...), the p.value used by MACS2 to distinguish significant peaks, the reference
