@@ -472,14 +472,18 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent({selected_filtered_dataset()
                input$nclust
+               input$tabs
                },{
                  req(input$nclust, scExp_cf())
                  print('Choosing cluster for scExp')
-                 print(consensus_ran())
-                 print("consclust" %in% names(scExp_cf()@metadata))
-                 
-                 scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust),
-                                               consensus = consensus_ran()))
+                 if(input$tabs == "cons_clustering"){
+                   print(input$nclust)
+                   print(consensus_ran())
+                   print("consclust" %in% names(scExp_cf()@metadata))
+                   
+                   scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust),
+                                                 consensus = consensus_ran()))
+                 }
                })
   
   hc_pca_plot <- reactive({
