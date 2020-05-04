@@ -923,7 +923,7 @@ output$anno_cc_box <- renderUI({
     }
   })
       
-  shinyDirChoose(input, "bam_folder", roots = volumes, session = 
+  shinyFiles::shinyDirChoose(input, "bam_folder", roots = volumes, session = 
                    session)
   list_bams = reactive({
     if(!is.null(bam_folder())){

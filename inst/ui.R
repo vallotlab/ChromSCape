@@ -1,5 +1,6 @@
 library(shiny)
 library(shinyjs)
+library(dplyr)
 # 
 shinyUI(shinydashboard::dashboardPage(skin='green',
                             shinydashboard::dashboardHeader(title = "ChromSCape"),
@@ -259,7 +260,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                              column(5,offset = 1,align="center", htmlOutput("peak_calling_icon")),
                                              column(12, align="left",
                                                     sliderInput("peak_distance_to_merge", "Select distance of peaks to merge:", min=0, max=50000, value=5000, step=100),
-                                                    shinyDirButton("bam_folder", "Choose a folder containing the BAM files" ,
+                                                    shinyFiles::shinyDirButton("bam_folder", "Choose a folder containing the BAM files" ,
                                                                    title = "Please select a folder:",
                                                                    buttonType = "default", class = NULL), br(),
                                                     
