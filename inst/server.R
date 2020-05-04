@@ -473,14 +473,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent({selected_filtered_dataset()
                input$nclust
                input$tabs
+               scExp_cf()
                },{
                  req(input$nclust, scExp_cf())
-                 print('Choosing cluster for scExp')
                  if(input$tabs == "cons_clustering"){
-                   print(input$nclust)
-                   print(consensus_ran())
-                   print("consclust" %in% names(scExp_cf()@metadata))
-                   
                    scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust),
                                                  consensus = consensus_ran()))
                  }
@@ -609,21 +605,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(selected_filtered_dataset(), priority = 10, {
     print("Observing selected_filtered_dataset()")
-  cluster_consensus_files = list.files(plotting_directory(), pattern =  "icl.*\\.png")
-  
-  if(length(cluster_consensus_files) > 0){
-    n = max(as.numeric(gsub("\\.png", "",gsub("icl", "", cluster_consensus_files))))
-    cluster_consensus_file = cluster_consensus_files[grep(n, cluster_consensus_files)]
-  } else {cluster_consensus_file = NULL}
-  
-  print(file.exists(file.path(init$data_folder, "ChromSCape_analyses",
-                              analysis_name(), "correlation_clustering",
-                              "Plots", selected_filtered_dataset(), "consensus.pdf")))
+ 
   if(file.exists(file.path(init$data_folder, "ChromSCape_analyses",
                            analysis_name(), "correlation_clustering",
-                           "Plots", selected_filtered_dataset(), "consensus.pdf")))
+                           "Plots", selected_filtered_dataset(), "consensus.pdf"))){
     print("clust$clust_pdf is on")
     clust$clust_pdf <- file.path("Plots", selected_filtered_dataset(), "consensus.pdf")
+  }
   })
   
   observeEvent(selected_filtered_dataset(), priority = 11, {
@@ -651,10 +639,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       data = list("scExp_cf" = scExp_cf())
       save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
                                   paste0(input$selected_reduced_dataset, ".RData")))
-      
-      cluster_consensus_files = list.files(plotting_directory(), pattern = "icl.*\\.png")
-      n = max(as.numeric(gsub("\\.png", "",gsub("icl", "", cluster_consensus_files))))
-      cluster_consensus_file = cluster_consensus_files[grep(n, cluster_consensus_files)]
 
       clust$clust_pdf <- NULL  # needed in order to update the pdf output
       clust$clust_pdf <- file.path("Plots", selected_filtered_dataset(), "consensus.pdf")
