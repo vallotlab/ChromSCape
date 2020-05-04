@@ -14,7 +14,7 @@
 #' defined by user [default to 10000bp]. Then, 
 #' 
 #' This function takes as input a SingleCellExperiment, that must contain 
-#' a 'chromatin_group' column in it's colData, an output directory where to 
+#' a 'cell_cluster' column in it's colData, an output directory where to 
 #' store temporary files, the list of BAM files corresponding to each sample and 
 #' containing the cell barcode information as a tag (for instance tag CB:Z:xxx, XB:Z:xxx or
 #'  else...), the p.value used by MACS2 to distinguish significant peaks, the reference
@@ -66,8 +66,8 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "
     if (!"barcode" %in% colnames(SingleCellExperiment::colData(scExp))) 
         stop("ChromSCape::subset_bam_call_peaks - Colnames of cell annotation must contain 'barcode'.")
     
-    if (!"chromatin_group" %in% colnames(SingleCellExperiment::colData(scExp))) 
-        stop("ChromSCape::subset_bam_call_peaks - Colnames of cell annotation must contain 'chromatin_group'.")
+    if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))) 
+        stop("ChromSCape::subset_bam_call_peaks - Colnames of cell annotation must contain 'cell_cluster'.")
     
     if (is.null(geneTSS_annotation))
     {
@@ -94,16 +94,16 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "
     
     print("Writting barcode files...")
     affectation = SingleCellExperiment::colData(scExp)
-    affectation$chromatin_group = as.factor(affectation$chromatin_group)
+    affectation$cell_cluster = as.factor(affectation$cell_cluster)
     
     p.value = paste0(" -p ", p.value, " ")  # format for system call to macs2
     
-    for (class in levels(factor(affectation$chromatin_group)))
+    for (class in levels(factor(affectation$cell_cluster)))
     {
-        write(as.vector(affectation$barcode[which(affectation$chromatin_group == 
+        write(as.vector(affectation$barcode[which(affectation$cell_cluster == 
             as.character(class))]), file = file.path(odir, paste0(class, ".barcode_class")))
     }
-    write(levels(factor(affectation$chromatin_group)), file = file.path(odir, "barcodes.barcode_class"))
+    write(levels(factor(affectation$cell_cluster)), file = file.path(odir, "barcodes.barcode_class"))
     
     print("Using Samtools to extract reads from each cell...")
     system(paste0("samtools view -H ", merged_bam, " > ", file.path(odir, "header.sam")))  # keeping header
@@ -136,7 +136,7 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "
     merged_peaks = list()
     ref_chromosomes = GRanges(eval(parse(text = paste0(ref, ".chromosomes"))))
     # Count properly paired mapped reads
-    for (class in levels(factor(affectation$chromatin_group)))
+    for (class in levels(factor(affectation$cell_cluster)))
     {
         
         print(paste0("samtools flagstat ", file.path(odir, paste0(class, ".bam")), 
@@ -182,17 +182,17 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "
         peaks = peaks[which(width(GenomicRanges::ranges(peaks)) >= 500), ]
         peaks = GenomicRanges::reduce(peaks, min.gapwidth = peak_distance_to_merge, 
             ignore.strand = TRUE)
-        peaks = suppressWarnings(GenomicRanges::subsetByOverlaps(peaks, ref_chromosomes, 
+        peaks = suppressWarnings(IRanges::subsetByOverlaps(peaks, ref_chromosomes, 
             ignore.strand = TRUE))
         merged_peaks[[class]] = peaks
     }
     
-    # Clean up files unlink(file.path(odir, 'bam_list.txt')) unlink(file.path(odir,
-    # '*.bam')) unlink(file.path(odir, '*.bam.bai'))
+    # Clean up files unlink(file.path(odir, 'bam_list.txt'))
     unlink(file.path(odir, "*.xls"))
     unlink(file.path(odir, "*.gappedPeak"))
     unlink(file.path(odir, "*_model.r"))
     unlink(file.path(odir, "header.sam"))
+    unlink(file.path(odir, 'merged.bam'))
     
     # call makePeakAnnot file
     print("Merging BAM files together...")
