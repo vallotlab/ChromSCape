@@ -326,18 +326,14 @@ choose_cluster_scExp <- function(scExp, nclust = 3, consensus = T, hc_linkage = 
     
     pca_t = as.data.frame(Matrix::t(SingleCellExperiment::reducedDim(scExp, "PCA")))
     pca_t_ordered = pca_t[, scExp@metadata$hc_cor$order]
-    
-    print("Choosing cluster - consensus ?")
-    print(consensus)
+
     if(consensus) 
         cell_clusters = scExp@metadata$consclust[[nclust]]$consensusClass[as.character(scExp$cell_id)]
     else {
         cell_clusters = stats::cutree(scExp@metadata$hc_cor, k = nclust)
         names(cell_clusters) = colData(scExp)$cell_id
     }
-    
-    print(dim(scExp))
-    print(length(cell_clusters))
+
     SummarizedExperiment::colData(scExp)[, "cell_cluster"] = paste("C", cell_clusters, 
         sep = "")
     

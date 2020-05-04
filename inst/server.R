@@ -49,7 +49,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   #Global Functions
   init <- reactiveValues(data_folder =  getwd(), datamatrix = data.frame(), annot_raw = data.frame(), available_raw_datasets = NULL,
                          available_reduced_datasets = NULL)
-  reduced_datasets <- reactive({ print("reduced_datasets"); print(init$available_reduced_datasets)
+  reduced_datasets <- reactive({ 
     if (is.null(init$available_reduced_datasets)) c() else gsub('.{6}$', '', basename(init$available_reduced_datasets)) })
   
   observeEvent({analysis_name()},{
@@ -149,8 +149,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       if (!"path" %in% names(directory())) return()
 
       init$data_folder <- shinyFiles::parseDirPath(volumes, directory())
-      print("init$data_folder")
-      print(init$data_folder)
       
       init$available_raw_datasets <- list.dirs(
         path = file.path(init$data_folder, "ChromSCape_analyses"),
@@ -193,7 +191,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$selected_analysis, {  # load precompiled dataset and update coverage plot
     if(!is.null(input$selected_analysis) & input$selected_analysis != ""){
-      print("Selecting analysis... ")
       myData = new.env()
       load(file.path(init$data_folder,"ChromSCape_analyses", input$selected_analysis, "scChIP_raw.RData"), envir = myData)
       init$datamatrix <- myData$datamatrix
@@ -289,7 +286,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   reduced_dataset <- eventReactive(input$selected_reduced_dataset, { # load reduced data set to work with on next pages
     req(input$selected_reduced_dataset)
-
     if(file.exists(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering","Plots"))) 
       addResourcePath('Plots', file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering","Plots"))
 
@@ -298,6 +294,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
     myData = new.env()
     load(filename_sel, envir = myData)
+    if(is.reactive(myData$scExp)) myData$scExp = isolate(myData$scExp())
     myData
     
   })
@@ -430,8 +427,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     color_df = get_color_dataframe_from_input(input,levels_selected(),input$color_by)
 
     scExp. = colors_scExp(scExp(),annotCol = input$color_by,color_by = input$color_by, color_df = color_df)
-  
     scExp(scExp.)
+    
+    save("scExp", file = file.path(init$data_folder, "ChromSCape_analyses",
+                                   analysis_name(), "Filtering_Normalize_Reduce",
+                                   paste0(input$selected_reduced_dataset,".RData")))
     rm(scExp.)
   })
   
@@ -444,18 +444,17 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   
   ###############################################################
-  # 4. Consensus clustering on correlated cells
+  # 3. Consensus clustering on correlated cells
   ###############################################################
 
   corColors <- grDevices::colorRampPalette(c("royalblue","white","indianred1"))(256)
   
-  observeEvent(input$tabs,
+  observeEvent(priority = 10,input$tabs, once = T,
                if(input$tabs == "cons_clustering"){
                  file = file.path(init$data_folder, "ChromSCape_analyses",
                                   analysis_name(), "correlation_clustering",
                                   paste0(selected_filtered_dataset(),".RData"))
                  if(file.exists(file)){
-                   print('Loading existing SingleCellExp cf')
                    myData = new.env()
                    load(file, envir = myData)
                    scExp_cf(myData$data$scExp_cf)
@@ -470,7 +469,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     "consclust" %in% names(scExp_cf()@metadata)
   })
   
-  observeEvent({selected_filtered_dataset()
+  observeEvent(priority = 10, {selected_filtered_dataset()
                input$nclust
                input$tabs
                scExp_cf()
@@ -484,11 +483,24 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   hc_pca_plot <- reactive({
     req(scExp_cf())
-    plot_heatmap_scExp(scExp_cf())
     unlocked$list$cor_clust_plot=TRUE;
+    unlocked$list$affectation=TRUE;
+    plot_heatmap_scExp(scExp_cf())
   })
 
   output$corr_clust_pca_plot <- renderPlot(hc_pca_plot())
+  output$cons_corr_clust_pca_plot <- renderPlot(plot_heatmap_scExp(scExp_cf()))
+  
+  output$cons_corr_clust_pca_UI <- renderUI({
+    if(consensus_ran()){
+      plotOutput("cons_corr_clust_pca_plot", height = 500, width = 500) %>%
+        shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                            content = "correlation_clustering")
+    }
+  })
+  
+
+
   
   output$download_cor_clust_plot <- downloadHandler(
     filename=function(){ paste0("correlation_clustering_", input$selected_reduced_dataset, ".png")},
@@ -572,7 +584,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
   
-  selected_filtered_dataset <- reactive({print("selecting fitlered dataset");input$selected_reduced_dataset})
+  selected_filtered_dataset <- reactive({input$selected_reduced_dataset})
   
   output$filtered_data_selection_format <- renderText({"The name of the filtered dataset is composed of the following information: data set name, min percentage of reads per cell, 
     min percentage of cells to support a window, quantile of cell read counts to keep, correlation threshold, percent of cell correlation. To work on a different dataset or different preprocessing state, select it on the first page."})
@@ -604,18 +616,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   clust <- reactiveValues(clust_pdf=NULL)
   
   observeEvent(selected_filtered_dataset(), priority = 10, {
-    print("Observing selected_filtered_dataset()")
  
   if(file.exists(file.path(init$data_folder, "ChromSCape_analyses",
                            analysis_name(), "correlation_clustering",
                            "Plots", selected_filtered_dataset(), "consensus.pdf"))){
-    print("clust$clust_pdf is on")
     clust$clust_pdf <- file.path("Plots", selected_filtered_dataset(), "consensus.pdf")
   }
   })
   
   observeEvent(selected_filtered_dataset(), priority = 11, {
-    print("Triggering consclust loading...")
     filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
                           paste0(input$selected_reduced_dataset, ".RData"))
       if(file.exists(filename)){
@@ -631,11 +640,18 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
   
+  clusterAlg <- reactive({if(input$clusterAlg=="K-means") "kmdist"
+    else if(input$clusterAlg == "Partitioning Medoids") "pam"
+    else "hc"})
+  
   observeEvent(input$do_cons_clust, {
     withProgress(message='Performing consensus clustering...', value = 0, {
       incProgress(amount=0.4, detail=paste("part one"))
 
-      scExp_cf(consensus_clustering_scExp(scExp_cf(), prefix = plotting_directory()))
+      scExp_cf(consensus_clustering_scExp(scExp_cf(), reps = as.numeric(input$consclust_iter),
+                                          maxK=as.numeric(input$maxK),
+                                          clusterAlg = clusterAlg(),
+                                          prefix = plotting_directory()))
       data = list("scExp_cf" = scExp_cf())
       save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
                                   paste0(input$selected_reduced_dataset, ".RData")))
@@ -643,7 +659,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       clust$clust_pdf <- NULL  # needed in order to update the pdf output
       clust$clust_pdf <- file.path("Plots", selected_filtered_dataset(), "consensus.pdf")
   
-      incProgress(amount=0.2, detail=paste("finished"))
+      incProgress(amount=0.2, detail=paste("Finished"))
     })
   })
   
@@ -683,7 +699,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         withProgress(message='Preparing final figures...', value = 0, {
           incProgress(amount=0.2, detail=paste("Choosing cluster & recalculating tsne..."))
           scExp_cf(choose_cluster_scExp(scExp_cf(), as.integer(input$nclust)))
-          incProgress(amount=0.4, detail = paste("Finished"))
+          incProgress(amount=0.4, detail = paste("Finishing..."))
           data = list("scExp_cf" = scExp_cf())
           save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
                                       paste0(input$selected_reduced_dataset,".RData")))
@@ -789,8 +805,6 @@ output$anno_cc_box <- renderUI({
   
   output$umap_box_cf <- renderUI({
     if(! is.null(scExp_cf())){
-      print("Umap color box")
-      print("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf())))
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf())) ){
         shinydashboard::box(title="Vizualisation in reduced dimensions", width = NULL, status="success", solidHeader = T,
                             column(6, align="left",
@@ -847,20 +861,20 @@ output$anno_cc_box <- renderUI({
     })
   })
   
-  observeEvent({
-    selected_filtered_dataset()
-    scExp_cf()
-  },
-  {
-    if(length(selected_filtered_dataset())>0 & !is.null(scExp_cf())){
-      if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
-        unlocked$list$affectation = T
-      } else {
-        unlocked$list$affectation = F
-      }
-    } else unlocked$list$affectation = F
-  }
-  )
+  # observeEvent({
+  #   selected_filtered_dataset()
+  #   scExp_cf()
+  # },
+  # {
+  #   if(length(selected_filtered_dataset())>0 & !is.null(scExp_cf())){
+  #     if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
+  #       unlocked$list$affectation = T
+  #     } else {
+  #       unlocked$list$affectation = F
+  #     }
+  #   } else unlocked$list$affectation = F
+  # }
+  # )
   
   observeEvent(unlocked$list, {able_disable_tab(c("selected_analysis","selected_reduced_dataset","affectation"),c("peak_calling","diff_analysis"))}) 
   
@@ -871,6 +885,9 @@ output$anno_cc_box <- renderUI({
   output$peak_calling_info <- renderText({"This module is optional, but recommended in order to obtain more precise results for enrichment analysis. 
     Based on the BAM files for the samples in your project, peaks will be called using MACS2 [only work on unix systems] so that the counts can be mapped to the gene TSS more specifically.
     "})
+  
+  can_run = reactiveVal({FALSE})
+  
   output$peak_calling_system <- renderText({
     platform = as.character(.Platform[1])
     if(length(grep("nix",platform,ignore.case = T)) ){
@@ -882,8 +899,10 @@ output$anno_cc_box <- renderUI({
       try({
         samtools = system2("which",args = "samtools",stdout = TRUE)
       })
-      if(length(macs2)>0 & length(samtools)>0)
+      if(length(macs2)>0 & length(samtools)>0){
+        can_run(TRUE)
         return(paste0("<b>You are running on an ", platform, " OS.<br>Found MACS2 at ", macs2, ".<br>Found samtools at ", samtools,"</b>"))
+      }
       if(length(macs2)>0 & length(samtools)==0)
         return(paste0("<b>You are running on an ", platform, " OS.<br>Found MACS2 at ", macs2,".<br>Didn't find samtools ! Please install samtools or skip this step.</b>"))
       if(length(macs2)==0 & length(samtools)>0)
@@ -895,30 +914,53 @@ output$anno_cc_box <- renderUI({
       return(paste0("<b>You are running on a non unix system, peak calling is not available, you can move directly to differential analysis.</b> "))
     }
     })
-  output$pc_k_selection <- renderText({
-    paste0( "Number of clusters selected  = ", dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster))
+  
+  output$peak_calling_icon = renderText({
+    if(can_run()) {
+      return( as.character(icon("check-circle", class = "large_icon")))}
+    else{
+      return( as.character(icon("times-circle", class = "large_icon")))
+    }
+  })
+      
+  shinyDirChoose(input, "bam_folder", roots = volumes, session = 
+                   session)
+  list_bams = reactive({
+    if(!is.null(bam_folder())){
+      list.files(bam_folder(), full.names = T, pattern = "*.bam$")
+    }
   })
   
+  bam_folder = reactiveVal(NULL)
+  
+  observeEvent(input$bam_folder,
+               {
+               if(!is.null(input$bam_folder)){
+                 # browser()
+                 bam_folder(parseDirPath(volumes, input$bam_folder))
+                 output$bam_dir <- renderText(bam_folder())
+               }
+})
+
   output$bam_upload <- renderUI({
-    req(scExp_cf())
-    sample_ids <- unique(SummarizedExperiment::colData(scExp_cf())$sample_id)
-    lapply(sample_ids, function(x){
-      textInput(paste0('bam_', x), paste0('Full path to .bam file for sample ', x, ':'), value="/home/example/sample.bam")
-    })
+    req(scExp_cf(), list_bams())
+    if(!is.null(list_bams()))
+      selectInput("bam_selection", label = "Selected BAM files",
+                  choices = basename(list_bams()), multiple = T,
+                  selected = basename(list_bams()) )
   })
   
   observeEvent(input$do_pc, {
-    if(is.null(input$pc_k_selection) | input$pc_k_selection == ''){
-      showNotification("No cluster number selected. It seems that you didn't select a clustering on the previous page, please go back and check.", duration = 7, closeButton = TRUE, type="warning")
-    }else{
-      withProgress(message='Performing enrichment analysis...', value = 0, {
+    nclust = length(unique(scExp_cf()$cell_cluster))  
+    withProgress(message='Performing enrichment analysis...', value = 0, {
         
         incProgress(amount = 0.1, detail = paste("Starting Peak Calling..."))
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks"), showWarnings = FALSE)
-        dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$pc_k_selection)), showWarnings = FALSE)
-        odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$pc_k_selection))
+        dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
+        odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
         sample_ids <- unique(SummarizedExperiment::colData(scExp_cf())$sample_id)
-        inputBams <- as.character(unlist(sapply(sample_ids, function(x){ input[[paste0('bam_', x)]] })))
+        # inputBams <- as.character(unlist(sapply(sample_ids, function(x){ input[[paste0('bam_', x)]] })))
+        inputBams <- as.character(list_bams())
 
         checkBams <- sapply(inputBams, function(x){ if(file.exists(x)){ 0 } else { 
           showNotification(paste0("Could not find file ", x, ". Please make sure to give a full path including the file name."),
@@ -935,13 +977,12 @@ output$anno_cc_box <- renderUI({
         }
         incProgress(amount = 0.3, detail = paste("Finished Peak Calling..."))
       })
-    }
+    
   })
   
   pc <- reactiveValues(new="")
   
   observeEvent({selected_filtered_dataset()  # reset label on actionButtion when new peak calling should be performed
-    input$pc_k_selection
     input$pc_stat
     input$pc_stat_value}, {
       pc$available_pc <- has_available_pc()
@@ -1009,8 +1050,8 @@ output$anno_cc_box <- renderUI({
   output$contrib_hist <- renderUI({ if(input$only_contrib_cells){ plotOutput("contrib_hist_p", height = 250, width = 500) }})
   output$contrib_hist_p <- renderPlot(contrib_hist_plot())
   contrib_hist_plot <- reactive({
-    maxCons <- tapply(scExp_cf()@metadata$icl$itemConsensus$itemConsensus[scExp_cf()@metadata$icl$itemConsensus$k==input$selected_k],
-                      scExp_cf()@metadata$icl$itemConsensus$item[scExp_cf()@metadata$icl$itemConsensus$k==input$selected_k], max)
+    maxCons <- tapply(scExp_cf()@metadata$icl$itemConsensus$itemConsensus[scExp_cf()@metadata$icl$itemConsensus$k==length(unique(scExp_cf()$cell_cluster))],
+                      scExp_cf()@metadata$icl$itemConsensus$item[scExp_cf()@metadata$icl$itemConsensus$k==length(unique(scExp_cf()$cell_cluster))], max)
     hist(maxCons, col="steelblue", breaks = 80, main="Max cluster contribution per cell", xlab="", ylab="number of cells")
     abline(v = input$contrib_thresh, lwd = 2, col="red", lty = 2)
     legend("topleft", legend = c("cluster contribution threshold"), col = c("red"), lty = c(2), cex = 0.8)
@@ -1018,25 +1059,25 @@ output$anno_cc_box <- renderUI({
   output$contrib_thresh <- renderUI({ if(input$only_contrib_cells){ sliderInput("contrib_thresh", "Select minimum cluster contribution for cells:", min = 0.6, max = 1, value = 0.9, step = 0.01) }})
   output$contrib_info <- renderUI({ if(input$only_contrib_cells){ textOutput("contrib_info_text") }})
   output$contrib_info_text <- renderText({
-    total_cells <- length(unique(scExp_cf()@metadata$icl$itemConsensus$item[scExp_cf()@metadata$icl$itemConsensus$k==input$selected_k]))
-    sel_cells <- length(unique(scExp_cf()@metadata$icl$itemConsensus$item[scExp_cf()@metadata$icl$itemConsensus$k==input$selected_k & scExp_cf()@metadata$icl$itemConsensus$itemConsensus >= input$contrib_thresh]))
+    total_cells <- length(unique(scExp_cf()@metadata$icl$itemConsensus$item[scExp_cf()@metadata$icl$itemConsensus$k==length(unique(scExp_cf()$cell_cluster))]))
+    sel_cells <- length(unique(scExp_cf()@metadata$icl$itemConsensus$item[scExp_cf()@metadata$icl$itemConsensus$k==length(unique(scExp_cf()$cell_cluster)) & scExp_cf()@metadata$icl$itemConsensus$itemConsensus >= input$contrib_thresh]))
     paste("Selected top", sel_cells, "cells out of", total_cells)
   })
   
-  observeEvent(c(input$qval.th, input$cdiff.th, input$selected_k, input$de_type, selected_filtered_dataset()), priority = 10,{
-
-    if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$cdiff.th)){
-      filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "diff_analysis_GSEA",
-                            paste0(selected_filtered_dataset(), "_", input$selected_k,
-                                   "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData"))
-      
-      if(file.exists(filename)){
-        print("Loading Diff Analysis")
-        myData = new.env()
-        load(filename, envir = myData)
-        scExp_cf(myData$data$scExp_cf)
-      } else {
-        NULL
+  observeEvent(c(input$qval.th, input$tabs, input$cdiff.th, input$de_type, selected_filtered_dataset()), priority = 10,{
+    if(input$tabs == "diff_analysis"){
+      if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$cdiff.th)){
+        filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "diff_analysis_GSEA",
+                              paste0(selected_filtered_dataset(), "_", input$nclust,
+                                     "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData"))
+        
+        if(file.exists(filename)){
+          myData = new.env()
+          load(filename, envir = myData)
+          scExp_cf(myData$data$scExp_cf)
+        } else {
+          NULL
+        }
       }
     }
     })
@@ -1047,10 +1088,10 @@ output$anno_cc_box <- renderUI({
       if(batchUsed()) block = T else block = F
       scExp_cf(differential_analysis_scExp(scExp_cf(), de_type = input$de_type,
                                            cdiff.th = input$cdiff.th, qval.th = input$qval.th, block)) 
-      incProgress(amount = 0.6, detail = paste("Finished DA"))
+      incProgress(amount = 0.6, detail = paste("Finishing DA..."))
       data = list("scExp_cf" = scExp_cf())
       save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "diff_analysis_GSEA",
-                                  paste0(selected_filtered_dataset(), "_", input$selected_k,
+                                  paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
                                          "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData")))
   
       incProgress(amount = 0.2, detail = paste("Saving DA"))
@@ -1088,7 +1129,7 @@ output$anno_cc_box <- renderUI({
   })
   
   output$download_da_barplot <- downloadHandler(
-    filename = function(){ paste0("diffAnalysis_numRegions_barplot_", selected_filtered_dataset(), "_", input$selected_k, "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".png")},
+    filename = function(){ paste0("diffAnalysis_numRegions_barplot_", selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)), "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".png")},
     content = function(file){
       grDevices::png(file, width = 800, height = 600, res = 150)
       plot_differential_summary_scExp(scExp_cf())
@@ -1111,7 +1152,10 @@ output$anno_cc_box <- renderUI({
   })
   
   output$download_da_table <- downloadHandler(
-    filename = function(){ paste0("diffAnalysis_data_", selected_filtered_dataset(), "_", input$selected_k, "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".csv")},
+    filename = function(){ paste0("diffAnalysis_data_", selected_filtered_dataset(),
+                                  "_", length(unique(scExp_cf()$cell_cluster)), "_",
+                                  input$qval.th, "_", input$cdiff.th, "_",
+                                  input$de_type, ".csv")},
     content = function(file){
       write.table(scExp_cf()@metadata$diff$res, file, row.names = F, quote = F, sep=",")
     })
@@ -1138,7 +1182,9 @@ output$anno_cc_box <- renderUI({
   })
   
   output$download_h1_plot <- downloadHandler(
-    filename = function(){ paste0("diffAnalysis_numRegions_barplot_", selected_filtered_dataset(), "_", input$selected_k, "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, "_", input$gpsamp, ".png")},
+    filename = function(){ paste0("diffAnalysis_numRegions_barplot_", selected_filtered_dataset(),
+                                  "_", length(unique(scExp_cf()$cell_cluster)), "_", input$qval.th,
+                                  "_", input$cdiff.th, "_", input$de_type, "_", input$gpsamp, ".png")},
     content = function(file){
       grDevices::png(file, width = 1000, height = 600, res = 300)
       plot_differential_H1_scExp(scExp_cf(), input$gpsamp)
@@ -1155,16 +1201,22 @@ output$anno_cc_box <- renderUI({
   })
   
   output$download_da_volcano <- downloadHandler(
-    filename = function(){ paste0("diffAnalysis_numRegions_barplot_", selected_filtered_dataset(), "_", input$selected_k, "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, "_", input$gpsamp, ".png")},
+    filename = function(){ paste0("diffAnalysis_numRegions_barplot_", selected_filtered_dataset(),
+                                  "_", length(unique(scExp_cf()$cell_cluster)), "_",
+                                  input$qval.th, "_", input$cdiff.th, "_", 
+                                  input$de_type, "_", input$gpsamp, ".png")},
         content = function(file){
         grDevices::png(file, width = 900, height = 900, res = 300)
-          plot_differential_volcano_scExp(scExp_cf(),cell_cluster = input$gpsamp,
-                                          cdiff.th = input$cdiff.th, qval.th = input$qval.th)
+          plot_differential_volcano_scExp(scExp_cf(),
+                                          cell_cluster = input$gpsamp,
+                                          cdiff.th = input$cdiff.th,
+                                          qval.th = input$qval.th)
         grDevices::dev.off()
     })
   
     observeEvent(unlocked$list, {
-      able_disable_tab(c("selected_analysis","selected_reduced_dataset","diff_my_res"),"enrich_analysis")
+      able_disable_tab(c("selected_analysis","selected_reduced_dataset",
+                         "diff_my_res"),"enrich_analysis")
     }) 
     
     observeEvent(scExp_cf(), {
@@ -1224,14 +1276,14 @@ output$anno_cc_box <- renderUI({
   observeEvent(input$do_enrich, {
     withProgress(message='Performing enrichment analysis...', value = 0, {
 
-      incProgress(amount = 0.3, detail = paste("Running GSEA"))
+      incProgress(amount = 0.3, detail = paste("Running GSEA..."))
       scExp_cf(gene_set_enrichment_analysis_scExp(scExp_cf(), enrichment_qval = 0.01, qval.th = input$qval.th,
                                                   ref = annotation_id(), cdiff.th = input$cdiff.th,
                                                   peak_distance = 1000, use_peaks = input$use_peaks))
-      incProgress(amount = 0.6, detail = paste("Finished GSEA"))
+      incProgress(amount = 0.6, detail = paste("Finishing GSEA..."))
       data = list("scExp_cf" = scExp_cf() )
       save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "diff_analysis_GSEA",
-                                  paste0(selected_filtered_dataset(), "_", input$selected_k,
+                                  paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
                                          "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData")))
       incProgress(amount = 0.6, detail = paste("Saving GSEA"))
       
@@ -1278,7 +1330,7 @@ output$anno_cc_box <- renderUI({
   })
   
   output$download_enr_data <- downloadHandler(
-    filename = paste(selected_filtered_dataset(), input$selected_k, input$qval.th, input$cdiff.th, "enrichment_tables.zip", sep="_"),
+    filename = paste(selected_filtered_dataset(), length(unique(scExp_cf()$cell_cluster)), input$qval.th, input$cdiff.th, "enrichment_tables.zip", sep="_"),
     content = function(fname){
       fis <- c()
       for(i in 1:length(scExp_cf()@metadata$diff$groups)){
@@ -1388,7 +1440,7 @@ output$anno_cc_box <- renderUI({
           dir =file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), 
                          "diff_analysis_GSEA", paste0(
                            selected_filtered_dataset(), "_",
-                           input$selected_k,
+                           length(unique(scExp_cf()$cell_cluster)),
                            "_", input$qval.th, "_", input$cdiff.th, "_",
                            input$de_type, ".RData"))
         } else{
