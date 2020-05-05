@@ -49,7 +49,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   #Global Functions
   init <- reactiveValues(data_folder =  getwd(), datamatrix = data.frame(), annot_raw = data.frame(), available_raw_datasets = NULL,
                          available_reduced_datasets = NULL)
-  reduced_datasets <- reactive({ 
+  reduced_datasets <- reactive({
     if (is.null(init$available_reduced_datasets)) c() else gsub('.{6}$', '', basename(init$available_reduced_datasets)) })
   
   observeEvent({analysis_name()},{
@@ -218,8 +218,23 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     updateActionButton(session, "create_analysis", label="Create Analysis", icon = character(0))
   })
   
-  observeEvent(input$selected_analysis,{if(nchar(input$selected_analysis)>0){unlocked$list$selected_analysis=T}else{for(i in names(unlocked$list)){unlocked$list[[i]]=F}}})
-  observeEvent(unlocked$list,{able_disable_tab("selected_analysis","filter_normalize")}) 
+  observeEvent(input$selected_analysis,
+               {
+                 if(nchar(input$selected_analysis)>0){
+                   unlocked$list$selected_analysis=T
+                   }
+                 else{
+                   for(i in names(unlocked$list)){
+                     unlocked$list[[i]]=F
+                   }
+                 }
+               })
+  observeEvent(input$selected_analysis,
+          {
+    unlocked$list
+
+    able_disable_tab("selected_analysis","filter_normalize")}
+    ) 
   
   ###############################################################
   # 2. Filter and Normalize dataset
@@ -271,6 +286,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                reactive({input$min_cells_window}), reactive({input$quant_removal}), reactive({init$datamatrix}), reactive({init$annot_raw}),
                reactive({init$data_folder}),reactive({annotationId}), reactive({exclude_regions}), reactive({annotCol()}),reactive({input$do_batch_corr}),
                 reactive({batch_sels}), reactive({input$run_tsne}), reactive({subsample_n}))
+    
     init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
     updateActionButton(session, "filter_normalize_reduce", label="Processed and saved successfully", icon = icon("check-circle"))
     
@@ -344,13 +360,16 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   observeEvent(input$selected_reduced_dataset,{
+
     if(suppressWarnings(nchar(input$selected_reduced_dataset)>0)){
       unlocked$list$selected_reduced_dataset=T
       }else{
         for(i in names(unlocked$list)){unlocked$list[[i]]=F}
         }
     })
-  observeEvent(unlocked$list,{able_disable_tab(c("selected_reduced_dataset"),"vizualize_dim_red")}) 
+  observeEvent(unlocked$list,{
+    
+    able_disable_tab(c("selected_reduced_dataset"),"vizualize_dim_red")}) 
   
   
   ###############################################################
@@ -440,7 +459,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     levels_selected = SummarizedExperiment::colData(scExp())[,input$color_by] %>% unique() %>% as.vector()
   })
 
-  observeEvent(unlocked$list,able_disable_tab(c("selected_reduced_dataset","pca"),"cons_clustering")) # if conditions are met, unlock tab Correlation Clustering
+  observeEvent(unlocked$list,able_disable_tab(c("pca"),"cons_clustering")) # if conditions are met, unlock tab Correlation Clustering
   
   
   ###############################################################
