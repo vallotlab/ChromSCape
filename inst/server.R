@@ -449,7 +449,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
   corColors <- grDevices::colorRampPalette(c("royalblue","white","indianred1"))(256)
   
-  observeEvent(priority = 10,input$tabs, once = T,
+  observeEvent(input$tabs, 
+               {
                if(input$tabs == "cons_clustering"){
                  file = file.path(init$data_folder, "ChromSCape_analyses",
                                   analysis_name(), "correlation_clustering",
@@ -462,6 +463,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                    scExp_cf(scExp())
                  }
                }
+               }
   )
   
   consensus_ran = reactive({
@@ -469,7 +471,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     "consclust" %in% names(scExp_cf()@metadata)
   })
   
-  observeEvent(priority = 10, {selected_filtered_dataset()
+  observeEvent({selected_filtered_dataset()
                input$nclust
                input$tabs
                scExp_cf()
@@ -937,7 +939,7 @@ output$anno_cc_box <- renderUI({
                {
                if(!is.null(input$bam_folder)){
                  # browser()
-                 bam_folder(parseDirPath(volumes, input$bam_folder))
+                 bam_folder(shinyFiles::parseDirPath(volumes, input$bam_folder))
                  output$bam_dir <- renderText(bam_folder())
                }
 })
@@ -951,8 +953,13 @@ output$anno_cc_box <- renderUI({
   })
   
   observeEvent(input$do_pc, {
-    nclust = length(unique(scExp_cf()$cell_cluster))  
-    withProgress(message='Performing enrichment analysis...', value = 0, {
+    inputBams <- as.character(list_bams())
+    if(length(inputBams)==0){
+      warning("Can't find input BAM files.")
+    } else{
+      
+      nclust = length(unique(scExp_cf()$cell_cluster))  
+      withProgress(message='Performing enrichment analysis...', value = 0, {
         
         incProgress(amount = 0.1, detail = paste("Starting Peak Calling..."))
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks"), showWarnings = FALSE)
@@ -960,8 +967,8 @@ output$anno_cc_box <- renderUI({
         odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
         sample_ids <- unique(SummarizedExperiment::colData(scExp_cf())$sample_id)
         # inputBams <- as.character(unlist(sapply(sample_ids, function(x){ input[[paste0('bam_', x)]] })))
-        inputBams <- as.character(list_bams())
 
+        
         checkBams <- sapply(inputBams, function(x){ if(file.exists(x)){ 0 } else { 
           showNotification(paste0("Could not find file ", x, ". Please make sure to give a full path including the file name."),
                            duration = 7, closeButton = TRUE, type="warning"); 1}  
@@ -977,7 +984,7 @@ output$anno_cc_box <- renderUI({
         }
         incProgress(amount = 0.3, detail = paste("Finished Peak Calling..."))
       })
-    
+    }
   })
   
   pc <- reactiveValues(new="")
