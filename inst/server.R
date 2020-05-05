@@ -453,7 +453,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     req(input$color_by)
     if(input$color_by != 'total_counts'){
       shinydashboard::box(title = tagList("Color settings ",shiny::icon("palette")),
-                          width = NULL, status = "warning", solidHeader = T,
+                          width = NULL, status = "success", solidHeader = T,
           column(6, htmlOutput("color_picker")),
           column(6 , br(), actionButton("col_reset", "Default colours", icon = icon("undo")),
                  br(), br(), actionButton("save_color", "Save colors & apply to all", icon = icon("save"))))
@@ -531,23 +531,38 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                }
                  output$hc_heatmap_plot <- renderPlot({
                    print("Doing the Heatmap...")
-                   plot_heatmap_scExp(scExp(), color_by = c("sample_id","total_counts"))
+                   plot_heatmap_scExp(scExp(), color_by = c("sample_id","total_counts","batch_id"))
                  })
                }
   )
   
-  consensus_ran = reactive({
-    req(scExp_cf())
-    "consclust" %in% names(scExp_cf()@metadata)
+  cluster_type = reactive({
+    print("CLUSTER_TYPE")
+    if(!is.null(scExp_cf())){
+      if("consclust" %in% names(scExp_cf()@metadata)) {
+        input$cluster_type
+      } else {
+        showNotification("Run Consensus Hiearchical Clustering first..",type="warning")
+        FALSE
+      }
+    } else{
+      showNotification("Run Consensus Hiearchical Clustering first..",type="warning")
+      updateCheckboxInput(session,"cluster_type",value = FALSE)
+      FALSE
+    }
+  })
+  output$nclust_UI = renderUI({
+    selectInput("nclust", br("Number of Clusters:"), choices=c("",2:input$maxK))
   })
   
   observeEvent({input$nclust
+    cluster_type()
                },{
                  req(input$nclust, scExp_cf())
                  if(input$nclust != ""){
                    print("Started choosing cluster...")
                    scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust),
-                                                 consensus = consensus_ran()))
+                                                 consensus = cluster_type()))
                    unlocked$list$cor_clust_plot=TRUE;
                    unlocked$list$affectation=TRUE;
                    gc()
@@ -614,7 +629,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       incProgress(amount=0.6, detail=paste("Filtering"))
       scExp_cf(filter_correlated_cell_scExp(scExp_cf(), random_iter = 50, corr_threshold = input$corr_threshold,
                                             percent_correlation = input$percent_correlation))
-      scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust), consensus = consensus_ran()))
+      scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust), consensus = cluster_type()))
       gc()
       incProgress(amount=0.2, detail=paste("Saving"))
       data = list("scExp_cf" = scExp_cf())
@@ -681,26 +696,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   }
   })
   
-  # observeEvent(selected_filtered_dataset(), priority = 11, {
-  #   filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
-  #                         paste0(input$selected_reduced_dataset, ".RData"))
-  #     if(file.exists(filename)){
-  #       print(paste0("Loading scExp_cf : ",selected_filtered_dataset()))
-  #       myData = new.env()
-  #       load(filename, envir = myData)
-  #       scExp_cf(myData$data$scExp_cf)
-  #       rm(myData)
-  #       gc()
-  #       print(paste0("Finished loading scExp_cf : ",selected_filtered_dataset()))
-  #       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
-  #         updateSelectInput(session, inputId = "nclust", label = "Select number of clusters:", choices=c(2:10),
-  #                           selected = dplyr::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster))
-  #       }
-  #     } else {
-  #       NULL
-  #     }
-  # })
-  
   clusterAlg <- reactive({if(input$clusterAlg=="K-means") "kmdist"
     else if(input$clusterAlg == "Partitioning Medoids") "pam"
     else "hc"})
@@ -750,28 +745,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$nclust_selection_info <- renderText({"After performing the clustering
     and checking the results for different numbers of clusters, select here the
     preferred number of clusters to make additional annotated plots."})
-
-  # annotated_heatmap = reactiveVal(NULL)
-  # 
-  # 
-  # 
-  # output$annotated_heatmap_plot  <- function(){
-  #   if(! is.null(annotated_heatmap())){
-  #     print("Rendering anno heatmap")
-  #     renderPlot(annotated_heatmap())
-  #   } else {
-  #     print("Not Rendering anno heatmap")
-  #     NULL
-  #   }
-  # }
-  # 
-  # output$annotated_heatmap_UI <- renderUI({
-  #   req(annotated_heatmap())
-  #   print("Checking annotated heatmap for renderUI")
-  #   if(!is.null(annotated_heatmap())){
-  #       plotOutput("annotated_heatmap_plot",width = 500,height = 500)
-  #   }
-  # })
   
   observeEvent(input$do_annotated_heatmap_plot,
                {
@@ -780,7 +753,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                    output$annotated_heatmap_UI <- renderUI({
                      
                      print("Checking rendering annotated heatmap")
-                     output$annotated_heatmap_plot = renderPlot(plot_heatmap_scExp(scExp_cf()))
+                     output$annotated_heatmap_plot = renderPlot(plot_heatmap_scExp(isolate(scExp_cf())))
                      shinydashboard::box(title="Correlation Heatmap with cluster information", width = NULL, status="success", solidHeader = T,
                                          column(12, align="left", plotOutput("annotated_heatmap_plot",width = 500,height = 500)))
                  })
@@ -925,7 +898,7 @@ output$anno_cc_box <- renderUI({
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
         if(input$color_by_cf != 'total_counts'){
-          shinydashboard::box(title=tagList("Color settings ",shiny::icon("palette")), width = NULL, status = "warning", solidHeader = T,
+          shinydashboard::box(title=tagList("Color settings ",shiny::icon("palette")), width = NULL, status = "success", solidHeader = T,
                               column(6, htmlOutput("color_picker_cf")),
                               column(4 , br(), actionButton("col_reset_cf", "Default colours", icon = icon("undo")),
                                      br(), br(), actionButton("save_color_cf",
