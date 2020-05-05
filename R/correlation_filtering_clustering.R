@@ -339,10 +339,7 @@ choose_cluster_scExp <- function(scExp, nclust = 3, consensus = T, hc_linkage = 
     
     cell_clusters_list <- lapply(unique(cell_clusters), function(z) names(which(cell_clusters == 
         z)))
-    
-    mat.cc <- geco.groupMat(pca_t, margin = 1, groups = cell_clusters_list, method = "mean")
-    hcc <- stats::hclust(geco.distPearson(Matrix::t(mat.cc)), method = hc_linkage)
-    
+
     scExp = colors_scExp(scExp = scExp, annotCol = "cell_cluster", color_by = "cell_cluster", 
         color_df = NULL)
     

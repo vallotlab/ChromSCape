@@ -172,6 +172,7 @@ plot_reduced_dim_scExp <- function(scExp, color_by = "sample_id", reduced_dim = 
 #' @param scExp 
 #' @param name_hc 
 #' @param corColors 
+#' @param color_by 
 #'
 #' @return
 #' @export
@@ -180,7 +181,8 @@ plot_reduced_dim_scExp <- function(scExp, color_by = "sample_id", reduced_dim = 
 #' @importFrom SingleCellExperiment reducedDim reducedDimNames colData
 #' @importFrom grDevices colorRampPalette
 plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (grDevices::colorRampPalette(c("royalblue", 
-    "white", "indianred1")))(256))
+    "white", "indianred1")))(256),
+    color_by = NULL)
     {
     
     # make a variety of sanity check
@@ -193,16 +195,23 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (grDevices
     
     if (length(scExp@metadata[[name_hc]]$order) != ncol(scExp)) 
         stop("ChromSCape::plot_heatmap_scExp - Dendrogram has different number of cells than dataset.")
-    
+
     anocol = as.matrix(SingleCellExperiment::colData(scExp)[, grep("_color", colnames(SingleCellExperiment::colData(scExp))), 
         drop = F])
     colnames(anocol) = gsub("_color","",colnames(anocol))
-
-    geco.hclustAnnotHeatmapPlot(x = SingleCellExperiment::reducedDim(scExp, "Cor")[scExp@metadata[[name_hc]]$order, 
+    
+    if(!is.null(color_by)) {
+        if(length(intersect(color_by,colnames(anocol)))>0) 
+            anocol = anocol[,color_by,drop=F]
+    }
+    
+    return(
+        geco.hclustAnnotHeatmapPlot(x = SingleCellExperiment::reducedDim(scExp, "Cor")[scExp@metadata[[name_hc]]$order, 
         scExp@metadata[[name_hc]]$order], hc = scExp@metadata[[name_hc]], hmColors = corColors, 
         anocol = as.matrix(anocol[scExp@metadata[[name_hc]]$order, ]), xpos = c(0.15, 
             0.9, 0.164, 0.885), ypos = c(0.1, 0.5, 0.5, 0.6, 0.62, 0.95), dendro.cex = 0.04, 
         xlab.cex = 0.8, hmRowNames = FALSE)
+    )
 }
 
 
