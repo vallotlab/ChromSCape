@@ -897,7 +897,7 @@ output$anno_cc_box <- renderUI({
   # }
   # )
   
-  observeEvent(unlocked$list, {able_disable_tab(c("selected_analysis","selected_reduced_dataset","affectation"),c("peak_calling","diff_analysis"))}) 
+  observeEvent(unlocked$list, {able_disable_tab(c("selected_reduced_dataset","affectation"),c("peak_calling","diff_analysis"))}) 
   
   ###############################################################
   # 5. Peak calling [optional]
