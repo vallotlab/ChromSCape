@@ -555,9 +555,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     selectInput("nclust", br("Number of Clusters:"), choices=c("",2:input$maxK))
   })
   
-  observeEvent({input$nclust
-    cluster_type()
-               },{
+  observeEvent({input$choose_cluster},{
                  req(input$nclust, scExp_cf())
                  if(input$nclust != ""){
                    print("Started choosing cluster...")
@@ -754,73 +752,50 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                      
                      print("Checking rendering annotated heatmap")
                      output$annotated_heatmap_plot = renderPlot(plot_heatmap_scExp(isolate(scExp_cf())))
-                     shinydashboard::box(title="Correlation Heatmap with cluster information", width = NULL, status="success", solidHeader = T,
-                                         column(12, align="left", plotOutput("annotated_heatmap_plot",width = 500,height = 500)))
+                     plotOutput("annotated_heatmap_plot",width = 500,height = 500)
                  })
                }
                    print("Finished running do annotated heatmap plot")
                }
   )
   
-  observeEvent(input$choose_cluster, {
-    if(is.null(scExp_cf())){
-      print("scExp cf is null. Run consensus clustering first.")
-    }
-    else{
-      if(! "consclust" %in% names(scExp_cf()@metadata)){
-        showNotification("Could not find clustering results. Please make sure to perform the clustering before generating the final figures.", duration=7, closeButton=TRUE, type="warning")
-      } else{
-        withProgress(message='Preparing final figures...', value = 0, {
-          incProgress(amount=0.2, detail=paste("Choosing cluster & recalculating tsne..."))
-          scExp_cf(choose_cluster_scExp(scExp_cf(), as.integer(input$nclust)))
-          incProgress(amount=0.4, detail = paste("Finishing..."))
-          data = list("scExp_cf" = scExp_cf())
-          save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
-                                      paste0(input$selected_reduced_dataset,".RData")))
-          rm(data)
-          gc()
-          incProgress(amount=0.4, detail = paste("Saved"))
-        })
-      }
-    }
-  })
-  
-output$cons_clust_anno_plot <- renderPlot({
-  if(! is.null(scExp_cf())){
-    if("ConsensusAssociation" %in% names(scExp_cf()@metadata)){
-      colors <- SummarizedExperiment::colData(scExp_cf())[scExp_cf()@metadata$hc_consensus_association$order,"cell_cluster_color"]
-      heatmap(SingleCellExperiment::reducedDim(scExp_cf(),"ConsensusAssociation")[scExp_cf()@metadata$hc_consensus_association$order,],
-              Colv = as.dendrogram(scExp_cf()@metadata$hc_consensus_association),
-              Rowv = NA, symm = FALSE, scale="none", col = grDevices::colorRampPalette(c("white", "blue"))(100),
-              na.rm = TRUE, labRow = F, labCol = F, mar = c(5, 5), main = paste("consensus matrix k=", input$nclust, sep=""),
-              ColSideCol = colors)
-    }
-  }
-    })
-  
-output$anno_cc_box <- renderUI({
-  if(! is.null(scExp_cf())){
-    if("ConsensusAssociation" %in% names(scExp_cf()@metadata)){
-      shinydashboard::box(title="Annotated consensus clustering", width = NULL, status="success", solidHeader = T,
-          column(12, align="left", plotOutput("cons_clust_anno_plot", height = 500, width = 500),
-                 downloadButton("download_anno_cc_plot", "Download image")))
-    }
-  }
-  })
-  
-  output$download_anno_cc_plot <- downloadHandler(
-    filename = function(){ paste0("consensus_clustering_k", input$nclust, "_", selected_filtered_dataset(), ".png")},
-    content = function(file){
-      grDevices::png(file, width = 1200, height = 800, res = 300)
-      colors <- SummarizedExperiment::colData(scExp_cf())[scExp_cf()@metadata$hc_consensus_association$order,"cell_cluster_color"]
-      heatmap(SingleCellExperiment::reducedDim(scExp_cf(),"ConsensusAssociation")[scExp_cf()@metadata$hc_consensus_association$order,],
-              Colv = as.dendrogram(scExp_cf()@metadata$hc_consensus_association),
-              Rowv = NA, symm = FALSE, scale="none", col = colorRampPalette(c("white", "blue"))(100),
-              na.rm = TRUE, labRow = F, labCol = F, mar = c(5, 5), main = paste("consensus matrix k=", input$nclust, sep=""),
-              ColSideCol = colors)
-      grDevices::dev.off()
-  })
-  
+#   
+# output$cons_clust_anno_plot <- renderPlot({
+#   if(! is.null(scExp_cf())){
+#     if("ConsensusAssociation" %in% names(scExp_cf()@metadata)){
+#       colors <- SummarizedExperiment::colData(scExp_cf())[scExp_cf()@metadata$hc_consensus_association$order,"cell_cluster_color"]
+#       heatmap(SingleCellExperiment::reducedDim(scExp_cf(),"ConsensusAssociation")[scExp_cf()@metadata$hc_consensus_association$order,],
+#               Colv = as.dendrogram(scExp_cf()@metadata$hc_consensus_association),
+#               Rowv = NA, symm = FALSE, scale="none", col = grDevices::colorRampPalette(c("white", "blue"))(100),
+#               na.rm = TRUE, labRow = F, labCol = F, mar = c(5, 5), main = paste("consensus matrix k=", input$nclust, sep=""),
+#               ColSideCol = colors)
+#     }
+#   }
+#     })
+#   
+# output$anno_cc_box <- renderUI({
+#   if(! is.null(scExp_cf())){
+#     if("ConsensusAssociation" %in% names(scExp_cf()@metadata)){
+#       shinydashboard::box(title="Annotated consensus clustering", width = NULL, status="success", solidHeader = T,
+#           column(12, align="left", plotOutput("cons_clust_anno_plot", height = 500, width = 500),
+#                  downloadButton("download_anno_cc_plot", "Download image")))
+#     }
+#   }
+#   })
+#   
+#   output$download_anno_cc_plot <- downloadHandler(
+#     filename = function(){ paste0("consensus_clustering_k", input$nclust, "_", selected_filtered_dataset(), ".png")},
+#     content = function(file){
+#       grDevices::png(file, width = 1200, height = 800, res = 300)
+#       colors <- SummarizedExperiment::colData(scExp_cf())[scExp_cf()@metadata$hc_consensus_association$order,"cell_cluster_color"]
+#       heatmap(SingleCellExperiment::reducedDim(scExp_cf(),"ConsensusAssociation")[scExp_cf()@metadata$hc_consensus_association$order,],
+#               Colv = as.dendrogram(scExp_cf()@metadata$hc_consensus_association),
+#               Rowv = NA, symm = FALSE, scale="none", col = colorRampPalette(c("white", "blue"))(100),
+#               na.rm = TRUE, labRow = F, labCol = F, mar = c(5, 5), main = paste("consensus matrix k=", input$nclust, sep=""),
+#               ColSideCol = colors)
+#       grDevices::dev.off()
+#   })
+#   
   output$contingency_table_cluster <- renderUI({
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
@@ -1125,8 +1100,8 @@ output$anno_cc_box <- renderUI({
   output$diff_analysis_info <- renderText({"Differential analysis will be performed using the cluster assignment obtained on the Consensus clustering page. To use a different number of clusters, 
     go to this page and first perform the clustering, then select the preferred number of clusters in the box on the right in order to display and save the data. 
     It will then appear here for selection."})
-  output$selected_k <- renderText({
-    paste0( "Number of clusters selected  = ", dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster))
+  output$selected_k <- renderUI({
+    HTML(paste0("<h3><b>Number of clusters selected  = ", dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster),"</b></h3>"))
   })
   output$contrib_hist <- renderUI({ if(input$only_contrib_cells){ plotOutput("contrib_hist_p", height = 250, width = 500) }})
   output$contrib_hist_p <- renderPlot(contrib_hist_plot())
@@ -1189,9 +1164,8 @@ output$anno_cc_box <- renderUI({
         shinydashboard::box(title="Number of differentially bound regions", width = NULL, status="success", solidHeader = T,
             column(5, align="left", br(), tableOutput("da_summary_kable")),
             column(7, align="left", plotOutput("da_barplot", height = 270, width = 250)),
-            column(12, align="left", div(style = 'overflow-x: scroll', DT::dataTableOutput('da_table')), br()),
-            column(4, align="left", downloadButton("download_da_barplot", "Download barplot")),
-            column(4, align="left", downloadButton("download_da_table", "Download table")))
+            column(4, align="left", downloadButton("download_da_barplot", "Download barplot"))
+        )
       }
     }
   })
@@ -1222,6 +1196,7 @@ output$anno_cc_box <- renderUI({
     })
   
   output$da_table <- DT::renderDataTable({
+    req(input$gpsamp)
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
         table <- scExp_cf()@metadata$diff$res[, -c(1)]
@@ -1230,7 +1205,16 @@ output$anno_cc_box <- renderUI({
           table[, (5*i+5)] <- round(table[, (5*i+5)], 3) #counts
           table[, (5*i+6)] <- round(table[, (5*i+6)], 3) #cdiff
         }
-        table <- table[order(table$Rank.C1),]
+        print(head(table))
+        print(colnames(table))
+        print(input$gpsamp)
+        print(grep(input$gpsamp,colnames(table)))
+        print(colnames(table)[grep(input$gpsamp,colnames(table))])
+        print(c("chr","start","end",colnames(table)[grep(input$gpsamp,colnames(table))] ))
+        table = table[,c("chr","start","end",colnames(table)[grep(input$gpsamp,colnames(table))] )]
+        print(colnames(table))
+        print(head(table[,paste0("Rank.",input$gpsamp)]))
+        table <- table[order(table[,paste0("Rank.",input$gpsamp)]),]
         DT::datatable(table, options = list(dom='tpi'))
       }
     }
@@ -1248,8 +1232,10 @@ output$anno_cc_box <- renderUI({
   output$da_visu_box <- renderUI({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
-        shinydashboard::box(title="Visualization", width = NULL, status="success", solidHeader = T,
+        shinydashboard::box(title="Detailed differential analysis per cluster", width = NULL, status="success", solidHeader = T,
             column(4, align="left", selectInput("gpsamp", "Select cluster:", choices = scExp_cf()@metadata$diff$groups)),
+            column(4, align="left", downloadButton("download_da_table", "Download table")),
+            column(12, align="left", div(style = 'overflow-x: scroll', DT::dataTableOutput('da_table')), br()),
             column(12, align="left", plotOutput("h1_prop", height = 300, width = 500),
                    plotOutput("da_volcano", height = 500, width = 500)),
             column(4, align="left", downloadButton("download_h1_plot", "Download histogram")),
@@ -1462,15 +1448,15 @@ output$anno_cc_box <- renderUI({
   })
   
 
-  gene_tsne_p <- reactive({
+  gene_umap_p <- reactive({
     req(input$gene_sel, input$region_sel)
     region <- strsplit(input$region_sel, " ")[[1]][1]
     if(region %in% rownames(scExp_cf())){
-      p <- ggplot(as.data.frame(SingleCellExperiment::reducedDim(scExp_cf(), "TSNE")),
+      p <- ggplot(as.data.frame(SingleCellExperiment::reducedDim(scExp_cf(), "UMAP")),
                   aes(x = Component_1, y = Component_2)) +
         geom_point(alpha = 0.5, aes(color = SingleCellExperiment::normcounts(scExp_cf())[region, ],
                                     shape = SummarizedExperiment::colData(scExp_cf())$cell_cluster)) +
-        labs(color="norm. count for region", shape="Cluster", x="t-SNE 1", y="t-SNE 2") +
+        labs(color="norm. count for region", title = "UMAP", shape="Cluster", x="Component 1", y="Component 2") +
         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
               panel.background = element_blank(), axis.line = element_line(colour="black"),
               panel.border = element_rect(colour="black", fill = NA)) +
@@ -1478,12 +1464,15 @@ output$anno_cc_box <- renderUI({
     }
   })
   
-  output$gene_tsne_plot <- plotly::renderPlotly({
-      req(input$gene_sel, input$region_sel)
-      region <- strsplit(input$region_sel, " ")[[1]][1]
-      if(region %in% rownames(scExp_cf())){
-        plotly::ggplotly(gene_tsne_p(), tooltip="Sample", dynamicTicks = T)
-      }
+  output$gene_umap_UI <- renderUI({
+    req(input$gene_sel, input$region_sel)
+    region <- strsplit(input$region_sel, " ")[[1]][1]
+    if(region %in% rownames(scExp_cf())){
+      output$gene_umap_plot <- plotly::renderPlotly({
+          plotly::ggplotly(gene_umap_p(), tooltip="Sample", dynamicTicks = T)
+      })
+      plotly::plotlyOutput("gene_umap_plot")
+    }
   })
   
   

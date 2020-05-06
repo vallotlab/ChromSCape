@@ -284,6 +284,15 @@ consensus_clustering_scExp <- function(scExp, prefix = NULL, maxK = 10, reps = 1
     
     icl <- ConsensusClusterPlus::calcICL(consclust, plot = plot_icl, title = prefix)
     
+    # Remove unused objects :
+    for(i in 2:maxK) {
+        consclust[[i]]$consensusMatrix = NULL
+        consclust[[i]]$consensusTree = NULL
+        consclust[[i]]$ml = NULL
+        consclust[[i]]$clrs = NULL
+    }
+    gc()
+    
     scExp@metadata$consclust = consclust
     scExp@metadata$icl = icl
     
@@ -343,13 +352,14 @@ choose_cluster_scExp <- function(scExp, nclust = 3, consensus = T, hc_linkage = 
     scExp = colors_scExp(scExp = scExp, annotCol = "cell_cluster", color_by = "cell_cluster", 
         color_df = NULL)
     
-    if(consensus){
-        ml  =  scExp@metadata$consclust[[nclust]]$ml
-        rownames(ml) = colnames(ml) = names(scExp@metadata$consclust[[2]]$consensusClass)
-        SingleCellExperiment::reducedDim(scExp, "ConsensusAssociation") = ml[as.character(scExp$cell_id),as.character(scExp$cell_id)]
-        scExp@metadata$hc_consensus_association = stats::hclust(stats::as.dist(1 - SingleCellExperiment::reducedDim(scExp, 
-        "ConsensusAssociation")), method = hc_linkage)
-    }
+    # depreciated
+    # if(consensus){
+    #     ml  =  scExp@metadata$consclust[[nclust]]$ml
+    #     rownames(ml) = colnames(ml) = names(scExp@metadata$consclust[[2]]$consensusClass)
+    #     SingleCellExperiment::reducedDim(scExp, "ConsensusAssociation") = ml[as.character(scExp$cell_id),as.character(scExp$cell_id)]
+    #     scExp@metadata$hc_consensus_association = stats::hclust(stats::as.dist(1 - SingleCellExperiment::reducedDim(scExp, 
+    #     "ConsensusAssociation")), method = hc_linkage)
+    # }
     
     return(scExp)
 }
