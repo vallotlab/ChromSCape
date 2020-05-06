@@ -14,7 +14,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                           shinydashboard::menuItem("Filter & Normalize", tabName = "filter_normalize", icon=icon("fas fa-filter")),
                                           shinydashboard::menuItem("Vizualize Cells", tabName = "vizualize_dim_red", icon=icon("fas fa-image")),
                                           shinydashboard::menuItem("Cluster Cells", tabName = "cons_clustering", icon=icon("th")),
-                                          shinydashboard::menuItem("Peak Call", tabName = "peak_calling", icon=icon("chart-area")), #mountain
+                                          shinydashboard::menuItem("Peak Calling", tabName = "peak_calling", icon=icon("chart-area")), #mountain
                                           shinydashboard::menuItem("Differential analysis", tabName = "diff_analysis", icon=icon("chart-bar")),
                                           shinydashboard::menuItem("Enrichment analysis", tabName = "enrich_analysis", icon=icon("code-branch")),
                                           shinydashboard::menuItem("Close App & Save Analysis", tabName = "close_and_save", icon=icon("close"))
@@ -119,7 +119,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                                       sliderInput("quant_removal", shiny::HTML("<p><span style='color: red'>Select the upper percentile of cells to remove (potential doublets):</span></p>"),
                                                                                                    min=80, max=100, value=95, step=1),
                                                                                       sliderInput("min_cells_window", "Select minimum percentage of cells to support a window :", min=0, max=20, value=1, step=0.25),
-                                                                                      checkboxInput("run_tsne", "Run T-SNE", value= TRUE) %>%
+                                                                                      checkboxInput("run_tsne", "Run T-SNE", value= FALSE) %>%
                                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                                               content = "run_tsne"),
                                                                                       checkboxInput("do_subsample", "Perform subsampling", value=FALSE)%>%
@@ -236,15 +236,20 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                              align="left",
                                                              column(width=4,uiOutput("nclust_UI")),
                                                              column(width=3, br(),br(), checkboxInput("cluster_type",label = shiny::HTML("<b>Use consensus</b>"),value = FALSE)),
-                                                             column(width=4, br(),br(),
-                                                                    actionButton(inputId = "do_annotated_heatmap_plot", label = "Plot Clustered Heatmap"))
-                                                             ),
-                                         # uiOutput("anno_cc_box"),
-                                         uiOutput("annotated_heatmap_UI"),
+                                                             column(width=3,br(),br(),actionButton(inputId = "choose_cluster", label = "Choose Cluster"))
+                                         ),
                                          uiOutput("contingency_table_cluster"),
                                          uiOutput("umap_box_cf"),
                                          uiOutput("tsne_box_cf"),
-                                         uiOutput("color_box_cf")))
+                                         uiOutput("color_box_cf"),
+                                         shinydashboard::box(title="Correlation heatmap with cluster annotation", width=NULL,
+                                                             status="success", solidHeader=T, align="left",
+                                                             column(width=4,
+                                                                    actionButton(inputId = "do_annotated_heatmap_plot", label = "Plot Clustered Heatmap"), br()),
+                                                             column(width=12, uiOutput("annotated_heatmap_UI"))
+                                         )
+                                  )
+                                )
                         ),
                         
                         ###############################################################
@@ -271,7 +276,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                              column(4, align="left", textOutput("pc_k_selection"),
                                                     selectInput("pc_stat","Select statistic for cutoff:", choices=c("p.value", "q.value"), selected="p.value")),
                                              column(8, align="left", br(), br(), br(), br(),
-                                                    sliderInput("pc_stat_value", "select significance threshold:", min=0, max=0.25, value=0.05, step=0.01)),
+                                                    sliderInput("pc_stat_value", "Select significance threshold:", min=0, max=0.25, value=0.05, step=0.01)),
                                              column(12, align="left", hr(), actionButton("do_pc", "Start"))))
                                   # ,column(width=6, uiOutput("pc_plot_box"))
                                   )
@@ -286,7 +291,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                   column(width=6,
                                          shinydashboard::box(title="Differential Analysis parameters", width=NULL, status="success", solidHeader=T,
                                              column(12, align="left", textOutput("diff_analysis_info"), br()),
-                                             column(5, align="left", textOutput("selected_k")),
+                                             column(8, align="left", htmlOutput("selected_k"), br()),
                                              column(5, align="left", selectInput("de_type", "Select type of cluster comparison:", choices=c("one_vs_rest","pairwise"))),
                                              column(12, align="left", sliderInput("qval.th", "Adjusted p-value to select significant features:", min=0.01, max=0.4, value=0.01, step=0.01),
                                                     sliderInput("cdiff.th", "Minimum log-fold change to select significant locations:", min=0, max=3, value=1, step=0.01),
@@ -327,7 +332,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                          shinydashboard::box(title="Binding strength near TSS", width=NULL, status="success", solidHeader=T,
                                              column(4, align="left", uiOutput("gene_sel")),
                                              column(8, align="left", uiOutput("region_sel")),
-                                             column(12, align="left", plotly::plotlyOutput("gene_tsne_plot")))))
+                                             column(12, align="left", uiOutput("gene_umap_UI")))))
                         ),
                         
                         ###############################################################

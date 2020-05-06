@@ -7,7 +7,8 @@
 plot_heatmap_scExp(
   scExp,
   name_hc = "hc_cor",
-  corColors = (grDevices::colorRampPalette(c("royalblue", "white", "indianred1")))(256)
+  corColors = (grDevices::colorRampPalette(c("royalblue", "white", "indianred1")))(256),
+  color_by = NULL
 )
 }
 \arguments{
@@ -16,6 +17,8 @@ plot_heatmap_scExp(
 \item{name_hc}{}
 
 \item{corColors}{}
+
+\item{color_by}{}
 }
 \value{
 
