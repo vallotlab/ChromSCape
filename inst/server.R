@@ -338,7 +338,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     scExp(scExp.)
     rm(scExp.)
     gc()
-    
     print("Finished Loading reduced dataset")
   })
 
@@ -542,18 +541,22 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     print("CLUSTER_TYPE")
     if(!is.null(scExp_cf())){
       if("consclust" %in% names(scExp_cf()@metadata)) {
+        print('return TRUE')
         input$cluster_type
       } else {
+        print('return FALSE')
         FALSE
       }
     } else{
       showNotification("Run Consensus Hiearchical Clustering first..",type="warning")
       updateCheckboxInput(session,"cluster_type",value = FALSE)
+      print('return FALSE')
       FALSE
     }
+    
   })
   output$nclust_UI = renderUI({
-    selectInput("nclust", br("Number of Clusters:"), choices=c("",2:input$maxK))
+    selectInput("nclust", br("Number of Clusters:"), choices=c(2:input$maxK))
   })
   
   observeEvent({input$choose_cluster},{
