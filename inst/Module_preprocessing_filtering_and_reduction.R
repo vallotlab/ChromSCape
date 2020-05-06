@@ -17,6 +17,7 @@ Module_preprocessing_filtering_and_reduction <- function(input, output, session,
         incProgress(amount = 0.1, detail = paste("Loading raw data..."))
         
         print(system.time({scExp = create_scExp(datamatrix(), annot_raw(), remove_zero_cells = T, remove_zero_features = T)}))
+        gc()
         
         ### 2. Filtering & Window selection ###
         
@@ -24,17 +25,21 @@ Module_preprocessing_filtering_and_reduction <- function(input, output, session,
         print("Filter...")
         print(system.time({ scExp = filter_scExp(scExp, min_cov_cell = min_cov_cell(), quant_removal = quant_removal(), 
             percentMin = percentMin())}))
+        gc()
         
         # Filtering based on exclude-regions from bed file, if provided
         if (!is.null(exclude_regions()))
         {
             scExp = exclude_features_scExp(scExp, exclude_regions(), by = "region")
+            gc()
         }
         
         ### 2.bis Optional subsampling ###
         if(length(subsample_n())>0){
             print("Doing subsampling")
             scExp = subsample_scExp(scExp, n_cells = subsample_n())
+            gc()
+            
         }
         
         ### 3. Normalizing ###
@@ -42,12 +47,14 @@ Module_preprocessing_filtering_and_reduction <- function(input, output, session,
         incProgress(amount = 0.1, detail = paste("Normalization..."))
         print("Normalize....")
         print(system.time({scExp = normalize_scExp(scExp, type = "CPM")}))
+        gc()
         
         ### 4. Feature annotation ###
         
         incProgress(amount = 0.3, detail = paste("Feature annotation..."))
         print("Feature annotation...")
         print(system.time({scExp = feature_annotation_scExp(scExp, ref = annotation_id())}))
+        gc()
         
         # Original PCA
         print("Running Dimensionality Reduction...")
@@ -62,6 +69,7 @@ Module_preprocessing_filtering_and_reduction <- function(input, output, session,
             scExp, dimension_reductions = methods,
             batch_correction = doBatchCorr(), batch_list = batch_sels(), 
             verbose = F)}))
+        gc()
         
         ### 7. Add default colors ###
         print("Add colors ...")

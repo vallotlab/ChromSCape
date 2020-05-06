@@ -211,7 +211,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       rm(myData)
       gc()
       print("Finished Loading Analysis")
-      }
+    }
+    
   })
   
   # observeEvent(input$selected_analysis,{
@@ -337,6 +338,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     scExp(scExp.)
     rm(scExp.)
     gc()
+    
     print("Finished Loading reduced dataset")
   })
 
@@ -542,7 +544,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       if("consclust" %in% names(scExp_cf()@metadata)) {
         input$cluster_type
       } else {
-        showNotification("Run Consensus Hiearchical Clustering first..",type="warning")
         FALSE
       }
     } else{
@@ -556,6 +557,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   observeEvent({input$choose_cluster},{
+    
                  req(input$nclust, scExp_cf())
                  if(input$nclust != ""){
                    print("Started choosing cluster...")
@@ -564,6 +566,18 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                    unlocked$list$cor_clust_plot=TRUE;
                    unlocked$list$affectation=TRUE;
                    gc()
+                   file = file.path(init$data_folder, "ChromSCape_analyses",
+                                    analysis_name(), "correlation_clustering",
+                                    paste0(selected_filtered_dataset(),".RData"))
+                   if(!file.exists(file)){
+                     print(paste0("Saving scExp_cf corr : ",selected_filtered_dataset()))
+                     data = list("scExp_cf" = scExp_cf())
+                     save(data,file=file )
+                     rm(data)
+                     gc()
+                     print(paste0("Finished saving scExp corr: ",selected_filtered_dataset()))
+                     
+                   }
                    print("Finished choosing cluster...")
                  }
                })
@@ -1146,14 +1160,17 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     withProgress(message='Performing differential analysis...', value = 0, {
       incProgress(amount = 0.2, detail = paste("Initializing DA"))
       if(batchUsed()) block = T else block = F
+      gc()
       scExp_cf(differential_analysis_scExp(scExp_cf(), de_type = input$de_type,
                                            cdiff.th = input$cdiff.th, qval.th = input$qval.th, block)) 
+      gc()
       incProgress(amount = 0.6, detail = paste("Finishing DA..."))
       data = list("scExp_cf" = scExp_cf())
       save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "diff_analysis_GSEA",
                                   paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
                                          "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData")))
-  
+      rm(data)
+      gc()
       incProgress(amount = 0.2, detail = paste("Saving DA"))
     })
   })
@@ -1205,15 +1222,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           table[, (5*i+5)] <- round(table[, (5*i+5)], 3) #counts
           table[, (5*i+6)] <- round(table[, (5*i+6)], 3) #cdiff
         }
-        print(head(table))
-        print(colnames(table))
-        print(input$gpsamp)
-        print(grep(input$gpsamp,colnames(table)))
-        print(colnames(table)[grep(input$gpsamp,colnames(table))])
-        print(c("chr","start","end",colnames(table)[grep(input$gpsamp,colnames(table))] ))
+        
         table = table[,c("chr","start","end",colnames(table)[grep(input$gpsamp,colnames(table))] )]
-        print(colnames(table))
-        print(head(table[,paste0("Rank.",input$gpsamp)]))
         table <- table[order(table[,paste0("Rank.",input$gpsamp)]),]
         DT::datatable(table, options = list(dom='tpi'))
       }
@@ -1304,16 +1314,20 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   ###############################################################
   
   MSIG.classes <- reactive({
-    myData = new.env()
-    eval(parse(text = paste0("data(", annotation_id(), ".MSIG.gs)")))
-    eval(parse(text = paste0("classes = ",annotation_id(), ".MSIG.gs$Class")))
-    unique(classes)
+    if(input$tabs == "enrich_analysis"){
+      myData = new.env()
+      eval(parse(text = paste0("data(", annotation_id(), ".MSIG.gs)")))
+      eval(parse(text = paste0("classes = ",annotation_id(), ".MSIG.gs$Class")))
+      unique(classes)
+    }
   })
 
   annotFeat_long <- reactive({
-    af = as.data.frame(SummarizedExperiment::rowData(scExp_cf()))
-    af = tidyr::separate_rows(af, Gene,sep = ", ")
-    af
+    if(input$tabs == "enrich_analysis"){
+      af = as.data.frame(SummarizedExperiment::rowData(scExp_cf()))
+      af = tidyr::separate_rows(af, Gene,sep = ", ")
+      af
+    }
   })
   
   output$enr_info <- renderText({"Enrichment will be performed based on the significant genes per cluster that were computed on the previous page. 
@@ -1337,25 +1351,31 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   enr <- reactiveValues(Both = NULL, Overexpressed = NULL, Underexpressed = NULL)
   
   GencodeGenes <- reactive({
-    myData = new.env()
-    eval(parse(text = paste0("data(",annotation_id(),".GeneTSS, envir = myData)")))
-    as.character(unique(
-      eval(parse(text = paste0("myData$",annotation_id(),".GeneTSS$gene")))
-    ))
+    if(input$tabs == "enrich_analysis"){
+      myData = new.env()
+      eval(parse(text = paste0("data(",annotation_id(),".GeneTSS, envir = myData)")))
+      as.character(unique(
+        eval(parse(text = paste0("myData$",annotation_id(),".GeneTSS$gene")))
+      ))
+    }
   })
   
   observeEvent(input$do_enrich, {
     withProgress(message='Performing enrichment analysis...', value = 0, {
 
       incProgress(amount = 0.3, detail = paste("Running GSEA..."))
+      gc()
       scExp_cf(gene_set_enrichment_analysis_scExp(scExp_cf(), enrichment_qval = 0.01, qval.th = input$qval.th,
                                                   ref = annotation_id(), cdiff.th = input$cdiff.th,
                                                   peak_distance = 1000, use_peaks = input$use_peaks))
+      gc()
       incProgress(amount = 0.6, detail = paste("Finishing GSEA..."))
       data = list("scExp_cf" = scExp_cf() )
       save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "diff_analysis_GSEA",
                                   paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
                                          "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData")))
+      rm(data)
+      gc()
       incProgress(amount = 0.6, detail = paste("Saving GSEA"))
       
     })
@@ -1369,7 +1389,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
     })
   
-  output$enr_class_sel <- renderUI({shiny::checkboxGroupInput(
+  output$enr_class_sel <- renderUI({
+    req(MSIG.classes())
+    shiny::checkboxGroupInput(
     inputId = "enr_class_sel", inline = T,
     label =  "Select classes to display:",
     selected = MSIG.classes(), choiceNames = MSIG.classes(),
