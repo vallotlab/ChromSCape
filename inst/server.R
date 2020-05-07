@@ -203,14 +203,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$selected_analysis, {  # load precompiled dataset and update coverage plot
     if(!is.null(input$selected_analysis) & input$selected_analysis != ""){
-      print(paste0("Loading Analysis : ", input$selected_analysis))
       myData = new.env()
       load(file.path(init$data_folder,"ChromSCape_analyses", input$selected_analysis, "scChIP_raw.RData"), envir = myData)
       init$datamatrix <- myData$datamatrix
       init$annot_raw <- myData$annot_raw
       rm(myData)
       gc()
-      print("Finished Loading Analysis")
     }
     
   })
@@ -319,15 +317,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(input$selected_reduced_dataset, { # load reduced data set to work with on next pages
     req(input$selected_reduced_dataset)
     
-    print(paste0("Adding Plot ressource : ", input$selected_analysis))
     if(file.exists(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering","Plots"))) 
       addResourcePath('Plots', file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering","Plots"))
-    print(paste0("Finishing adding Plot ressource : ", input$selected_analysis))
-    
+
     file_index <- match(c(input$selected_reduced_dataset), reduced_datasets())
     filename_sel <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),"Filtering_Normalize_Reduce",init$available_reduced_datasets[file_index])
   
-    print(paste0("Loading reduced dataset : ", input$selected_reduced_dataset))
     myData = new.env()
     load(filename_sel, envir = myData)
     if(is.reactive(myData$scExp)) myData$scExp = isolate(myData$scExp())
@@ -338,7 +333,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     scExp(scExp.)
     rm(scExp.)
     gc()
-    print("Finished Loading reduced dataset")
   })
 
   # observeEvent(input$selected_reduced_dataset, {  # load scExp, add colors, add correlation
@@ -351,10 +345,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   # })
 
   cell_cov_df <- reactive ({
-    print("Doing cell_cov_df")
     df = data.frame(coverage = sort(unname(Matrix::colSums(init$datamatrix)))) 
     gc()
-    print("Finishing cell_cov_df")
     df
     })  # used for plotting cell coverage on first page
   
@@ -384,10 +376,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$num_cell_after_QC_filt <- function(){
     req(input$selected_reduced_dataset,scExp())
-    print("Doing num_cell_after_QC_filt_scExp")
     tab = num_cell_after_QC_filt_scExp(scExp(),init$annot_raw)
-    print("Finished num_cell_after_QC_filt_scExp")
-    
     tab
   }
   
@@ -517,40 +506,33 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                   analysis_name(), "correlation_clustering",
                                   paste0(selected_filtered_dataset(),".RData"))
                  if(file.exists(file)){
-                   print(paste0("Loading scExp_cf corr : ",selected_filtered_dataset()))
                    myData = new.env()
                    load(file, envir = myData)
                    scExp_cf(myData$data$scExp_cf)
                    rm(myData)
                    gc()
-                   print(paste0("Finished loading scExp corr: ",selected_filtered_dataset()))
-                   
+
                  } else {
                    scExp_cf(scExp())
                    gc()
                  }
                }
                  output$hc_heatmap_plot <- renderPlot({
-                   print("Doing the Heatmap...")
                    plot_heatmap_scExp(scExp(), color_by = c("sample_id","total_counts","batch_id"))
                  })
                }
   )
   
   cluster_type = reactive({
-    print("CLUSTER_TYPE")
     if(!is.null(scExp_cf())){
       if("consclust" %in% names(scExp_cf()@metadata)) {
-        print('return TRUE')
         input$cluster_type
       } else {
-        print('return FALSE')
         FALSE
       }
     } else{
       showNotification("Run Consensus Hiearchical Clustering first..",type="warning")
       updateCheckboxInput(session,"cluster_type",value = FALSE)
-      print('return FALSE')
       FALSE
     }
     
@@ -563,7 +545,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     
                  req(input$nclust, scExp_cf())
                  if(input$nclust != ""){
-                   print("Started choosing cluster...")
                    scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust),
                                                  consensus = cluster_type()))
                    unlocked$list$cor_clust_plot=TRUE;
@@ -573,15 +554,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                     analysis_name(), "correlation_clustering",
                                     paste0(selected_filtered_dataset(),".RData"))
                    if(!file.exists(file)){
-                     print(paste0("Saving scExp_cf corr : ",selected_filtered_dataset()))
                      data = list("scExp_cf" = scExp_cf())
                      save(data,file=file )
                      rm(data)
                      gc()
-                     print(paste0("Finished saving scExp corr: ",selected_filtered_dataset()))
-                     
+
                    }
-                   print("Finished choosing cluster...")
                  }
                })
   
@@ -763,16 +741,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$do_annotated_heatmap_plot,
                {
-                 print("Running do annotated heatmap plot")
                  if(input$nclust != ""){
                    output$annotated_heatmap_UI <- renderUI({
                      
-                     print("Checking rendering annotated heatmap")
                      output$annotated_heatmap_plot = renderPlot(plot_heatmap_scExp(isolate(scExp_cf())))
                      plotOutput("annotated_heatmap_plot",width = 500,height = 500)
                  })
                }
-                   print("Finished running do annotated heatmap plot")
                }
   )
   
@@ -1145,13 +1120,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                      "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData"))
         
         if(file.exists(filename)){
-          print(paste0("Loading DA : ",selected_filtered_dataset()))
           myData = new.env()
           load(filename, envir = myData)
           scExp_cf(myData$data$scExp_cf)
           rm(myData)
           gc()
-          print(paste0("Finished DA : ",selected_filtered_dataset()))
         } else {
           NULL
         }
@@ -1299,8 +1272,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     })
   
     observeEvent(unlocked$list, {
-      able_disable_tab(c("selected_analysis","selected_reduced_dataset",
-                         "diff_my_res"),"enrich_analysis")
+      able_disable_tab(c("diff_my_res"),"enrich_analysis")
     }) 
     
     observeEvent(scExp_cf(), {

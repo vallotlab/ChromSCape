@@ -61,8 +61,6 @@ Module_preprocessing_filtering_and_reduction <- function(input, output, session,
         
         incProgress(amount = 0.3, detail = paste("Performing Dimensionality Reduction..."))
         print("Reduce dimensions annotation...")
-        print(dim(scExp))
-        print(class(SingleCellExperiment::normcounts(scExp)))
         if(run_tsne()) methods = c("PCA","TSNE","UMAP") else 
             methods = c("PCA","UMAP")
         print(system.time({scExp = reduce_dims_scExp(

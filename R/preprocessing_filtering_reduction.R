@@ -434,7 +434,7 @@ create_scExp <- function(datamatrix,
         rownames(scExp) <- rows
     }
     
-    scExp <- scater::calculateQCMetrics(scExp)
+    suppressWarnings({scExp <- scater::calculateQCMetrics(scExp)})
     
     return(scExp)
 }
@@ -668,9 +668,9 @@ exclude_features_scExp <-
                     start.field = c("start"),
                     end.field = c("stop")
                 )
-            ovrlps <-
+            suppressWarnings({ovrlps <-
                 as.data.frame(GenomicRanges::findOverlaps(regions, excl_gr))[,
-                                                                             1]
+                                                                             1]})
             if (length(unique(ovrlps) > 0))
             {
                 scExp <- scExp[-unique(ovrlps),]
@@ -696,8 +696,8 @@ exclude_features_scExp <-
             features <- rownames(scExp)
             features_to_exclude <-
                 as.character(features_to_exclude[, 1])
-            ovrlps <-
-                GenomicRanges::intersect(features, features_to_exclude)
+            suppressWarnings({ovrlps <-
+                GenomicRanges::intersect(features, features_to_exclude)})
             if (length(unique(ovrlps) > 0))
             {
                 scExp <- scExp[-which(rownames(scExp) %in% ovrlps),]
@@ -891,13 +891,13 @@ feature_annotation_scExp <- function(scExp,
     }
     
     feature_ranges <- SummarizedExperiment::rowRanges(scExp)
-    hits <-
+    suppressWarnings({hits <-
         GenomicRanges::distanceToNearest(
             feature_ranges,
             reference_annotation,
             ignore.strand = T,
             select = "all"
-        )
+        )})
     
     annotFeat <- data.frame(
         chr = as.character(GenomicRanges::seqnames(feature_ranges[S4Vectors::queryHits(hits)])),
