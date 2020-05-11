@@ -1,6 +1,6 @@
 ---
 title: "ChromSCape Guide"
-author: "Pacome Prompsy"
+author: "Pacôme Prompsy, Pia Kirchmeier & Céline Vallot"
 date: "5/9/2020"
 output: 
   html_document:
@@ -17,22 +17,111 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# Installation
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+**ChromSCape** requires R version 3.5 or higher (does not work on R 4.0 yet).
+To install **ChromSCape**, open **R** or **Rstudio** and copy the following commands :
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r, eval=FALSE}
+install.packages("devtools")
+devtools::install_github("vallotlab/ChromSCape")
 ```
 
-## Including Plots
+## Launching the application
 
-You can also embed plots, for example:
+To launch the application simply run:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r, eval=FALSE}
+library(ChromSCape)
+ChromSCape::launchApp()
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# What is ChromSCape ?
+
+**ChromSCape** - Single-Cell Chromatin Landscape profiling - is a ready-to-launch 
+user-friendly **Shiny** application for analysis of single-cell epigenomic datasets
+(scChIP-seq, scATAC-seq...). ChromSCape is used to reveal heterogeneity of chromatin
+landscapes within single-cell of one or more samples using dimensionality reduction & 
+unsupervised consensus clustering. The user can then interrogate the biological difference
+of each epigenomic subpopulation by running differential analysis & gene set enrichment
+analysis.  
+Various existing technologies allow to produce single-cell genome-wide epigenomic
+datasets :  
+
+  * scChIP-seq (Grosselin et al., 2019) CUT&TAG (Kaya-Okur et al., 2019),
+ scChIL-seq (Harada et al., 2019), scChIC-seq (Ku et al.,) are technologies that
+ isolate DNA sequences attached to histones with specific marks (H3K27me3, H3K4me3)
+ or transcription factors (RNA Polymerase 2,...) in single-cells 
+  * scATAC-seq(Buenorostro et al., 2015), sciATAC-seq (Cusanovitch et al., 2016) 
+ are technologies that allows to asses regions of open chromatin in single-cells 
+  
+   
+   
+![**ChromSCape Overview: **  The application takes as input single-cell count matrices and let the user filter & cluster cells, rundifferential analysis & gene set enrichment analysis between epigenomic subpopulations, in an unsupervised manner.](../inst/www/ChromSCape_concept.png)
+
+# Step-by-step analysis of single-cell epigenomic data
+
+## Input 
+
+### Prepare your input files 
+
+#### Count matrices
+
+After sequencing a single-cell epigenomic experiment, the raw sequencing files 
+(.fastq) are demultiplexed, aligned against a reference genome to output a count
+matrix using a data engineering pipeline specific of the technology. 
+For instance, the scChIP-seq raw data produced in (Grosselin et al., 2019) is 
+processed using our pipeline [scChIP-seq data engineering](https://github.com/vallotlab/scChIPseq_DataEngineering).
+For each cells, reads are counted according to features (extended region around TSS of genes, enhancers),
+to peaks called on the single-cell or bulk experiment or into genomic bins (windows of 
+constant length).  
+
+**Matrix format**: ChromSCape expects as input one single-cell count matrix per condition in tab-separated
+format (extension .txt or .tsv).  The first column is genomic location in standard
+format (chr:start-end, 0 based) and the next columns are reads counted in each cells
+in the corresponding genomic feature. Note that the first entry (row 1, column 1)
+must be empty. All files should be placed in the same folder.
+
+```{r, eval=FALSE}
+head example_matrix.tsv | cut -f1-5
+ 	BC969404	BC893525	BC239068	BC073314
+chr10:0-50000	0	0	0	0
+chr10:50000-100000	0	0	0	0
+chr10:100000-150000	0	0	0	0
+...
+```
+  
+  
+#### Alignment BAM files for optional Peak Calling (**optional**)
+
+For the optional step of Peak Calling on cluster of cells found de novo, 
+users have to input one BAM file per sample, placed in the same folder. The barcode
+information of each read should be contained in a specific tag (XB, CB..) and correspond
+to the column names of the corresponding count matrix.
+
+```{r, eval=FALSE}
+samtools view example_matrix.bam | head
+NS500388:436:HNG5VAFXX:2:21311:26430:3816	89	chr10	3102405	255	51M	*	0	0	CTTGGTGTCTAGTGGATCTGCTGCAGTCTTCTGTTGTCAGTGCTAAATCAC	EEEEE/E6EEEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAAAAA	NH:i:1	HI:i:1	AS:i:50	nM:i:0	XS:i:2147483647	XD:Z:GATGACAAAG	XB:Z:BC969404
+...
+```
+  
+  
+### Available datasets
+
+Two datasets are available :  
+
+ * **Single-Cell ChIP-seq PDX dataset against H3K27me3**:  
+ Input count matrices & BAM files
+ corresponding to mouse cells from 2 PDX models, luminal and triple negative
+ breast cancer tumours resistant or not to cancer therapy (respectively HBCx_22
+ & HBCx_95, see Grosselin et al., 2019). [[scChIP-seq data FigShare](https://figshare.com/projects/Single-Cell_ChIP-seq_of_Mouse_Stromal_Cells_in_PDX_tumour_models_of_resistance/66419)]
+
+ * **Single-cell ATAC seq dataset**:  
+ Data from Buenrostro et al., 2015, Corces et al., 2016, Schep et al., 2017 of cell lines & 
+ patients sample of various cell types. [[scATAC-seq data FigShare](https://figshare.com/projects/Single-Cell_ChIP-seq_of_Mouse_Stromal_Cells_in_PDX_tumour_models_of_resistance/66419)]]  
+
+  
+### Create & import a dataset
+
+Once you have launched the application, you should be 
+  

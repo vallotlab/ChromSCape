@@ -1,10 +1,4 @@
----
-output: 
-  html_document: 
-    self_contained: no
----
-# ChromSCape: Analysis of single-cell ChIP-seq data in a Shiny App
-
+# ChromSCape: Analysis of single-cell epigenomic data in a Shiny App
 
 ## What is ChromSCape ?
 
@@ -30,8 +24,10 @@ Various existing technologies allow to produce single-cell epigenomic datasets :
 To install **ChromSCape**, open **R** or **Rstudio** and copy the following commands : 
 
 ```
-install.packages("devtools")
-devtools::install_github("vallotlab/ChromSCape", ref = "package")
+if (!requireNamespace("devtools", quietly = TRUE)){
+  install.packages("devtools")
+}
+devtools::install_github("vallotlab/ChromSCape")
 ```
 
 Once the installation was sucessful, launch **ChromSCape** using the following command :
@@ -45,6 +41,10 @@ It is recommended to use Chrome browser for optimal display of graphics & table.
 If no browser opens, copy the url after 'Listening on ...' and paste in your browser.
 
 Play around by inputing a simple matrix (unzip first): [single-cell ChIP-seq matrix - HBCx95 (H3K27me3 mark)](inst/extdata/example_matrix.tsv.zip)
+
+## User guide
+
+[User guide](www.github.io/vallotlab/ChromSCape/ChromSCape_guide.html) \[in development\]
 
 ## Test datasets
 
