@@ -141,4 +141,6 @@ Two datasets are available :
 ### Create & import a dataset
 
 Once you have launched the application, you should be 
+
+## R commands 
   

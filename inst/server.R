@@ -1305,8 +1305,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
   
-  url <- a("MSigDB homepage", href="https://www.gsea-msigdb.org/gsea/msigdb/index.jsp")
-  output$enr_info <- renderText({tagList("Enrichment will be performed based on the
+  url <- a("MSigDB homepage", href="https://www.gsea-msigdb.org/gsea/msigdb/index.jsp",
+           target='"_blank">gsea-msigdb.org/gsea/msigdb/index.jsp')
+  output$enr_info <- renderUI({tagList("Enrichment will be performed based on the
                                          significant genes per cluster that were computed on the previous page. 
                                          Genes in vincinity of differential features are tested using hypergeometric test
                                          against MSigDB pathway lists (", url,").")})
