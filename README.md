@@ -46,7 +46,7 @@ Two datasets are available :
  Input count matrices & BAM files
  corresponding to mouse cells from 2 PDX models, luminal and triple negative
  breast cancer tumours resistant or not to cancer therapy (respectively HBCx_22
- & HBCx_95, see Grosselin et al., 2019). [[scChIP-seq data FigShare](https://figshare.com/projects/Single-Cell_ChIP-seq_of_Mouse_Stromal_Cells_in_PDX_tumour_models_of_resistance/66419)]
+ & HBCx_95, see Grosselin et al., 2019). [[scChIP-seq data FigShare](https://figshare.com/articles/PDX_mouse_cells_H3K27me3_scChIP-seq_matrices/12280631)]
 
  * **Single-cell ATAC seq dataset**:  
  Data from Buenrostro et al., 2015, Corces et al., 2016, Schep et al., 2017 of cell lines & 
