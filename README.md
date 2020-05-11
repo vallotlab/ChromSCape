@@ -5,19 +5,6 @@
 **ChromSCape** - Single-Cell Chromatin Landscape profiling - is a ready-to-launch user-friendly **Shiny App** for analysis of single-cell epigenomic datasets (scChIP-seq, scATAC-seq...). It takes as input single-cell count matrices and let the user filter & cluster cells, run differential analysis & gene set enrichment analysis between epigenomic subpopulations, in an unsupervised manner.  
 Various existing technologies allow to produce single-cell epigenomic datasets : scChIP-seq, scATAC-seq, scCUT&TAG, scChIL-seq, scChIC-seq ...
 
-## Contents
-
-- [What is ChromSCape ?](#what-is-chromscape-)
-- [Launch the App](#Launch-the-App)
-- [Docker version ](#Docker-version)
-- [Test datasets](#Test-datasets)
-- [Run Time](#Run-Time)
-- [Walkthrough of the App with screencast](#Walkthrough-of-the-App-with-screencast)
-- [Output](#Output)
-- [Detailed walkthrough of the App](#Detailed-walkthrough-of-the-App)
-- [Authors](#Authors)
-- [Session Info](#Session-Info)
-
 ## Launch the App 
 
 **ChromSCape** requires R version 3.5 or 3.6 (does not work on R 4.0 yet!).
@@ -40,11 +27,11 @@ ChromSCape::launchApp()
 It is recommended to use Chrome browser for optimal display of graphics & table.
 If no browser opens, copy the url after 'Listening on ...' and paste in your browser.
 
-Play around by inputing a simple matrix (unzip first): [single-cell ChIP-seq matrix - HBCx95 (H3K27me3 mark)](inst/extdata/example_matrix.tsv.zip)
+Play around by inputing a simple scChIP-seq against H3K27me3 mouse count matrix (unzip first): [single-cell ChIP-seq matrix - HBCx95 (H3K27me3 mark)](inst/extdata/example_matrix.tsv.zip)
 
 ## User guide
 
-[User guide](www.github.io/vallotlab/ChromSCape/ChromSCape_guide.html) \[in development\]
+[User guide](https://vallotlab.github.io/ChromSCape/ChromSCape_guide.html) \[*in development*\]
 
 ## Test datasets
 
@@ -52,9 +39,19 @@ ChromSCape takes as input one tab-separated count matrice (in .tsv or .txt) per 
 you input your own matrices, it is recommended you try playing around and familiarize
 with ChromSCape by downloading our example matrices and uploading them in ChromSCape :
 
-Input count matrices corresponding to mouse cells from 2 PDX models, luminal and triple negative breast cancer tumours resistant or not to cancer therapy (respectively HBCx_22 & HBCx_95, see Grosselin et al., 2019) are available at https://figshare.com/projects/Single-Cell_ChIP-seq_of_Mouse_Stromal_Cells_in_PDX_tumour_models_of_resistance/66419 (theses count matrices have been processed using our latest data engineering pipeline, see https://github.com/vallotlab/scChIPseq_DataEngineering). The optional peak calling step requires  BAM files (also available on Figshare) to improve gene set enrichment analysis.
 
-Alternatively, a ready-to-use pre-compiled analysis folder for HBCx22 & HBCx95 mouse H3K27me3 datasets is available at : https://figshare.com/articles/ChromSCape_scChIP_scATAC_compiled_datasets/11854371. A similar pre-compiled folder is available for the analysis of single-cell ATAC seq datasets from (Buenrostro et al., 2015, Corces et al., 2016, Schep et al., 2017). Download and uncompress the directory. Once in ChromSCape, select the directory containing the "dataset" folder to start exploring. 
+Two datasets are available :  
+
+ * **Single-Cell ChIP-seq PDX dataset against H3K27me3**:  
+ Input count matrices & BAM files
+ corresponding to mouse cells from 2 PDX models, luminal and triple negative
+ breast cancer tumours resistant or not to cancer therapy (respectively HBCx_22
+ & HBCx_95, see Grosselin et al., 2019). [[scChIP-seq data FigShare](https://figshare.com/projects/Single-Cell_ChIP-seq_of_Mouse_Stromal_Cells_in_PDX_tumour_models_of_resistance/66419)]
+
+ * **Single-cell ATAC seq dataset**:  
+ Data from Buenrostro et al., 2015, Corces et al., 2016, Schep et al., 2017 of cell lines & 
+ patients samples of various cell types. [[scATAC-seq data FigShare](https://figshare.com/projects/Single-Cell_ChIP-seq_of_Mouse_Stromal_Cells_in_PDX_tumour_models_of_resistance/66419)]]  
+
 
 ## Run Time
 
