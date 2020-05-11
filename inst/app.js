@@ -19,7 +19,7 @@ $(document).ready(function() {
             position:'auto'},
           {
             element:document.getElementsByClassName("input-group-btn")[0],
-            intro:'Browse your computer to upload one or multiple matrice(s). The matrices should be tab-separated and in .tsv or .txt format. The first column must be cell-barcode names, the first row must be  genomic location (chr:start-end) or gene name. The matrices must all be placed in the same folder and uploaded simultaneously.',position:'auto'},
+            intro:'Browse your computer to upload one or multiple matrice(s). The matrices should be tab-separated and in .tsv or .txt format. The first row must be cell/barcode names, the first column must be  genomic location (chr:start-end). The matrices must all be placed in the same folder and uploaded simultaneously (Use Ctrl + Left Click).',position:'auto'},
           {
             element:'#create_analysis',
             intro:'Click here to create analysis & upload the selected matrices.',
@@ -59,7 +59,7 @@ $(document).ready(function() {
             position: 'right'
           },
           {
-            intro: "You are good to go ! Take a look at https://github.com/vallotlab/ChromSCape for more details or questions.",
+            intro: "You are good to go ! Take a look at the <a href='https://vallotlab.github.io/ChromSCape/ChromSCape_guide.html' target='_blank'>User Guide</a> for more details, and please report issues at <a href='https://github.com/vallotlab/ChromSCape'  target='_blank'>ChromSCape Github</a>.",
             position: 'right'
           }
           ]
