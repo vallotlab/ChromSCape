@@ -315,7 +315,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                 fluidPage(
                                   column(width=6,
                                          shinydashboard::box(title="Enrichment analysis", width=NULL, status="success", solidHeader=T,
-                                             column(12, align="left", textOutput("enr_info"), br(),
+                                             column(12, align="left", htmlOutput("enr_info"), br(),
                                                     uiOutput("use_peaks"),
                                                     actionButton("do_enrich", "Start enrichment analysis"))),
                                          shinydashboard::box(title="Enriched gene sets in differential regions across clusters", width=NULL, status="success", solidHeader=T,
