@@ -177,7 +177,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Filtering_Normalize_Reduce"))
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "correlation_clustering"))
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "correlation_clustering","Plots"))
-        dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "diff_analysis_GSEA"))
+        dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Diff_Analysis_Gene_Sets"))
         write.table(input$annotation, file.path(init$data_folder, 'ChromSCape_analyses', input$new_analysis_name, 'annotation.txt'), row.names = FALSE, col.names = FALSE, quote = FALSE)
         incProgress(0.3, detail="reading data matrices")
         
@@ -1115,7 +1115,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(c(input$qval.th, input$tabs, input$cdiff.th, input$de_type, selected_filtered_dataset()), priority = 10,{
     if(input$tabs == "diff_analysis"){
       if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$cdiff.th)){
-        filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "diff_analysis_GSEA",
+        filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                               paste0(selected_filtered_dataset(), "_", input$nclust,
                                      "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData"))
         
@@ -1142,7 +1142,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       gc()
       incProgress(amount = 0.6, detail = paste("Finishing DA..."))
       data = list("scExp_cf" = scExp_cf())
-      save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "diff_analysis_GSEA",
+      save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                                   paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
                                          "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData")))
       rm(data)
@@ -1305,8 +1305,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
   
-  output$enr_info <- renderText({"Enrichment will be performed based on the significant genes per cluster that were computed on the previous page. 
-    Please make sure that you have run the differential analysis on the clustering that you prefer before running the enrichment analysis."})
+  url <- a("MSigDB homepage", href="https://www.gsea-msigdb.org/gsea/msigdb/index.jsp")
+  output$enr_info <- renderText({tagList("Enrichment will be performed based on the
+                                         significant genes per cluster that were computed on the previous page. 
+                                         Genes in vincinity of differential features are tested using hypergeometric test
+                                         against MSigDB pathway lists (", url,").")})
   
   canUsePeaks <- reactive({
     print("Can usepeak calling exist ?")
@@ -1336,22 +1339,22 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   observeEvent(input$do_enrich, {
-    withProgress(message='Performing enrichment analysis...', value = 0, {
+    withProgress(message='Running Gene Set Analysis...', value = 0, {
 
-      incProgress(amount = 0.3, detail = paste("Running GSEA..."))
+      incProgress(amount = 0.3, detail = paste("Running Hypergeometric Enrichment Testing against MSigDB..."))
       gc()
       scExp_cf(gene_set_enrichment_analysis_scExp(scExp_cf(), enrichment_qval = 0.01, qval.th = input$qval.th,
                                                   ref = annotation_id(), cdiff.th = input$cdiff.th,
                                                   peak_distance = 1000, use_peaks = input$use_peaks))
       gc()
-      incProgress(amount = 0.6, detail = paste("Finishing GSEA..."))
+      incProgress(amount = 0.6, detail = paste("Finishing Gene Set Analysis..."))
       data = list("scExp_cf" = scExp_cf() )
-      save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "diff_analysis_GSEA",
+      save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                                   paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
                                          "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData")))
       rm(data)
       gc()
-      incProgress(amount = 0.6, detail = paste("Saving GSEA"))
+      incProgress(amount = 0.6, detail = paste("Saving Gene Set Analysis"))
       
     })
   })
@@ -1437,11 +1440,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   output$region_sel <- renderUI({
-    req(input$gene_sel)
+    req(input$gene_sel, annotFeat_long())
     subset <- annotFeat_long()[which(annotFeat_long()$Gene==input$gene_sel), ]
-    subset <- subset[order(subset$distance),]
-    regions <- paste0(subset$ID, " (distance to gene TSS: ", subset$distance, ")")
-    selectInput("region_sel", "Select associated genomic region:", choices = regions)
+    if(!is.null(subset)){
+      subset <- subset[order(subset$distance),]
+      regions <- paste0(subset$ID, " (distance to gene TSS: ", subset$distance, ")")
+      selectInput("region_sel", "Select associated genomic region:", choices = regions)
+    }
   })
   
 
@@ -1509,7 +1514,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       if("consclust" %in% names(scExp_cf()@metadata)){
         if("diff" %in% names(scExp_cf()@metadata)){
           dir =file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), 
-                         "diff_analysis_GSEA", paste0(
+                         "Diff_Analysis_Gene_Sets", paste0(
                            selected_filtered_dataset(), "_",
                            length(unique(scExp_cf()$cell_cluster)),
                            "_", input$qval.th, "_", input$cdiff.th, "_",

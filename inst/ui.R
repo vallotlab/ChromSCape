@@ -12,11 +12,11 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                               shinydashboard::sidebarMenu(id="tabs", style = "position: fixed; overflow: visible;",
                                           shinydashboard::menuItem("Select & Import", tabName = "select_import", icon=icon("upload")),
                                           shinydashboard::menuItem("Filter & Normalize", tabName = "filter_normalize", icon=icon("fas fa-filter")),
-                                          shinydashboard::menuItem("Vizualize Cells", tabName = "vizualize_dim_red", icon=icon("fas fa-image")),
+                                          shinydashboard::menuItem("Visualize Cells", tabName = "vizualize_dim_red", icon=icon("fas fa-image")),
                                           shinydashboard::menuItem("Cluster Cells", tabName = "cons_clustering", icon=icon("th")),
                                           shinydashboard::menuItem("Peak Calling", tabName = "peak_calling", icon=icon("chart-area")), #mountain
                                           shinydashboard::menuItem("Differential analysis", tabName = "diff_analysis", icon=icon("chart-bar")),
-                                          shinydashboard::menuItem("Enrichment analysis", tabName = "enrich_analysis", icon=icon("code-branch")),
+                                          shinydashboard::menuItem("Gene Set Analysis", tabName = "enrich_analysis", icon=icon("code-branch")),
                                           shinydashboard::menuItem("Close App & Save Analysis", tabName = "close_and_save", icon=icon("close"))
                               )
                             ),
