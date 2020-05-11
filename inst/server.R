@@ -1427,6 +1427,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   )
   
   output$gene_sel <- renderUI({
+    req(annotFeat_long())
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
         most_diff = scExp_cf()@metadata$diff$res %>% dplyr::select(ID,starts_with("qval."))
