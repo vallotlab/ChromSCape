@@ -465,9 +465,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$col_reset, {
     cols <- gg_fill_hue(length(levels_selected()))
-    lapply(seq_along(levels_selected()), function(i) {
-      do.call(what="updateColourInput", args=list(session=session, inputId=paste0("color_", levels_selected()[i]), value=cols[i]))
-    })
+    for(i in seq_along(levels_selected())){
+      colourpicker::updateColourInput(session=session, inputId=paste0("color_", levels_selected()[i]),
+                                      value=cols[i])
+    }
   })
   
   output$color_picker <- renderUI({
@@ -899,11 +900,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$col_reset_cf, {
     cols <- gg_fill_hue(length(levels_selected_cf()))
-    lapply(seq_along(levels_selected_cf()), function(i) {
-      do.call(what="updateColourInput",
-              args=list(session=session,
-                        inputId=paste0("color_cf", levels_selected_cf()[i]), value=cols[i]))
-    })
+    for(i in seq_along(levels_selected_cf())){
+      colourpicker::updateColourInput(session=session, inputId=paste0("color_cf_", levels_selected_cf()[i]),
+                                      value=cols[i])
+    }
   })
 
   output$color_picker_cf <- renderUI({
