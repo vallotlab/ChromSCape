@@ -293,8 +293,21 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     subsample_n <- if(input$do_subsample){input$subsample_n}
     
     annotationId <- annotation_id_norm()
-    exclude_regions <- if(input$exclude_regions) setNames(read.table(
-      input$exclude_file$datapath, header = FALSE, stringsAsFactors = FALSE), c("chr", "start", "stop")) else NULL
+    exclude_regions <- if(input$exclude_regions) {
+      print(input$exclude_file)
+      if(!is.null(input$exclude_file) && file.exists(input$exclude_file)){
+      setNames(read.table(
+      input$exclude_file$datapath, header = FALSE, stringsAsFactors = FALSE),
+      c("chr", "start", "stop"))
+      } else {
+        warning("The BED file you specified doesn't exist. No specific features will be
+                removed during filtering.")
+        NULL
+      }
+    }
+    else {
+      NULL
+    }
   
     callModule(Module_preprocessing_filtering_and_reduction, "Module_preprocessing_filtering_and_reduction", reactive({input$selected_analysis}), reactive({input$min_coverage_cell}),
                reactive({input$min_cells_window}), reactive({input$quant_removal}), reactive({init$datamatrix}), reactive({init$annot_raw}),
