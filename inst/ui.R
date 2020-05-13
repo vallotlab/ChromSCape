@@ -67,7 +67,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                            shinydashboard::box(title="Select output directory", width = NULL, status="success",
                                                                 solidHeader=T,
                                                                column(12, align="left",
-                                                                      shinyFiles::shinyDirButton("data_folder", "Input directory", "Upload") %>%
+                                                                      shinyFiles::shinyDirButton("data_folder", "Browse", "Upload") %>%
                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                               content = "output_directory"),
                                                                       verbatimTextOutput("directory", placeholder = TRUE)),
