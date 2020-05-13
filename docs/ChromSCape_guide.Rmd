@@ -69,7 +69,7 @@ datasets :
 
 # Step-by-step analysis of single-cell epigenomic data
 
-## Input 
+## 0. Input files 
 
 ### Prepare your input files 
 
@@ -138,9 +138,69 @@ Two datasets are available :
  patients sample of various cell types. [[scATAC-seq data FigShare](https://figshare.com/projects/Single-Cell_ChIP-seq_of_Mouse_Stromal_Cells_in_PDX_tumour_models_of_resistance/66419)]]  
 
   
-### Create & import a dataset
+## 1. Create & import a dataset
 
-Once you have launched the application, you should be 
+Once you have launched the application, you arrive on the "Select & Import". Here you
+can selet an output directory, where your analyses will be saved. ChromSCape will 
+automatically save the folder's location so that you don't have to select it each
+time you connect. 
+You must then name your analysis. The name shouldn't contain special characters (except
+'_'). Choose either the Human (hg38) or Mouse (mm10) genome. This is used to annotate
+your features with the closest genes TSS for the Gene Set Analysis. Browse your 
+computer for one or multiple matrices that will be analyzed together. To select
+multiple matrices, they must be placed in the same folder and then the user can select
+multiples matrices with (Shift + Click) or (Ctrl + Click).   
+Finally, clicking  on 'Create Analysis' will create an analysis & import the count matrices
+in this analysis. This will create a folder named 'ChromSCape_analyses' in the output 
+directory you specified, inside which
+another folder 'Your_analysis_name' is nested. If you create another analysis,
+it will also be created under 'ChromSCape_analyses'. 
+If you already created an analysis in a previous section, selecting the same output
+directory as you chose in the previous session will enable you to load your analysis.
+
+<br>
+
+![<br> <br> **Select & Import Tab: ** Select an output directory, Create an analysis or load previous analyses, import count matrix into your new analysis.](../inst/www/Guide_images/Step1_select_import.png)  
+
+## 2. Filter, Normalize & Reduce Dimensionality 
+
+<br>
+
+![<br> <br> **Filter, Normalize & Reduce Tab: ** Adjust paramters to filter out low covered cells & features, as well as too highly covered cells that might be potential doublets. Normalize & Reduce dimensionality using PCA.](../inst/www/Guide_images/Step2_filter_normalize.png)  
+
+
+## 3. Visualize cells in reduced dimensions 
+
+<br>
+
+![<br> <br> **Visualize Cells: ** Visualize cells in reduced dimensions: PCA, UMAP & TSNE. Color cells by sample, batch, or total count to make sure cells are not separating due to library size only.](../inst/www/Guide_images/Step3_visualize_cells.png) 
+
+## 4. Cluster cells
+
+<br>
+
+![<br> <br> **Cluster Cells: ** Choose a number of cluster if you have clear clusters  of cells, or run  consensus clustering to test multiple clustering and find the optimal cluster number. Optionally filter out lowly correlated cells that might impact the clustering performance.](../inst/www/Guide_images/Step4_1_cluster_cells.png) 
+
+
+<br>
+
+![<br> <br> **Cluster Cells - results: ** Association of cells to each cluster in  a table & cluster visualization with UMAP.](../inst/www/Guide_images/Step4_table_UMAP.png)
+
+## 5. Peak Calling to refine bins to gene annotation
+
+<br>
+
+![<br> <br> **Peak Calling to refine bins to gene annotation: ** Call peaks on 'pseudo-bulk' cell clusters, and refine bins to genes annotation.](../inst/www/Guide_images/Step4_1_cluster_cells.png) 
+## 6. Differential Analysis
+
+## 7. Gene Sets Analysis
 
 ## R commands 
+
+## FAQ
+
+### Error after deleting or moving files from ChromSCape_analysis
+
+Try remove cookies from the browser you are using, and start again selecting a different
+output folder.
   
