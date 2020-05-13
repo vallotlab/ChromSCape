@@ -387,7 +387,7 @@ num_cell_in_cluster_scExp <- function(scExp)
     
     # Overall goodness of fit testing : how fairly are cells allocated between the
     # clusters ?
-    chi <- stats::chisq.test(x = as.matrix(table_raw), correct = FALSE)
+    chi <- suppressWarnings(stats::chisq.test(x = as.matrix(table_raw), correct = FALSE))
     
     # Cluster goodness of fit testing : how fairly are cells allocated to a
     # particular cluster ?
@@ -395,7 +395,7 @@ num_cell_in_cluster_scExp <- function(scExp)
     for (i in 1:(dim(as.matrix(table_raw))[1]))
     {
         contingency_tab = rbind(table_raw[i, ], colSums(table_raw))
-        chi <- stats::chisq.test(x = contingency_tab, correct = FALSE)
+        chi <- suppressWarnings( stats::chisq.test(x = contingency_tab, correct = FALSE))
         chi_pvalues[i] = chi$p.value
     }
     
