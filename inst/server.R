@@ -436,7 +436,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     req(scExp(), input$color_by)
     if("TSNE" %in% SingleCellExperiment::reducedDimNames(scExp())){
       p = plot_reduced_dim_scExp(scExp(),input$color_by, "TSNE")
-      output$tsne_plot = plotly::renderPlotly( plotly::ggplotly(p, tooltip="Sample", dynamicTicks=T) )
+      output$tsne_plot = plotly::renderPlotly( plotly::ggplotly(p, tooltip="Sample", dynamicTicks=T) ) %>%
+        shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
       shinydashboard::box(title="tSNE visualization", width = NULL, status="success", solidHeader=T,
                           column(12, align="left", plotly::plotlyOutput("tsne_plot") %>%
                                    shinyhelper::helper(type = 'markdown', icon ="info-circle",
@@ -759,7 +760,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                    output$annotated_heatmap_UI <- renderUI({
                      
                      output$annotated_heatmap_plot = renderPlot(plot_heatmap_scExp(isolate(scExp_cf())))
-                     plotOutput("annotated_heatmap_plot",width = 500,height = 500)
+                     plotOutput("annotated_heatmap_plot",width = 500,height = 500) %>%
+                       shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
                  })
                }
                }
