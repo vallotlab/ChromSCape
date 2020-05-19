@@ -108,7 +108,8 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                                       sliderInput("coverage_bins", "modify bin size of histogram :",
                                                                                                   min=5, max=100, value=50, step=5)),
                                                                                column(12, align="left",
-                                                                                      plotly::plotlyOutput("cell_coverage", height=250),
+                                                                                      plotly::plotlyOutput("cell_coverage", height=250) %>%
+                                                                                          shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75),
                                                                                       br(), hr(),
                                                                                       uiOutput("table_QC_filt_box"),
                                                                                       br(), hr(),
@@ -163,6 +164,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                          shinydashboard::box(title="PCA visualization", width = NULL, status="success", solidHeader=T,
                                              column(6, align="left", htmlOutput("color_by")),
                                              column(12, align="left", plotly::plotlyOutput("pca_plot") %>%
+                                                        shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
                                                         shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                             content = "pca_plot")),
                                              column(3, align="left", htmlOutput("pc_select_x")),
@@ -172,6 +174,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                          uiOutput("tsne_box"),
                                          shinydashboard::box(title="UMAP visualization", width = NULL, status="success", solidHeader=T,
                                                              column(12, align="left", plotly::plotlyOutput("umap_plot") %>%
+                                                                        shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
                                                                         shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                             content = "umap_plot")))
                                          )
@@ -189,6 +192,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                          shinydashboard::box(title=tagList(shiny::icon("cube"),"Hierarchical Clustering"),
                                                              width=NULL, status="success", solidHeader=T,
                                                              column(12, align ="center", plotOutput("hc_heatmap_plot", height=500, width=500) %>%
+                                                                        shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
                                                                         shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                             content = "correlation_clustering"))
                                          ),
@@ -218,6 +222,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                              collapsible = T, collapsed = T,
                                                              column(12, align="center",
                                                                     plotOutput("cell_cor_hist_plot", height=300, width=500) %>%
+                                                                        shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
                                                                         shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                             content = "filter_correlation_distrib")),
                                                              column(12, align = "left",

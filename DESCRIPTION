@@ -21,6 +21,7 @@ Imports:
     shinyjs (>= 1.0),
     shinyFiles (>= 0.8.0),
     shinyhelper (>= 0.3.2),
+    shinycssloaders (>= 0.3),
     Matrix (>= 1.2-15),
     plotly (>= 4.9.1),
     shinydashboard (>= 0.7.1),

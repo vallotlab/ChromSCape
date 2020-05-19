@@ -16,6 +16,7 @@
 #' @importFrom jsonlite toJSON
 #' @importFrom fs path_home
 #' @importFrom shinyhelper observe_helpers helper 
+#' @importFrom shinycssloaders withSpinner 
 #' @import shiny
 #' @import utils
 #' @import ggplot2
