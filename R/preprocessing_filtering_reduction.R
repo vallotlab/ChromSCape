@@ -2,6 +2,81 @@
 ## dimensionality of single-cell Matrix Description : Funtions to load, filter,
 ## normalize & reduce single-cell Epigenetic Matrices prior to analysis
 
+#' Create a simulated single cell datamatrix & cell annotation
+#'
+#' @param mat A matrix of peaks x cells 
+#' @param bin_width width of bins to produce in base pairs (minimum 500) [50000]
+#' @param ref reference genome to use [hg38]
+#' @param n_bins number of bins (exclusive with bin_width)
+#'
+#' @return
+#' @export
+#'
+#' @importFrom GenomicRanges GRanges tileGenome width seqnames GRangesList
+#' sort.GenomicRanges
+peaks_to_bins <- function(mat,
+                          bin_width = 50000,
+                          n_bins = NULL,
+                          ref = "hg38")
+{
+    stopifnot(
+        !is.null(mat)
+        ref %in% c("mm10", "hg38"),
+    )
+    if(is.null(n_bins) & is.null(bin_width)) 
+        stop("One of bin_width or n_bins must be set")
+    
+    # Create genomic ranges of bins
+    eval(parse(text = paste0(
+        "chr <- ChromSCape::", ref, ".chromosomes"
+    )))
+    # load species chromsizes
+    chr <- GenomicRanges::GRanges(chr)
+    
+    if(!is.null(n_bins)){
+        bin_ranges <- unlist(GenomicRanges::tileGenome(
+            setNames(
+                GenomicRanges::width(chr),
+                GenomicRanges::seqnames(chr)
+            ),
+            ntile = n_bins
+        ))
+    } else {
+        bin_ranges <- unlist(GenomicRanges::tileGenome(
+            setNames(
+                GenomicRanges::width(chr),
+                GenomicRanges::seqnames(chr)
+            ),
+            tilewidth = bin_width
+        ))
+    }
+    
+    peaks = rownames(mat)
+    peaks_chr = sapply(strsplit(peaks,":|-|_"),function(x) x[1])
+    peaks_start = as.numeric(sapply(strsplit(peaks,":|-|_"),function(x) x[2]))
+    peaks_end = as.numeric(sapply(strsplit(peaks,":|-|_"),function(x) x[3]))
+    
+    if(anyNA(peaks_start) | anyNA(peaks_end))
+        stop("The rows of mat should be regions in format chr_start_end or 
+             chr:start-end, without non canonical chromosomes")
+    
+    peaks = GenomicRanges::GRanges(seqnames = peaks_chr,
+                                   ranges = IRanges(peaks_start, peaks_end))
+    
+    hits <- findOverlaps(chrom_size_range, cna_ranges[[i]])
+    agg <- aggregate(cna_ranges[[i]], hits, LogR=mean(LogR),BAF=mean(BAF),ntot=mean(ntot),LOH=mean(LOH))
+    cna_ranges_binned[[i]] =subsetByOverlaps(chrom_size_range, cna_ranges[[i]])
+    
+    # ~constant window size
+    features_names <- paste(
+        as.data.frame(bin_ranges)$seqnames,
+        as.data.frame(bin_ranges)$start,
+        as.data.frame(bin_ranges)$end,
+        sep = "_"
+    )
+    
+
+}
 
 #' Create a simulated single cell datamatrix & cell annotation
 #'
@@ -463,86 +538,55 @@ create_scExp <- function(datamatrix,
 #' @importFrom SingleCellExperiment SingleCellExperiment counts colData
 #' @importFrom Matrix colSums rowSums
 #' @importFrom scater calculateQCMetrics
-filter_scExp <- function(scExp,
-                         min_cov_cell = 1600,
-                         quant_removal = 95,
-                         percentMin = 1,
-                         bin_min_count = 2,
-                         verbose = T)
+filter_scExp =  function (scExp, min_cov_cell = 1600, quant_removal = 95, percentMin = 1, 
+                          bin_min_count = 2, verbose = T) 
 {
-    stopifnot(
-        is(scExp, "SingleCellExperiment"),
-        is.numeric(min_cov_cell),
-        is.numeric(quant_removal),
-        is.numeric(percentMin),
-        is.numeric(bin_min_count),
-        verbose %in% c(F, T)
-    )
-    
-    if (is.null(scExp))
-    {
-        warning("ChromSCape::filter_scExp -
-                Please specify a SingleCellExperiment")
+    stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(min_cov_cell), 
+              is.numeric(quant_removal), is.numeric(percentMin), is.numeric(bin_min_count), 
+              verbose %in% c(F, T))
+    if (is.null(scExp)) {
+        warning("ChromSCape::filter_scExp -\n                Please specify a SingleCellExperiment")
     }
-    
-    cellCounts <- Matrix::colSums(counts(scExp))
-    
+    cellCounts <- Matrix::colSums(SingleCellExperiment::counts(scExp))
     thresh <- stats::quantile(cellCounts, probs = seq(0, 1, 0.01))
-    
-    sel1000 <-
-        (cellCounts > 1000 & cellCounts <= thresh[quant_removal + 1])
-    sel <-
-        (cellCounts > min_cov_cell &
-             cellCounts <= thresh[quant_removal + 1])
-    
-    if (verbose)
-    {
-        cat(
-            "ChromSCape::filter_scExp -",
-            length(which(sel)),
-            "cells pass the threshold of",
-            min_cov_cell,
-            "minimum reads and are lower than the ",
-            quant_removal,
-            "th centile of library size ~=",
-            round(thresh[quant_removal + 1]),
-            "reads.\n"
-        )
+    sel1000 <- (cellCounts > 1000 & cellCounts <= thresh[quant_removal + 
+                                                             1])
+    sel <- (cellCounts > min_cov_cell & cellCounts <= thresh[quant_removal + 
+                                                                 1])
+    if (verbose) {
+        cat("ChromSCape::filter_scExp -", length(which(sel)), 
+            "cells pass the threshold of", min_cov_cell, "minimum reads and are lower than the ", 
+            quant_removal, "th centile of library size ~=", round(thresh[quant_removal + 
+                                                                             1]), "reads.\n")
     }
-    
-    # Create the binary matrix of cells >= 1000 counts if count >= bin_min_count,
-    # count = 1 else
-    bina_counts <- counts(scExp)[, sel1000]
-    sel_below_2 <- (bina_counts < bin_min_count)
-    bina_counts[sel_below_2] <- 0
-    sel_above_1 <- (bina_counts >= bin_min_count)
-    bina_counts[sel_above_1] <- 1
-    
+    rm(cellCounts)
+    gc()
+    bina_counts <- SingleCellExperiment::counts(scExp)[, sel1000]
+    gc()
+    sel_above_2 <- (bina_counts >= bin_min_count)
+    gc()
+    bina_counts = Matrix::sparseMatrix(i = 1,j = 1,x = 1,dims = dim(bina_counts))
+    bina_counts[1,1] = 0
+    gc()
+    bina_counts[sel_above_2] <- 1
+    gc()
     nCells_in_feature <- Matrix::rowSums(bina_counts)
-    fixedFeature <- names(which(nCells_in_feature >
-                                    ((percentMin / 100) * (
-                                        ncol(bina_counts)
-                                    ))))
-    if (verbose)
-    {
-        cat(
-            "ChromSCape::filter_scExp -",
-            length(fixedFeature),
-            "features pass the threshold of",
-            percentMin,
-            " % of total cells 'ON', representing a minimum of",
-            round((percentMin / 100) * (ncol(
-                bina_counts
-            ))),
-            "cells.\n"
-        )
+    print(nCells_in_feature)
+    gc()
+    fixedFeature <- which(nCells_in_feature > ((percentMin/100) * 
+                                                   (ncol(bina_counts))))
+    print(fixedFeature)
+    if (verbose) {
+        cat("ChromSCape::filter_scExp -", length(fixedFeature), 
+            "features pass the threshold of", percentMin, " % of total cells 'ON', representing a minimum of", 
+            round((percentMin/100) * (ncol(bina_counts))), "cells.\n")
     }
-    
     scExp <- scExp[, sel]
-    scExp <- scExp[fixedFeature,]
+    scExp <- scExp[fixedFeature, ]
     scExp <- scater::calculateQCMetrics(scExp)
     return(scExp)
 }
+
 
 #' Does SingleCellExperiment has genomic coordinates in features ?
 #'
