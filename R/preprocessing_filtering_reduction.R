@@ -12,16 +12,19 @@
 #' @return
 #' @export
 #'
+#' @import IRanges
+#' @importFrom parallel detectCores mclapply
 #' @importFrom GenomicRanges GRanges tileGenome width seqnames GRangesList
 #' sort.GenomicRanges
 peaks_to_bins <- function(mat,
                           bin_width = 50000,
                           n_bins = NULL,
+                          minoverlap = 150,
                           ref = "hg38")
 {
     stopifnot(
         !is.null(mat)
-        ref %in% c("mm10", "hg38"),
+        ref %in% c("mm10", "hg38")
     )
     if(is.null(n_bins) & is.null(bin_width)) 
         stop("One of bin_width or n_bins must be set")
@@ -63,8 +66,39 @@ peaks_to_bins <- function(mat,
     peaks = GenomicRanges::GRanges(seqnames = peaks_chr,
                                    ranges = IRanges(peaks_start, peaks_end))
     
-    hits <- findOverlaps(chrom_size_range, cna_ranges[[i]])
-    agg <- aggregate(cna_ranges[[i]], hits, LogR=mean(LogR),BAF=mean(BAF),ntot=mean(ntot),LOH=mean(LOH))
+    hits <- GenomicRanges::findOverlaps(bin_ranges,peaks,minoverlap = minoverlap)
+    bins_names = paste0(bin_ranges@seqnames, ":",
+                        GenomicRanges::start(bin_ranges), "-",
+                        GenomicRanges::end(bin_ranges))
+    filled_col = Matrix::sparseMatrix(1,1,x=0,dims = c(length(bin_ranges),2), dimnames = list(
+        rows=bins_names,
+        cols=c("index","counts")))
+    
+    bin_mat = NULL
+    hits = as.matrix(hits)
+    system.time({
+    numCores <- parallel::detectCores()
+    summarized_col_list = parallel::mclapply(1:ncol(mat),mc.cores = numCores, function(j){
+        col = mat[,j,drop=F]
+        hits. = cbind(hits,col[hits[,"subjectHits"]])
+        colnames(hits.)[3] = "counts"
+        combined <- as.matrix(aggregate(x = hits.[,"counts",drop=F], 
+                              by = list(bins =hits.[,"queryHits"]), 
+                              FUN = sum))
+        
+        combined = cbind(combined,matrix(rep(j,nrow(combined))))
+        combined
+    })
+    })
+    system.time({
+    indexes = do.call( rbind,summarized_col_list)
+    bin_mat = Matrix::sparseMatrix(i = indexes[,1], j=indexes[,3], x =indexes[,2],
+                                   dims = c(length(bin_ranges),ncol(mat)),
+                                   dimnames = list(rownames=bins_names,
+                                                   colnames=colnames(mat)))
+    bin_mat = Matrix::drop0(bin_mat)
+    })
+    agg <- aggregate(bin_ranges, hits, )
     cna_ranges_binned[[i]] =subsetByOverlaps(chrom_size_range, cna_ranges[[i]])
     
     # ~constant window size
