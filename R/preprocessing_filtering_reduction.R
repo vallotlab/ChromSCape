@@ -2,12 +2,212 @@
 ## dimensionality of single-cell Matrix Description : Funtions to load, filter,
 ## normalize & reduce single-cell Epigenetic Matrices prior to analysis
 
-#' Create a simulated single cell datamatrix & cell annotation
+
+split_bam_file_into_single_cell_bams <- function(bam_file,
+                                                 sample_id,
+                                             outdir,
+                                             min_coverage=500,
+                                             barcode_tag="XB",
+                                             verbose = T)
+{
+    stopifnot(
+        file.exists(bam_file),
+        dir.exists(outdir),
+        is.character(sample_id),
+        is.numeric(min_coverage),
+        is.character(barcode_tag)
+        )
+    if(length(barcode_tag)>2) stop("ChromSCape::split_bam_file_into_single_cell_bams 
+                                   The barcode tag ID should be two characters (e.g. 'XB')")
+    try({
+        samtools = system2("which",args = "samtools",stdout = TRUE)
+    })
+    
+    if(length(samtools)==0) stop("samtools is not found in path. Reinstall samtools or
+                                 launch application from terminal.")
+    num_cores = BiocParallel::bpparam()
+    num_cores = as.numeric(num_cores@.xData$workers)
+    
+    # system2(command = paste0("bash ",file.path(system.file(package = "ChromSCape"),
+    #                                            "split_bam.sh"))
+    #                          , args =paste0(bam_file,sample_id,
+    #                                         outdir,min_coverage,
+    #                                         barcode_tag, num_cores))
+    system2(command = "bash",
+                             args = paste(file.path("/media/pacome/LaCie/InstitutCurie/Documents/Data/Tests/Test_format_input/split_bam.sh"),
+            bam_file,sample_id,
+                        outdir,min_coverage,
+                        barcode_tag, num_cores,collapse = " "))
+
+}
+
+#' Transforms a peaks x cells count matrix into a bins x cells count matrix. 
+#' 
+#' This functions is best used to re-count large number of small peaks (e.g. <= 5000bp)
+#' into equal or larger bins.
+#' The genome is either cut in fixed bins (e.g. 50,000bp) or into an user defined 
+#' number of bins. Bins are calculated based on the canconical chromosomes. Note
+#' that if peaks are larger than bins, or if peaks are overlapping multiple bins, 
+#' the signal is added to each bin. Users can increase the minimum overlap to 
+#' consider peaks overlapping bins (by default 150bp, size of a nucleosome) to 
+#' disminish the number of peaks overlapping multiple region. Any peak smaller 
+#' than the minimum overlapp threshold will be dismissed. Therefore, library size
+#' might be slightly different from peaks to bins if signal was duplicated into 
+#' multiple bins or ommitted due to peaks smaller than minimum overlap.
+#'
+#' @param ref reference genome to use [hg38]
+#' @param verbose 
+#' @param bam_dir 
+#' @param peak_file 
+#' @param outdir 
+#' @param n_bins 
+#' @param bin_width 
+#' @param geneTSS 
+#' @param aroundTSS 
+#'
+#' @return
+#' @export
+#'
+#' @import IRanges
+#' @importFrom parallel detectCores mclapply
+#' @importFrom GenomicRanges GRanges tileGenome width seqnames GRangesList
+#' sort.GenomicRanges
+BAM_files_to_feature_count_files <- function(bam_dir,
+                                             sample_id,
+                                             peak_file = NULL,
+                                             n_bins = NULL,
+                                             bin_width = NULL,
+                                             geneTSS = NULL,
+                                             aroundTSS = 2500,
+                                             verbose = T,
+                                             ref = "hg38")
+{
+    stopifnot(
+        dir.exists(bam_dir),
+        is.character(sample_id),
+        is.numeric(aroundTSS),
+        ref %in% c("mm10", "hg38")
+    )
+    
+    if(!is.null(peak_file) && !file.exists(peak_file)) 
+        stop("ChromSCape::BAM_files_to_feature_count_files - Can't find peak file.")
+    
+    if(!is.null(n_bins) && !is.numeric(n_bins)) 
+        stop("ChromSCape::BAM_files_to_feature_count_files - n_bins must be a number.")
+    
+    if(!is.null(bin_width) && !is.numeric(bin_width)) 
+        stop("ChromSCape::BAM_files_to_feature_count_files - bin_width must be a number.")
+    
+    if(!is.null(geneTSS) && !is.logical(geneTSS)) 
+        stop("ChromSCape::BAM_files_to_feature_count_files - geneTSS must be a TRUE or FALSE")
+    
+
+    type = length(which(c(!is.null(peak_file),
+                   !is.null(n_bins),
+                   !is.null(bin_width),
+                   !is.null(geneTSS))))
+   
+    if(type>1 | type==0 ) {
+        stop("ChromSCape::BAM_files_to_feature_count_files - peak_file, n_bins,
+    bin_width & geneTSS are required and mutually exclusive.")
+    }
+    
+    # Create genomic ranges of bins
+    eval(parse(text = paste0(
+        "chr <- ChromSCape::", ref, ".chromosomes"
+    )))
+
+    single_cell_bams = list.files(bam_dir,full.names = T,pattern = paste0(sample_id,".*.bam$"))
+    bam_files = Rsamtools::BamFileList(single_cell_bams)
+    names_cells = gsub("*.bam","",basename(as.character(single_cell_bams)))
+    names(bam_files) = names_cells
+    
+    print(single_cell_bams[1:5])
+    print(names_cells[1:5])
+    print(length(bam_files))
+    if(!is.null(peak_file)){
+        cat('ChromSCape::BAM_files_to_feature_count_files - Reading in peaks file...')
+        features = read.table(peak_file,sep = "\t",
+                              header = F,quote = "")
+        features = features[which(features$V1 %in% chr$chr),]
+        features$V1 = as.character(features$V1)
+        which <- GenomicRanges::GRanges(seqnames = features$V1,ranges = IRanges(features$V2, features$V3)) 
+    } else if(!is.null(n_bins) | !is.null(bin_width)){
+        cat('ChromSCape::BAM_files_to_feature_count_files - Counting on genomic bins...')
+        # load species chromsizes
+        chr <- GenomicRanges::GRanges(chr)
+        if(!is.null(n_bins)){
+            which <- unlist(GenomicRanges::tileGenome(
+                setNames(
+                    GenomicRanges::width(chr),
+                    GenomicRanges::seqnames(chr)
+                ),
+                ntile = n_bins
+            ))
+        } else if(!is.null(bin_width)){
+            which <- unlist(GenomicRanges::tileGenome(
+                setNames(
+                    GenomicRanges::width(chr),
+                    GenomicRanges::seqnames(chr)
+                ),
+                tilewidth = bin_width
+            ))
+        }
+    } else if(geneTSS == TRUE) {
+        # Retrieve gene TSS from ref and create GRanges
+        eval(parse(text = paste0(
+            "geneTSS_df <- ChromSCape::", ref, ".GeneTSS"
+        )))
+        geneTSS_df$start = geneTSS_df$start - aroundTSS
+        geneTSS_df$end = geneTSS_df$end + aroundTSS
+        which = GenomicRanges::GRanges(geneTSS_df)
+    }
+
+    param = Rsamtools::ScanBamParam(which = which)
+    system.time({
+        feature_list = BiocParallel::bplapply(names(bam_files), function(bam_name){
+            tmp = Rsamtools::countBam(bam_files[[bam_name]], param=param)
+            tmp$feature_index = rownames(tmp)
+            tmp$sample_id = bam_name
+            tmp = tmp[which(tmp$records>0),c("sample_id","feature_index","records")]
+            tmp
+        }) 
+    })
+    
+    feature_indexes = do.call(rbind,feature_list)
+    feature_indexes$sample_index = as.numeric(as.factor(feature_indexes$sample_id))
+
+    mat = Matrix::sparseMatrix(i = as.numeric(feature_indexes$feature_index),
+                               j =feature_indexes$sample_index,
+                               x = feature_indexes$records,
+                               dims = c(length(which),length(bam_files)),
+                               dimnames = list(rows=as.character(which),
+                                               cols=names_cells))
+    
+    return(mat)
+}
+
+#' Transforms a peaks x cells count matrix into a bins x cells count matrix. 
+#' 
+#' This functions is best used to re-count large number of small peaks (e.g. <= 5000bp)
+#' into equal or larger bins.
+#' The genome is either cut in fixed bins (e.g. 50,000bp) or into an user defined 
+#' number of bins. Bins are calculated based on the canconical chromosomes. Note
+#' that if peaks are larger than bins, or if peaks are overlapping multiple bins, 
+#' the signal is added to each bin. Users can increase the minimum overlap to 
+#' consider peaks overlapping bins (by default 150bp, size of a nucleosome) to 
+#' disminish the number of peaks overlapping multiple region. Any peak smaller 
+#' than the minimum overlapp threshold will be dismissed. Therefore, library size
+#' might be slightly different from peaks to bins if signal was duplicated into 
+#' multiple bins or ommitted due to peaks smaller than minimum overlap.
 #'
 #' @param mat A matrix of peaks x cells 
 #' @param bin_width width of bins to produce in base pairs (minimum 500) [50000]
 #' @param ref reference genome to use [hg38]
 #' @param n_bins number of bins (exclusive with bin_width)
+#' @param minoverlap Minimum overlap between a peak and a bin to consider the 
+#' peak as overlapping the bin [150].
+#' @param verbose 
 #'
 #' @return
 #' @export
@@ -20,12 +220,15 @@ peaks_to_bins <- function(mat,
                           bin_width = 50000,
                           n_bins = NULL,
                           minoverlap = 150,
+                          verbose = T,
                           ref = "hg38")
 {
     stopifnot(
-        !is.null(mat)
+        !is.null(mat),
         ref %in% c("mm10", "hg38")
     )
+    # Render sparse
+    if(is.matrix(mat)) mat = as(mat,"dgCMatrix")
     if(is.null(n_bins) & is.null(bin_width)) 
         stop("One of bin_width or n_bins must be set")
     
@@ -62,7 +265,14 @@ peaks_to_bins <- function(mat,
     if(anyNA(peaks_start) | anyNA(peaks_end))
         stop("The rows of mat should be regions in format chr_start_end or 
              chr:start-end, without non canonical chromosomes")
-    
+    if(verbose) {
+        cat(
+            "ChromSCape::peaks_to_bins - converting",
+            dim(mat)[1],
+            "peaks into",length(bin_ranges)[1], "bins of",
+            mean(bin_ranges@ranges@width), "bp in average.\n"
+        )
+    }
     peaks = GenomicRanges::GRanges(seqnames = peaks_chr,
                                    ranges = IRanges(peaks_start, peaks_end))
     
@@ -70,46 +280,31 @@ peaks_to_bins <- function(mat,
     bins_names = paste0(bin_ranges@seqnames, ":",
                         GenomicRanges::start(bin_ranges), "-",
                         GenomicRanges::end(bin_ranges))
-    filled_col = Matrix::sparseMatrix(1,1,x=0,dims = c(length(bin_ranges),2), dimnames = list(
-        rows=bins_names,
-        cols=c("index","counts")))
     
     bin_mat = NULL
     hits = as.matrix(hits)
+    hits = cbind(hits, mat[hits[,"subjectHits"],])
+    print("Running aggregation of peaks to bins in parallel")
+    hits = as.matrix(hits)
     system.time({
-    numCores <- parallel::detectCores()
-    summarized_col_list = parallel::mclapply(1:ncol(mat),mc.cores = numCores, function(j){
-        col = mat[,j,drop=F]
-        hits. = cbind(hits,col[hits[,"subjectHits"]])
-        colnames(hits.)[3] = "counts"
-        combined <- as.matrix(aggregate(x = hits.[,"counts",drop=F], 
-                              by = list(bins =hits.[,"queryHits"]), 
-                              FUN = sum))
-        
-        combined = cbind(combined,matrix(rep(j,nrow(combined))))
-        combined
+    bin_mat = BiocParallel::bpaggregate(x = hits[,3:dim(hits)[2]], 
+                                        by = list(bins = hits[,1,drop=F]), 
+                                        FUN = sum)
     })
-    })
-    system.time({
-    indexes = do.call( rbind,summarized_col_list)
-    bin_mat = Matrix::sparseMatrix(i = indexes[,1], j=indexes[,3], x =indexes[,2],
-                                   dims = c(length(bin_ranges),ncol(mat)),
-                                   dimnames = list(rownames=bins_names,
-                                                   colnames=colnames(mat)))
-    bin_mat = Matrix::drop0(bin_mat)
-    })
-    agg <- aggregate(bin_ranges, hits, )
-    cna_ranges_binned[[i]] =subsetByOverlaps(chrom_size_range, cna_ranges[[i]])
     
-    # ~constant window size
-    features_names <- paste(
-        as.data.frame(bin_ranges)$seqnames,
-        as.data.frame(bin_ranges)$start,
-        as.data.frame(bin_ranges)$end,
-        sep = "_"
-    )
+    bin_mat = as(as.matrix(bin_mat[,2:ncol(bin_mat)]),"dgCMatrix")
+    rownames(bin_mat) = bins_names[unique(hits[,1])]
+    gc()
     
-
+    if(verbose){
+        cat(
+            "ChromSCape::peaks_to_bins - removed",
+            length(bin_ranges) - nrow(bin_mat),
+            "empty bins from the binned matrix.\n"
+        )
+    }
+    if(length(empty_bins)>0) bin_mat=bin_mat[-empty_bins,]
+    
 }
 
 #' Create a simulated single cell datamatrix & cell annotation
