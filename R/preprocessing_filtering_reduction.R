@@ -5,10 +5,10 @@
 
 split_bam_file_into_single_cell_bams <- function(bam_file,
                                                  sample_id,
-                                             outdir,
-                                             min_coverage=500,
-                                             barcode_tag="XB",
-                                             verbose = T)
+                                                 outdir,
+                                                 min_coverage=500,
+                                                 barcode_tag="XB",
+                                                 verbose = T)
 {
     stopifnot(
         file.exists(bam_file),
@@ -57,13 +57,13 @@ split_bam_file_into_single_cell_bams <- function(bam_file,
 #'
 #' @param ref reference genome to use [hg38]
 #' @param verbose 
-#' @param bam_dir 
+#' @param files_dir 
 #' @param peak_file 
-#' @param outdir 
 #' @param n_bins 
 #' @param bin_width 
 #' @param geneTSS 
 #' @param aroundTSS 
+#' @param file_type 
 #'
 #' @return
 #' @export
@@ -72,35 +72,41 @@ split_bam_file_into_single_cell_bams <- function(bam_file,
 #' @importFrom parallel detectCores mclapply
 #' @importFrom GenomicRanges GRanges tileGenome width seqnames GRangesList
 #' sort.GenomicRanges
-BAM_files_to_feature_count_files <- function(bam_dir,
-                                             sample_id,
-                                             peak_file = NULL,
-                                             n_bins = NULL,
-                                             bin_width = NULL,
-                                             geneTSS = NULL,
-                                             aroundTSS = 2500,
-                                             verbose = T,
-                                             ref = "hg38")
-{
+raw_counts_to_feature_count_files <- function(files_dir,
+                                              file_type = c("BAM","BED","Index_Peak_Barcode"),
+                                              peak_file = NULL,
+                                              n_bins = NULL,
+                                              bin_width = NULL,
+                                              geneTSS = NULL,
+                                              aroundTSS = 2500,
+                                              verbose = T,
+                                              ref = "hg38"){
     stopifnot(
-        dir.exists(bam_dir),
-        is.character(sample_id),
+        dir.exists(files_dir),
         is.numeric(aroundTSS),
         ref %in% c("mm10", "hg38")
     )
     
     if(!is.null(peak_file) && !file.exists(peak_file)) 
-        stop("ChromSCape::BAM_files_to_feature_count_files - Can't find peak file.")
+        stop("ChromSCape::raw_counts_to_feature_count_files - Can't find peak file.")
     
     if(!is.null(n_bins) && !is.numeric(n_bins)) 
-        stop("ChromSCape::BAM_files_to_feature_count_files - n_bins must be a number.")
+        stop("ChromSCape::raw_counts_to_feature_count_files - n_bins must be a number.")
     
     if(!is.null(bin_width) && !is.numeric(bin_width)) 
-        stop("ChromSCape::BAM_files_to_feature_count_files - bin_width must be a number.")
+        stop("ChromSCape::raw_counts_to_feature_count_files - bin_width must be a number.")
     
     if(!is.null(geneTSS) && !is.logical(geneTSS)) 
-        stop("ChromSCape::BAM_files_to_feature_count_files - geneTSS must be a TRUE or FALSE")
+        stop("ChromSCape::raw_counts_to_feature_count_files - geneTSS must be a TRUE or FALSE")
     
+    if(file_type == "Index_Peak_Barcode"){
+      peak_file_2 = list.files(path = files_dir, pattern = ".*peaks.bed$")
+      index_file = list.files(path = files_dir, pattern = ".*index.txt$")
+      barcode_file = list.files(path = files_dir, pattern = ".*barcodes.txt$")
+      if(length(c(peak_file_2,index_file,barcode_file))!=3) stop("ChromSCape::raw_counts_to_feature_count_files - For Index Count type, the folder 
+                 must contain exactly two files matching respectively [*index.txt$],[*peaks.txt$],
+               [*barcodes.txt$]")
+    }
 
     type = length(which(c(!is.null(peak_file),
                    !is.null(n_bins),
@@ -108,7 +114,7 @@ BAM_files_to_feature_count_files <- function(bam_dir,
                    !is.null(geneTSS))))
    
     if(type>1 | type==0 ) {
-        stop("ChromSCape::BAM_files_to_feature_count_files - peak_file, n_bins,
+        stop("ChromSCape::raw_counts_to_feature_count_files - peak_file, n_bins,
     bin_width & geneTSS are required and mutually exclusive.")
     }
     
@@ -116,24 +122,16 @@ BAM_files_to_feature_count_files <- function(bam_dir,
     eval(parse(text = paste0(
         "chr <- ChromSCape::", ref, ".chromosomes"
     )))
-
-    single_cell_bams = list.files(bam_dir,full.names = T,pattern = paste0(sample_id,".*.bam$"))
-    bam_files = Rsamtools::BamFileList(single_cell_bams)
-    names_cells = gsub("*.bam","",basename(as.character(single_cell_bams)))
-    names(bam_files) = names_cells
     
-    print(single_cell_bams[1:5])
-    print(names_cells[1:5])
-    print(length(bam_files))
     if(!is.null(peak_file)){
-        cat('ChromSCape::BAM_files_to_feature_count_files - Reading in peaks file...')
+        cat('ChromSCape::raw_counts_to_feature_count_files - Reading in peaks file...')
         features = read.table(peak_file,sep = "\t",
                               header = F,quote = "")
         features = features[which(features$V1 %in% chr$chr),]
         features$V1 = as.character(features$V1)
         which <- GenomicRanges::GRanges(seqnames = features$V1,ranges = IRanges(features$V2, features$V3)) 
     } else if(!is.null(n_bins) | !is.null(bin_width)){
-        cat('ChromSCape::BAM_files_to_feature_count_files - Counting on genomic bins...')
+        cat('ChromSCape::raw_counts_to_feature_count_files - Counting on genomic bins...')
         # load species chromsizes
         chr <- GenomicRanges::GRanges(chr)
         if(!is.null(n_bins)){
@@ -163,28 +161,132 @@ BAM_files_to_feature_count_files <- function(bam_dir,
         which = GenomicRanges::GRanges(geneTSS_df)
     }
 
+    if(file_type == "BAM"){
+        t1 = system.time({l = bams_to_matrix_indexes(files_dir, which)})
+        feature_indexes = l[[1]]
+        name_cells = l[[2]]
+        if(verbose) cat("ChromSCape::raw_counts_to_feature_count_files - Count matrix created from BAM files in",t1[3],"sec.")
+    }
+    else if(file_type == "BED"){
+        t1 = system.time({l = beds_to_matrix_indexes(files_dir, which) })
+        feature_indexes = l[[1]]
+        name_cells = l[[2]]
+        if(verbose) cat("ChromSCape::raw_counts_to_feature_count_files - Count matrix created from BED files in",t1[3],"sec.")
+    }
+    else if(file_type == "Index_Peak_Barcode"){
+        name_cells = read.table(barcode_file,sep="",quote="",stringsAsFactors = F)[,1]
+        t1 = system.time({
+            l = index_peaks_barcodes_to_matrix_indexes(peak_file = peak_file_2,
+                                                       index_file = index_file,
+                                                       name_cells = name_cells,
+                                                       ref = ref)
+        })
+        feature_indexes=l[[1]]
+        which = l[[2]]
+        
+        if(verbose) cat("ChromSCape::raw_counts_to_feature_count_files - Count matrix created from Index-Peak-Barcodes files in",t1[3],"sec.")
+    }
+    
+    mat = Matrix::sparseMatrix(i = as.numeric(feature_indexes$feature_index),
+                               j = feature_indexes$barcode_index,
+                               x = feature_indexes$counts,
+                               dims = c(length(which),length(name_cells)),
+                               dimnames = list(rows=as.character(which),
+                                               cols=name_cells))
+    
+    
+    return(mat)
+}
+
+#' Count bam files on interval to create count indexes
+#'
+#' @return feature_indexes
+#'
+#' @examples
+bams_to_matrix_indexes = function(files_dir,which){
+    single_cell_bams = list.files(files_dir,full.names = T,pattern = paste0(".*.bam$"))
+    bam_files = Rsamtools::BamFileList(single_cell_bams)
+    name_cells = gsub("*.bam$","",basename(as.character(single_cell_bams)))
+    names(bam_files) = name_cells
+    
     param = Rsamtools::ScanBamParam(which = which)
     system.time({
         feature_list = BiocParallel::bplapply(names(bam_files), function(bam_name){
             tmp = Rsamtools::countBam(bam_files[[bam_name]], param=param)
             tmp$feature_index = rownames(tmp)
-            tmp$sample_id = bam_name
-            tmp = tmp[which(tmp$records>0),c("sample_id","feature_index","records")]
+            tmp$cell_id = bam_name
+            sel=which(tmp$records>0)
+            if(length(sel)>0) tmp = tmp[sel,c("cell_id","feature_index","records")]
             tmp
         }) 
     })
     
     feature_indexes = do.call(rbind,feature_list)
-    feature_indexes$sample_index = as.numeric(as.factor(feature_indexes$sample_id))
+    feature_indexes$barcode_index = as.numeric(as.factor(feature_indexes$cell_id))
+    colnames(feature_indexes)[3] = "counts"
+    return(list(feature_indexes,name_cells))
+}
 
-    mat = Matrix::sparseMatrix(i = as.numeric(feature_indexes$feature_index),
-                               j =feature_indexes$sample_index,
-                               x = feature_indexes$records,
-                               dims = c(length(which),length(bam_files)),
-                               dimnames = list(rows=as.character(which),
-                                               cols=names_cells))
+#' Read index-peaks-barcodes trio files on interval to create count indexes
+#'
+#' @return feature_indexes
+#'
+#' @examples
+index_peaks_barcodes_to_matrix_indexes = function(peak_file,
+                                                  index_file,
+                                                  name_cells,
+                                                  binarize = F,
+                                                  ref = "hg38"){
     
-    return(mat)
+    regions = GenomicRanges::GRanges(setNames(read.table(peak_file,sep="\t",quote="")[,1:3],
+                               c("chr","start","end")))
+    eval(parse(text = paste0(
+        "chr <- ChromSCape::", ref, ".chromosomes"
+    )))
+    
+    regions = regions[which(as.character(regions@seqnames) %in% chr$chr),]
+    feature_indexes = setNames(read.table(index_file,sep="",quote="")[,1:3],
+                       c("feature_index","barcode_index","counts"))
+    
+    
+    feature_indexes$cell_id = name_cells[feature_indexes$barcode_index]
+    feature_indexes = feature_indexes[,c("cell_id","feature_index","counts","barcode_index")]
+    return(list(feature_indexes,regions))
+}
+
+#' Count bed files on interval to create count indexes
+#'
+#' @return feature_indexes
+#'
+#' @examples
+beds_to_matrix_indexes = function(files_dir,which){
+    single_cell_beds = list.files(files_dir,full.names = T,pattern = ".*.bed$|.*.bed.gz$")
+    names_cells = gsub(".bed$|.bed.gz$","",basename(as.character(single_cell_beds)))
+    names(single_cell_beds) = names_cells
+    
+    system.time({
+        feature_list = BiocParallel::bplapply(names(single_cell_beds), function(bed_name){
+            
+            gzipped = (length(grep(".gz$",single_cell_beds[[bed_name]])) > 0)
+            if(gzipped) {
+                bed = read.table(gzfile(single_cell_beds[[bed_name]]),
+                           sep="\t",quote = "",stringsAsFactors = F)
+            }else {bed = read.table(single_cell_beds[[bed_name]], sep="\t", 
+                                  quote = "",stringsAsFactors = F)}
+            bed = GenomicRanges::GRanges(setNames(bed[,1:3],c("chr","start","end")))       
+            tmp = data.frame(counts=GenomicRanges::countOverlaps(which,bed, minoverlap = 1))
+            
+            tmp$feature_index = as.numeric(rownames(tmp))
+            tmp = tmp[which(tmp$counts>0),]
+            tmp$cell_id = bed_name
+            tmp = tmp[,c("cell_id","feature_index","counts")]
+            tmp
+        }) 
+    })
+    gc()
+    feature_indexes = do.call(rbind,feature_list)
+    feature_indexes$barcode_index = as.numeric(as.factor(feature_indexes$cell_id))
+    return(list(feature_indexes,names_cells))
 }
 
 #' Transforms a peaks x cells count matrix into a bins x cells count matrix. 
