@@ -161,6 +161,19 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   )
   
+  
+  input_data_ui <- renderUI({
+    type_file = as.character(input$data_choice_box)
+    if(input$data_choice_box== ""){
+      fileInput("datafile_matrix", "Upload all data matrices (.txt or .tsv) :",
+                multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv"))
+    }
+    else{
+      shinyFiles::shinyDirButton("datafile_folder", "Browse", "Upload")
+    }
+
+  })
+  
   observeEvent(input$create_analysis, {  # save new dataset
     req(input$new_analysis_name, input$annotation, input$datafile_matrix)
     datamatrix <- NULL
