@@ -3,6 +3,49 @@
 ## normalize & reduce single-cell Epigenetic Matrices prior to analysis
 
 
+
+library(qualV)
+library(stringdist)
+#' Heuristic discovery of samples based on cell labels 
+#'
+#' @param barcodes 
+#' @param nb_samples 
+#'
+#' @return character vector of sample names the same length as cell labels
+#' @export
+#'
+#' @importFrom stringdist stringdistmatrix
+#' @importFrom qualV LCS
+#' @examples
+detect_samples <- function(barcodes, nb_samples=1){
+  
+  t = system.time({
+    mat = stringdist::stringdistmatrix(barcodes,barcodes,useNames="strings", method = "lv",weight = c(1,1,1))
+    dist = as.dist(1-cor(mat))
+    hc = hclust(dist,method = 'ward.D')
+    hc$labels=rep("",ncol(mat))
+    plot(hc)
+  })
+  cat("ChromSCape::detect_samples - found samples in",t[3], "secs.")
+  sample_groups = stats::cutree(hc,k = nb_samples)
+  samp_name = c()
+  
+  for(i in 1:nb_samples){
+    x = barcodes[which(sample_groups==i)]
+    set.seed(47)
+    samp = as.character(sample(x,min(length(x),10),replace = T))
+    
+    lcs = strsplit(samp[1], "")[[1]]
+    for(j in 2:min(length(x),10)){
+      lcs = unlist(qualV::LCS(lcs, strsplit(samp[j], "")[[1]])[4])
+    }
+    samp_name = c(samp_name,paste(lcs,collapse = ""))   
+  }
+  
+  samples_names = samp_name[sample_groups]
+  return(samples_names)
+}
+
 split_bam_file_into_single_cell_bams <- function(bam_file,
                                                  sample_id,
                                                  outdir,
@@ -40,6 +83,8 @@ split_bam_file_into_single_cell_bams <- function(bam_file,
                         barcode_tag, num_cores,collapse = " "))
 
 }
+
+
 
 #' Transforms a peaks x cells count matrix into a bins x cells count matrix. 
 #' 
