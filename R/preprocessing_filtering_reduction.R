@@ -2,10 +2,6 @@
 ## dimensionality of single-cell Matrix Description : Funtions to load, filter,
 ## normalize & reduce single-cell Epigenetic Matrices prior to analysis
 
-
-
-library(qualV)
-library(stringdist)
 #' Heuristic discovery of samples based on cell labels 
 #'
 #' @param barcodes 
@@ -21,10 +17,9 @@ detect_samples <- function(barcodes, nb_samples=1){
   
   t = system.time({
     mat = stringdist::stringdistmatrix(barcodes,barcodes,useNames="strings", method = "lv",weight = c(1,1,1))
-    dist = as.dist(1-cor(mat))
-    hc = hclust(dist,method = 'ward.D')
+    dist = stats::as.dist(1-stats::cor(mat))
+    hc = stats::hclust(dist,method = 'ward.D')
     hc$labels=rep("",ncol(mat))
-    plot(hc)
   })
   cat("ChromSCape::detect_samples - found samples in",t[3], "secs.")
   sample_groups = stats::cutree(hc,k = nb_samples)
@@ -46,6 +41,19 @@ detect_samples <- function(barcodes, nb_samples=1){
   return(samples_names)
 }
 
+#' split_bam_file_into_single_cell_bams
+#'
+#' @param bam_file 
+#' @param sample_id 
+#' @param outdir 
+#' @param min_coverage 
+#' @param barcode_tag 
+#' @param verbose 
+#'
+#' @return
+#'
+#' @importFrom BiocParallel bpparam
+#' @examples
 split_bam_file_into_single_cell_bams <- function(bam_file,
                                                  sample_id,
                                                  outdir,
@@ -71,16 +79,11 @@ split_bam_file_into_single_cell_bams <- function(bam_file,
     num_cores = BiocParallel::bpparam()
     num_cores = as.numeric(num_cores@.xData$workers)
     
-    # system2(command = paste0("bash ",file.path(system.file(package = "ChromSCape"),
-    #                                            "split_bam.sh"))
-    #                          , args =paste0(bam_file,sample_id,
-    #                                         outdir,min_coverage,
-    #                                         barcode_tag, num_cores))
-    system2(command = "bash",
-                             args = paste(file.path("/media/pacome/LaCie/InstitutCurie/Documents/Data/Tests/Test_format_input/split_bam.sh"),
-            bam_file,sample_id,
-                        outdir,min_coverage,
-                        barcode_tag, num_cores,collapse = " "))
+    system2(command = paste0("bash ",file.path(system.file(package = "ChromSCape"),
+                                               "split_bam.sh"))
+                             , args =paste0(bam_file,sample_id,
+                                            outdir,min_coverage,
+                                            barcode_tag, num_cores))
 
 }
 
@@ -113,7 +116,7 @@ split_bam_file_into_single_cell_bams <- function(bam_file,
 #' @return
 #' @export
 #'
-#' @import IRanges
+#' @importFrom IRanges IRanges
 #' @importFrom parallel detectCores mclapply
 #' @importFrom GenomicRanges GRanges tileGenome width seqnames GRangesList
 #' sort.GenomicRanges
@@ -145,11 +148,11 @@ raw_counts_to_feature_count_files <- function(files_dir,
         stop("ChromSCape::raw_counts_to_feature_count_files - geneTSS must be a TRUE or FALSE")
     
     if(file_type == "Index_Peak_Barcode"){
-      peak_file_2 = list.files(path = files_dir, pattern = ".*peaks.bed$")
-      index_file = list.files(path = files_dir, pattern = ".*index.txt$")
-      barcode_file = list.files(path = files_dir, pattern = ".*barcodes.txt$")
+      peak_file_2 = list.files(path = files_dir,full.names = T, pattern = ".*peaks.bed$")
+      index_file = list.files(path = files_dir,full.names = T, pattern = ".*index.txt$")
+      barcode_file = list.files(path = files_dir,full.names = T, pattern = ".*barcodes.txt$")
       if(length(c(peak_file_2,index_file,barcode_file))!=3) stop("ChromSCape::raw_counts_to_feature_count_files - For Index Count type, the folder 
-                 must contain exactly two files matching respectively [*index.txt$],[*peaks.txt$],
+                 must contain exactly two files matching respectively [*index.txt$],[*peaks.bed$],
                [*barcodes.txt$]")
     }
 
@@ -169,14 +172,14 @@ raw_counts_to_feature_count_files <- function(files_dir,
     )))
     
     if(!is.null(peak_file)){
-        cat('ChromSCape::raw_counts_to_feature_count_files - Reading in peaks file...')
+        cat('ChromSCape::raw_counts_to_feature_count_files - Reading in peaks file...\n')
         features = read.table(peak_file,sep = "\t",
                               header = F,quote = "")
         features = features[which(features$V1 %in% chr$chr),]
         features$V1 = as.character(features$V1)
-        which <- GenomicRanges::GRanges(seqnames = features$V1,ranges = IRanges(features$V2, features$V3)) 
+        which <- GenomicRanges::GRanges(seqnames = features$V1,ranges = IRanges::IRanges(features$V2, features$V3)) 
     } else if(!is.null(n_bins) | !is.null(bin_width)){
-        cat('ChromSCape::raw_counts_to_feature_count_files - Counting on genomic bins...')
+        cat('ChromSCape::raw_counts_to_feature_count_files - Counting on genomic bins...\n')
         # load species chromsizes
         chr <- GenomicRanges::GRanges(chr)
         if(!is.null(n_bins)){
@@ -210,13 +213,13 @@ raw_counts_to_feature_count_files <- function(files_dir,
         t1 = system.time({l = bams_to_matrix_indexes(files_dir, which)})
         feature_indexes = l[[1]]
         name_cells = l[[2]]
-        if(verbose) cat("ChromSCape::raw_counts_to_feature_count_files - Count matrix created from BAM files in",t1[3],"sec.")
+        if(verbose) cat("ChromSCape::raw_counts_to_feature_count_files - Count matrix created from BAM files in",t1[3],"sec.\n")
     }
     else if(file_type == "BED"){
         t1 = system.time({l = beds_to_matrix_indexes(files_dir, which) })
         feature_indexes = l[[1]]
         name_cells = l[[2]]
-        if(verbose) cat("ChromSCape::raw_counts_to_feature_count_files - Count matrix created from BED files in",t1[3],"sec.")
+        if(verbose) cat("ChromSCape::raw_counts_to_feature_count_files - Count matrix created from BED files in",t1[3],"sec.\n")
     }
     else if(file_type == "Index_Peak_Barcode"){
         name_cells = read.table(barcode_file,sep="",quote="",stringsAsFactors = F)[,1]
@@ -229,14 +232,14 @@ raw_counts_to_feature_count_files <- function(files_dir,
         feature_indexes=l[[1]]
         which = l[[2]]
         
-        if(verbose) cat("ChromSCape::raw_counts_to_feature_count_files - Count matrix created from Index-Peak-Barcodes files in",t1[3],"sec.")
+        if(verbose) cat("ChromSCape::raw_counts_to_feature_count_files - Count matrix created from Index-Peak-Barcodes files in",t1[3],"sec.\n")
     }
     
     mat = Matrix::sparseMatrix(i = as.numeric(feature_indexes$feature_index),
                                j = feature_indexes$barcode_index,
                                x = feature_indexes$counts,
                                dims = c(length(which),length(name_cells)),
-                               dimnames = list(rows=as.character(which),
+                               dimnames = list(rows=gsub(":|-","_",as.character(which)),
                                                cols=name_cells))
     
     
@@ -247,17 +250,27 @@ raw_counts_to_feature_count_files <- function(files_dir,
 #'
 #' @return feature_indexes
 #'
+#' @importFrom Rsamtools BamFileList indexBam ScanBamParam countBam
+#' @importFrom BiocParallel bplapply
 #' @examples
 bams_to_matrix_indexes = function(files_dir,which){
     single_cell_bams = list.files(files_dir,full.names = T,pattern = paste0(".*.bam$"))
     bam_files = Rsamtools::BamFileList(single_cell_bams)
     name_cells = gsub("*.bam$","",basename(as.character(single_cell_bams)))
     names(bam_files) = name_cells
-    
+
+    indexes = list.files(files_dir,full.names = T,pattern = paste0(".*.bai$"))
+    if(length(indexes) < length(bam_files)){
+      cat("ChromSCape::bams_to_matrix_indexes - indexing BAM files...")
+      BiocParallel::bplapply(bam_files,Rsamtools::indexBam)
+    }
+    names_index = gsub("*.bam.bai$","",basename(as.character(indexes)))
+    names(indexes) = names_index
+    if(!all.equal(names_index,name_cells)) stop("Different number of BAM and indexes files. Stopping.")
     param = Rsamtools::ScanBamParam(which = which)
     system.time({
         feature_list = BiocParallel::bplapply(names(bam_files), function(bam_name){
-            tmp = Rsamtools::countBam(bam_files[[bam_name]], param=param)
+            tmp = Rsamtools::countBam(bam_files[[bam_name]],indexes[[bam_name]],param=param)
             tmp$feature_index = rownames(tmp)
             tmp$cell_id = bam_name
             sel=which(tmp$records>0)
@@ -275,7 +288,8 @@ bams_to_matrix_indexes = function(files_dir,which){
 #' Read index-peaks-barcodes trio files on interval to create count indexes
 #'
 #' @return feature_indexes
-#'
+#' 
+#' @importFrom GenomicRanges GRanges
 #' @examples
 index_peaks_barcodes_to_matrix_indexes = function(peak_file,
                                                   index_file,
@@ -302,7 +316,9 @@ index_peaks_barcodes_to_matrix_indexes = function(peak_file,
 #' Count bed files on interval to create count indexes
 #'
 #' @return feature_indexes
-#'
+#' @importFrom BiocParallel bplapply
+#' @importFrom GenomicRanges GRanges countOverlaps
+#' 
 #' @examples
 beds_to_matrix_indexes = function(files_dir,which){
     single_cell_beds = list.files(files_dir,full.names = T,pattern = ".*.bed$|.*.bed.gz$")
@@ -319,7 +335,9 @@ beds_to_matrix_indexes = function(files_dir,which){
             }else {bed = read.table(single_cell_beds[[bed_name]], sep="\t", 
                                   quote = "",stringsAsFactors = F)}
             bed = GenomicRanges::GRanges(setNames(bed[,1:3],c("chr","start","end")))       
-            tmp = data.frame(counts=GenomicRanges::countOverlaps(which,bed, minoverlap = 1))
+            suppressWarnings({
+              tmp = data.frame(counts=GenomicRanges::countOverlaps(which,bed, minoverlap = 1))
+            })
             
             tmp$feature_index = as.numeric(rownames(tmp))
             tmp = tmp[which(tmp$counts>0),]
@@ -359,10 +377,10 @@ beds_to_matrix_indexes = function(files_dir,which){
 #' @return
 #' @export
 #'
-#' @import IRanges
-#' @importFrom parallel detectCores mclapply
+#' @importFrom IRanges IRanges
+#' @importFrom BiocParallel bpaggregate
 #' @importFrom GenomicRanges GRanges tileGenome width seqnames GRangesList
-#' sort.GenomicRanges
+#' sort.GenomicRanges findOverlaps
 peaks_to_bins <- function(mat,
                           bin_width = 50000,
                           n_bins = NULL,
@@ -421,7 +439,7 @@ peaks_to_bins <- function(mat,
         )
     }
     peaks = GenomicRanges::GRanges(seqnames = peaks_chr,
-                                   ranges = IRanges(peaks_start, peaks_end))
+                                   ranges = IRanges::IRanges(peaks_start, peaks_end))
     
     hits <- GenomicRanges::findOverlaps(bin_ranges,peaks,minoverlap = minoverlap)
     bins_names = paste0(bin_ranges@seqnames, ":",
@@ -648,8 +666,7 @@ import_scExp <- function(file_names,
                          ){
     
     stopifnot(is.character(file_names))
-    print(file_names)
-    print(path_to_matrix)
+
     if(length(grep("(.tsv$)|(.txt$)",file_names)) < length(file_names))
         stop(paste0("ChromSCape::import_scExp - Matrix files must be in .txt or .tsv format."))
     
@@ -661,10 +678,11 @@ import_scExp <- function(file_names,
     datamatrix = annot_raw = NULL
     
     for(i in 1:length(file_names)){
-        print(file_names[i])
+
         sample_name <- gsub('.{4}$', '', basename(file_names[i]))
-        print(sample_name)
-        datamatrix_single <- scater::readSparseCounts(path_to_matrix[i], sep="\t")
+
+        datamatrix_single <- scater::readSparseCounts(path_to_matrix[i], sep="\t",
+                                                      chunk = 100L)
         gc()
         #perform some checks on data format
         matchingRN <- grep("[[:alnum:]]+(:|_)[[:digit:]]+(-|_)[[:digit:]]+",
@@ -947,11 +965,9 @@ filter_scExp =  function (scExp, min_cov_cell = 1600, quant_removal = 95, percen
     bina_counts[sel_above_2] <- 1
     gc()
     nCells_in_feature <- Matrix::rowSums(bina_counts)
-    print(nCells_in_feature)
     gc()
     fixedFeature <- which(nCells_in_feature > ((percentMin/100) * 
                                                    (ncol(bina_counts))))
-    print(fixedFeature)
     if (verbose) {
         cat("ChromSCape::filter_scExp -", length(fixedFeature), 
             "features pass the threshold of", percentMin, " % of total cells 'ON', representing a minimum of", 
@@ -1310,14 +1326,16 @@ feature_annotation_scExp <- function(scExp,
                                                                         keep.extra.columns = T)
     }
     
-    feature_ranges <- SummarizedExperiment::rowRanges(scExp)
-    suppressWarnings({hits <-
+    feature_ranges <- SummarizedExperiment::rowRanges(scExp)[,1]
+    suppressWarnings({
+      hits <-
         GenomicRanges::distanceToNearest(
             feature_ranges,
             reference_annotation,
             ignore.strand = T,
             select = "all"
-        )})
+        )
+      })
     
     annotFeat <- data.frame(
         chr = as.character(GenomicRanges::seqnames(feature_ranges[S4Vectors::queryHits(hits)])),
@@ -1396,6 +1414,7 @@ choose_perplexity <- function(dataset)
 #' @importFrom umap umap umap.defaults
 #' @importFrom SummarizedExperiment assays
 #' @importFrom SingleCellExperiment counts normcounts reducedDims
+#' @importFrom batchelor fastMNN
 #' @importFrom Matrix t
 reduce_dims_scExp <-
     function(scExp,
@@ -1467,25 +1486,25 @@ reduce_dims_scExp <-
             for (i in 1:length(b_names))
             {
                 b_name <- b_names[i]
-                batches[[i]] <- pca[scExp$batch_name == b_name,]
+                batches[[i]] <- as.matrix(pca[scExp$batch_name == b_name,])
                 adj_annot <- rbind(adj_annot,
                                    SummarizedExperiment::colData(scExp)[scExp$batch_name ==
                                                                             b_name,])
             }
-            
+          
             mnn.out <-
-                do.call(scran::fastMNN, c(
+                do.call(batchelor::fastMNN, c(
                     batches,
-                    list(
+                    list( 
                         k = 25,
                         d = 50,
                         ndist = 3,
                         pc.input = T,
                         auto.order = T,
-                        cos.norm = F,
-                        compute.variances = T
+                        cos.norm = F
                     )
                 ))
+            
             pca <- mnn.out$corrected
             SummarizedExperiment::colData(scExp) <- adj_annot
         } else
@@ -1652,7 +1671,6 @@ subsample_scExp <- function(scExp, n_cells = 500) {
             annot. = Matrix::rbind2(annot., annot[cells, ])
     }
     cat("ChromSCape::subsample_scExp -")
-    print(table(annot.$sample_id))
     ord = order(colnames(counts.))
     ord2 = order(rownames(annot.))
     counts. = counts.[, ord]
@@ -1668,3 +1686,4 @@ subsample_scExp <- function(scExp, n_cells = 500) {
     
     return(scExp.)
 }
+
