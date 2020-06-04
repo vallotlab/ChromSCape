@@ -162,29 +162,143 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   )
   
   
-  input_data_ui <- renderUI({
-    type_file = as.character(input$data_choice_box)
-    if(input$data_choice_box== ""){
-      fileInput("datafile_matrix", "Upload all data matrices (.txt or .tsv) :",
-                multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv"))
+  output$input_data_ui <- renderUI({
+    if(input$data_choice_box== "count_mat"){
+      column(12, br(),fileInput("datafile_matrix", "Upload all data matrices (.txt or .tsv) :",
+                multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv")))
     }
     else{
-      shinyFiles::shinyDirButton("datafile_folder", "Browse", "Upload")
+      column(12,
+             br(),
+             HTML(paste0("<b>Upload all ", input$data_choice_box," files:</b><br>")),
+             shinyFiles::shinyDirButton(id = "datafile_folder", label = "Browse...",
+                                        title =  paste0("Select a directory containing your ",
+                                                        input$data_choice_box," files."),
+                                        icon = icon("folder-open")),
+             selectInput(inputId = "nb_samples_to_find",label = "Number of samples:",
+                         choices = 1:100,selected = 1,multiple = F)
+             )
     }
-
+    
   })
   
+  output$advanced_data_input <- renderUI({
+   if(input$data_choice_box != "count_mat"){
+    column(12,
+           shinydashboard::box(title="Counting parameters", width = NULL, status="success", solidHeader = T,
+                               column(6, 
+                                      radioButtons("count_on_box", label = "Select a count method",
+                                            choices = list("Count on bins (width)"="bin_width",
+                                                           "Count on bins (number of bins)" = "n_bins",
+                                                           "Count on peaks (must provide a .bed file)" = "peak_file",
+                                                           "Count around gene TSS" = "geneTSS")),
+                                      
+                               ),
+                               column(6,
+                                      uiOutput("bin_width"),
+                                      uiOutput("n_bins"),
+                                      uiOutput("peak_file"),
+                                      uiOutput("aroundTSS"))
+           )
+    )
+   }
+  })
+  
+  output$bin_width <- renderUI({ if(input$count_on_box == "bin_width"){
+    textInput("bin_width", label = "Width of bins to count on (in bp) :",value = 50000)
+  }})
+  output$n_bins <- renderUI({ if(input$count_on_box == "n_bins" ){
+    textInput("n_bins", label = "Number of bins to count on :", value = 10000)
+  }})
+  output$peak_file <- renderUI({ if(input$count_on_box == "peak_file"){
+    fileInput("peak_file", ".bed file containing the peaks to count on:", multiple = FALSE, accept = c(".bed",".txt"))
+  }})
+  output$aroundTSS <- renderUI({ if(input$count_on_box == "geneTSS" ){
+    textInput("aroundTSS", label = "Distance Up/Downstream of TSS(bp):", value = 2500)
+  }})
+
+  shinyFiles::shinyDirChoose(input, "datafile_folder", roots = volumes, session = 
+                               session)
+  
   observeEvent(input$create_analysis, {  # save new dataset
-    req(input$new_analysis_name, input$annotation, input$datafile_matrix)
+    req(input$new_analysis_name, input$annotation)
+    if(is.null(input$datafile_folder) & is.null(input$datafile_matrix)) return()
+    
     datamatrix <- NULL
     annot_raw <- NULL
+    type_file = as.character(input$data_choice_box)
     if(dir.exists(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name))){
       showNotification(paste0("Warning : The name : '",input$new_analysis_name,
                               " is already taken by a preexisting analysis. Please
                               choose another name for your analysis."),
                               duration = 5, closeButton = TRUE, type="warning")
     }else{
-      withProgress(message='Compiling new data set...',value = 0, {
+      withProgress(message='Creating new data set...',value = 0, {
+        
+        print(type_file)
+        
+        if(type_file == "count_mat" & !is.null(input$datafile_matrix)){
+          incProgress(0.3, detail="Reading count matrices")
+          tmp_list = import_scExp(file_names = input$datafile_matrix$name,
+                                  path_to_matrix = input$datafile_matrix$datapath)
+          datamatrix = tmp_list$datamatrix
+          annot_raw = tmp_list$annot_raw
+        }
+        else if(type_file %in% c("BAM","BED","Index_Peak_Barcode") & !is.null(input$datafile_folder)) {
+          datafile_folder = shinyFiles::parseDirPath(volumes, input$datafile_folder)
+          print(datafile_folder)
+          send_warning = FALSE
+          if(type_file == "BAM") if(length(list.files(datafile_folder,pattern = "*.bam$"))==0) send_warning = TRUE
+          if(type_file == "BED") if(length(list.files(datafile_folder,pattern = "*.bed$|.*.bed.gz"))==0) send_warning = TRUE
+          if(type_file == "Index_Peak_Barcode") 
+            if(length(list.files(datafile_folder,pattern = "*.index.txt|.*.barcodes.txt|.*.peak.bed"))==0) send_warning = TRUE
+          
+          if(send_warning) {
+            showNotification(paste0("Warning : Can't find any specified file types in the upload folder. 
+                                    Select another upload folder or another data type."),
+                             duration = 5, closeButton = TRUE, type="warning")
+            return()
+          }
+          incProgress(0.2, detail=paste0("Reading ",type_file," files to create matrix. This might take a while."))
+          
+          if(input$count_on_box == "bin_width") datamatrix = raw_counts_to_feature_count_files(
+            files_dir = datafile_folder,
+            file_type = type_file,
+            bin_width = as.numeric(input$bin_width),
+            ref = input$annotation)
+          
+          if(input$count_on_box == "n_bins") datamatrix = raw_counts_to_feature_count_files(
+            files_dir = datafile_folder,
+            file_type = type_file,
+            n_bins = as.numeric(input$n_bins),
+            ref = input$annotation)
+          
+          if(input$count_on_box == "peak_file") datamatrix = raw_counts_to_feature_count_files(
+            files_dir = datafile_folder,
+            file_type = type_file,
+            peak_file = as.character(input$peak_file),
+            ref = input$annotation)
+          
+          if(input$count_on_box == "geneTSS") datamatrix = raw_counts_to_feature_count_files(
+            files_dir = datafile_folder,
+            file_type = type_file,
+            geneTSS = T,
+            aroundTSS = as.numeric(input$aroundTSS),
+            ref = input$annotation)
+          
+          incProgress(0.3, detail=paste0("Finished creating matrix, assigning sample labels to cells heuristically."))
+          samples_ids = detect_samples(colnames(datamatrix), nb_samples = as.numeric(input$nb_samples_to_find))
+          annot_raw = data.frame(barcode = colnames(datamatrix),
+                                 cell_id = colnames(datamatrix),
+                                 sample_id = samples_ids,
+                                 batch_id = rep(1, ncol(datamatrix))
+          )
+          
+                  
+        } else {
+          stop("No data folder or data files selected.")
+        }
+        incProgress(0.4, detail="Saving matrix & annotation...")
         dir.create(file.path(init$data_folder, "ChromSCape_analyses"), showWarnings = FALSE)
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name))
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Filtering_Normalize_Reduce"))
@@ -192,23 +306,25 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "correlation_clustering","Plots"))
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Diff_Analysis_Gene_Sets"))
         write.table(input$annotation, file.path(init$data_folder, 'ChromSCape_analyses', input$new_analysis_name, 'annotation.txt'), row.names = FALSE, col.names = FALSE, quote = FALSE)
-        incProgress(0.3, detail="reading data matrices")
         
-        tmp_list = import_scExp(file_names = input$datafile_matrix$name,
-                                path_to_matrix = input$datafile_matrix$datapath)
-        datamatrix = tmp_list$datamatrix
-        annot_raw = tmp_list$annot_raw
-        incProgress(0.7, detail="saving raw data")
         save(datamatrix, annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "scChIP_raw.RData"))
+        print("Inititalizing available analysis")
+        print(init$data_folder)
+        print(list.dirs(path = file.path(init$data_folder, "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE))
         init$available_analyses <- list.dirs(path = file.path(init$data_folder, "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE)
+        print(init$available_analyses)
+        
+        print("Updating select Input")
         updateSelectInput(session = session, inputId = "selected_analysis",
                           label =  "Select an Analysis:",
                           choices = init$available_analyses,
                           selected =  input$new_analysis_name)
     
+        print(init$available_analyses)
+        print(input$new_analysis_name)
         init$datamatrix <- datamatrix
         init$annot_raw <- annot_raw
-        
+        incProgress(0.1, detail="Import successfully finished! ")
         updateActionButton(session, "create_analysis", label="Added successfully", icon = icon("check-circle"))
       })
     }
@@ -308,7 +424,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     annotationId <- annotation_id_norm()
     exclude_regions <- if(input$exclude_regions) {
       print(input$exclude_file)
-      if(!is.null(input$exclude_file) && file.exists(input$exclude_file)){
+      print(as.character(input$exclude_file$datapath))
+      if(!is.null(input$exclude_file) && file.exists(as.character(input$exclude_file$datapath))){
       setNames(read.table(
       input$exclude_file$datapath, header = FALSE, stringsAsFactors = FALSE),
       c("chr", "start", "stop"))
@@ -348,17 +465,30 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
     file_index <- match(c(input$selected_reduced_dataset), reduced_datasets())
     filename_sel <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),"Filtering_Normalize_Reduce",init$available_reduced_datasets[file_index])
-  
+    
+    print("Starting loading filteredanalysis")
+    print(filename_sel)
+    t1 = system.time({
+    
     myData = new.env()
     load(filename_sel, envir = myData)
-    if(is.reactive(myData$scExp)) myData$scExp = isolate(myData$scExp())
+    print("loading finished")
+    if(is.reactive(myData$scExp)) {
+      myData$scExp = isolate(myData$scExp())
+      print("Is reactive finished")
+    }
     scExp. = myData$scExp # retrieve filtered scExp
     rm(myData)
     gc()
-    scExp. = correlation_and_hierarchical_clust_scExp(scExp.)
+    print("started hc clust ")
+    t2 = system.time({scExp. = correlation_and_hierarchical_clust_scExp(scExp.)})
+    cat("finished corhc clust in", t2," sec\n.")
     scExp(scExp.)
+    cat("Assined finished\n.")
     rm(scExp.)
     gc()
+    })
+    cat("finished loading filtered analysis in ", t1 ,' secs')
   })
 
   # observeEvent(input$selected_reduced_dataset, {  # load scExp, add colors, add correlation
@@ -402,7 +532,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$num_cell_after_QC_filt <- function(){
     req(input$selected_reduced_dataset,scExp())
-    tab = num_cell_after_QC_filt_scExp(scExp(),init$annot_raw)
+    print("Starting num_cell_after_QC_filt_scExp....")
+    t1 = system.time({tab = num_cell_after_QC_filt_scExp(scExp(),init$annot_raw)})
+    cat("finished num_cell_after_QC_filt_scExp in ", t1 ,' secs')
     tab
   }
   
@@ -449,10 +581,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     req(scExp(), input$color_by)
     if("TSNE" %in% SingleCellExperiment::reducedDimNames(scExp())){
       p = plot_reduced_dim_scExp(scExp(),input$color_by, "TSNE")
-      output$tsne_plot = plotly::renderPlotly( plotly::ggplotly(p, tooltip="Sample", dynamicTicks=T) ) %>%
-        shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+      output$tsne_plot = plotly::renderPlotly( plotly::ggplotly(p, tooltip="Sample", dynamicTicks=T) ) 
       shinydashboard::box(title="tSNE visualization", width = NULL, status="success", solidHeader=T,
                           column(12, align="left", plotly::plotlyOutput("tsne_plot") %>%
+                                   shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
                                    shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                        content = "tsne_plot")))
     }
