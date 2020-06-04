@@ -161,8 +161,12 @@ plot_reduced_dim_scExp <- function(scExp, color_by = "sample_id", reduced_dim = 
         p <- p + scale_color_gradientn(colours = matlab.like(100))
     } else
     {
-        p <- p + scale_color_manual(values = unique(as.character(SingleCellExperiment::colData(scExp)[, 
-            paste0(color_by, "_color")])))
+        
+        cols = unique(as.character(
+            SingleCellExperiment::colData(scExp)[,paste0(color_by, "_color")]))
+        names(cols) = unique(as.character(
+            SingleCellExperiment::colData(scExp)[,color_by]))
+        p <- p + scale_color_manual(values = cols)
     }
     return(p)
 }
@@ -375,7 +379,7 @@ plot_cluster_consensus_scExp <- function(scExp)
     cc$cluster =  factor(paste0("C",cc$cluster), levels = unique(paste0("C",cc$cluster)))
     p = cc %>% ggplot(aes(x=cluster, y=clusterConsensus, fill=cluster)) +
         geom_bar(stat = "identity", position=position_dodge(width=0.9)) +
-        facet_grid(.~as.factor(k), scale="free_x", space="free") +
+        facet_grid(.~as.factor(k), scales="free_x", space="free") +
         theme_minimal() + theme(panel.grid = element_blank(),
                                 axis.text.x = element_blank()) +
         scale_fill_manual(values=unique(colors)) + ylab("Consensus Score")
