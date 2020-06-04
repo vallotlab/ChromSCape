@@ -1,7 +1,7 @@
 library(shiny)
 library(shinyjs)
 library(dplyr)
-# 
+
 shinyUI(shinydashboard::dashboardPage(skin='green',
                             shinydashboard::dashboardHeader(title = "ChromSCape"),
                             shinydashboard::dashboardSidebar(
@@ -74,19 +74,23 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                column(12, align="left", textOutput("data_folder_info"))),
                                            shinydashboard::box(title="Create new analysis & import raw data", width = NULL, status="success", solidHeader=T,
                                                                column(12, align="left",
-                                                                      textInput("new_analysis_name", "Enter a name for the new analysis :", value = "Analysis_1"),
+                                                                      column(12, align="left",textInput("new_analysis_name", "Enter a name for the new analysis :", value = "Analysis_1"),
                                                                       selectInput("annotation","Select reference genome:", choices=c("hg38", "mm10")),
                                                                       textOutput("data_matrices_info") %>%
                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
-                                                                                              content = "datamatrix_input"),
+                                                                                              content = "datamatrix_input")),
+                                                                      column(6,
                                                                       radioButtons("data_choice_box", label = "Input data type",
                                                                                    choices = list("Count matrix(ces)"="count_mat",
+                                                                                                  "Index, Peak & Barcode files" = "Index_Peak_Barcode",
                                                                                                   "Single-cell BAM files" = "BAM",
-                                                                                                  "Single-cell BED files" = "BED",
-                                                                                                  "Index, Peak & Barcode files" = "Index_Peak_Barcode")),
-                                                                      fileInput("datafile_matrix", "Upload all data matrices (.txt or .tsv) :",
-                                                                                multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv")),
-                                                                      actionButton("create_analysis", "Create analysis"))),
+                                                                                                  "Single-cell BED files" = "BED"
+                                                                                                  ))),
+                                                                      column(6,
+                                                                      uiOutput("input_data_ui")),
+                                                                      column(12,
+                                                                      uiOutput("advanced_data_input")),
+                                                                      column(12,actionButton("create_analysis", "Create analysis")))),
 
                                                          shinydashboard::box(title="Load previous analysis", width = NULL, status="success", solidHeader=T,
                                                                              column(12, align="left",
