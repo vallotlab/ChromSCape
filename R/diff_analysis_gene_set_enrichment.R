@@ -30,14 +30,18 @@
 #' @importFrom scran combineMarkers 
 #' @importFrom SingleCellExperiment colData normcounts rowData
 #' @importFrom rlist list.append
-differential_analysis_scExp = function(scExp, de_type = "one_vs_rest", qval.th = 0.01, 
-    cdiff.th = 1, block = NULL)
+differential_analysis_scExp = function(scExp, de_type = "one_vs_rest", 
+                                       method = "wilcox",
+                                       qval.th = 0.01, 
+                                       cdiff.th = 1, block = NULL)
     {
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(de_type), is.numeric(qval.th), 
         is.numeric(cdiff.th))
     
     if (!de_type %in% c("one_vs_rest", "pairwise")) 
         stop("ChromSCape::run_differential_analysis_scExp - de_type must be 'one_vs_rest' or 'pairwise'.")
+    if (!method %in% c("wilcox", "neg.binomial")) 
+        stop("ChromSCape::run_differential_analysis_scExp - method must be 'wilcox' or 'neg.binomial'.")
     
     if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))) 
         stop("ChromSCape::run_differential_analysis_scExp - scExp object must have selected number of clusters.")
@@ -72,9 +76,18 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest", qval.th =
         })
         names(myrefs) = paste0("notC", 1:nclust)
         refs = names(myrefs)
-        res = geco.CompareWilcox(dataMat = counts, annot = affectation, ref = myrefs, 
+        if(method == "wilcox"){ res = geco.CompareWilcox(
+            dataMat = counts, annot = affectation, ref = myrefs, 
             groups = mygps, featureTab = feature, block = block)
-        
+        } else {
+            res = geco.CompareedgeRGLM( dataMat = counts, 
+                                        annot = affectation, ref = myrefs,
+                                        groups = mygps, featureTab = feature)
+            colnames(res)[grep("logCPM",colnames(res))] = gsub("logCPM","Count",
+                                                               colnames(res)[grep("logCPM",colnames(res))])
+            colnames(res)[grep("log2FC",colnames(res))] = gsub("log2FC","cdiff",
+                                                               colnames(res)[grep("log2FC",colnames(res))])
+        }
     } else
     {
         # pairwise one-vs-one testing for each cluster
@@ -95,8 +108,13 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest", qval.th =
                   j)), "cell_id"])
                 names(myrefs) = paste0("C", j)
                 refs = names(myrefs)
-                tmp_result = geco.CompareWilcox(dataMat = counts, annot = affectation, 
-                  ref = myrefs, groups = mygps, featureTab = feature)
+                if(method == "wilcox") tmp_result = geco.CompareWilcox(
+                    dataMat = counts, annot = affectation, ref = myrefs, 
+                    groups = mygps, featureTab = feature)
+                else tmp_result = geco.CompareedgeRGLM(
+                    dataMat = counts, annot = affectation, ref = myrefs,
+                    groups = mygps, featureTab = feature)
+                
                 tmp_result = tmp_result[match(count_save$ID, tmp_result$ID), ]
                 rownames(tmp_result) = tmp_result$ID
                 tmp_result[5] = NULL  #remove rank because it will be added later

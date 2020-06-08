@@ -164,8 +164,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$input_data_ui <- renderUI({
     if(input$data_choice_box== "count_mat"){
-      column(12, br(),fileInput("datafile_matrix", "Upload all data matrices (.txt or .tsv) :",
-                multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv")))
+      column(12, br(),fileInput("datafile_matrix", "Upload all data matrices (.txt, .tsv or .csv) :",
+                multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv", ".csv")),
+             checkboxInput("is_combined_mat", "The matrix contains multiple samples ?",value = F),
+             uiOutput("nb_samples_mat")
+             )
+      
     }
     else{
       column(12,
@@ -204,6 +208,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
    }
   })
   
+  output$nb_samples_mat <- renderUI({ if(input$is_combined_mat == TRUE){
+    selectInput(inputId = "nb_samples_to_find",label = "Number of samples:",
+                choices = 1:100,selected = 1,multiple = F)
+  }})
+  
   output$bin_width <- renderUI({ if(input$count_on_box == "bin_width"){
     textInput("bin_width", label = "Width of bins to count on (in bp) :",value = 50000)
   }})
@@ -239,10 +248,22 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         
         if(type_file == "count_mat" & !is.null(input$datafile_matrix)){
           incProgress(0.3, detail="Reading count matrices")
+          print("Importing scExp")
           tmp_list = import_scExp(file_names = input$datafile_matrix$name,
                                   path_to_matrix = input$datafile_matrix$datapath)
           datamatrix = tmp_list$datamatrix
-          annot_raw = tmp_list$annot_raw
+          print("Finished importing scExp")
+          if(input$is_combined_mat == TRUE) {
+            print("Detecting samples")
+            print(as.numeric(input$nb_samples_to_find))
+            samples_ids = detect_samples(colnames(datamatrix),
+                                         nb_samples = as.numeric(input$nb_samples_to_find))
+            annot_raw = data.frame(barcode = colnames(datamatrix),
+                                   cell_id = colnames(datamatrix),
+                                   sample_id = samples_ids,
+                                   batch_id = rep(1, ncol(datamatrix)))
+          } else{ annot_raw = tmp_list$annot_raw }
+          print("Finised ?")
         }
         else if(type_file %in% c("BAM","BED","Index_Peak_Barcode") & !is.null(input$datafile_folder)) {
           datafile_folder = shinyFiles::parseDirPath(volumes, input$datafile_folder)
@@ -529,18 +550,24 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                                                  tooltip="Sample", dynamicTicks=T) )
   
   
+  output$num_cell <- function(){
+    req(init$annot_raw)
+    tab = num_cell_scExp(init$annot_raw)
+    tab
+  }
   
   output$num_cell_after_QC_filt <- function(){
     req(input$selected_reduced_dataset,scExp())
-    print("Starting num_cell_after_QC_filt_scExp....")
-    t1 = system.time({tab = num_cell_after_QC_filt_scExp(scExp(),init$annot_raw)})
-    cat("finished num_cell_after_QC_filt_scExp in ", t1 ,' secs')
+    tab = num_cell_after_QC_filt_scExp(scExp(),init$annot_raw)
     tab
   }
   
   output$table_QC_filt_box <- renderUI({
-    if(!is.null(input$selected_reduced_dataset)){
+    if(!is.null(input$selected_reduced_dataset) && 
+       input$selected_reduced_dataset != ""){
           column(12, align="left", tableOutput("num_cell_after_QC_filt"))
+    } else {
+      column(12, align="left", tableOutput("num_cell"))
     }
   })
   
@@ -1297,8 +1324,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       incProgress(amount = 0.2, detail = paste("Initializing DA"))
       if(batchUsed()) block = T else block = F
       gc()
-      scExp_cf(differential_analysis_scExp(scExp_cf(), de_type = input$de_type,
-                                           cdiff.th = input$cdiff.th, qval.th = input$qval.th, block)) 
+      scExp_cf(differential_analysis_scExp(scExp = scExp_cf(),
+                                           method= input$da_method,
+                                           de_type = input$de_type,
+                                           cdiff.th = input$cdiff.th,
+                                           qval.th = input$qval.th,
+                                           block = block)) 
       gc()
       incProgress(amount = 0.6, detail = paste("Finishing DA..."))
       data = list("scExp_cf" = scExp_cf())
