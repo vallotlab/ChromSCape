@@ -76,6 +76,59 @@ geco.CompareWilcox <- function(dataMat = NULL, annot = NULL, ref = NULL, groups 
 }
 
 
+
+
+#' Creates a summary table with the number of genes under- or overexpressed in each group and outputs several graphical representations
+#'
+#' @param ref List containing one or more vectors of reference samples. Name of the vectors will be used in the results table. The length of this list should be 1 or the same length as the groups list
+#' @param dataMat reads matrix
+#' @param annot selected annotation of interest
+#' @param featureTab Feature annotations to be added to the results table
+#' @param norm_method 
+#' @param groups List containing the IDs of groups to be compared with the reference samples. Names of the vectors will be used in the results table
+#'
+#' @return Results table
+#' @export
+#'
+#' @importFrom edgeR DGEList calcNormFactors estimateDisp glmFit glmLRT
+#' @author Eric Letouze & Celine Vallot
+#' @examples
+geco.CompareedgeRGLM <- function(dataMat=NULL,
+                                 annot=NULL,
+                                 ref=NULL,
+                                 groups=NULL,
+                                 featureTab=NULL,
+                                 norm_method="RLE"
+)
+{
+    res <- featureTab
+    for(k in 1:length(groups))
+    {
+        print(paste("Comparing",names(ref)[min(c(k,length(ref)))],"versus",names(groups)[k]))
+        if(length(ref)==1){refsamp <- ref[[1]]}else{refsamp <- ref[[k]]}
+        gpsamp <- groups[[k]]
+        annot. <- annot[c(refsamp,gpsamp),1:2];annot.$Condition <- c(rep("ref",length(refsamp)),rep("gpsamp",length(gpsamp)))
+        mat.<-dataMat [,c(as.character(refsamp),as.character(gpsamp))]
+        edgeRgroup <- c(rep(1,length(refsamp)),rep(2,length(gpsamp)))	
+        y <- edgeR::DGEList(counts=mat.,group=edgeRgroup)
+        y <- edgeR::calcNormFactors(y,method=norm_method)
+        design <- stats::model.matrix(~edgeRgroup)
+        y <- edgeR::estimateDisp(y, design)		
+        fit <- edgeR::glmFit(y, design)
+        comp <- edgeR::glmLRT(fit, coef=2)
+        pvals <- comp$table
+        colnames(pvals) <- c("log2FC.gpsamp","logCPM.gpsamp","LR.gpsamp","pval.gpsamp")
+        pvals$qval.gpsamp <- stats::p.adjust(pvals$pval.gpsamp, method = "BH")
+        res <- data.frame(res,pvals[,c("log2FC.gpsamp","logCPM.gpsamp","pval.gpsamp","qval.gpsamp")])
+        colnames(res) <- sub("ref",names(ref)[min(c(k,length(ref)))],sub("gpsamp",names(groups)[k],colnames(res)))		
+        
+    }
+    
+    res
+}	
+
+
+
 #' geco.changeRange
 #'
 #' @param v 

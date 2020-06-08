@@ -1,7 +1,6 @@
 ## Authors : Pacôme Prompsy Title : Wrappers & function to create variety of plot
 ## to uncover heterogeneity in single cell Dataset
 
-
 #' Plotting distribution of signal
 #'
 #' @param scExp 
