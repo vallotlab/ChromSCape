@@ -36,8 +36,46 @@ detect_samples <- function(barcodes, nb_samples=1){
     }
     samp_name = c(samp_name,paste(lcs,collapse = ""))   
   }
+  samples_names = samp_name
   
-  samples_names = samp_name[sample_groups]
+  # remove trailing special char
+  samples_names = gsub("[[:punct:]]$", "", samples_names)
+  print(samples_names)
+  # remove starting special char
+  samples_names = gsub("^[[:punct:]]", "", samples_names)
+  print(samples_names)
+  # remove longest common string
+  mat = matrix("",nrow=nb_samples,ncol=nb_samples)
+  for(i in 1:(nb_samples)){
+    for(j in 1:(nb_samples)){
+    x = as.character(samples_names[i])
+    y = as.character(samples_names[j])
+    
+    x = strsplit(x, "")[[1]]
+    y = strsplit(y, "")[[1]]
+    
+    lcs = qualV::LCS(x,y)
+    ls = split(lcs[6]$va, cumsum(c(TRUE, diff(lcs[6]$va) != 1)))
+    ls =ls[[which.max(lengths(ls))]]
+    
+    x = as.character(samples_names[i])
+    x = strsplit(x, "")[[1]]
+    lcs = paste0(x[ls],collapse = "")
+    
+    if(length(lcs)==0) lcs =""
+    mat[i,j] = lcs
+    }
+  }
+  
+  mat = as.character(mat)
+  longest_common_between_samples = mat[which.min(unlist(lapply(mat, nchar)))][1]
+  if(length(longest_common_between_samples)>0){
+    if(length(grep(pattern = longest_common_between_samples, samples_names)) 
+       == nb_samples) samples_names = gsub(longest_common_between_samples,"",
+                                           samples_names)
+  }
+  samples_names = samples_names[sample_groups]
+  
   return(samples_names)
 }
 
@@ -667,7 +705,7 @@ import_scExp <- function(file_names,
     
     stopifnot(is.character(file_names))
 
-    if(length(grep("(.tsv$)|(.txt$)",file_names)) < length(file_names))
+    if(length(grep("(.tsv$)|(.txt$)|(.csv$)",file_names)) < length(file_names))
         stop(paste0("ChromSCape::import_scExp - Matrix files must be in .txt or .tsv format."))
     
     if(is.null(path_to_matrix)) path_to_matrix = file_names
@@ -680,9 +718,44 @@ import_scExp <- function(file_names,
     for(i in 1:length(file_names)){
 
         sample_name <- gsub('.{4}$', '', basename(file_names[i]))
-
-        datamatrix_single <- scater::readSparseCounts(path_to_matrix[i], sep="\t",
-                                                      chunk = 100L)
+        
+        format_test = as.character(read.table(path_to_matrix[i],
+                                 header = F,
+                                 sep = "\t", nrows = 5)[4,])
+        
+        if(length(format_test)>3) separator = "\t" else separator = ","
+        
+        format_test = read.table(path_to_matrix[i],
+                                              header = T,
+                                              sep = separator, nrows = 5)
+        separated_chr_start_end = c(grep("chr",colnames(format_test)[1:3]),
+          grep("start|begin", colnames(format_test)[1:3]),
+          grep("end|stop",colnames(format_test)[1:3]))
+        
+        
+        if(length(separated_chr_start_end)>0 && all.equal(separated_chr_start_end,c(1,2,3))){
+          
+          val = c("NULL","NULL","NULL",
+                  rep("integer", length(colnames(format_test))-3))
+          datamatrix_single = as(as.matrix(read.table(path_to_matrix[i],
+                                                   header = T,
+                                                   sep = separator,
+                                                   colClasses = val)), "dgCMatrix")
+          gc()
+          
+          val = c("character","integer","integer",rep("NULL", ncol(datamatrix_single)))
+          regions = read.table(path_to_matrix[i],
+                               header = T,
+                               sep = separator,
+                               colClasses = val)
+          regions = paste0(regions[,1],":",regions[,2],"-",regions[,3])
+          rownames(datamatrix_single) = regions
+        
+        } else{
+          datamatrix_single <- scater::readSparseCounts(path_to_matrix[i],
+                                                      sep=separator,
+                                                      chunk = 1000L)
+        }
         gc()
         #perform some checks on data format
         matchingRN <- grep("[[:alnum:]]+(:|_)[[:digit:]]+(-|_)[[:digit:]]+",
@@ -725,7 +798,7 @@ import_scExp <- function(file_names,
         gc()
         total_cell <- length(datamatrix_single[1,])
         annot_single <- data.frame(barcode = colnames(datamatrix_single),
-                                   cell_id = paste0(sample_name, "_c", 1:total_cell),
+                                   cell_id = paste0(sample_name, "_", colnames(datamatrix_single)),
                                    sample_id = rep(sample_name, total_cell),
                                    batch_id = i)
         colnames(datamatrix_single) <- annot_single$cell_id
@@ -733,11 +806,19 @@ import_scExp <- function(file_names,
             datamatrix <- datamatrix_single
         }else{
             common_regions <- intersect(rownames(datamatrix), rownames(datamatrix_single))
+
             if(length(common_regions)>0){
                 datamatrix <- Matrix::cbind2(datamatrix[common_regions,], datamatrix_single[common_regions,])
-            } else{
+            } else {
                stop(paste0("ChromSCape::import_scExp - ",file_names[i], " contains no common regions with ",file_names[i-1])) 
             }
+            if(length(common_regions) < nrow(datamatrix)){
+              warning(paste0("ChromSCape::import_scExp - ",file_names[i],
+                             " contains less than ",
+                             ceiling(100 * length(common_regions) / (nrow(datamatrix)))
+                             ," common regions with ",file_names[i-1])) 
+            }
+            
         }
         rm(datamatrix_single)
         gc()
@@ -1587,6 +1668,34 @@ pca_irlba_for_sparseMatrix <- function(x, n_comp)
     pca <- x. %*% svd.0$v
     
     return(pca)
+}
+
+#' Table of cells
+#'
+#' @param scExp A SingleCellExperiment object.
+#'
+#' @export
+#' @return A formatted kable in HTML.
+#' @importFrom SingleCellExperiment colData
+#' @importFrom dplyr bind_rows tibble left_join
+#' @importFrom kableExtra kable kable_styling group_rows
+#'
+num_cell_scExp <- function(annot)
+{
+  stopifnot(!is.null(annot))
+  
+  table <- as.data.frame(table(annot$sample_id))
+  
+  colnames(table) <- c("Sample", "#Cells")
+  rownames(table) <- NULL
+
+  table[, 1] <- as.character(table[, 1])
+  table[nrow(table)+1,]= c("",sum(table[,2]))
+  table %>% kableExtra::kable(escape = F, align = "c") %>%
+    kableExtra::kable_styling(c("striped",
+                                "condensed"), full_width = T) %>%
+    kableExtra::group_rows("Total cell count",
+                           dim(table)[1], dim(table)[1])
 }
 
 #' Table of cells before / after QC
