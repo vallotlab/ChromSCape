@@ -1391,7 +1391,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         }
         
         table = table[,c("chr","start","end",colnames(table)[grep(input$gpsamp,colnames(table))] )]
-        table <- table[order(table[,paste0("Rank.",input$gpsamp)]),]
+        table <- table[order(table[,paste0("cdiff.",input$gpsamp)]),]
         DT::datatable(table, options = list(dom='tpi'))
       }
     }
