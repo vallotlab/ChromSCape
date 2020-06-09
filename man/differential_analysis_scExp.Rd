@@ -7,6 +7,7 @@
 differential_analysis_scExp(
   scExp,
   de_type = "one_vs_rest",
+  method = "wilcox",
   qval.th = 0.01,
   cdiff.th = 1,
   block = NULL
