@@ -244,18 +244,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }else{
       withProgress(message='Creating new data set...',value = 0, {
         
-        print(type_file)
-        
         if(type_file == "count_mat" & !is.null(input$datafile_matrix)){
           incProgress(0.3, detail="Reading count matrices")
-          print("Importing scExp")
           tmp_list = import_scExp(file_names = input$datafile_matrix$name,
                                   path_to_matrix = input$datafile_matrix$datapath)
           datamatrix = tmp_list$datamatrix
-          print("Finished importing scExp")
           if(input$is_combined_mat == TRUE) {
-            print("Detecting samples")
-            print(as.numeric(input$nb_samples_to_find))
             samples_ids = detect_samples(colnames(datamatrix),
                                          nb_samples = as.numeric(input$nb_samples_to_find))
             annot_raw = data.frame(barcode = colnames(datamatrix),
@@ -263,11 +257,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                    sample_id = samples_ids,
                                    batch_id = rep(1, ncol(datamatrix)))
           } else{ annot_raw = tmp_list$annot_raw }
-          print("Finised ?")
         }
         else if(type_file %in% c("BAM","BED","Index_Peak_Barcode") & !is.null(input$datafile_folder)) {
           datafile_folder = shinyFiles::parseDirPath(volumes, input$datafile_folder)
-          print(datafile_folder)
           send_warning = FALSE
           if(type_file == "BAM") if(length(list.files(datafile_folder,pattern = "*.bam$"))==0) send_warning = TRUE
           if(type_file == "BED") if(length(list.files(datafile_folder,pattern = "*.bed$|.*.bed.gz"))==0) send_warning = TRUE
@@ -329,20 +321,14 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         write.table(input$annotation, file.path(init$data_folder, 'ChromSCape_analyses', input$new_analysis_name, 'annotation.txt'), row.names = FALSE, col.names = FALSE, quote = FALSE)
         
         save(datamatrix, annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "scChIP_raw.RData"))
-        print("Inititalizing available analysis")
-        print(init$data_folder)
-        print(list.dirs(path = file.path(init$data_folder, "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE))
+
         init$available_analyses <- list.dirs(path = file.path(init$data_folder, "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE)
-        print(init$available_analyses)
-        
-        print("Updating select Input")
+
         updateSelectInput(session = session, inputId = "selected_analysis",
                           label =  "Select an Analysis:",
                           choices = init$available_analyses,
                           selected =  input$new_analysis_name)
-    
-        print(init$available_analyses)
-        print(input$new_analysis_name)
+
         init$datamatrix <- datamatrix
         init$annot_raw <- annot_raw
         incProgress(0.1, detail="Import successfully finished! ")
@@ -444,8 +430,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     
     annotationId <- annotation_id_norm()
     exclude_regions <- if(input$exclude_regions) {
-      print(input$exclude_file)
-      print(as.character(input$exclude_file$datapath))
       if(!is.null(input$exclude_file) && file.exists(as.character(input$exclude_file$datapath))){
       setNames(read.table(
       input$exclude_file$datapath, header = FALSE, stringsAsFactors = FALSE),
@@ -487,29 +471,21 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     file_index <- match(c(input$selected_reduced_dataset), reduced_datasets())
     filename_sel <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),"Filtering_Normalize_Reduce",init$available_reduced_datasets[file_index])
     
-    print("Starting loading filteredanalysis")
-    print(filename_sel)
     t1 = system.time({
     
     myData = new.env()
     load(filename_sel, envir = myData)
-    print("loading finished")
     if(is.reactive(myData$scExp)) {
       myData$scExp = isolate(myData$scExp())
-      print("Is reactive finished")
     }
     scExp. = myData$scExp # retrieve filtered scExp
     rm(myData)
     gc()
-    print("started hc clust ")
     t2 = system.time({scExp. = correlation_and_hierarchical_clust_scExp(scExp.)})
-    cat("finished corhc clust in", t2," sec\n.")
     scExp(scExp.)
-    cat("Assined finished\n.")
     rm(scExp.)
     gc()
     })
-    cat("finished loading filtered analysis in ", t1 ,' secs')
   })
 
   # observeEvent(input$selected_reduced_dataset, {  # load scExp, add colors, add correlation
@@ -1234,7 +1210,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
   # available_pc_plots <- reactive({
-  #   print(paste0("new peaks done: ", pc$new))
   #   fe <- sapply(c(1:input$pc_k_selection), function(i){file.exists(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$pc_k_selection), paste0("C", i, "_model.r")))})
   #   which(fe==TRUE)
   # })
@@ -1282,23 +1257,34 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$selected_k <- renderUI({
     HTML(paste0("<h3><b>Number of clusters selected  = ", dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster),"</b></h3>"))
   })
-  output$contrib_hist <- renderUI({ if(input$only_contrib_cells){ plotOutput("contrib_hist_p", height = 250, width = 500) }})
-  output$contrib_hist_p <- renderPlot(contrib_hist_plot())
-  contrib_hist_plot <- reactive({
-    maxCons <- tapply(scExp_cf()@metadata$icl$itemConsensus$itemConsensus[scExp_cf()@metadata$icl$itemConsensus$k==length(unique(scExp_cf()$cell_cluster))],
-                      scExp_cf()@metadata$icl$itemConsensus$item[scExp_cf()@metadata$icl$itemConsensus$k==length(unique(scExp_cf()$cell_cluster))], max)
-    hist(maxCons, col="steelblue", breaks = 80, main="Max cluster contribution per cell", xlab="", ylab="number of cells")
-    abline(v = input$contrib_thresh, lwd = 2, col="red", lty = 2)
-    legend("topleft", legend = c("cluster contribution threshold"), col = c("red"), lty = c(2), cex = 0.8)
-  })
-  output$contrib_thresh <- renderUI({ if(input$only_contrib_cells){ sliderInput("contrib_thresh", "Select minimum cluster contribution for cells:", min = 0.6, max = 1, value = 0.9, step = 0.01) }})
-  output$contrib_info <- renderUI({ if(input$only_contrib_cells){ textOutput("contrib_info_text") }})
-  output$contrib_info_text <- renderText({
-    total_cells <- length(unique(scExp_cf()@metadata$icl$itemConsensus$item[scExp_cf()@metadata$icl$itemConsensus$k==length(unique(scExp_cf()$cell_cluster))]))
-    sel_cells <- length(unique(scExp_cf()@metadata$icl$itemConsensus$item[scExp_cf()@metadata$icl$itemConsensus$k==length(unique(scExp_cf()$cell_cluster)) & scExp_cf()@metadata$icl$itemConsensus$itemConsensus >= input$contrib_thresh]))
-    paste("Selected top", sel_cells, "cells out of", total_cells)
-  })
-  
+  # output$only_contrib_cell_ui <- renderUI({
+  #   if("icl" %in% names(scExp_cf()@metadata) && !is.null(scExp_cf()@metadata$icl)){
+  #     checkboxInput("only_contrib_cells", "Only use cells contributing most to the clustering ?", value=FALSE)
+  #   }
+  # })
+  # output$contrib_hist <- renderUI({ if(!is.null(input$only_contrib_cells) && input$only_contrib_cells){ plotOutput("contrib_hist_p", height = 250, width = 500) }})
+  # output$contrib_hist_p <- renderPlot(contrib_hist_plot())
+  # contrib_hist_plot <- reactive({
+  #   maxCons <- tapply(scExp_cf()@metadata$icl$itemConsensus$itemConsensus[scExp_cf()@metadata$icl$itemConsensus$k==length(unique(scExp_cf()$cell_cluster))],
+  #                     scExp_cf()@metadata$icl$itemConsensus$item[scExp_cf()@metadata$icl$itemConsensus$k==length(unique(scExp_cf()$cell_cluster))], max)
+  #   hist(maxCons, col="steelblue", breaks = 80, main="Max cluster contribution per cell", xlab="", ylab="number of cells")
+  #   abline(v = input$contrib_thresh, lwd = 2, col="red", lty = 2)
+  #   legend("topleft", legend = c("cluster contribution threshold"), col = c("red"), lty = c(2), cex = 0.8)
+  # })
+  output$distrib_norm_hist <- renderPlot({
+    signal = log10(as.numeric(counts(scExp_cf()))+1)
+    h = hist(signal,
+    col="steelblue", breaks = 120, main="Distribution of raw signal",
+         xlab="log10(Raw Signal)", ylab="frequency")
+    })
+  # output$contrib_thresh <- renderUI({ if(!is.null(input$only_contrib_cells) && input$only_contrib_cells){ sliderInput("contrib_thresh", "Select minimum cluster contribution for cells:", min = 0.6, max = 1, value = 0.9, step = 0.01) }})
+  # output$contrib_info <- renderUI({ if(!is.null(input$only_contrib_cells) && input$only_contrib_cells){ textOutput("contrib_info_text") }})
+  # output$contrib_info_text <- renderText({
+  #   total_cells <- length(unique(scExp_cf()@metadata$icl$itemConsensus$item[scExp_cf()@metadata$icl$itemConsensus$k==length(unique(scExp_cf()$cell_cluster))]))
+  #   sel_cells <- length(unique(scExp_cf()@metadata$icl$itemConsensus$item[scExp_cf()@metadata$icl$itemConsensus$k==length(unique(scExp_cf()$cell_cluster)) & scExp_cf()@metadata$icl$itemConsensus$itemConsensus >= input$contrib_thresh]))
+  #   paste("Selected top", sel_cells, "cells out of", total_cells)
+  # })
+  # 
   observeEvent(c(input$qval.th, input$tabs, input$cdiff.th, input$de_type, selected_filtered_dataset()), priority = 10,{
     if(input$tabs == "diff_analysis"){
       if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$cdiff.th)){
@@ -1504,7 +1490,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                          against MSigDB pathway lists (", url,").")})
   
   canUsePeaks <- reactive({
-    print("Can usepeak calling exist ?")
     if(!is.null(scExp_cf())){
       if("refined_annotation" %in% names(scExp_cf()@metadata) ){
         return(TRUE)

@@ -53,7 +53,12 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
         block = NULL
     nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
     
-    counts = SingleCellExperiment::normcounts(scExp)
+    if(method == "wilcox"){
+        counts = SingleCellExperiment::normcounts(scExp)
+    } else {
+        counts = SingleCellExperiment::counts(scExp)
+    }
+    
     feature = data.frame(ID = SingleCellExperiment::rowData(scExp)[, "ID"], chr = SingleCellExperiment::rowData(scExp)[, 
         "chr"], start = SingleCellExperiment::rowData(scExp)[, "start"], end = SingleCellExperiment::rowData(scExp)[, 
         "end"])
@@ -111,14 +116,24 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
                 if(method == "wilcox") tmp_result = geco.CompareWilcox(
                     dataMat = counts, annot = affectation, ref = myrefs, 
                     groups = mygps, featureTab = feature)
-                else tmp_result = geco.CompareedgeRGLM(
+                else {
+                    tmp_result = geco.CompareedgeRGLM(
                     dataMat = counts, annot = affectation, ref = myrefs,
                     groups = mygps, featureTab = feature)
+                colnames(tmp_result)[grep("logCPM",colnames(tmp_result))] = gsub("logCPM","Count",
+                                                                   colnames(tmp_result)[grep("logCPM",colnames(tmp_result))])
+                colnames(tmp_result)[grep("log2FC",colnames(tmp_result))] = gsub("log2FC","cdiff",
+                                                                   colnames(tmp_result)[grep("log2FC",colnames(tmp_result))])
+                }
                 
                 tmp_result = tmp_result[match(count_save$ID, tmp_result$ID), ]
                 rownames(tmp_result) = tmp_result$ID
-                tmp_result[5] = NULL  #remove rank because it will be added later
-                colnames(tmp_result)[5:8] = c("count", "cdiff", "p.val", "adj.p.val")
+                if(method == "wilcox"){
+                    tmp_result[5] = NULL  #remove rank because it will be added later
+                    colnames(tmp_result)[5:8] = c("count", "cdiff", "p.val", "adj.p.val")
+                } else {
+                    colnames(tmp_result)[5:8] = c("cdiff", "count",  "p.val", "adj.p.val")
+                }
                 count_save[, paste0("C", i)] = tmp_result$count
                 single_results = list.append(single_results, tmp_result)
                 pairs[nrow(pairs) + 1, ] = list(groups[1], refs[1])
