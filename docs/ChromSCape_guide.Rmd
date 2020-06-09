@@ -56,48 +56,57 @@ datasets :
  or transcription factors (RNA Polymerase 2,...) in single-cells 
   * scATAC-seq (Buenorostro et al., 2015), sciATAC-seq (Cusanovitch et al., 2016) 
  are technologies that allows to asses regions of open chromatin in single-cells 
-  
-  
 
 <br>
 
    
-![<br> <br> **ChromSCape Overview: **  The application takes as input single-cell count matrices and let the user filter & cluster cells, rundifferential analysis & gene set enrichment analysis between epigenomic subpopulations, in an unsupervised manner.](../inst/www/ChromSCape_concept.png)
+![<br> <br> **ChromSCape Overview: **  The application takes as input various single-cell format and let the user filter & cluster cells, run differential analysis & gene set enrichment analysis between epigenomic subpopulations, in an unsupervised manner.](../inst/www/ChromSCape_concept.png)
 
 <br>
 
 
 # Step-by-step analysis of single-cell epigenomic data
 
-## 0. Input files 
-
-### Prepare your input files 
-
-#### Count matrices
+## 0. Input files (before launching ChromSCape)
 
 After sequencing a single-cell epigenomic experiment, the raw sequencing files 
-(.fastq) are demultiplexed, aligned against a reference genome to output a count
-matrix using a data engineering pipeline specific of the technology. 
-For instance, the scChIP-seq raw data produced in (Grosselin et al., 2019) is 
-processed using our pipeline [scChIP-seq data engineering](https://github.com/vallotlab/scChIPseq_DataEngineering).
-For each cells, reads are counted according to either: 
+(.fastq) are demultiplexed, aligned against a reference genome to output different
+kind of data depending on the technology.   
+ChromSCape allows user to input a variety of different format. Depending on the
+output of the data-engineering/pre-processing pipeline used, the signal can
+be already *summarized into features* (**Count matrix**, **Peak-Index-Barcode** 
+files) or stored directly in *raw format* (**single-cell BAM** or **single-cell BED** 
+files).
 
- * features (extended region around TSS of genes, enhancers)
- * peaks called on bulk or single-cell signal
- * genomic bins (windows of constant length, e.g. 100kbp, 50kbp, 5kbp...)
+Anyhow the format, ChromSCape needs signal to be summarized into features. 
+If inputting *raw signal* (**scBAM** or **scBED**), the application lets user
+summarize signal of each cells into various features:
 
-For the moment, ChromSCape only allows **peaks** or **genomic bins**.
+ * **Genomic features** (extended region around TSS of genes, enhancers)
+ * **Peaks** called on bulk or single-cell signal (BED file must be provided by the user)
+ * **Genomic bins** (windows of constant length, e.g. 100kbp, 50kbp, 5kbp...)
+ 
+Note that summarizing will take longer if using BAM files than BED files, and 
+if the number of features is important (e.g. 5kbp bins, enhancers...).
 
-**Matrix format**: ChromSCape expects as input one single-cell count matrix per condition in tab-separated
-format (extension .txt or .tsv).  The first column is genomic location in standard
-format (chr:start-end) and the next columns are reads counted in each cells
-in the corresponding genomic feature. Note that the first entry (row 1, column 1)
-must be empty. All files should be placed in the same folder.
+### Count matrices files
 
+Each sample should be contained into single-cell count matrix (features x cells) 
+in tab-separated format (extension .txt or .tsv) or comma-separated format (.csv). 
+The first column is genomic location in standard format (chr:start-end) and the next columns are
+reads counted in each cells in the corresponding genomic feature. Note that the
+first entry (row 1, column 1) must be empty. All files should be placed in the same folder.
+
+If inputing only a single matrix regrouping different samples, the user can 
+check the 'multiple sample' check box and specify a number of samples. ChromSCape
+will automatically find the different samples based on the names of the cells, so
+please make sure samples names are all quite different (e.g. K562_.., GM12878_..).
+
+An example of such dataset is availablefor H3K27me3 mouse scChIP-seq of
+paired PDX samples at: [PDX mouse cells H3K27me3 scChIP-seq matrices](https://ndownloader.figshare.com/files/22629317).
 <br>
 
 ```{r, eval=FALSE}
-head example_matrix.tsv | cut -f1-5
  	BC969404	BC893525	BC239068	BC073314
 chr10:0-50000	0	0	0	0
 chr10:50000-100000	0	0	0	0
@@ -107,7 +116,53 @@ chr10:100000-150000	0	0	0	0
   
 <br>
 
-#### Alignment BAM files for Peak Calling (**optional**)
+### Peak-Index-Barcode files
+
+This format regroups three files containing signal of all samples of one or multiple experiment:  
+
+ * The **barcode file** contains one cell barcode per line and finish by '_barcode.txt' :
+```{r, eval=FALSE}
+HBCx95_BC969404
+HBCx95_BC893525
+HBCx22_BC239068
+HBCx22_BC073314
+...
+```
+* The **peak file** contains feature location (usually peaks) must be in BED format 
+and finish by '_peaks.bed': 
+```{r, eval=FALSE}
+chr3	197959001	197961500
+chr3	198080001	198081500
+chr4	53001	55500
+...
+```
+* The **index file** contains indexes of non-zero signal and finish by '_indexes.txt',
+the first column is the index of peaks, the second column contains barcode index,
+the last column contains the signal: 
+```{r, eval=FALSE}
+459	1	1
+461	1	1
+556	1	2
+...
+```
+
+
+<br>
+
+### Single-cell BAM or BED files
+
+Each BAM or BED (.bed or .bed.gz) file must be grouping signal of a single-cell, and all files
+must be placed in the same folder. The signal will be summarized into either bins,
+peaks, or around gene TSS depending on user choice.
+
+An example of such dataset is publicly available for H3K27me3 single-cell CUT&TAG (Kaya-Okur et al., 2019)
+ K562 and H1 cells at: [K562 H3K27me3 cells](https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE124680&format=file)
+ and [K562 + H1 H3K27me3 cells](https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE129119&format=file). 
+ All files need to be placed in the same folders, the BED files do not need to be
+ unzipped.
+<br>
+
+### Alignment BAM files for Peak Calling (**optional**)
 
 For the optional step of Peak Calling on cluster of cells found de novo, 
 users have to input one BAM file per sample, placed in the same folder. The barcode
@@ -122,45 +177,32 @@ NS500388:436:HNG5VAFXX:2:21311:26430:3816	89	chr10	3102405	255	51M	*	0	0	CTTGGTG
 ...
 ```
   
-  
-### Available datasets
-
-Two datasets are available :  
-
- * **Single-Cell ChIP-seq PDX dataset against H3K27me3**:  
- Input count matrices & BAM files
- corresponding to mouse cells from 2 PDX models, luminal and triple negative
- breast cancer tumours resistant or not to cancer therapy (respectively HBCx_22
- & HBCx_95, see Grosselin et al., 2019). [[scChIP-seq data FigShare](https://figshare.com/articles/PDX_mouse_cells_H3K27me3_scChIP-seq_matrices/12280631)]
-
- * **Single-cell ATAC seq dataset**:  
- Data from Buenrostro et al., 2015, Corces et al., 2016, Schep et al., 2017 of cell lines & 
- patients sample of various cell types. [[scATAC-seq data FigShare](https://figshare.com/projects/Single-Cell_ChIP-seq_of_Mouse_Stromal_Cells_in_PDX_tumour_models_of_resistance/66419)]]  
-
-  
 ## 1. Create & import a dataset
 
-Once you have launched the application, you arrive on the "Select & Import". Here you
+Once you have launched the application, you arrive on the "**Select & Import**". Here you
 can selet an output directory, where your analyses will be saved. ChromSCape will 
 automatically save the folder's location so that you don't have to select it each
-time you connect. 
+time you connect.  
+
 You must then name your analysis. The name shouldn't contain special characters (except
 '_'). Choose either the Human (hg38) or Mouse (mm10) genome. This is used to annotate
 your features with the closest genes TSS for the Gene Set Analysis. Browse your 
 computer for one or multiple matrices that will be analyzed together. To select
 multiple matrices, they must be placed in the same folder and then the user can select
 multiples matrices with (Shift + Click) or (Ctrl + Click).   
-Finally, clicking  on 'Create Analysis' will create an analysis & import the count matrices
-in this analysis. This will create a folder named 'ChromSCape_analyses' in the output 
+Finally, clicking  on '**Create Analysis**' will create an analysis & import the count matrices
+in this analysis. This will create a folder named '*ChromSCape_analyses*' in the output 
 directory you specified, inside which
 another folder 'Your_analysis_name' is nested. If you create another analysis,
-it will also be created under 'ChromSCape_analyses'. 
+it will also be created under '*ChromSCape_analyses*'. 
 If you already created an analysis in a previous section, selecting the same output
 directory as you chose in the previous session will enable you to load your analysis.
 
 <br>
 
 ![<br> <br> **Select & Import Tab: ** Select an output directory, Create an analysis or load previous analyses, import count matrix into your new analysis.](../inst/www/Guide_images/Step1_select_import.png)  
+
+![<br> <br> **Format Selection: ** Select an type of format input, and eventually a type of feature to summarize signal.](../inst/www/Guide_images/Step1_format_input.png)  
 
 ## 2. Filter, Normalize & Reduce Dimensionality 
 
@@ -190,16 +232,19 @@ directory as you chose in the previous session will enable you to load your anal
 
 <br>
 
-![<br> <br> **Peak Calling to refine bins to gene annotation: ** Call peaks on 'pseudo-bulk' cell clusters, and refine bins to genes annotation.](../inst/www/Guide_images/Step4_1_cluster_cells.png) 
+![<br> <br> **Peak Calling to refine bins to gene annotation: ** Call peaks on 'pseudo-bulk' cell clusters, and refine bins to genes annotation.](../inst/www/Guide_images/Step5_peak_calling.png) 
+
 ## 6. Differential Analysis
+
+![<br> <br> **Differential Analysis: ** Identify most differential features between the various cell clusters ](../inst/www/Guide_images/Step6_DA.png)
 
 ## 7. Gene Sets Analysis
 
-## R commands 
+![<br> <br> **Gene Set Analysis: ** Look for pathways activated or depleted in most differential regions between clusters](../inst/www/Guide_images/Step7_GeneSetAnalysis.png)
 
 ## FAQ
 
-### Error after deleting or moving files from ChromSCape_analysis
+ * **Error after deleting or moving files from ChromSCape_analysis ?**
 
 Try remove cookies from the browser you are using, and start again selecting a different
 output folder.
