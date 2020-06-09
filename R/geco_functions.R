@@ -4,7 +4,6 @@
 #'
 #' @return
 #' @importFrom stats cor as.dist
-#' @export
 #'
 geco.distPearson <- function(m)
 {
@@ -88,7 +87,6 @@ geco.CompareWilcox <- function(dataMat = NULL, annot = NULL, ref = NULL, groups 
 #' @param groups List containing the IDs of groups to be compared with the reference samples. Names of the vectors will be used in the results table
 #'
 #' @return Results table
-#' @export
 #'
 #' @importFrom edgeR DGEList calcNormFactors estimateDisp glmFit glmLRT
 #' @author Eric Letouze & Celine Vallot
@@ -136,7 +134,6 @@ geco.CompareedgeRGLM <- function(dataMat=NULL,
 #' @param newmax 
 #'
 #' @return
-#' @export
 #'
 geco.changeRange <- function(v, newmin = 1, newmax = 10)
 {
@@ -180,7 +177,6 @@ geco.H1proportion <- function(pv = NA, lambda = 0.5)
 #'
 #' @importFrom stats phyper
 #' @return
-#' @export
 geco.enrichmentTest <- function(gene.sets, mylist, possibleIds, sep = ";", silent = F)
 {
     possibleIds <- unique(possibleIds)
@@ -230,7 +226,6 @@ geco.enrichmentTest <- function(gene.sets, mylist, possibleIds, sep = ";", silen
 #' @param hmRowNames.cex 
 #'
 #' @return
-#' @export
 #'
 geco.hclustAnnotHeatmapPlot <- function(x = NULL, hc = NULL, hmColors = NULL, anocol = NULL, 
     xpos = c(0.1, 0.9, 0.114, 0.885), ypos = c(0.1, 0.5, 0.5, 0.6, 0.62, 0.95), dendro.cex = 1, 
@@ -263,7 +258,6 @@ geco.hclustAnnotHeatmapPlot <- function(x = NULL, hc = NULL, hmColors = NULL, an
 #' @param ... 
 #'
 #' @return
-#' @export
 #'
 geco.imageCol <- function(matcol = NULL, strat = NULL, xlab.cex = 0.5, ylab.cex = 0.5, 
     drawLines = c("none", "h", "v", "b")[1], ...)
@@ -339,7 +333,6 @@ geco.imageCol <- function(matcol = NULL, strat = NULL, xlab.cex = 0.5, ylab.cex 
 #' @param plotLegendFile 
 #'
 #' @return
-#' @export
 #'
 geco.annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), anotype = NULL, 
     maxnumcateg = 2, categCol = NULL, quantitCol = NULL, plotLegend = T, plotLegendFile = NULL)
@@ -459,7 +452,6 @@ geco.annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), 
 #' @param method 
 #'
 #' @return
-#' @export
 #'
 #' @examples
 geco.groupMat <- function(mat = NA, margin = 1, groups = NA, method = "mean")

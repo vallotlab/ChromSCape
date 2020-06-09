@@ -40,10 +40,8 @@ detect_samples <- function(barcodes, nb_samples=1){
   
   # remove trailing special char
   samples_names = gsub("[[:punct:]]$", "", samples_names)
-  print(samples_names)
   # remove starting special char
   samples_names = gsub("^[[:punct:]]", "", samples_names)
-  print(samples_names)
   # remove longest common string
   mat = matrix("",nrow=nb_samples,ncol=nb_samples)
   for(i in 1:(nb_samples)){
