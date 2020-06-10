@@ -246,6 +246,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         
         if(type_file == "count_mat" & !is.null(input$datafile_matrix)){
           incProgress(0.3, detail="Reading count matrices")
+          if(input$is_combined_mat == TRUE){
+            if(length(input$datafile_matrix$name)>1){
+              showNotification(paste0("Warning : When checking the 
+                                      'The matrix contains multiple samples ?' button,
+                                      you have to input a single count matrix."),
+                               duration = 5, closeButton = TRUE, type="warning")
+              return()
+            }
+          }
           tmp_list = import_scExp(file_names = input$datafile_matrix$name,
                                   path_to_matrix = input$datafile_matrix$datapath)
           datamatrix = tmp_list$datamatrix
@@ -585,7 +594,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if("TSNE" %in% SingleCellExperiment::reducedDimNames(scExp())){
       p = plot_reduced_dim_scExp(scExp(),input$color_by, "TSNE")
       output$tsne_plot = plotly::renderPlotly( plotly::ggplotly(p, tooltip="Sample", dynamicTicks=T) ) 
-      shinydashboard::box(title="tSNE visualization", width = NULL, status="success", solidHeader=T,
+      shinydashboard::box(title="t-SNE", width = NULL, status="success", solidHeader=T,
                           column(12, align="left", plotly::plotlyOutput("tsne_plot") %>%
                                    shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
                                    shinyhelper::helper(type = 'markdown', icon ="info-circle",
@@ -986,7 +995,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           ggtitle("t-SNE")
         output$tsne_plot_cf <- plotly::renderPlotly(
           plotly::ggplotly(p, tooltip="Sample", dynamicTicks = T))
-        shinydashboard::box(title="tSNE visualization", width = NULL, status="success", solidHeader=T,
+        shinydashboard::box(title="t-SNE", width = NULL, status="success", solidHeader=T,
                             column(12, align="left", plotly::plotlyOutput("tsne_plot_cf")))
       }
     }
@@ -1088,9 +1097,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   # 5. Peak calling [optional]
   ###############################################################
   
-  output$peak_calling_info <- renderText({"This module is optional, but recommended in order to obtain more precise results for enrichment analysis. 
-    Based on the BAM files for the samples in your project, peaks will be called using MACS2 [only work on unix systems] so that the counts can be mapped to the gene TSS more specifically.
-    If you have MACS2 & samtools installed but that ChromSCape can't find these softwares, try relaunching R from the terminal and start ChromSCape again."})
+  output$peak_calling_info <- renderText({"This module is optional, but recommended in order to obtain the most meaningful results for pathway enrichment analysis. Peaks will be called from the BAM files of the samples selected in your project, using MACS2 [only works on unix systems] so that counts can be assigned more specifically to genes TSS . If you have MACS2 & samtools installed but ChromSCape can’t find these softwares, try relaunching R from the terminal and start ChromSCape again."})
   
   can_run = reactiveVal({FALSE})
   
@@ -1251,9 +1258,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   # 6. Differential analysis
   ###############################################################
   
-  output$diff_analysis_info <- renderText({"Differential analysis will be performed using the cluster assignment obtained on the Consensus clustering page. To use a different number of clusters, 
-    go to this page and first perform the clustering, then select the preferred number of clusters in the box on the right in order to display and save the data. 
-    It will then appear here for selection."})
+  output$diff_analysis_info <- renderText({"Differential analysis is performed using
+    the cluster assignment obtained with the Cluster Cells module. To change the
+    partition of the datasets - number of k clusters - go back to this module and
+    select the preferred number of clusters in the box in the upper right panel.
+    User can choose either a non-parametric test (Wilcoxon) or a parametric test
+    (here edgeR GLM) depending on the observed distribution of the reads."})
   output$selected_k <- renderUI({
     HTML(paste0("<h3><b>Number of clusters selected  = ", dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster),"</b></h3>"))
   })
@@ -1516,7 +1526,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   observeEvent(input$do_enrich, {
-    withProgress(message='Running Gene Set Analysis...', value = 0, {
+    withProgress(message='Running Pathway Enrichment Analysis...', value = 0, {
 
       incProgress(amount = 0.3, detail = paste("Running Hypergeometric Enrichment Testing against MSigDB..."))
       gc()
@@ -1524,14 +1534,14 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                                   ref = annotation_id(), cdiff.th = input$cdiff.th,
                                                   peak_distance = 1000, use_peaks = input$use_peaks))
       gc()
-      incProgress(amount = 0.6, detail = paste("Finishing Gene Set Analysis..."))
+      incProgress(amount = 0.6, detail = paste("Finishing Pathway Enrichment Analysis..."))
       data = list("scExp_cf" = scExp_cf() )
       save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                                   paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
                                          "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData")))
       rm(data)
       gc()
-      incProgress(amount = 0.6, detail = paste("Saving Gene Set Analysis"))
+      incProgress(amount = 0.6, detail = paste("Saving Pathway Enrichment Analysis"))
       
     })
   })

@@ -385,7 +385,7 @@ num_cell_in_cluster_scExp <- function(scExp)
     table_raw <- as.data.frame.matrix(table(as.data.frame(SingleCellExperiment::colData(scExp))[, 
         c("cell_cluster", "sample_id")]))
     ord =  as.character(unique(SingleCellExperiment::colData(scExp)[, "sample_id"]))
-    table_raw = table_raw[,match(ord,colnames(table_raw))]
+    table_raw = table_raw[,match(ord,colnames(table_raw)),drop=F]
     
     # Overall goodness of fit testing : how fairly are cells allocated between the
     # clusters ?
