@@ -42,35 +42,38 @@ detect_samples <- function(barcodes, nb_samples=1){
   samples_names = gsub("[[:punct:]]$", "", samples_names)
   # remove starting special char
   samples_names = gsub("^[[:punct:]]", "", samples_names)
-  # remove longest common string
-  mat = matrix("",nrow=nb_samples,ncol=nb_samples)
-  for(i in 1:(nb_samples)){
-    for(j in 1:(nb_samples)){
-    x = as.character(samples_names[i])
-    y = as.character(samples_names[j])
-    
-    x = strsplit(x, "")[[1]]
-    y = strsplit(y, "")[[1]]
-    
-    lcs = qualV::LCS(x,y)
-    ls = split(lcs[6]$va, cumsum(c(TRUE, diff(lcs[6]$va) != 1)))
-    ls =ls[[which.max(lengths(ls))]]
-    
-    x = as.character(samples_names[i])
-    x = strsplit(x, "")[[1]]
-    lcs = paste0(x[ls],collapse = "")
-    
-    if(length(lcs)==0) lcs =""
-    mat[i,j] = lcs
-    }
-  }
   
-  mat = as.character(mat)
-  longest_common_between_samples = mat[which.min(unlist(lapply(mat, nchar)))][1]
-  if(length(longest_common_between_samples)>0){
-    if(length(grep(pattern = longest_common_between_samples, samples_names)) 
-       == nb_samples) samples_names = gsub(longest_common_between_samples,"",
-                                           samples_names)
+  # remove longest common string
+  if(nb_samples > 1){
+    mat = matrix("",nrow=nb_samples,ncol=nb_samples)
+    for(i in 1:(nb_samples)){
+      for(j in 1:(nb_samples)){
+        x = as.character(samples_names[i])
+        y = as.character(samples_names[j])
+        
+        x = strsplit(x, "")[[1]]
+        y = strsplit(y, "")[[1]]
+        
+        lcs = qualV::LCS(x,y)
+        ls = split(lcs[6]$va, cumsum(c(TRUE, diff(lcs[6]$va) != 1)))
+        ls =ls[[which.max(lengths(ls))]]
+        
+        x = as.character(samples_names[i])
+        x = strsplit(x, "")[[1]]
+        lcs = paste0(x[ls],collapse = "")
+        
+        if(length(lcs)==0) lcs =""
+        mat[i,j] = lcs
+      }
+    }
+    
+    mat = as.character(mat)
+    longest_common_between_samples = mat[which.min(unlist(lapply(mat, nchar)))][1]
+    if(length(longest_common_between_samples)>0){
+      if(length(grep(pattern = longest_common_between_samples, samples_names)) 
+         == nb_samples) samples_names = gsub(longest_common_between_samples,"",
+                                             samples_names)
+    }
   }
   samples_names = samples_names[sample_groups]
   
