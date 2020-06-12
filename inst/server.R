@@ -30,6 +30,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   for(tab in tab_vector){
     js$disableTab(tab) #Disabling all tabs but the first one
   }
+
   
   observeEvent(input$startHelp,{
     print("Started help")
