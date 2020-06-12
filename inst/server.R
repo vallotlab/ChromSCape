@@ -1282,12 +1282,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   #   abline(v = input$contrib_thresh, lwd = 2, col="red", lty = 2)
   #   legend("topleft", legend = c("cluster contribution threshold"), col = c("red"), lty = c(2), cex = 0.8)
   # })
-  output$distrib_norm_hist <- renderPlot({
-    signal = log10(as.numeric(counts(scExp_cf()))+1)
-    h = hist(signal,
-    col="steelblue", breaks = 120, main="Distribution of raw signal",
-         xlab="log10(Raw Signal)", ylab="frequency")
-    })
+  # output$distrib_norm_hist <- renderPlot({
+  #   signal = log10(as.numeric(counts(scExp_cf()))+1)
+  #   h = hist(signal,
+  #   col="steelblue", breaks = 120, main="Distribution of raw signal",
+  #        xlab="log10(Raw Signal)", ylab="frequency")
+  #   })
   # output$contrib_thresh <- renderUI({ if(!is.null(input$only_contrib_cells) && input$only_contrib_cells){ sliderInput("contrib_thresh", "Select minimum cluster contribution for cells:", min = 0.6, max = 1, value = 0.9, step = 0.01) }})
   # output$contrib_info <- renderUI({ if(!is.null(input$only_contrib_cells) && input$only_contrib_cells){ textOutput("contrib_info_text") }})
   # output$contrib_info_text <- renderText({

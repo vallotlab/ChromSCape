@@ -7,7 +7,7 @@ Various existing technologies allow to produce single-cell epigenomic datasets :
 
 ## Launch the App 
 
-**ChromSCape** requires R version 3.5 or 3.6 (does not work on R 4.0 yet!).
+**ChromSCape** requires R version 3.6.3 (does not work on R 4.0 yet!).
 To install **ChromSCape**, open **R** or **Rstudio** and copy the following commands : 
 
 ```
@@ -27,11 +27,10 @@ ChromSCape::launchApp()
 It is recommended to use Chrome browser for optimal display of graphics & table.
 If no browser opens, copy the url after 'Listening on ...' and paste in your browser.
 
-Play around by inputing a simple scChIP-seq against H3K27me3 mouse count matrix (unzip first): [single-cell ChIP-seq matrix - HBCx95 (H3K27me3 mark)](inst/extdata/example_matrix.tsv.zip)
-
 ## User guide
 
-[User guide](https://vallotlab.github.io/ChromSCape/ChromSCape_guide.html) \[*in development*\]
+Take a look at the user guide before starting: 
+[User guide](https://vallotlab.github.io/ChromSCape/ChromSCape_guide.html)
 
 ## Test datasets
 
@@ -39,18 +38,13 @@ ChromSCape takes as input one tab-separated count matrice (in .tsv or .txt) per 
 you input your own matrices, it is recommended you try playing around and familiarize
 with ChromSCape by downloading our example matrices and uploading them in ChromSCape :
 
-
-Two datasets are available :  
+Try out ChromSCape with a test dataset :
 
  * **Single-Cell ChIP-seq PDX dataset against H3K27me3**:  
  Input count matrices & BAM files
  corresponding to mouse cells from 2 PDX models, luminal and triple negative
  breast cancer tumours resistant or not to cancer therapy (respectively HBCx_22
  & HBCx_95, see Grosselin et al., 2019). [[scChIP-seq data FigShare](https://figshare.com/articles/PDX_mouse_cells_H3K27me3_scChIP-seq_matrices/12280631)]
-
- * **Single-cell ATAC seq dataset**:  
- Data from Buenrostro et al., 2015, Corces et al., 2016, Schep et al., 2017 of cell lines & 
- patients samples of various cell types. [[scATAC-seq data FigShare](https://figshare.com/projects/Single-Cell_ChIP-seq_of_Mouse_Stromal_Cells_in_PDX_tumour_models_of_resistance/66419)]]  
 
 
 ## Run Time
