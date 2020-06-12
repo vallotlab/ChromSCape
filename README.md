@@ -5,9 +5,13 @@
 **ChromSCape** - Single-Cell Chromatin Landscape profiling - is a ready-to-launch user-friendly **Shiny App** for analysis of single-cell epigenomic datasets (scChIP-seq, scATAC-seq...). It takes as input single-cell count matrices and let the user filter & cluster cells, run differential analysis & gene set enrichment analysis between epigenomic subpopulations, in an unsupervised manner.  
 Various existing technologies allow to produce single-cell epigenomic datasets : scChIP-seq, scATAC-seq, scCUT&TAG, scChIL-seq, scChIC-seq ...
 
+## Demo 
+
+Checkout the application look & feel at : [Demo](https://vallotlab.shinyapps.io/ChromSCape/)
+
 ## Launch the App 
 
-**ChromSCape** requires R version 3.6.3 (does not work on R 4.0 yet!).
+**ChromSCape** requires **R version 3.6.3** (does not work on R 4.0 yet!).
 To install **ChromSCape**, open **R** or **Rstudio** and copy the following commands : 
 
 ```
@@ -85,18 +89,6 @@ The user should be on a Unix system (Mac, Linux) and have installed samtools & M
 ```
 The application will automatically check if these tools are available and will give
 you a warning if they are not installed/available.
-
-## Detailed walkthrough of the App
-### 1. Upload your matrice(s)
-### 2. Name & compile dataset
-### 3. Fix filters to keep most covered regions & cells
-### 4. Vizualize data in reduced dimension
-### 5. Correlate cells and filter out cells with low correlation scores
-### 6. Cluster cells
-### 7. Peak call to refine signal (optional)
-### 8. Find differentially bound regions in each cluster
-### 9. Find enriched gene sets in differentially bound regions
-
 
 # Authors
 Please do not hesitate to post an issue or contact the authors :
