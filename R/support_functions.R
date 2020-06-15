@@ -1,16 +1,16 @@
-#' geco.distPearson
+#' distPearson
 #'
 #' @param m 
 #'
 #' @return
 #' @importFrom stats cor as.dist
 #'
-geco.distPearson <- function(m)
+distPearson <- function(m)
 {
     stats::as.dist(1 - stats::cor(t(m), method = "pearson"))
 }
 
-#' geco.CompareWilcox
+#' CompareWilcox
 #'
 #' @param dataMat 
 #' @param annot 
@@ -23,7 +23,7 @@ geco.distPearson <- function(m)
 #' @importFrom stats p.adjust wilcox.test
 #' @export
 #'
-geco.CompareWilcox <- function(dataMat = NULL, annot = NULL, ref = NULL, groups = NULL, 
+CompareWilcox <- function(dataMat = NULL, annot = NULL, ref = NULL, groups = NULL, 
     featureTab = NULL, block = NULL)
     {
     res = featureTab
@@ -91,7 +91,7 @@ geco.CompareWilcox <- function(dataMat = NULL, annot = NULL, ref = NULL, groups 
 #' @importFrom edgeR DGEList calcNormFactors estimateDisp glmFit glmLRT
 #' @author Eric Letouze & Celine Vallot
 #' @examples
-geco.CompareedgeRGLM <- function(dataMat=NULL,
+CompareedgeRGLM <- function(dataMat=NULL,
                                  annot=NULL,
                                  ref=NULL,
                                  groups=NULL,
@@ -127,7 +127,7 @@ geco.CompareedgeRGLM <- function(dataMat=NULL,
 
 
 
-#' geco.changeRange
+#' changeRange
 #'
 #' @param v 
 #' @param newmin 
@@ -135,14 +135,14 @@ geco.CompareedgeRGLM <- function(dataMat=NULL,
 #'
 #' @return
 #'
-geco.changeRange <- function(v, newmin = 1, newmax = 10)
+changeRange <- function(v, newmin = 1, newmax = 10)
 {
     oldmin <- min(v, na.rm = TRUE)
     oldmax <- max(v, na.rm = TRUE)
     newmin + ((newmax - newmin) * (v - oldmin)/(oldmax - oldmin))
 }
 
-#' geco.H1proportion
+#' H1proportion
 #'
 #' @param pv 
 #' @param lambda 
@@ -151,7 +151,7 @@ geco.changeRange <- function(v, newmin = 1, newmax = 10)
 #' @export
 #'
 #' @examples
-geco.H1proportion <- function(pv = NA, lambda = 0.5)
+H1proportion <- function(pv = NA, lambda = 0.5)
 {
     pi1 = 1 - mean(pv > lambda, na.rm = TRUE)/(1 - lambda)
     if (pi1 < 0)
@@ -167,7 +167,7 @@ geco.H1proportion <- function(pv = NA, lambda = 0.5)
     return(pi1)
 }
 
-#' geco.enrichmentTest
+#' enrichmentTest
 #'
 #' @param gene.sets 
 #' @param mylist 
@@ -177,7 +177,7 @@ geco.H1proportion <- function(pv = NA, lambda = 0.5)
 #'
 #' @importFrom stats phyper
 #' @return
-geco.enrichmentTest <- function(gene.sets, mylist, possibleIds, sep = ";", silent = F)
+enrichmentTest <- function(gene.sets, mylist, possibleIds, sep = ";", silent = F)
 {
     possibleIds <- unique(possibleIds)
     mylist <- unique(mylist)
@@ -212,7 +212,7 @@ geco.enrichmentTest <- function(gene.sets, mylist, possibleIds, sep = ";", silen
     tmp
 }
 
-#' geco.hclustAnnotHeatmapPlot
+#' hclustAnnotHeatmapPlot
 #'
 #' @param x 
 #' @param hc 
@@ -227,7 +227,7 @@ geco.enrichmentTest <- function(gene.sets, mylist, possibleIds, sep = ";", silen
 #'
 #' @return
 #'
-geco.hclustAnnotHeatmapPlot <- function(x = NULL, hc = NULL, hmColors = NULL, anocol = NULL, 
+hclustAnnotHeatmapPlot <- function(x = NULL, hc = NULL, hmColors = NULL, anocol = NULL, 
     xpos = c(0.1, 0.9, 0.114, 0.885), ypos = c(0.1, 0.5, 0.5, 0.6, 0.62, 0.95), dendro.cex = 1, 
     xlab.cex = 0.8, hmRowNames = FALSE, hmRowNames.cex = 0.5)
     {
@@ -237,7 +237,7 @@ geco.hclustAnnotHeatmapPlot <- function(x = NULL, hc = NULL, hmColors = NULL, an
     plot(hc, main = "Hierarchical clustering", xlab = "", sub = "", las = 2, cex = dendro.cex, 
         cex.axis = dendro.cex)
     par(fig = c(xpos[3], xpos[4], ypos[3], ypos[4]), new = TRUE, mar = rep(0, 4))
-    geco.imageCol(anocol, xlab.cex = xlab.cex, ylab.cex = 0)  # [hc$order,]
+    imageCol(anocol, xlab.cex = xlab.cex, ylab.cex = 0)  # [hc$order,]
     par(fig = c(xpos[3], xpos[4], ypos[1], ypos[2]), new = TRUE, mar = rep(0, 4))
     image(t(x), axes = FALSE, xlab = "", ylab = "", col = hmColors)
     graphics::box()
@@ -248,7 +248,7 @@ geco.hclustAnnotHeatmapPlot <- function(x = NULL, hc = NULL, hmColors = NULL, an
     }
 }
 
-#' geco.imageCol
+#' imageCol
 #'
 #' @param matcol 
 #' @param strat 
@@ -259,7 +259,7 @@ geco.hclustAnnotHeatmapPlot <- function(x = NULL, hc = NULL, hmColors = NULL, an
 #'
 #' @return
 #'
-geco.imageCol <- function(matcol = NULL, strat = NULL, xlab.cex = 0.5, ylab.cex = 0.5, 
+imageCol <- function(matcol = NULL, strat = NULL, xlab.cex = 0.5, ylab.cex = 0.5, 
     drawLines = c("none", "h", "v", "b")[1], ...)
     {
     if (is.null(ncol(matcol)))
@@ -313,14 +313,14 @@ geco.imageCol <- function(matcol = NULL, strat = NULL, xlab.cex = 0.5, ylab.cex 
     {
         z <- factor(matcol[, strat])
         levels(z) <- 1:length(levels(z))
-        z <- geco.vectorToSegments(as.numeric(z))
-        abline(v = geco.changeRange(c(0.5, z$Ind_K + 0.5)/max(z$Ind_K), newmin = par()$usr[1], 
+        z <- vectorToSegments(as.numeric(z))
+        abline(v = changeRange(c(0.5, z$Ind_K + 0.5)/max(z$Ind_K), newmin = par()$usr[1], 
             newmax = par()$usr[2]), lwd = 2, lty = 2)
     }
 }
 
 
-#' geco.annotToCol2
+#' annotToCol2
 #'
 #' @param annotS 
 #' @param annotT 
@@ -334,7 +334,7 @@ geco.imageCol <- function(matcol = NULL, strat = NULL, xlab.cex = 0.5, ylab.cex 
 #'
 #' @return
 #'
-geco.annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), anotype = NULL, 
+annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), anotype = NULL, 
     maxnumcateg = 2, categCol = NULL, quantitCol = NULL, plotLegend = T, plotLegendFile = NULL)
     {
     if (is.null(ncol(annotS)))
@@ -423,7 +423,7 @@ geco.annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), 
     for (j in which(anotype == "quantit"))
     {
         colrange <- matlab.like(100)
-        anocol[, j] <- colrange[round(geco.changeRange(anocol[, j], newmin = 1, newmax = 100))]
+        anocol[, j] <- colrange[round(changeRange(anocol[, j], newmin = 1, newmax = 100))]
         if (k < length(quantitCol))
         {
             k <- k + 1
@@ -454,7 +454,7 @@ geco.annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), 
 #' @return
 #'
 #' @examples
-geco.groupMat <- function(mat = NA, margin = 1, groups = NA, method = "mean")
+groupMat <- function(mat = NA, margin = 1, groups = NA, method = "mean")
 {
     if (!method %in% c("mean", "median"))
     {

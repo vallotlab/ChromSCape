@@ -59,7 +59,7 @@ colors_scExp <- function(scExp, annotCol = "sample_id", color_by = "sample_id", 
     
     # initialization
     annot = as.data.frame(SingleCellExperiment::colData(scExp))
-    anocol <- geco.annotToCol2(annotS = annot[, annotCol, drop = F], annotT = annot, 
+    anocol <- annotToCol2(annotS = annot[, annotCol, drop = F], annotT = annot, 
         plotLegend = F, categCol = NULL)
     SummarizedExperiment::colData(scExp)[, paste0(annotCol, "_color")] = as.data.frame(anocol, 
         stringsAsFactors = F)[, annotCol]  # factor or not ?
@@ -149,18 +149,18 @@ plot_reduced_dim_scExp <- function(scExp, color_by = "sample_id", reduced_dim = 
     plot_df = as.data.frame(cbind(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]), 
         SingleCellExperiment::colData(scExp)))
     
-    p <- ggplot(plot_df, aes_string(x = select_x, y = select_y)) + geom_point(alpha = 0.6, 
-        aes(color = SingleCellExperiment::colData(scExp)[, color_by])) + labs(color = color_by) + 
-        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-            panel.background = element_blank(), axis.line = element_line(colour = "black"), 
+    p <- ggplot(plot_df, aes_string(x = select_x, y = select_y)) + geom_point(alpha = 0.6,
+        aes(color = SingleCellExperiment::colData(scExp)[, color_by])) + labs(color = color_by) +
+        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+            panel.background = element_blank(), axis.line = element_line(colour = "black"),
             panel.border = element_rect(colour = "black", fill = NA))
-    
+
     if (color_by == "total_counts")
     {
         p <- p + scale_color_gradientn(colours = matlab.like(100))
     } else
     {
-        
+
         cols = unique(as.character(
             SingleCellExperiment::colData(scExp)[,paste0(color_by, "_color")]))
         names(cols) = unique(as.character(
@@ -209,7 +209,7 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (grDevices
     }
     
     return(
-        geco.hclustAnnotHeatmapPlot(x = SingleCellExperiment::reducedDim(scExp, "Cor")[scExp@metadata[[name_hc]]$order, 
+        hclustAnnotHeatmapPlot(x = SingleCellExperiment::reducedDim(scExp, "Cor")[scExp@metadata[[name_hc]]$order, 
         scExp@metadata[[name_hc]]$order], hc = scExp@metadata[[name_hc]], hmColors = corColors, 
         anocol = as.matrix(anocol[scExp@metadata[[name_hc]]$order, ]), xpos = c(0.15, 
             0.9, 0.164, 0.885), ypos = c(0.1, 0.5, 0.5, 0.6, 0.62, 0.95), dendro.cex = 0.04, 
@@ -267,7 +267,7 @@ plot_differential_H1_scExp <- function(scExp_cf, cell_cluster = "C1")
     
     res = scExp_cf@metadata$diff$res
     
-    tmp <- geco.H1proportion(res[, paste("pval", cell_cluster, sep = ".")])
+    tmp <- H1proportion(res[, paste("pval", cell_cluster, sep = ".")])
     hist(res[, paste("pval", cell_cluster, sep = ".")], breaks = seq(0, 1, by = 0.05), 
         xlab = "P-value", ylab = "Frequency", main = paste(cell_cluster, "vs the rest", 
             "\n", "H1 proportion:", round(tmp, 3)))

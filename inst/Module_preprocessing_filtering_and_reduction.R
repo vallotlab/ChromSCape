@@ -72,6 +72,9 @@ Module_preprocessing_filtering_and_reduction <- function(input, output, session,
         print("Add colors ...")
         print(system.time({scExp = colors_scExp(scExp, annotCol())}))  # add colors 
         
+        ### 8. Running hierarchical clustering ###
+        print(system.time({scExp = correlation_and_hierarchical_clust_scExp(scExp)}))
+        
         ### 8. Save data ###
         save(scExp, file = file.path(data_folder(), "ChromSCape_analyses", raw_dataset_name(), 
             "Filtering_Normalize_Reduce", paste0(paste(raw_dataset_name(), min_cov_cell(), percentMin(), 
