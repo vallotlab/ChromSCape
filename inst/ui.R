@@ -135,17 +135,17 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                                       checkboxInput("do_subsample", "Perform subsampling", value=FALSE)%>%
                                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                                               content = "subsampling"),
-                                                                                      htmlOutput("do_subsample"),
+                                                                                      uiOutput("do_subsample"),
                                                                                       checkboxInput("exclude_regions", "exclude specific genomic regions", value=FALSE)  %>%
                                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                                               content = "exclude_region"),
-                                                                                      htmlOutput("exclude_file"),
+                                                                                      uiOutput("exclude_file"),
                                                                                       checkboxInput("do_batch_corr", "perform batch correction", value=FALSE) %>%
                                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                                               content = "batch_correction"),
-                                                                                      htmlOutput("num_batches")),
+                                                                                      uiOutput("num_batches")),
                                                                                column(5, align="left",
-                                                                                      htmlOutput("batch_names")),
+                                                                                      uiOutput("batch_names")),
                                                                                column(7, align="left",
                                                                                       htmlOutput("batch_sel")),
                                                                                column(12, align="left",
@@ -171,21 +171,23 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                 fluidPage(
                                   column(width=6,
                                          shinydashboard::box(title="PCA", width = NULL, status="success", solidHeader=T,
-                                             column(6, align="left", htmlOutput("color_by")),
-                                             column(12, align="left", plotly::plotlyOutput("pca_plot") %>%
+                                             column(6, align="left", selectInput("color_by", "Color by", choices=c("sample_id","total_counts","batch_id"))),
+                                             column(12, align="left",plotOutput("pca_plot") %>%
                                                         shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
                                                         shinyhelper::helper(type = 'markdown', icon ="info-circle",
-                                                                            content = "pca_plot")),
-                                             column(3, align="left", htmlOutput("pc_select_x")),
-                                             column(3, align="left", htmlOutput("pc_select_y"))),
+                                                                            content = "pca_plot")
+                                                        ),
+                                             column(3, align="left", uiOutput("pc_select_x")),
+                                             column(3, align="left", uiOutput("pc_select_y"))),
                                          uiOutput("color_box")),
                                   column(width=6,
-                                         uiOutput("tsne_box"),
                                          shinydashboard::box(title="UMAP", width = NULL, status="success", solidHeader=T,
-                                                             column(12, align="left", plotly::plotlyOutput("umap_plot") %>%
+                                                             column(12, align="left", plotOutput("UMAP_plot") %>%
                                                                         shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
                                                                         shinyhelper::helper(type = 'markdown', icon ="info-circle",
-                                                                                            content = "umap_plot")))
+                                                                                            content = "umap_plot")
+                                                                    )),
+                                         uiOutput("tsne_box")
                                          )
                                 )
                         ),
@@ -253,7 +255,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                              column(width=3,br(),br(),actionButton(inputId = "choose_cluster", label = "Choose Cluster"))
                                          ),
                                          uiOutput("contingency_table_cluster"),
-                                         uiOutput("umap_box_cf"),
+                                         uiOutput("UMAP_box"),
                                          uiOutput("tsne_box_cf"),
                                          uiOutput("color_box_cf"),
                                          shinydashboard::box(title="Correlation heatmap with cluster annotation", width=NULL,
@@ -305,7 +307,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                   column(width=6,
                                          shinydashboard::box(title="Differential Analysis parameters", width=NULL, status="success", solidHeader=T,
                                              column(12, align="left", textOutput("diff_analysis_info"), br()),
-                                             column(8, align="left", htmlOutput("selected_k"), br()),
+                                             column(8, align="left", uiOutput("selected_k"), br()),
                                              column(5, align="left", selectInput("da_method", "Select type of DA method:",
                                                                                  choices=list("Wilcoxon" = "wilcox",
                                                                                                "edgeR GLM" = "neg.binomial"))),

@@ -204,6 +204,43 @@ directory as you chose in the previous session will enable you to load your anal
 
 ![<br> <br> **Format Selection: ** Select an type of format input, and eventually a type of feature to summarize signal.](../inst/www/Guide_images/Step1_format_input.png)  
 
+### Summarizing features
+
+Depending on what kind of data you are analyzing, you might want to summarized your
+data on different features. For open/active chromatin measures, such as ATAC or 
+ChIP against H3K4me3, we recommand to summarize signal into small bins of 5kbp to 
+10kbp or to count aroung gene TSS. When counting around gene TSS, the default is to
+take overlapping regions of 2,500bp around the gene TSS, but you might want to increase
+this value for scATAC-seq if looking to retrieve enhancers open regions. For repressive
+marks such as H3K27me3, we recommand summarizing into large bins of 50kbp to 100kbp, as 
+those mark are known to accumulate into large domains.
+
+### Recognition of samples
+
+ChromSCape will recognize automatically to which sample/condition each cell belongs. In order
+to do so, the names of the cells (e.g. names of the files for scBED/scBAM or
+barcodes names for combined Index-Peaks-Barcode/count matrix) should explicitely
+contains name of the samples/conditions.  
+
+Example: if inputing two cell types, e.g. Jurkat and Ramos, names of the files/cells
+should be something like : Jurkat_cell1.BED, Jurkat_cell2.BED, ..., Ramos_cell1.BED,
+Ramos_cell2.BED.  
+
+The more different the names of the samples/conditions are, the more easily ChromSCape
+will classify correctly each cell. If having two samples with a similar name, users should 
+manually change the names of the label. For example if having 'CMP' (common myeloid progenitors)
+and 'GMP' (granulocytes myeloid progenitors) samples, change the name manually to
+'commonMP' and 'granulocytesMP' respectively.
+
+### Inputing BAM files
+
+Inputting BAM files is the most demanding task in terms of ressource in the application,
+despite the fact that the summarizing of features will take place in parallel. 
+To give an example, for 1,287 single-cell BAM files, summarizing into 50kbp bins
+takes 9 minutes to finish. Counting from BED files is way faster, therefore if
+analyzing lots of cells in BAM format, users might consider running 'bamToBed'
+command from BEDTools on each file beforehand.
+
 ## 2. Filter, Normalize & Reduce Dimensionality 
 
 <br>
@@ -244,8 +281,20 @@ directory as you chose in the previous session will enable you to load your anal
 
 ## FAQ
 
+ * **Error when installing from R3.6.0,1,2  **
+If you got an error of type : 
+
+```
+Error: Failed to install ‘ChromSCape’ from GitHub:
+  (converted from warning) installation of package ‘ALL’ had non-zero exit status
+```
+This means some of the packages in ChromSCape have higher version than what is 
+available on your current R version. You should either update R to R3.6.3 (best solution),
+or bypass the transformation of warning into error by running the command 
+`r Sys.setenv(R_REMOTES_NO_ERRORS_FROM_WARNINGS="true")` before launching the installation.
+
  * **Error after deleting or moving files from ChromSCape_analysis ?**
 
 Try remove cookies from the browser you are using, and start again selecting a different
 output folder.
-  
+

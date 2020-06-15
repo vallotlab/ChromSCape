@@ -302,6 +302,7 @@ bams_to_matrix_indexes = function(files_dir,which){
     if(length(indexes) < length(bam_files)){
       cat("ChromSCape::bams_to_matrix_indexes - indexing BAM files...")
       BiocParallel::bplapply(bam_files,Rsamtools::indexBam)
+      indexes = list.files(files_dir,full.names = T,pattern = paste0(".*.bai$"))
     }
     names_index = gsub("*.bam.bai$","",basename(as.character(indexes)))
     names(indexes) = names_index
@@ -309,7 +310,8 @@ bams_to_matrix_indexes = function(files_dir,which){
     param = Rsamtools::ScanBamParam(which = which)
     system.time({
         feature_list = BiocParallel::bplapply(names(bam_files), function(bam_name){
-            tmp = Rsamtools::countBam(bam_files[[bam_name]],indexes[[bam_name]],param=param)
+            bam_files[[bam_name]]$index = indexes[[bam_name]]
+            tmp = Rsamtools::countBam(file = bam_files[[bam_name]], param=param)
             tmp$feature_index = rownames(tmp)
             tmp$cell_id = bam_name
             sel=which(tmp$records>0)

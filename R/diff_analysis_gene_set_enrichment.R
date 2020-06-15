@@ -81,11 +81,11 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
         })
         names(myrefs) = paste0("notC", 1:nclust)
         refs = names(myrefs)
-        if(method == "wilcox"){ res = geco.CompareWilcox(
+        if(method == "wilcox"){ res = CompareWilcox(
             dataMat = counts, annot = affectation, ref = myrefs, 
             groups = mygps, featureTab = feature, block = block)
         } else {
-            res = geco.CompareedgeRGLM( dataMat = counts, 
+            res = CompareedgeRGLM( dataMat = counts, 
                                         annot = affectation, ref = myrefs,
                                         groups = mygps, featureTab = feature)
             colnames(res)[grep("logCPM",colnames(res))] = gsub("logCPM","Count",
@@ -113,11 +113,11 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
                   j)), "cell_id"])
                 names(myrefs) = paste0("C", j)
                 refs = names(myrefs)
-                if(method == "wilcox") tmp_result = geco.CompareWilcox(
+                if(method == "wilcox") tmp_result = CompareWilcox(
                     dataMat = counts, annot = affectation, ref = myrefs, 
                     groups = mygps, featureTab = feature)
                 else {
-                    tmp_result = geco.CompareedgeRGLM(
+                    tmp_result = CompareedgeRGLM(
                     dataMat = counts, annot = affectation, ref = myrefs,
                     groups = mygps, featureTab = feature)
                 colnames(tmp_result)[grep("logCPM",colnames(tmp_result))] = gsub("logCPM","Count",
@@ -329,7 +329,7 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
         
         if (length(significG))
         {
-            enrich.test = geco.enrichmentTest(gene.sets = GeneSets, mylist = significG, 
+            enrich.test = enrichmentTest(gene.sets = GeneSets, mylist = significG, 
                 possibleIds = GenePool)
             enrich.test = data.frame(Gene_set_name = rownames(enrich.test), enrich.test, 
                 check.names = FALSE)
@@ -345,7 +345,7 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
         }
         if (length(overG))
         {
-            enrich.test = geco.enrichmentTest(gene.sets = GeneSets, mylist = overG, 
+            enrich.test = enrichmentTest(gene.sets = GeneSets, mylist = overG, 
                 possibleIds = GenePool)
             enrich.test = data.frame(Gene_set_name = rownames(enrich.test), enrich.test, 
                 check.names = FALSE)
@@ -361,7 +361,7 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
         }
         if (length(underG))
         {
-            enrich.test = geco.enrichmentTest(gene.sets = GeneSets, mylist = underG, 
+            enrich.test = enrichmentTest(gene.sets = GeneSets, mylist = underG, 
                 possibleIds = GenePool)
             enrich.test = data.frame(Gene_set_name = rownames(enrich.test), enrich.test, 
                 check.names = FALSE)
