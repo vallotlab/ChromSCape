@@ -353,10 +353,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       load(file.path(init$data_folder,"ChromSCape_analyses", input$selected_analysis, "scChIP_raw.RData"), envir = myData)
       init$datamatrix <- myData$datamatrix
       init$annot_raw <- myData$annot_raw
-      rm(myData)
-      gc()
+      
     }
-    
   })
   
   # observeEvent(input$selected_analysis,{
@@ -481,21 +479,23 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     file_index <- match(c(input$selected_reduced_dataset), reduced_datasets())
     filename_sel <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),"Filtering_Normalize_Reduce",init$available_reduced_datasets[file_index])
     
-    t1 = system.time({
     
+    t1 = system.time({
     myData = new.env()
     load(filename_sel, envir = myData)
     if(is.reactive(myData$scExp)) {
       myData$scExp = isolate(myData$scExp())
     }
-    scExp. = myData$scExp # retrieve filtered scExp
+    scExp(myData$scExp) # retrieve filtered scExp
     rm(myData)
-    gc()
-    t2 = system.time({scExp. = correlation_and_hierarchical_clust_scExp(scExp.)})
-    scExp(scExp.)
-    rm(scExp.)
+    # gc()
+    # t2 = system.time({scExp. = correlation_and_hierarchical_clust_scExp(scExp.)})
+    # cat("Took ",t2[3]," sec to run correlation hierarchical clustering...")
+    # scExp(scExp.)
+    # rm(scExp.)
     gc()
     })
+    cat("Loaded reduced data in ",t1[3]," secs\n")
   })
 
   # observeEvent(input$selected_reduced_dataset, {  # load scExp, add colors, add correlation
@@ -509,7 +509,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
   cell_cov_df <- reactive ({
     df = data.frame(coverage = sort(unname(Matrix::colSums(init$datamatrix)))) 
-    gc()
     df
     })  # used for plotting cell coverage on first page
   
@@ -576,7 +575,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$pc_select_x <- renderUI({ selectInput("pc_select_x", "X",choices=paste0("Component_", c(1:15)), selected="Component_1") })
   output$pc_select_y <- renderUI({ selectInput("pc_select_y", "Y",choices=paste0("Component_", c(1:15)), selected="Component_2") })
-  output$color_by <- renderUI({selectInput("color_by", "Color by", choices=annotCol()) })
 
   pca_plot <- reactive({
     req(scExp(), input$pc_select_x,input$pc_select_y,  input$color_by)
@@ -588,28 +586,27 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     unlocked$list$pca=T
     p
   })
-  output$pca_plot <- plotly::renderPlotly( plotly::ggplotly(pca_plot(), tooltip="Sample", dynamicTicks=T) )
+  output$pca_plot <- renderPlot(pca_plot())
   
   output$tsne_box <- renderUI({
     req(scExp(), input$color_by)
     if("TSNE" %in% SingleCellExperiment::reducedDimNames(scExp())){
       p = plot_reduced_dim_scExp(scExp(),input$color_by, "TSNE")
-      output$tsne_plot = plotly::renderPlotly( plotly::ggplotly(p, tooltip="Sample", dynamicTicks=T) ) 
-      shinydashboard::box(title="t-SNE", width = NULL, status="success", solidHeader=T,
-                          column(12, align="left", plotly::plotlyOutput("tsne_plot") %>%
+      output$tsne_plot = renderPlot(p)
+      shinydashboard::box(title="t-SNE vizualisation 1", width = NULL, status="success", solidHeader=T,
+                          column(12, align="left", plotOutput("tsne_plot") %>% 
                                    shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
                                    shinyhelper::helper(type = 'markdown', icon ="info-circle",
-                                                       content = "tsne_plot")))
+                                                       content = "tsne_plot")
+                                 ))
     }
   })
-  
-  umap_plot <- reactive({
-    req(scExp(), input$color_by)
-    p = plot_reduced_dim_scExp(scExp(),input$color_by, "UMAP"
-    )
+
+  output$UMAP_plot <- renderPlot({
+    req(scExp(),input$color_by)
+    p = plot_reduced_dim_scExp(scExp(),input$color_by, "UMAP")
     p
-  })
-  output$umap_plot <- plotly::renderPlotly( plotly::ggplotly(umap_plot(), tooltip="Sample", dynamicTicks=T) )
+     })
   
   output$color_box <- renderUI({
     req(input$color_by)
@@ -632,17 +629,19 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$color_picker <- renderUI({
     #Color picker
-    colsModif <- SummarizedExperiment::colData(scExp())[,c(input$color_by,paste0(input$color_by,"_color"))] %>% unique()
-    lapply(seq_along(levels_selected()), function(i) {
-      colourpicker::colourInput(inputId=paste0("color_", levels_selected()[i]),
-                                label=paste0("Choose colour for ", levels_selected()[i]),
-                                value=colsModif[i,paste0(input$color_by,"_color")], returnName=TRUE) ## Add ", palette = "limited"" to get selectable color panel       
-    })
+    if(input$color_by != "total_counts"){
+      colsModif <- SummarizedExperiment::colData(scExp())[,c(input$color_by,paste0(input$color_by,"_color"))] %>% unique()
+      lapply(seq_along(levels_selected()), function(i) {
+        colourpicker::colourInput(inputId=paste0("color_", levels_selected()[i]),
+                                  label=paste0("Choose colour for ", levels_selected()[i]),
+                                  value=colsModif[i,paste0(input$color_by,"_color")], returnName=TRUE) ## Add ", palette = "limited"" to get selectable color panel       
+      })
+    }
   })
   
   observeEvent(input$save_color, {  
     req(scExp(), input$color_by)
-
+  
     color_df = get_color_dataframe_from_input(input,levels_selected(),input$color_by)
 
     scExp. = colors_scExp(scExp(),annotCol = input$color_by,color_by = input$color_by, color_df = color_df)
@@ -658,7 +657,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   levels_selected <- reactive({
     req(scExp(),input$color_by)
-    levels_selected = SummarizedExperiment::colData(scExp())[,input$color_by] %>% unique() %>% as.vector()
+    if(input$color_by != "total_counts") 
+      levels_selected = SummarizedExperiment::colData(scExp())[,input$color_by] %>% unique() %>% as.vector()
+    else NULL
   })
 
   observeEvent(unlocked$list,able_disable_tab(c("pca"),"cons_clustering")) # if conditions are met, unlock tab Correlation Clustering
@@ -689,12 +690,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                    scExp_cf(scExp())
                    gc()
                  }
-               }
                  output$hc_heatmap_plot <- renderPlot({
                    plot_heatmap_scExp(scExp(), color_by = c("sample_id","total_counts","batch_id"))
                  })
                }
-  )
+               })
   
   cluster_type = reactive({
     if(!is.null(scExp_cf())){
@@ -994,42 +994,44 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                    select_x = "Component_1",
                                    select_y = "Component_2") +
           ggtitle("t-SNE")
-        output$tsne_plot_cf <- plotly::renderPlotly(
-          plotly::ggplotly(p, tooltip="Sample", dynamicTicks = T))
-        shinydashboard::box(title="t-SNE", width = NULL, status="success", solidHeader=T,
-                            column(12, align="left", plotly::plotlyOutput("tsne_plot_cf")))
+        output$tsne_plot_cf <- renderPlot(p)
+        shinydashboard::box(title="t-SNE vizualisation 2", width = NULL, status="success", solidHeader=T,
+                            column(12, align="left", plotOutput("tsne_plot_cf")))
       }
     }
   })
   
   umap_p_cf <- reactive({
     req(scExp_cf(), input$color_by_cf)
+    
     p = plot_reduced_dim_scExp(scExp_cf(),input$color_by_cf, "UMAP",
                                select_x = "Component_1",
-                               select_y = "Component_2") +
-      ggtitle("UMAP")
+                               select_y = "Component_2")
     p
   })
-  output$umap_plot_cf <- plotly::renderPlotly(
-    plotly::ggplotly(umap_p_cf(), tooltip="Sample", dynamicTicks = T) )
+
+  output$plot_CF_UMAP <- renderPlot({
+    umap_p_cf()
+    })
+
   
   levels_selected_cf <- reactive({
     req(scExp_cf(),input$color_by_cf)
-    levels_selected_cf =
+    if(input$color_by_cf != "total_counts") levels_selected_cf =
       SummarizedExperiment::colData(scExp_cf())[,input$color_by_cf] %>%
-      unique() %>% as.vector()
+      unique() %>% as.vector() else NULL
   })
   
-  output$umap_box_cf <- renderUI({
+  output$UMAP_box <- renderUI({
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf())) ){
-        shinydashboard::box(title="UMAP", width = NULL, status="success", solidHeader = T,
+        shinydashboard::box(title="UMAP vizualisation 2", width = NULL, status="success", solidHeader = T,
                             column(6, align="left",
                                    selectInput("color_by_cf", "Color by",
                                                selected = "cell_cluster",
                                                choices = c('sample_id', 'total_counts',
                                                            'cell_cluster','batch_id'))),
-                            column(12, align="left", plotly::plotlyOutput("umap_plot_cf")))
+                            column(12, align="left", plotOutput("plot_CF_UMAP")))
       }
     }
   })
