@@ -45,17 +45,13 @@ user-friendly **Shiny** application for analysis of single-cell epigenomic datas
 (scChIP-seq, scATAC-seq...). ChromSCape is used to reveal heterogeneity of chromatin
 landscapes within single-cell of one or more samples using dimensionality reduction & 
 unsupervised consensus clustering. The user can then interrogate the biological difference
-of each epigenomic subpopulation by running differential analysis & gene set enrichment
-analysis.  
+between each subpopulation by running differential analysis & pathway enrichment analysis.  
 Various existing technologies allow to produce single-cell genome-wide epigenomic
 datasets :  
 
-  * scChIP-seq (Grosselin et al., 2019) CUT&TAG (Kaya-Okur et al., 2019),
- scChIL-seq (Harada et al., 2019), scChIC-seq (Ku et al.,) are technologies that
- isolate DNA sequences attached to histones with specific marks (H3K27me3, H3K4me3)
- or transcription factors (RNA Polymerase 2,...) in single-cells 
-  * scATAC-seq (Buenorostro et al., 2015), sciATAC-seq (Cusanovitch et al., 2016) 
- are technologies that allows to asses regions of open chromatin in single-cells 
+  * scChIP-seq (Grosselin et al., 2019) scCUT&Tag (Kaya-Okur et al., 2019),
+ scChIL-seq (Harada et al., 2019), scChIC-seq (Ku et al.,) reveal the distribution of histone marks (H3K27me3, H3K4me3) or transcription factors (RNA Polymerase 2,…) with single-cell resolution. 
+  * scATAC-seq (Buenorostro et al., 2015) or sciATAC-seq (Cusanovitch et al., 2016) assess regions of open chromatin in single-cells
 
 <br>
 
@@ -190,7 +186,7 @@ your features with the closest genes TSS for the Gene Set Analysis. Browse your
 computer for one or multiple matrices that will be analyzed together. To select
 multiple matrices, they must be placed in the same folder and then the user can select
 multiples matrices with (Shift + Click) or (Ctrl + Click).   
-Finally, clicking  on '**Create Analysis**' will create an analysis & import the count matrices
+Finally, clicking  on 'Create Analysis' will create an analysis & import the count matrices
 in this analysis. This will create a folder named '*ChromSCape_analyses*' in the output 
 directory you specified, inside which
 another folder 'Your_analysis_name' is nested. If you create another analysis,
@@ -202,7 +198,7 @@ directory as you chose in the previous session will enable you to load your anal
 
 ![<br> <br> **Select & Import Tab: ** Select an output directory, Create an analysis or load previous analyses, import count matrix into your new analysis.](../inst/www/Guide_images/Step1_select_import.png)  
 
-![<br> <br> **Format Selection: ** Select an type of format input, and eventually a type of feature to summarize signal.](../inst/www/Guide_images/Step1_format_input.png)  
+![<br> <br>  Select an type of format input, and eventually a type of feature to summarize signal.](../inst/www/Guide_images/Step1_format_input.png)  
 
 ### Summarizing features
 
