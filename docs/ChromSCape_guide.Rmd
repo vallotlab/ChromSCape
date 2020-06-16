@@ -198,7 +198,7 @@ directory as you chose in the previous session will enable you to load your anal
 
 ![<br> <br> **Select & Import Tab: ** Select an output directory, Create an analysis or load previous analyses, import count matrix into your new analysis.](../inst/www/Guide_images/Step1_select_import.png)  
 
-![<br> <br>  Select an type of format input, and eventually a type of feature to summarize signal.](../inst/www/Guide_images/Step1_format_input.png)  
+![<br> <br> Select an type of format input, and eventually a type of feature to summarize signal.](../inst/www/Guide_images/Step1_format_input.png)  
 
 ### Summarizing features
 
