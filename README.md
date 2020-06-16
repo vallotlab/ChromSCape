@@ -7,11 +7,12 @@ Various existing technologies allow to produce single-cell epigenomic datasets :
 
 ## Demo 
 
-Checkout the application look & feel at : [Demo](https://vallotlab.shinyapps.io/ChromSCape/)
+Checkout the application look & feel at : [Demo](https://vallotlab.shinyapps.io/ChromSCape/). 
+On this demo application, you can follow analysis of Jurkat & Ramos scChIP H3K4me3 cells.
 
 ## Launch the App 
 
-**ChromSCape** requires **R version 3.6.3** (does not work on R 4.0 yet!).
+**ChromSCape** requires **R version 3.6.3** (does not work on R 4.0 yet).
 To install **ChromSCape**, open **R** or **Rstudio** and copy the following commands : 
 
 ```
