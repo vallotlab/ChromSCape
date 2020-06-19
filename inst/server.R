@@ -296,10 +296,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
             n_bins = as.numeric(input$n_bins),
             ref = input$annotation)
           
+          
           if(input$count_on_box == "peak_file") datamatrix = raw_counts_to_feature_count_files(
             files_dir = datafile_folder,
             file_type = type_file,
-            peak_file = as.character(input$peak_file),
+            peak_file = as.character(input$peak_file$datapath),
             ref = input$annotation)
           
           if(input$count_on_box == "geneTSS") datamatrix = raw_counts_to_feature_count_files(
