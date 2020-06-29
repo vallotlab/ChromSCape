@@ -16,7 +16,7 @@ Module_preprocessing_filtering_and_reduction <- function(input, output, session,
             "batchCorrected" else "uncorrected"
         incProgress(amount = 0.1, detail = paste("Loading raw data..."))
         
-        print(system.time({scExp = create_scExp(datamatrix(), annot_raw(), remove_zero_cells = T, remove_zero_features = T)}))
+        print(system.time({scExp = create_scExp(datamatrix(), annot_raw(), remove_zero_cells = T, remove_zero_features = T, ref = annotation_id())}))
         gc()
         
         ### 2. Filtering & Window selection ###

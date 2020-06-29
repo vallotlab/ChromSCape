@@ -358,10 +358,14 @@ annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), anoty
     if (plotLegend) 
         pdf(plotLegendFile)
     if (is.null(categCol)) 
-        categCol <- c("#4285F4", "#DB4437", "#F4B400", "#0F9D58", "slategray", "black", 
-            "orange", "turquoise4", "yellow3", "orangered4", "orchid", "palegreen2", 
-            "orchid4", "red4", "peru", "orangered", "palevioletred4", "purple", "sienna4", 
-            "turquoise1")
+        categCol <- c("#FFEB3B", "#FFC107", "#9CCC65", "#FF9800", "#FF5722", "#009688", 
+                      "gray88", "gray74", "#474448", "orangered4", "orchid", "palegreen2", 
+                      "orchid4", "red4", "peru", "orangered", "palevioletred4", "purple", "sienna4", 
+                      "turquoise1")
+        # categCol <- c("#4285F4", "#DB4437", "#F4B400", "#0F9D58", "slategray", "black", 
+        #     "orange", "turquoise4", "yellow3", "orangered4", "orchid", "palegreen2", 
+        #     "orchid4", "red4", "peru", "orangered", "palevioletred4", "purple", "sienna4", 
+        #     "turquoise1")
     # categCol <- c('royalblue', 'palevioletred1', 'red', 'palegreen4', 'skyblue',
     # 'sienna2', 'slateblue3', 'pink2', 'slategray', 'black', 'orange', 'turquoise4',
     # 'yellow3', 'orangered4', 'orchid', 'palegreen2', 'orchid4', 'red4', 'peru',
@@ -524,4 +528,21 @@ groupMat <- function(mat = NA, margin = 1, groups = NA, method = "mean")
         colnames(res) <- colnames(mat)
     }
     res
+}
+
+
+#' Sparse covariance calculation
+#' Directly copied from Ron, Joris Meys & mike
+#' SO https://stackoverflow.com/questions/5888287/running-cor-or-any-variant-over-a-sparse-matrix-in-r 
+#'
+#' @param x 
+#'
+#' @return A covariance matrix
+#'
+#' @examples
+sparse_cov <- function(x){
+    n <- nrow(x)
+    cMeans <- Matrix::colMeans(x)
+    covmat <- (as.matrix(crossprod(x)) - n*tcrossprod(cMeans))/(n-1)
+    return(covmat)
 }

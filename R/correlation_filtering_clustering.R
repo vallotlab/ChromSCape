@@ -284,6 +284,14 @@ consensus_clustering_scExp <- function(scExp, prefix = NULL, maxK = 10, reps = 1
     
     icl <- ConsensusClusterPlus::calcICL(consclust, plot = plot_icl, title = prefix)
     
+    ml = list()
+    for(i in 2:maxK) {
+        ml[[i]] = consclust[[i]]$ml  
+    }
+    ConsensusClusterPlus:::CDF(ml)
+    plot_cdf = grDevices::recordPlot()
+    rm(ml)
+    
     # Remove unused objects :
     for(i in 2:maxK) {
         consclust[[i]]$consensusMatrix = NULL
@@ -295,6 +303,7 @@ consensus_clustering_scExp <- function(scExp, prefix = NULL, maxK = 10, reps = 1
     
     scExp@metadata$consclust = consclust
     scExp@metadata$icl = icl
+    scExp@metadata$plot_cdf = plot_cdf
     
     return(scExp)
 }

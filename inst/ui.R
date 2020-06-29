@@ -179,6 +179,11 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                         ),
                                              column(3, align="left", uiOutput("pc_select_x")),
                                              column(3, align="left", uiOutput("pc_select_y"))),
+                                         shinydashboard::box(title="Feature contribution",collapsible = T,collapsed = T,
+                                                             width = NULL, status="success", solidHeader=T,
+                                                             column(12,plotly::plotlyOutput("representation_of_loci")),
+                                                             column(12,plotly::plotlyOutput("variable_correlation"))
+                                                             ),
                                          uiOutput("color_box")),
                                   column(width=6,
                                          shinydashboard::box(title="UMAP", width = NULL, status="success", solidHeader=T,
@@ -194,7 +199,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                         
                         
                         ###############################################################
-                        # 4. Consensus clustering on correlated cells
+                        # 3. Consensus clustering on correlated cells
                         ###############################################################
                                
                         shinydashboard::tabItem(tabName = "cons_clustering",
@@ -269,7 +274,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                         ),
                         
                         ###############################################################
-                        # 5. Peak calling [optional]
+                        # 4. Peak calling [optional]
                         ###############################################################
                         
                         shinydashboard::tabItem(tabName = "peak_calling",
@@ -283,23 +288,26 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                              column(5,offset = 1,align="center", htmlOutput("peak_calling_icon")),
                                              column(12, align="left",
                                                     sliderInput("peak_distance_to_merge", "Select distance of peaks to merge:", min=0, max=50000, value=5000, step=100),
+                                                    column(3, align="left", textOutput("pc_k_selection"),
+                                                           selectInput("pc_stat","Select statistic for cutoff:", choices=c("p.value", "q.value"), selected="p.value")),
+                                                    column(7, align="right", 
+                                                           sliderInput("pc_stat_value", "Select significance threshold:", min=0, max=0.25, value=0.05, step=0.01)),
+                                                    br(),
+                                                    checkboxInput("create_coverage_tracks","Produce cluster cumulative coverage tracks (time-consuming)",value = F),
+                                                    br(), 
                                                     shinyFiles::shinyDirButton("bam_folder", "Choose a folder containing the BAM files" ,
                                                                    title = "Please select a folder:",
                                                                    buttonType = "default", class = NULL), br(),
                                                     
                                                     textOutput("bam_dir"), br(),
                                                     uiOutput("bam_upload")),
-                                             column(4, align="left", textOutput("pc_k_selection"),
-                                                    selectInput("pc_stat","Select statistic for cutoff:", choices=c("p.value", "q.value"), selected="p.value")),
-                                             column(8, align="left", br(), br(), br(), br(),
-                                                    sliderInput("pc_stat_value", "Select significance threshold:", min=0, max=0.25, value=0.05, step=0.01)),
                                              column(12, align="left", hr(), actionButton("do_pc", "Start"))))
                                   # ,column(width=6, uiOutput("pc_plot_box"))
                                   )
                         ),
                         
                         ###############################################################
-                        # 6. Differential analysis
+                        # 5. Differential analysis
                         ###############################################################
                         
                         shinydashboard::tabItem(tabName = "diff_analysis",
@@ -331,7 +339,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                         ),
                         
                         ###############################################################
-                        # 7. Enrichment analysis
+                        # 6. Enrichment analysis
                         ###############################################################
                         
                         shinydashboard::tabItem(tabName = "enrich_analysis",

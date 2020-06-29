@@ -55,7 +55,7 @@
 #' @importFrom S4Vectors mcols
 #' @importFrom utils read.table
 subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "hg38", 
-    peak_distance_to_merge = 10000, geneTSS_annotation = NULL)
+    peak_distance_to_merge = 10000, geneTSS_annotation = NULL, create_coverage_tracks = FALSE)
     {
     stopifnot(is(scExp, "SingleCellExperiment"), dir.exists(odir), is.numeric(p.value), 
         is.character(ref), is.numeric(peak_distance_to_merge))
@@ -120,13 +120,27 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "
         file.path(odir, "header.sam"), " ", file.path(odir, "$i.sam"), " | samtools view -b - > ", 
         file.path(odir, "$i.bam"), " ; done"))
     
-    # BamCoverage system(paste0('for i in $(cat ',
-    # file.path(odir,'barcodes.barcode_class'), '); do samtools index ',
-    # file.path(odir,'$i.bam'), '; done')) system(paste0('for i in $(cat ',
-    # file.path(odir,'barcodes.barcode_class'), '); do bamCoverage --bam ',
-    # file.path(odir,'$i.bam'), ' --outFileName ', file.path(odir,'$i.bw'), '
-    # --binSize 50 --smoothLength 500 --extendReads 150 --ignoreForNormalization chrX
-    # --numberOfProcessors 4 --normalizeUsing RPKM; done'))
+    if(create_coverage_tracks){
+        # BamCoverage 
+        ## read in BAM file (use readGAlignmentPairs for paired-end files)
+        cat("ChromSCape::subset_bam_call_peaks - Creating cumulative coverage track (BigWig) for each cluster.\n")
+        for (class in levels(factor(affectation$cell_cluster)))
+        {
+            # read in cluster bam
+            gr = GenomicAlignments::readGAlignments(file.path(odir,paste0(class,'.bam')))
+            
+            ## convert to coverages
+            gr.cov = GenomicAlignments::coverage(gr)
+            
+            ## export as bigWig
+            rtracklayer::export.bw(gr.cov,file.path(odir,paste0(class,'.bigwig')))
+            cat("ChromSCape::subset_bam_call_peaks - Created cumulative coverage track for cluster", class,"!\nAvailable in",odir,"\n")
+            rm(gr)
+            rm(gr.cov)
+            gc()
+        }
+        
+    }
     
     system(paste0("rm ", file.path(odir, "*.barcode_class"), " ", file.path(odir, 
         "*.sam")))
@@ -195,7 +209,7 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "
     unlink(file.path(odir, 'merged.bam'))
     
     # call makePeakAnnot file
-    print("Merging BAM files together...")
+    print("Merging Peaks files together...")
     
     segmentation = SummarizedExperiment::rowRanges(scExp)
     S4Vectors::mcols(segmentation) = NULL
@@ -224,6 +238,6 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "
         GenomicRanges::start(refined_annotation), GenomicRanges::end(refined_annotation), 
         sep = "_")
     scExp@metadata$refined_annotation = refined_annotation
-    
+    cat("Finished Peak Calling !\n")
     return(scExp)
 }

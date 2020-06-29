@@ -257,7 +257,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
             }
           }
           tmp_list = import_scExp(file_names = input$datafile_matrix$name,
-                                  path_to_matrix = input$datafile_matrix$datapath)
+                                  path_to_matrix = input$datafile_matrix$datapath,
+                                  ref = input$annotation) 
           datamatrix = tmp_list$datamatrix
           if(input$is_combined_mat == TRUE) {
             samples_ids = detect_samples(colnames(datamatrix),
@@ -663,6 +664,39 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     else NULL
   })
 
+  output$representation_of_loci = renderPlotly({
+    req(scExp())
+    dim1 = as.numeric(gsub("Component_","",as.character(input$pc_select_x)))
+    dim2 = as.numeric(gsub("Component_","",as.character(input$pc_select_y)))
+    pca = list()
+    pca$x = as.matrix(SingleCellExperiment::reducedDim(scExp(),"PCA"))
+    pca$sdev = apply(pca$x,2,sd)
+    pca$rotation = scExp()@metadata$rotation
+    class(pca) = "prcomp"
+    print(c(dim1,dim2))
+   if(!is.null(pca$rotation)) 
+     factoextra::fviz_cos2(pca,
+                           choice = "var",
+                           axes = c(dim1,dim2),top = 10) else element_blank()
+  })
+  
+  output$variable_correlation = renderPlotly({
+    req(scExp())
+    print(input$pc_select_x)
+    dim1 = as.numeric(gsub("Component_","",as.character(input$pc_select_x)))
+    dim2 = as.numeric(gsub("Component_","",as.character(input$pc_select_y)))
+    print(dim1)
+    print(dim2)
+    pca$x = as.matrix(SingleCellExperiment::reducedDim(scExp(),"PCA"))
+    pca$sdev = apply(pca$x,2,sd)
+    pca$rotation = scExp()@metadata$rotation
+    class(pca) = "prcomp"
+    if(!is.null(pca$rotation)) 
+      factoextra::fviz_pca_var(pca, col.var = "black",
+                               axes =  c(dim1,dim2),
+                               select.var = list(cos2 = 10)) else element_blank()
+  })
+  
   observeEvent(unlocked$list,able_disable_tab(c("pca"),"cons_clustering")) # if conditions are met, unlock tab Correlation Clustering
   
   
@@ -794,7 +828,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(input$filter_corr_cells, {  # retreiveing cells with low correlation score
     withProgress(message='Filtering correlated cells...', value = 0, {
       incProgress(amount=0.6, detail=paste("Filtering"))
-      scExp_cf(filter_correlated_cell_scExp(scExp_cf(), random_iter = 50, corr_threshold = input$corr_threshold,
+      scExp_cf(filter_correlated_cell_scExp(scExp_cf(), random_iter = 5, corr_threshold = input$corr_threshold,
                                             percent_correlation = input$percent_correlation))
       scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust), consensus = cluster_type()))
       gc()
@@ -1174,7 +1208,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     } else{
       
       nclust = length(unique(scExp_cf()$cell_cluster))  
-      withProgress(message='Performing enrichment analysis...', value = 0, {
+      withProgress(message='Performing peak calling...', value = 0, {
         
         incProgress(amount = 0.1, detail = paste("Starting Peak Calling..."))
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks"), showWarnings = FALSE)
@@ -1190,7 +1224,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         })
         incProgress(amount = 0.3, detail = paste("Running Peak Calling..."))
         if(sum(checkBams)==0){
-          scExp_cf(subset_bam_call_peaks(scExp_cf(), odir, inputBams, as.numeric(input$pc_stat_value), annotation_id(), input$peak_distance_to_merge))
+          scExp_cf(subset_bam_call_peaks(scExp_cf(), odir, inputBams, 
+                                         as.numeric(input$pc_stat_value),
+                                         annotation_id(),
+                                         input$peak_distance_to_merge,
+                                         create_coverage_tracks = input$create_coverage_tracks))
           data = list("scExp_cf" = scExp_cf())
           save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
                                       paste0(input$selected_reduced_dataset, ".RData")))

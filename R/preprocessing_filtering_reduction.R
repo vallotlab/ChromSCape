@@ -693,6 +693,8 @@ create_scDataset_raw <- function(cells = 300,
 #' epigenomic matrices (features x cells) (must be .txt / .tsv)
 #' @param path_to_matrix In case matrices are stored in temporary folder, 
 #' a character vector of path towards temporary files. [NULL]
+#' @param ref Reference genome. Either 'hg38' or 'mm10'. (only matters if
+#'  rows are genes)['hg38']
 #'
 #' @return a list containing spa
 #'  * datamatrix: a sparseMatrix of features x cells
@@ -703,7 +705,8 @@ create_scDataset_raw <- function(cells = 300,
 #' @importFrom scater readSparseCounts
 #' @examples
 import_scExp <- function(file_names,
-                         path_to_matrix = NULL
+                         path_to_matrix = NULL,
+                         ref = "hg38"
                          ){
     
     stopifnot(is.character(file_names))
@@ -765,16 +768,21 @@ import_scExp <- function(file_names,
                            rownames(datamatrix_single)) # check rowname format
         
         if(length(matchingRN) < length(rownames(datamatrix_single))){
+          eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
+          reference_annotation <-
+            eval(parse(text = paste0("", ref, ".GeneTSS")))
+          matching_genes = intersect(rownames(datamatrix_single),
+                                     reference_annotation$gene)
+          if(length(matching_genes) < length(rownames(datamatrix_single))){
             warning(paste0("ChromSCape::import_scExp - ",sample_name, " contains ",
                            (length(rownames(datamatrix_single))-length(matchingRN)),
                            " rownames that do not conform to the required format.
+                           Must be either genomic coordinates (chr:start-end) or 
+                           conform gene name, check data(hg38.GeneTSS) or
+                           data(mm10.GeneTSS).
                            Please check your data matrix and try again."))
-            if(length(matchingRN) < 5){ # almost all rownames are wrong
-                stop("ChromSCape::import_scExp - Maybe your rownames are contained
-                in the first column instead? In this case, remove the header of
-                this column so that they are interpreted as rownames.")
-            }
             return()
+          }
         }
         
         numericC <- apply(datamatrix_single[1:5,1:5],MARGIN=2,is.numeric) # check if matrix is numeric
@@ -854,6 +862,7 @@ import_scExp <- function(file_names,
 #' @param remove_non_canonical remove non canonical chromosomes ?[T]
 #' @param remove_chr_M remove chromosomes M ? [T]
 #' @param verbose [TRUE]
+#' @param ref Reference genome. Either 'hg38' or 'mm10'. (only matters if rows are genes)['hg38']
 #'
 #' @return Returns a SingleCellExperiment object.
 #' @export
@@ -872,6 +881,7 @@ create_scExp <- function(datamatrix,
                          remove_zero_features = TRUE,
                          remove_non_canonical = TRUE,
                          remove_chr_M = TRUE,
+                         ref = "hg38",
                          verbose = TRUE)
 {
     stopifnot(
@@ -907,7 +917,9 @@ create_scExp <- function(datamatrix,
     )
     
     scExp <- SingleCellExperiment::SingleCellExperiment(
-        assays = list(counts = datamatrix),colData = annot)
+        assays = list(counts = datamatrix), colData = annot)
+    
+    
     
     if (has_genomic_coordinates(scExp))
     {
@@ -950,6 +962,61 @@ create_scExp <- function(datamatrix,
                 }
             }
         }
+    } else { # Row content is genes
+      if (ref %in% c("hg38", "mm10"))
+      {
+        message(
+          paste0(
+            "ChromSCape::create_scExp - Selecting ",
+            ref,
+            " genes coordinates from Gencode."
+          )
+        )
+        eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
+        reference_annotation <-
+          eval(parse(text = paste0("", ref, ".GeneTSS")))
+      } else {
+        stop("ChromSCape::create_scExp - For genes as rows matrices, please select
+           a valid reference genome (hg38/mm10)")
+      }
+      
+      genes = intersect(reference_annotation$gene, rownames(scExp))
+      print(head(genes,15))
+      print(head(reference_annotation$gene,15))
+      print(head(rownames(scExp),15))
+      if(length(genes) < 10){
+        stop("ChromSCape::create_scExp - Error - The rownames of your matrix are
+          recognized as being genes, but are not present in the reference genome
+               you specified.")
+      }
+
+      chr = as.character(reference_annotation$chr[match(
+         rownames(scExp),reference_annotation$gene)])
+      start = as.character(reference_annotation$start[match(
+         rownames(scExp),reference_annotation$gene)])
+      end = as.character(reference_annotation$end[match(
+         rownames(scExp),reference_annotation$gene)])
+      
+      rownames(scExp) = paste0(chr,"_",start,"_",end)
+      
+      if (remove_chr_M)
+      {
+        # Remove chrM from mat if it is inside
+        chrM_regions <- grep("chrM", rownames(scExp))
+        if (length(chrM_regions) > 0)
+        {
+          scExp <- scExp[-chrM_regions,]
+          if (verbose)
+          {
+            cat(
+              "ChromSCape::create_scExp -",
+              length(chrM_regions),
+              "chromosome M regions were removed.\n"
+            )
+          }
+        }
+      }
+      scExp <- scExp[!duplicated(rownames(scExp)),] 
     }
     dim_b <- dim(scExp)
     if (remove_zero_features)
@@ -977,7 +1044,6 @@ create_scExp <- function(datamatrix,
             "features with 0 signals were removed.\n"
         )
     }
-    
     
     if (has_genomic_coordinates(scExp))
     {
@@ -1536,7 +1602,7 @@ reduce_dims_scExp <-
         }
         
         batches <- list()
-        
+        rotation = NULL
         if (batch_correction)
         {
             print("Running Batch Correction ...")
@@ -1559,12 +1625,15 @@ reduce_dims_scExp <-
             
             if (class(mat) %in% c("dgCMatrix", "dgTMatrix"))
             {
-                pca <- pca_irlba_for_sparseMatrix(Matrix::t(mat), n)
+                out <- pca_irlba_for_sparseMatrix(Matrix::t(mat), n)
+                pca = out[["PCA"]]
+                rotation = out[["rotation"]]
             } else
             {
                 pca <- stats::prcomp(Matrix::t(mat),
                                      center = T,
                                      scale. = F)
+                rotation = pca$rotation
                 pca <- pca$x[, 1:n]
             }
             for (i in 1:length(b_names))
@@ -1596,12 +1665,15 @@ reduce_dims_scExp <-
             scExp$batch_id <- "batch_1"
             if (class(mat) %in% c("dgCMatrix", "dgTMatrix"))
             {
-                pca <- pca_irlba_for_sparseMatrix(Matrix::t(mat), n)
+                out <- pca_irlba_for_sparseMatrix(Matrix::t(mat), n)
+                pca = out[["PCA"]]
+                rotation = out[["rotation"]]
             } else
             {
                 pca <- stats::prcomp(Matrix::t(mat),
                                      center = T,
                                      scale. = F)
+                rotation = pca$rotation
                 pca <- pca$x[, 1:n]
             }
         }
@@ -1647,7 +1719,10 @@ reduce_dims_scExp <-
             listReducedDim$UMAP <- umap
         }
         SingleCellExperiment::reducedDims(scExp) <- listReducedDim
-        
+        if(!is.null(rotation)) {
+          scExp@metadata$rotation = rotation 
+          rownames(scExp@metadata$rotation) = rownames(scExp)
+        }
         return(scExp)
     }
 
@@ -1670,7 +1745,7 @@ pca_irlba_for_sparseMatrix <- function(x, n_comp)
     x. <- sweep(x, 2, x.means, "-")
     pca <- x. %*% svd.0$v
     
-    return(pca)
+    return(list("PCA"=pca,"rotation" = svd.0$v))
 }
 
 #' Table of cells
