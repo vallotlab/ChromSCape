@@ -4,7 +4,7 @@
 \alias{import_scExp}
 \title{Read single-cell matrix(ces) into scExp}
 \usage{
-import_scExp(file_names, path_to_matrix = NULL)
+import_scExp(file_names, path_to_matrix = NULL, ref = "hg38")
 }
 \arguments{
 \item{file_names}{A character vector of file names towards single cell 
@@ -12,6 +12,9 @@ epigenomic matrices (features x cells) (must be .txt / .tsv)}
 
 \item{path_to_matrix}{In case matrices are stored in temporary folder, 
 a character vector of path towards temporary files. [NULL]}
+
+\item{ref}{Reference genome. Either 'hg38' or 'mm10'. (only matters if
+rows are genes)['hg38']}
 }
 \value{
 a list containing spa

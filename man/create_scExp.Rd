@@ -12,6 +12,7 @@ create_scExp(
   remove_zero_features = TRUE,
   remove_non_canonical = TRUE,
   remove_chr_M = TRUE,
+  ref = "hg38",
   verbose = TRUE
 )
 }
@@ -29,6 +30,8 @@ same number of rows as the number of columns in datamatrix.}
 \item{remove_non_canonical}{remove non canonical chromosomes ?[T]}
 
 \item{remove_chr_M}{remove chromosomes M ? [T]}
+
+\item{ref}{Reference genome. Either 'hg38' or 'mm10'. (only matters if rows are genes)['hg38']}
 
 \item{verbose}{[TRUE]}
 }
