@@ -59,8 +59,23 @@ colors_scExp <- function(scExp, annotCol = "sample_id", color_by = "sample_id", 
     
     # initialization
     annot = as.data.frame(SingleCellExperiment::colData(scExp))
+    
+    categCol = NULL
+    if(length(unique(annot[,color_by]))>20){
+      n <- length(unique(annot[,color_by]))
+      qual_col_pals = RColorBrewer::brewer.pal.info[RColorBrewer::brewer.pal.info$category == 'qual',]
+      categCol = unlist(mapply(RColorBrewer::brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+      set.seed(2047)
+      categCol = unique(categCol)
+      categCol = categCol[sample(length(categCol),n,replace = F)]
+      pie(rep(1,length(categCol)), col=categCol)
+      print(categCol)
+      print(length(categCol))
+    }
+
+    
     anocol <- annotToCol2(annotS = annot[, annotCol, drop = F], annotT = annot, 
-        plotLegend = F, categCol = NULL)
+        plotLegend = F, categCol = categCol)
     SummarizedExperiment::colData(scExp)[, paste0(annotCol, "_color")] = as.data.frame(anocol, 
         stringsAsFactors = F)[, annotCol]  # factor or not ?
     
@@ -124,11 +139,16 @@ get_color_dataframe_from_input <- function(input, levels_selected, color_by = c(
 #' @importFrom colorRamps matlab.like
 
 plot_reduced_dim_scExp <- function(scExp, color_by = "sample_id", reduced_dim = c("PCA", 
-    "TSNE", "UMAP"), select_x = "Component_1", select_y = "Component_2")
+    "TSNE", "UMAP"),
+    select_x = "Component_1",
+    select_y = "Component_2",
+    downsample = 5000,
+    transparency = 0.6)
     {
     
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(color_by), is.character(reduced_dim), 
-        is.character(select_x), is.character(select_y))
+        is.character(select_x), is.character(select_y), is.numeric(5000),
+        is.numeric(transparency))
     
     if (!reduced_dim[1] %in% SingleCellExperiment::reducedDimNames(scExp)) 
         stop(paste0("ChromSCape::plot_reduced_dim_scExp - ", reduced_dim[1], " is not present in object, please run normalize_scExp first."))
@@ -146,10 +166,13 @@ plot_reduced_dim_scExp <- function(scExp, color_by = "sample_id", reduced_dim = 
     if (!select_y %in% colnames(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]))) 
         stop("ChromSCape::plot_reduced_dim_scExp - select_y must be present in colnames of PCA of scExp.")
     
+  set.seed(2047)
+    if(ncol(scExp) > downsample ) scExp = scExp[,sample(ncol(scExp),downsample,replace = F)]
+    
     plot_df = as.data.frame(cbind(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]), 
         SingleCellExperiment::colData(scExp)))
     
-    p <- ggplot(plot_df, aes_string(x = select_x, y = select_y)) + geom_point(alpha = 0.6,
+    p <- ggplot(plot_df, aes_string(x = select_x, y = select_y)) + geom_point(alpha = transparency,
         aes(color = SingleCellExperiment::colData(scExp)[, color_by])) + labs(color = color_by) +
         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.background = element_blank(), axis.line = element_line(colour = "black"),
@@ -185,7 +208,7 @@ plot_reduced_dim_scExp <- function(scExp, color_by = "sample_id", reduced_dim = 
 #' @importFrom grDevices colorRampPalette
 plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (grDevices::colorRampPalette(c("royalblue", 
     "white", "indianred1")))(256),
-    color_by = NULL)
+    color_by = NULL, downsample = 3000)
     {
     
     # make a variety of sanity check
@@ -198,7 +221,18 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (grDevices
     
     if (length(scExp@metadata[[name_hc]]$order) != ncol(scExp)) 
         stop("ChromSCape::plot_heatmap_scExp - Dendrogram has different number of cells than dataset.")
-
+    
+ 
+    if(ncol(scExp) > downsample) {
+      set.seed(2047)
+      samp = sample(ncol(scExp),downsample,replace=F)
+      scExp = scExp[,samp]
+      SingleCellExperiment::reducedDim(scExp, "Cor") = SingleCellExperiment::reducedDim(scExp, "Cor")[,samp]
+      scExp@metadata[[name_hc]] = stats::hclust(stats::as.dist(1-SingleCellExperiment::reducedDim(scExp, "Cor"))
+                                                , method = "ward.D")
+      scExp@metadata[[name_hc]]$labels = rep("", length(scExp@metadata[[name_hc]]$labels))
+    }
+    
     anocol = as.matrix(SingleCellExperiment::colData(scExp)[, grep("_color", colnames(SingleCellExperiment::colData(scExp))), 
         drop = F])
     colnames(anocol) = gsub("_color","",colnames(anocol))
@@ -285,12 +319,12 @@ plot_differential_H1_scExp <- function(scExp_cf, cell_cluster = "C1")
 #'
 #' @examples
 plot_differential_volcano_scExp <- function(scExp_cf, cell_cluster = "C1", cdiff.th = 1, 
-    qval.th = 0.01)
+    qval.th = 0.01, n_top = 5)
     {
     
     # make a variety of sanity check
     stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(cell_cluster), 
-        is.numeric(qval.th), is.numeric(cdiff.th))
+        is.numeric(qval.th), is.numeric(cdiff.th), is.numeric(n_top))
     
     if (is.null(scExp_cf@metadata$diff)) 
         stop("ChromSCape::differential_volcano_plot_scExp - No DA, please run differential_analysis_scExp first.")
@@ -301,13 +335,15 @@ plot_differential_volcano_scExp <- function(scExp_cf, cell_cluster = "C1", cdiff
     
     res = scExp_cf@metadata$diff$res
     summary = scExp_cf@metadata$diff$summary
+    qval = paste("qval", cell_cluster, sep = ".")
+    cdiff = paste("cdiff", cell_cluster, sep = ".")
     
     mycol <- rep("black", nrow(res))
-    mycol[which(res[, paste("qval", cell_cluster, sep = ".")] <= qval.th & res[, 
-        paste("cdiff", cell_cluster, sep = ".")] > cdiff.th)] <- "red"
-    mycol[which(res[, paste("qval", cell_cluster, sep = ".")] <= qval.th & res[, 
-        paste("cdiff", cell_cluster, sep = ".")] < -cdiff.th)] <- "forestgreen"
-    plot(res[, paste("cdiff", cell_cluster, sep = ".")], -log10(res[, paste("qval", 
+    mycol[which(res[, qval] <= qval.th & res[, 
+        cdiff] > cdiff.th)] <- "red"
+    mycol[which(res[, qval] <= qval.th & res[, 
+        cdiff] < -cdiff.th)] <- "forestgreen"
+    plot(res[, cdiff], -log10(res[, paste("qval", 
         cell_cluster, sep = ".")]), col = mycol, cex = 0.7, pch = 16, xlab = "count difference", 
         ylab = "-log10(adjusted p-value)", las = 1, main = paste(cell_cluster, 
             "vs the rest", "\n", summary["over", cell_cluster], "enriched,", summary["under", 
@@ -315,7 +351,31 @@ plot_differential_volcano_scExp <- function(scExp_cf, cell_cluster = "C1", cdiff
     abline(v = cdiff.th, lty = 2)
     abline(h = -log10(qval.th), lty = 2)
     abline(v = -cdiff.th, lty = 2)
-    
+    if(n_top > 0){
+      top_res = res[which(res[,qval] < qval.th & abs(res[,cdiff]) > cdiff.th),]
+      if(nrow(top_res) < n_top) n_top = nrow(top_res)
+      if(n_top > 0){
+        top_res = top_res[order(top_res[,qval],abs(top_res[,cdiff])),]
+        top_res = top_res[1:n_top,]
+        top_features_IDs = as.character(top_res$ID)
+        top_features_df = as.data.frame(rowRanges(scExp_cf)[top_features_IDs,])
+        top_features = top_x = top_y = adj = col = c()
+        for(i in 1:n_top){
+          top_features = c(top_features, ifelse(top_features_df$distance[i]<=1000,
+                                                top_features_df$Gene[i],
+                                                top_features_df$ID[i]))
+          top_x[i] = top_res[i, paste("cdiff", 
+                                  cell_cluster, sep = ".")]
+          top_y[i] = -log10(top_res[i, paste("qval", 
+                                         cell_cluster, sep = ".")]) 
+          col[i] = ifelse(top_x[i]>0,"red","forestgreen")
+          adj[i] = ifelse(top_x[i]>0,0,1)
+        }
+
+        print(top_features)
+        text(top_x,top_y,adj = adj,labels = top_features,col=col)
+      }
+    }
 }
 
 #' gg_fill_hue
