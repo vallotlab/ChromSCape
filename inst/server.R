@@ -687,6 +687,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     dim2 = as.numeric(gsub("Component_","",as.character(input$pc_select_y)))
     print(dim1)
     print(dim2)
+    pca = list()
     pca$x = as.matrix(SingleCellExperiment::reducedDim(scExp(),"PCA"))
     pca$sdev = apply(pca$x,2,sd)
     pca$rotation = scExp()@metadata$rotation
