@@ -42,6 +42,9 @@ detect_samples <- function(barcodes, nb_samples=1){
   samples_names = gsub("[[:punct:]]$", "", samples_names)
   # remove starting special char
   samples_names = gsub("^[[:punct:]]", "", samples_names)
+  # remove starting special char
+  samples_names = gsub("[[:punct:]]", "_", samples_names)
+  
   
   # remove longest common string
   if(nb_samples > 1){
@@ -247,7 +250,14 @@ raw_counts_to_feature_count_files <- function(files_dir,
         geneTSS_df$end = geneTSS_df$end + aroundTSS
         which = GenomicRanges::GRanges(geneTSS_df)
     }
-
+    
+    dup_rownames = which(duplicated(paste0(GenomicRanges::seqnames(which),
+                                 ":",GenomicRanges::start(which),"-",
+                                 GenomicRanges::end(which))))
+  if(length(dup_rownames)>0){
+    which = which[-dup_rownames]
+  }
+    
     if(file_type == "BAM"){
         t1 = system.time({l = bams_to_matrix_indexes(files_dir, which)})
         feature_indexes = l[[1]]
@@ -273,6 +283,7 @@ raw_counts_to_feature_count_files <- function(files_dir,
         
         if(verbose) cat("ChromSCape::raw_counts_to_feature_count_files - Count matrix created from Index-Peak-Barcodes files in",t1[3],"sec.\n")
     }
+    
     
     mat = Matrix::sparseMatrix(i = as.numeric(feature_indexes$feature_index),
                                j = feature_indexes$barcode_index,
