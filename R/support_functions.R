@@ -362,6 +362,7 @@ annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), anoty
                       "gray88", "gray74", "#474448", "orangered4", "orchid", "palegreen2", 
                       "orchid4", "red4", "peru", "orangered", "palevioletred4", "purple", "sienna4", 
                       "turquoise1")
+    
         # categCol <- c("#4285F4", "#DB4437", "#F4B400", "#0F9D58", "slategray", "black", 
         #     "orange", "turquoise4", "yellow3", "orangered4", "orchid", "palegreen2", 
         #     "orchid4", "red4", "peru", "orangered", "palevioletred4", "purple", "sienna4", 
