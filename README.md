@@ -93,7 +93,8 @@ you a warning if they are not installed/available.
 
 ## Note for Windows users
 
-Windows user are not able to run the peak calling step, as both samtools and macs2 are not yet available on windows. 
+Windows user are not able to run the peak calling step, as both samtools and macs2 are not yet available on windows.   
+
 Also, if starting from a fresh installation of R3.6.3 on windows, you might encounter the following error   
 ```
 WARNING: Rtools is required to build R packages, but is not currently installed.
