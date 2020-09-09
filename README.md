@@ -91,6 +91,20 @@ The user should be on a Unix system (Mac, Linux) and have installed samtools & M
 The application will automatically check if these tools are available and will give
 you a warning if they are not installed/available.
 
+## Note for Windows users
+
+Windows user are not able to run the peak calling step, as both samtools and macs2 are not yet available on windows.   
+
+Also, if starting from a fresh installation of R3.6.3 on windows, you might encounter the following error   
+```
+WARNING: Rtools is required to build R packages, but is not currently installed.
+Please download and install Rtools 3.5 from https://cran.r-project.org/bin/windows/Rtools/
+```
+
+Windows R version needs Rtools external software to install packages. Download Rtools 3.5 from https://cran.r-project.org/bin/windows/Rtools/history.html
+and install it.  
+
+
 # Authors
 Please do not hesitate to post an issue or contact the authors :
 
