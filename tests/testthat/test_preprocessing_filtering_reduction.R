@@ -5,7 +5,7 @@ context("Testing preprocessing, filtering & reduction functions")
 # Functions for testing purposes
 
 
-out = create_scDataset_raw(featureType = "window",sparse = T, batch_id = c(1,1,2,2))
+out = create_scDataset_raw(featureType = "window",sparse = TRUE, batch_id = c(1,1,2,2))
 mat = out$mat
 annot = out$annot
 batches = out$batches
@@ -18,7 +18,7 @@ scExp = filter_scExp(scExp)
 expect_is(counts(scExp),"dgCMatrix")
 scExp = normalize_scExp(scExp,type = "RPKM")
 expect_is(normcounts(scExp),"dgCMatrix")
-scExp = reduce_dims_scExp(scExp,n = 50,batch_correction = F)
+scExp = reduce_dims_scExp(scExp,n = 50,batch_correction = FALSE)
 expect_is(reducedDim(scExp,"PCA"),"data.frame")
 
 scExp = colors_scExp(scExp,annotCol = c("sample_id","batch_id","total_counts"))
@@ -36,7 +36,7 @@ scExp = choose_cluster_scExp(scExp)
 expect_is(normcounts(scExp),"dgCMatrix")
 scExp = differential_analysis_scExp(scExp)
 expect_is(normcounts(scExp),"dgCMatrix")
-scExp = gene_set_enrichment_analysis_scExp(scExp,ref = "hg38",use_peaks = F)
+scExp = gene_set_enrichment_analysis_scExp(scExp,ref = "hg38",use_peaks = FALSE)
 expect_is(normcounts(scExp),"dgCMatrix")
 
 })
@@ -49,7 +49,7 @@ test_that("Sparse matrices + Batch Correction", {
   expect_is(counts(scExp),"dgCMatrix")
   # scExp = normalize_scExp(scExp,type = "feature_size_only")
   # expect_is(normcounts(scExp),"dgCMatrix")
-  scExp = reduce_dims_scExp(scExp,n = 50,batch_correction = T,
+  scExp = reduce_dims_scExp(scExp,n = 50,batch_correction = TRUE,
                             batch_list = list("batch_1"=c("sample_1","sample_2"),
                                               "batch_2"=c("sample_3","sample_4")))
   
@@ -151,9 +151,9 @@ test_that("Max feature filters remove all features", {
 
 
 test_that("Verbose is on /off", {
-  expect_output(filter_scExp(scExp,verbose=T), "cells pass the threshold of" )
-  expect_output(filter_scExp(scExp,verbose=T), "features pass the threshold of" )
-  expect_invisible({scExp. = filter_scExp(scExp,verbose=F)} )
+  expect_output(filter_scExp(scExp,verbose=TRUE), "cells pass the threshold of" )
+  expect_output(filter_scExp(scExp,verbose=TRUE), "features pass the threshold of" )
+  expect_invisible({scExp. = filter_scExp(scExp,verbose=FALSE)} )
 })
 
 test_that("Some cells are empty", {
@@ -179,15 +179,15 @@ test_that("Some features are empty", {
 test_that("Is not genomic coordinates", {
   scExp. = scExp 
   rownames(scExp.) = paste0("Gene", 1:nrow(scExp.))
-  expect_equal(has_genomic_coordinates(scExp.),F)
-  rownames(scExp.) = sample(letters, nrow(scExp.), replace=T)
-  expect_equal(has_genomic_coordinates(scExp.),F)
+  expect_equal(has_genomic_coordinates(scExp.),FALSE)
+  rownames(scExp.) = sample(letters, nrow(scExp.), replace=TRUE)
+  expect_equal(has_genomic_coordinates(scExp.),FALSE)
   rownames(scExp.) = NULL
   expect_error(has_genomic_coordinates(scExp.))
 })
 
 test_that("Is genomic coordinates", {
-  expect_equal(has_genomic_coordinates(scExp),T)
+  expect_equal(has_genomic_coordinates(scExp),TRUE)
 })
 
 
@@ -235,7 +235,7 @@ test_that("Feature annotation wrong input", {
 #   
 #   expect_s4_class(feature_annotation_scExp(scExp,reference_annotation),
 #                   "SingleCellExperiment")
-#   expect_s4_class(feature_annotation_scExp(scExp,makeGRangesFromDataFrame(reference_annotation,keep.extra.columns = T) ),
+#   expect_s4_class(feature_annotation_scExp(scExp,makeGRangesFromDataFrame(reference_annotation,keep.extra.columns = TRUE) ),
 #                   "SingleCellExperiment")
 #   
 # })
@@ -253,7 +253,7 @@ test_that("Dimensionality reduction right input", {
   scExp. = scExp
   scExp. = normalize_scExp(scExp.)
   pca_1 = reducedDim(reduce_dims_scExp(scExp.),"PCA")
-  pca_2 = as.data.frame(prcomp(Matrix::t(normcounts(scExp.)), retx = T, center = T, scale. = F)$x[,1:50])
+  pca_2 = as.data.frame(prcomp(Matrix::t(normcounts(scExp.)), retx = TRUE, center = TRUE, scale. = FALSE)$x[,1:50])
   expect_equal(pca_1, pca_2)
 })
 
