@@ -4,20 +4,36 @@
 \alias{choose_cluster_scExp}
 \title{Choose a number of clusters}
 \usage{
-choose_cluster_scExp(scExp, nclust = 3, consensus = T, hc_linkage = "ward.D")
+choose_cluster_scExp(
+  scExp,
+  nclust = 3,
+  consensus = TRUE,
+  hc_linkage = "ward.D"
+)
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment object containing consclust in metadata.}
 
-\item{nclust}{Number of cluster to pick [3]}
+\item{nclust}{Number of cluster to pick \link{3}}
 
-\item{hc_linkage}{A linkage method for hierarchical clustering. See \link[stats]{cor}. ['ward.D']}
+\item{hc_linkage}{A linkage method for hierarchical clustering. See \link[stats]{cor}. \link{'ward.D'}}
 }
 \value{
 Returns a SingleCellExperiment object with each cell assigned to a correlation cluster in colData.
 }
 \description{
 This functions takes as input a SingleCellExperiment object with consclust and a number of cluster to select.
-It outputs a SingleCellExperiment object with each cell assigned to a correlation cluster in colData. Also 
+It outputs a SingleCellExperiment object with each cell assigned to a correlation cluster in colData. Also
 calculates a hierarchical clustering of the consensus associations calculated by ConsensusClusterPlus.
+}
+\examples{
+data("scExp")
+scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+scExp_cf = choose_cluster_scExp(scExp_cf,nclust=3,consensus=FALSE)
+num_cell_in_cluster_scExp(scExp_cf)
+
+scExp_cf = consensus_clustering_scExp(scExp)
+scExp_cf_consensus = choose_cluster_scExp(scExp_cf,nclust=3,consensus=TRUE)
+num_cell_in_cluster_scExp(scExp_cf_consensus)
+
 }

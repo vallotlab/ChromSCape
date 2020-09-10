@@ -39,7 +39,7 @@ hclustAnnotHeatmapPlot(
 \item{hmRowNames.cex}{}
 }
 \value{
-
+A heatmap
 }
 \description{
 hclustAnnotHeatmapPlot

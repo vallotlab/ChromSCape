@@ -7,8 +7,8 @@
 \format{
 hg38.MSIG.ls - a list with 9548 elements:
 \describe{
-  \item{names}{Name of gene sets}
-  \item{values}{Gene symbols}
+\item{names}{Name of gene sets}
+\item{values}{Gene symbols}
 }
 }
 \source{

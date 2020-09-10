@@ -22,47 +22,47 @@ subset_bam_call_peaks(
 \item{inputBam}{A character vector of file paths to each sample's BAM file, containing cell
 barcode information as tags. BAM files can be paired-end or single-end.}
 
-\item{p.value}{a p-value to use for MACS2 to determine significant peaks. [0.05]}
+\item{p.value}{a p-value to use for MACS2 to determine significant peaks. \link{0.05}}
 
-\item{ref}{A reference genome, either hg38 or mm10. ['hg38']}
+\item{ref}{A reference genome, either hg38 or mm10. \link{'hg38'}}
 
 \item{peak_distance_to_merge}{Maximal distance to merge peaks together after peak calling
-, in bp. [10000]}
+, in bp. \link{10000}}
 
-\item{geneTSS_annotation}{A data.frame annotation of genes TSS. If NULL will automatically load 
+\item{geneTSS_annotation}{A data.frame annotation of genes TSS. If NULL will automatically load
 Gencode list of genes fro specified reference genome.}
 }
 \value{
-
+A SingleCellExperiment with refinded annotation
 }
 \description{
 This functions does peak calling on each cell population in order to refine gene annotation
-for large bins. For instance, a 50000bp bin might containt the TSS of several genes, while 
+for large bins. For instance, a 50000bp bin might containt the TSS of several genes, while
 in reality only one or two of these genes are overlapping the signal (peak). To do so, first
 in-silico cell sorting is applied based on previously defined clusters contained in the SingleCellExperiment.
-Taking BAM files of each sample as input, samtools pools then splits reads from 
-each cell barcode into 1 BAM file per cell cluster (pseudo-bulk). Then MACS2 calls 
-peaks on each cluster. The peaks are aggregated and merged if closer to a certain distance 
-defined by user [default to 10000bp]. Then,
+Taking BAM files of each sample as input, samtools pools then splits reads from
+each cell barcode into 1 BAM file per cell cluster (pseudo-bulk). Then MACS2 calls
+peaks on each cluster. The peaks are aggregated and merged if closer to a certain distance
+defined by user \link{default to 10000bp}. Then,
 }
 \details{
-This function takes as input a SingleCellExperiment, that must contain 
-a 'cell_cluster' column in it's colData, an output directory where to 
-store temporary files, the list of BAM files corresponding to each sample and 
+This function takes as input a SingleCellExperiment, that must contain
+a 'cell_cluster' column in it's colData, an output directory where to
+store temporary files, the list of BAM files corresponding to each sample and
 containing the cell barcode information as a tag (for instance tag CB:Z:xxx, XB:Z:xxx or
- else...), the p.value used by MACS2 to distinguish significant peaks, the reference
- genome (either hg38 or mm10), the maximal merging distance in bp and a data.frame containing
- gene TSS genomic cooridnates of corresponding genome (if set to NULL, will automatically load
- geneTSS). 
- The output is a SingleCellExperiment with GRanges object containing ranges of each merged peaks that falls within
- genomic bins of the SingleCellExperiment, saving the bin range as additional column (window_chr,
- window_start, window_end), as well as the closests genes and their distance relative to the peak.
- The peaks may be present in several rows if multiple genes are close / overlap to the peaks.
- 
- Note that the user must have samtools & MACS2 installed and available in the PATH.
- Users can open command terminal and type 'which samtools' & 'which macs2' to verify
- the availability of these programs. Will only work on unix operating system. Check 
- operating system with 'print(.Platform[1])'.
+else...), the p.value used by MACS2 to distinguish significant peaks, the reference
+genome (either hg38 or mm10), the maximal merging distance in bp and a data.frame containing
+gene TSS genomic cooridnates of corresponding genome (if set to NULL, will automatically load
+geneTSS).
+The output is a SingleCellExperiment with GRanges object containing ranges of each merged peaks that falls within
+genomic bins of the SingleCellExperiment, saving the bin range as additional column (window_chr,
+window_start, window_end), as well as the closests genes and their distance relative to the peak.
+The peaks may be present in several rows if multiple genes are close / overlap to the peaks.
+
+Note that the user must have samtools & MACS2 installed and available in the PATH.
+Users can open command terminal and type 'which samtools' & 'which macs2' to verify
+the availability of these programs. Will only work on unix operating system. Check
+operating system with 'print(.Platform\link{1})'.
 }
 \examples{
 

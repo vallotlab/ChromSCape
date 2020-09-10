@@ -8,7 +8,7 @@ create_scDataset_raw(
   cells = 300,
   features = 600,
   featureType = c("window", "peak", "gene"),
-  sparse = T,
+  sparse = TRUE,
   nsamp = 4,
   ref = "hg38",
   batch_id = rep(1, nsamp)
@@ -18,8 +18,37 @@ create_scDataset_raw(
 \item{batch_id}{}
 }
 \value{
-
+A list composed of
+\itemize{
+\item mat : a sparse matrix following an approximation of the negative binomial law (adapted to scChIPseq)
+\item annot : a data.frame of cell annotation
+\item batches : an integer vector with the batch number for each cell
+}
 }
 \description{
 Create a simulated single cell datamatrix & cell annotation
+}
+\examples{
+# Creating a basic sparse 600 genomic bins x 300 cells matrix and annotation
+l = create_scDataset_raw()
+head(l$mat)
+head(l$annot)
+head(l$batches)
+
+# Specifying number of cells, features and samples
+l2 = create_scDataset_raw(cells = 500, features = 500, nsamp=2)
+
+# Specifying species
+mouse_l = create_scDataset_raw(ref="mm10")
+
+# Specifying batches
+batch_l = create_scDataset_raw(nsamp=4, batch_id = c(1,1,2,2))
+
+# Peaks of different size as features
+peak_l = create_scDataset_raw(featureType="peak")
+head(peak_l$mat)
+
+# Genes as features
+gene_l = create_scDataset_raw(featureType="gene")
+head(gene_l$mat)
 }

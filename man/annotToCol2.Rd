@@ -12,7 +12,7 @@ annotToCol2(
   maxnumcateg = 2,
   categCol = NULL,
   quantitCol = NULL,
-  plotLegend = T,
+  plotLegend = TRUE,
   plotLegendFile = NULL
 )
 }
@@ -36,8 +36,13 @@ annotToCol2(
 \item{plotLegendFile}{}
 }
 \value{
-
+A matrix of continuous or discrete colors
 }
 \description{
 annotToCol2
+}
+\examples{
+data("scExp")
+annotToCol2(colData(scExp))
+
 }

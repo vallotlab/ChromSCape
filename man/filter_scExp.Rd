@@ -10,31 +10,40 @@ filter_scExp(
   quant_removal = 95,
   percentMin = 1,
   bin_min_count = 2,
-  verbose = T
+  verbose = TRUE
 )
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment object.}
 
-\item{min_cov_cell}{Minimum counts for each cell. [1600]}
+\item{min_cov_cell}{Minimum counts for each cell. \link{1600}}
 
 \item{quant_removal}{Centile of cell counts above which cells are removed.
-[95]}
+\link{95}}
 
-\item{percentMin}{Minimum percent of cells 'ON' in feature. [1]}
+\item{percentMin}{Minimum percent of cells 'ON' in feature. \link{1}}
 
-\item{bin_min_count}{Minimum number of counts to define if cell is 'ON'. [2]}
+\item{bin_min_count}{Minimum number of counts to define if cell is 'ON'. \link{2}}
 
-\item{verbose}{[T]}
+\item{verbose}{\link{TRUE}}
 }
 \value{
 Returns a filtered SingleCellExperiment object.
 }
 \description{
-Function to filter out cells & features from SingleCellExperiment based on 
+Function to filter out cells & features from SingleCellExperiment based on
 total count per cell, number of cells 'ON' in features and top covered
 cells that might be doublets.
 }
 \examples{
 
+scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
+scExp. = filter_scExp(scExp)
+
+# No feature filtering (all features are valuable)
+scExp. = filter_scExp(scExp,percentMin=0)
+
+# No cell filtering (all features are valuable)
+scExp. = filter_scExp(scExp,min_cov_cell=0,quant_removal=100)
+ 
 }

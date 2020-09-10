@@ -7,16 +7,18 @@
 import_scExp(file_names, path_to_matrix = NULL)
 }
 \arguments{
-\item{file_names}{A character vector of file names towards single cell 
+\item{file_names}{A character vector of file names towards single cell
 epigenomic matrices (features x cells) (must be .txt / .tsv)}
 
-\item{path_to_matrix}{In case matrices are stored in temporary folder, 
-a character vector of path towards temporary files. [NULL]}
+\item{path_to_matrix}{In case matrices are stored in temporary folder,
+a character vector of path towards temporary files. \link{NULL}}
 }
 \value{
-a list containing spa
- * datamatrix: a sparseMatrix of features x cells
- * annot_raw: an annotation of cells as data.frame
+A list containing:
+\itemize{
+\item datamatrix: a sparseMatrix of features x cells
+\item annot_raw: an annotation of cells as data.frame
+}
 }
 \description{
 Combine one or multiple matrices together to create a sparse matrix and cell

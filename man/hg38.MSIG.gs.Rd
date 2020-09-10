@@ -7,9 +7,9 @@
 \format{
 hg38.MSIG.gs - a data frame with 9548 rows and 3 variables:
 \describe{
-  \item{Gene.Set}{Name of gene sets}
-  \item{Class}{8 categories of pathways}
-  \item{Genes}{Gene symbols}
+\item{Gene.Set}{Name of gene sets}
+\item{Class}{8 categories of pathways}
+\item{Genes}{Gene symbols}
 }
 }
 \source{

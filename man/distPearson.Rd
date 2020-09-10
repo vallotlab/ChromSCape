@@ -10,8 +10,12 @@ distPearson(m)
 \item{m}{}
 }
 \value{
-
+A dist object
 }
 \description{
 distPearson
+}
+\examples{
+m = matrix(runif(100),runif(100),ncol=100,nrow=100)
+distPearson(m)
 }

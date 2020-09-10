@@ -6,8 +6,14 @@
 \usage{
 bams_to_matrix_indexes(files_dir, which)
 }
+\arguments{
+\item{files_dir}{}
+
+\item{which}{}
+}
 \value{
-feature_indexes
+A list containing a "feature index" data.frame and a
+count vector for non 0 entries, both used to form the sparse matrix
 }
 \description{
 Count bam files on interval to create count indexes

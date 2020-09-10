@@ -10,8 +10,14 @@ pca_irlba_for_sparseMatrix(x, n_comp)
 \item{n_comp}{}
 }
 \value{
-
+The rotated data, e.g. the cells x PC column in case of sc data.
 }
 \description{
 Run sparse PCA using irlba SVD
+}
+\examples{
+
+pca_irlba_for_sparseMatrix(matrix(runif(100),nrow = 250,ncol=250),15)
+pca_irlba_for_sparseMatrix(as(matrix(runif(100),nrow = 250,ncol=250),"dgCMatrix"),15)
+
 }

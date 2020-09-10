@@ -15,15 +15,23 @@ table_enriched_genes_scExp(
 \arguments{
 \item{scExp}{A SingleCellExperiment object containing list of enriched gene sets.}
 
-\item{set}{A character vector, either 'Both', 'Overexpressed' or 'Underexpressed'. ['Both']}
+\item{set}{A character vector, either 'Both', 'Overexpressed' or 'Underexpressed'. \link{'Both'}}
 
-\item{cell_cluster}{Cell cluster. ['C1']}
+\item{cell_cluster}{Cell cluster. \link{'C1'}}
 
-\item{enr_class_sel}{Which classes of gene sets to show. [c('c1_positional', 'c2_curated', ...)]}
+\item{enr_class_sel}{Which classes of gene sets to show. \link{c('c1_positional', 'c2_curated', ...)}}
 }
 \value{
 A DT::data.table of enriched gene sets.
 }
 \description{
 Creates table of enriched genes sets
+}
+\examples{
+data("scExp")
+scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
+scExp_cf = differential_analysis_scExp(scExp_cf)
+scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf)
+table_enriched_genes_scExp(scExp_cf)
 }

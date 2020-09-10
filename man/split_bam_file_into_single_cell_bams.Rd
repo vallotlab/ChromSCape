@@ -10,24 +10,14 @@ split_bam_file_into_single_cell_bams(
   outdir,
   min_coverage = 500,
   barcode_tag = "XB",
-  verbose = T
+  verbose = TRUE
 )
 }
 \arguments{
-\item{bam_file}{}
-
-\item{sample_id}{}
-
-\item{outdir}{}
-
-\item{min_coverage}{}
-
-\item{barcode_tag}{}
-
 \item{verbose}{}
 }
 \value{
-
+Splitted single-cell Bam files
 }
 \description{
 split_bam_file_into_single_cell_bams

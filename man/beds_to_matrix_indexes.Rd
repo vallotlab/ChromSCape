@@ -6,8 +6,14 @@
 \usage{
 beds_to_matrix_indexes(files_dir, which)
 }
+\arguments{
+\item{files_dir}{}
+
+\item{which}{}
+}
 \value{
-feature_indexes
+A list containing a "feature index" data.frame and a
+names of cells as vector both used to form the sparse matrix
 }
 \description{
 Count bed files on interval to create count indexes

@@ -8,12 +8,24 @@ index_peaks_barcodes_to_matrix_indexes(
   peak_file,
   index_file,
   name_cells,
-  binarize = F,
+  binarize = FALSE,
   ref = "hg38"
 )
 }
+\arguments{
+\item{peak_file}{}
+
+\item{index_file}{}
+
+\item{name_cells}{}
+
+\item{binarize}{}
+
+\item{ref}{}
+}
 \value{
-feature_indexes
+A list containing a "feature index" data.frame and a
+region GenomicRange object both used to form the sparse matrix
 }
 \description{
 Read index-peaks-barcodes trio files on interval to create count indexes

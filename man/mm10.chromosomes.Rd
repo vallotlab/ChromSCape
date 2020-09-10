@@ -7,9 +7,9 @@
 \format{
 mm10.chromosomes - a data frame with 24 rows and 3 variables:
 \describe{
-  \item{chr}{Chromosome name}
-  \item{star}{Start}
-  \item{end}{End}
+\item{chr}{Chromosome name}
+\item{star}{Start}
+\item{end}{End}
 }
 }
 \usage{

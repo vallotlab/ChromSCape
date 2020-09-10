@@ -15,3 +15,9 @@ A SingleCellExperiment object.
 \description{
 Preprocess scExp - Read per Kilobase Per Million (RPKM)
 }
+\examples{
+
+scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
+scExp = preprocess_RPKM(scExp)
+head(normcounts(scExp))
+}

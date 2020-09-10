@@ -10,8 +10,13 @@ num_cell_before_cor_filt_scExp(scExp)
 \item{scExp}{}
 }
 \value{
-
+A colored kable with the number of cells per sample for display
 }
 \description{
 Table of number of cells before correlation filtering
+}
+\examples{
+data("scExp")
+num_cell_before_cor_filt_scExp(scExp)
+ 
 }

@@ -14,8 +14,13 @@ changeRange(v, newmin = 1, newmax = 10)
 \item{newmax}{}
 }
 \value{
-
+A matrix with values scaled between newmin and newmax
 }
 \description{
 changeRange
+}
+\examples{
+mat = matrix(runif(100),runif(100),ncol=1,nrow=100)
+mat. = changeRange(mat,0,1)
+summary(mat.)
 }

@@ -21,7 +21,7 @@ get_color_dataframe_from_input(
 \item{input_id_prefix}{}
 }
 \value{
-
+A data.frame with the feature levels and the colors of each level of this feature.
 }
 \description{
 Get color dataframe from shiny::colorInput

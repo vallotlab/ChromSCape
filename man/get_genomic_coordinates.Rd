@@ -15,3 +15,9 @@ A GRanges object of genomic coordinates.
 \description{
 Get SingleCellExperiment's genomic coordinates
 }
+\examples{
+
+scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
+feature_GRanges = get_genomic_coordinates(scExp)
+
+}

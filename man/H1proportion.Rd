@@ -12,8 +12,13 @@ H1proportion(pv = NA, lambda = 0.5)
 \item{lambda}{}
 }
 \value{
-
+H1 proportion value
 }
 \description{
 H1proportion
+}
+\examples{
+p.value = runif(100)
+H1proportion(p.value) = changeRange(mat,0,1)
+
 }

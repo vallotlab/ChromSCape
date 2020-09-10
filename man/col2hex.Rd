@@ -10,7 +10,7 @@ col2hex(cname)
 \item{cname}{}
 }
 \value{
-
+The HEX color code of a particular color
 }
 \description{
 Transform character color to hexadecimal color code.
