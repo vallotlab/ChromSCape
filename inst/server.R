@@ -15,7 +15,7 @@ shinyServer(function(input, output, session) {
   volumes = c(Home = fs::path_home(), "R Installation" = R.home(), shinyFiles::getVolumes()())
 shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
-  # addResourcePath("www", system.file("www", package="ChromSCape"))
+  # addResourcePath("www",directoryPath = "/media/pprompsy/LaCie/InstitutCurie/Documents/GitLab/ChromSCape/inst/www/") #system.file("www", package="ChromSCape")
   tab_vector = c("filter_normalize",
                  "vizualize_dim_red",
                  "cons_clustering",
@@ -78,7 +78,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
     able_or_disable = c()
     for(var in variables_to_check){
-      if (unlocked$list[[var]]==T) {
+      if (unlocked$list[[var]]==TRUE) {
         able_or_disable = c(able_or_disable,TRUE)
       } else{
         able_or_disable = c(able_or_disable,FALSE)
@@ -100,7 +100,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$selected_analysis <- renderUI({ 
     selectInput("selected_analysis", "Choose analysis:",
-                choices = init$available_analyses, multiple = F) 
+                choices = init$available_analyses, multiple = FALSE) 
     })
   
   output$data_folder_info <- renderText({
@@ -167,7 +167,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(input$data_choice_box== "count_mat"){
       column(12, br(),fileInput("datafile_matrix", "Upload all data matrices (.txt, .tsv or .csv) :",
                 multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv", ".csv")),
-             checkboxInput("is_combined_mat", "Single Multi-sample count matrix ?",value = F),
+             checkboxInput("is_combined_mat", "Single Multi-sample count matrix ?",value = FALSE),
              uiOutput("nb_samples_mat")
              )
       
@@ -181,7 +181,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                                         input$data_choice_box," files."),
                                         icon = icon("folder-open")),
              selectInput(inputId = "nb_samples_to_find",label = "Number of samples:",
-                         choices = 1:100,selected = 1,multiple = F)
+                         choices = 1:100,selected = 1,multiple = FALSE)
              )
     }
     
@@ -190,7 +190,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$advanced_data_input <- renderUI({
    if(input$data_choice_box != "count_mat"){
     column(12,
-           shinydashboard::box(title="Counting parameters", width = NULL, status="success", solidHeader = T,
+           shinydashboard::box(title="Counting parameters", width = NULL, status="success", solidHeader = TRUE,
                                column(6, 
                                       radioButtons("count_on_box", label = "Select a count method",
                                             choices = list("Count on bins (width)"="bin_width",
@@ -211,7 +211,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$nb_samples_mat <- renderUI({ if(input$is_combined_mat == TRUE){
     selectInput(inputId = "nb_samples_to_find",label = "Number of samples:",
-                choices = 1:100,selected = 1,multiple = F)
+                choices = 1:100,selected = 1,multiple = FALSE)
   }})
   
   output$bin_width <- renderUI({ if(input$count_on_box == "bin_width"){
@@ -306,7 +306,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           if(input$count_on_box == "geneTSS") datamatrix = raw_counts_to_feature_count_files(
             files_dir = datafile_folder,
             file_type = type_file,
-            geneTSS = T,
+            geneTSS = TRUE,
             aroundTSS = as.numeric(input$aroundTSS),
             ref = input$annotation)
           
@@ -380,11 +380,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(input$selected_analysis,
                {
                  if(nchar(input$selected_analysis)>0){
-                   unlocked$list$selected_analysis=T
+                   unlocked$list$selected_analysis=TRUE
                    }
                  else{
                    for(i in names(unlocked$list)){
-                     unlocked$list[[i]]=F
+                     unlocked$list[[i]]=FALSE
                    }
                  }
                })
@@ -533,7 +533,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     })
   
   output$cell_coverage <- plotly::renderPlotly( plotly::ggplotly(cell_cov_plot(), 
-                                                                 tooltip="Sample", dynamicTicks=T) )
+                                                                 tooltip="Sample", dynamicTicks=TRUE) )
   
   
   output$num_cell <- function(){
@@ -560,9 +560,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(input$selected_reduced_dataset,{
 
     if(suppressWarnings(nchar(input$selected_reduced_dataset)>0)){
-      unlocked$list$selected_reduced_dataset=T
+      unlocked$list$selected_reduced_dataset=TRUE
       }else{
-        for(i in names(unlocked$list)){unlocked$list[[i]]=F}
+        for(i in names(unlocked$list)){unlocked$list[[i]]=FALSE}
         }
     })
   observeEvent(unlocked$list,{
@@ -584,7 +584,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                select_x = input$pc_select_x,
                                select_y = input$pc_select_y
     )
-    unlocked$list$pca=T
+    unlocked$list$pca=TRUE
     p
   })
   output$pca_plot <- renderPlot(pca_plot())
@@ -594,7 +594,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if("TSNE" %in% SingleCellExperiment::reducedDimNames(scExp())){
       p = plot_reduced_dim_scExp(scExp(),input$color_by, "TSNE")
       output$tsne_plot = renderPlot(p)
-      shinydashboard::box(title="t-SNE vizualisation 1", width = NULL, status="success", solidHeader=T,
+      shinydashboard::box(title="t-SNE vizualisation 1", width = NULL, status="success", solidHeader=TRUE,
                           column(12, align="left", plotOutput("tsne_plot") %>% 
                                    shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
                                    shinyhelper::helper(type = 'markdown', icon ="info-circle",
@@ -613,7 +613,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     req(input$color_by)
     if(input$color_by != 'total_counts'){
       shinydashboard::box(title = tagList("Color settings ",shiny::icon("palette")),
-                          width = NULL, status = "success", solidHeader = T,
+                          width = NULL, status = "success", solidHeader = TRUE,
           column(6, htmlOutput("color_picker")),
           column(6 , br(), actionButton("col_reset", "Default colours", icon = icon("undo")),
                  br(), br(), actionButton("save_color", "Save colors & apply to all", icon = icon("save"))))
@@ -934,7 +934,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 #       heatmap(SingleCellExperiment::reducedDim(scExp_cf(),"ConsensusAssociation")[scExp_cf()@metadata$hc_consensus_association$order,],
 #               Colv = as.dendrogram(scExp_cf()@metadata$hc_consensus_association),
 #               Rowv = NA, symm = FALSE, scale="none", col = grDevices::colorRampPalette(c("white", "blue"))(100),
-#               na.rm = TRUE, labRow = F, labCol = F, mar = c(5, 5), main = paste("consensus matrix k=", input$nclust, sep=""),
+#               na.rm = TRUE, labRow = FALSE, labCol = FALSE, mar = c(5, 5), main = paste("consensus matrix k=", input$nclust, sep=""),
 #               ColSideCol = colors)
 #     }
 #   }
@@ -943,7 +943,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 # output$anno_cc_box <- renderUI({
 #   if(! is.null(scExp_cf())){
 #     if("ConsensusAssociation" %in% names(scExp_cf()@metadata)){
-#       shinydashboard::box(title="Annotated consensus clustering", width = NULL, status="success", solidHeader = T,
+#       shinydashboard::box(title="Annotated consensus clustering", width = NULL, status="success", solidHeader = TRUE,
 #           column(12, align="left", plotOutput("cons_clust_anno_plot", height = 500, width = 500),
 #                  downloadButton("download_anno_cc_plot", "Download image")))
 #     }
@@ -958,7 +958,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 #       heatmap(SingleCellExperiment::reducedDim(scExp_cf(),"ConsensusAssociation")[scExp_cf()@metadata$hc_consensus_association$order,],
 #               Colv = as.dendrogram(scExp_cf()@metadata$hc_consensus_association),
 #               Rowv = NA, symm = FALSE, scale="none", col = colorRampPalette(c("white", "blue"))(100),
-#               na.rm = TRUE, labRow = F, labCol = F, mar = c(5, 5), main = paste("consensus matrix k=", input$nclust, sep=""),
+#               na.rm = TRUE, labRow = FALSE, labCol = FALSE, mar = c(5, 5), main = paste("consensus matrix k=", input$nclust, sep=""),
 #               ColSideCol = colors)
 #       grDevices::dev.off()
 #   })
@@ -966,7 +966,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$contingency_table_cluster <- renderUI({
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
-        shinydashboard::box(title="Samples & Cluster association table", width = NULL, status="success", solidHeader = T,
+        shinydashboard::box(title="Samples & Cluster association table", width = NULL, status="success", solidHeader = TRUE,
             column(12, align="left", tableOutput("hcor_kable")),
             column(5,offset = 2, align="left", htmlOutput("chi_info"),br())
         )
@@ -996,7 +996,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                    select_y = "Component_2") +
           ggtitle("t-SNE")
         output$tsne_plot_cf <- renderPlot(p)
-        shinydashboard::box(title="t-SNE vizualisation 2", width = NULL, status="success", solidHeader=T,
+        shinydashboard::box(title="t-SNE vizualisation 2", width = NULL, status="success", solidHeader=TRUE,
                             column(12, align="left", plotOutput("tsne_plot_cf")))
       }
     }
@@ -1026,7 +1026,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$UMAP_box <- renderUI({
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf())) ){
-        shinydashboard::box(title="UMAP vizualisation 2", width = NULL, status="success", solidHeader = T,
+        shinydashboard::box(title="UMAP vizualisation 2", width = NULL, status="success", solidHeader = TRUE,
                             column(6, align="left",
                                    selectInput("color_by_cf", "Color by",
                                                selected = "cell_cluster",
@@ -1042,7 +1042,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
         if(input$color_by_cf != 'total_counts'){
-          shinydashboard::box(title=tagList("Color settings ",shiny::icon("palette")), width = NULL, status = "success", solidHeader = T,
+          shinydashboard::box(title=tagList("Color settings ",shiny::icon("palette")), width = NULL, status = "success", solidHeader = TRUE,
                               column(6, htmlOutput("color_picker_cf")),
                               column(4 , br(), actionButton("col_reset_cf", "Default colours", icon = icon("undo")),
                                      br(), br(), actionButton("save_color_cf",
@@ -1087,11 +1087,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   # {
   #   if(length(selected_filtered_dataset())>0 & !is.null(scExp_cf())){
   #     if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
-  #       unlocked$list$affectation = T
+  #       unlocked$list$affectation = TRUE
   #     } else {
-  #       unlocked$list$affectation = F
+  #       unlocked$list$affectation = FALSE
   #     }
-  #   } else unlocked$list$affectation = F
+  #   } else unlocked$list$affectation = FALSE
   # }
   # )
   
@@ -1107,7 +1107,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$peak_calling_system <- renderText({
     platform = as.character(.Platform[1])
-    if(length(grep("nix",platform,ignore.case = T)) ){
+    if(length(grep("nix",platform,ignore.case = TRUE)) ){
       macs2=""
       samtools=""
       try({
@@ -1144,7 +1144,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                    session)
   list_bams = reactive({
     if(!is.null(bam_folder())){
-      list.files(bam_folder(), full.names = T, pattern = "*.bam$")
+      list.files(bam_folder(), full.names = TRUE, pattern = "*.bam$")
     }
   })
   
@@ -1163,7 +1163,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     req(scExp_cf(), list_bams())
     if(!is.null(list_bams()))
       selectInput("bam_selection", label = "Selected BAM files",
-                  choices = basename(list_bams()), multiple = T,
+                  choices = basename(list_bams()), multiple = TRUE,
                   selected = basename(list_bams()) )
   })
   
@@ -1227,7 +1227,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
   # output$pc_plot_box <- renderUI({
   #   if(has_available_pc()){
-  #     shinydashboard::box(title="Peak calling visualization", width = NULL, status="success", solidHeader = T,
+  #     shinydashboard::box(title="Peak calling visualization", width = NULL, status="success", solidHeader = TRUE,
   #         column(8, align="left", selectInput("pc_cluster","Select cluster (only those shown for which plots are available):", choices = paste0("C", available_pc_plots()))),
   #         column(12, align="left",
   #                plotOutput("peak_model_plot", height = 500, width = 500),
@@ -1322,7 +1322,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(input$do_wilcox, {  # perform differential analysis based on wilcoxon test
     withProgress(message='Performing differential analysis...', value = 0, {
       incProgress(amount = 0.2, detail = paste("Initializing DA"))
-      if(batchUsed()) block = T else block = F
+      if(batchUsed()) block = TRUE else block = FALSE
       gc()
       scExp_cf(differential_analysis_scExp(scExp = scExp_cf(),
                                            method= input$da_method,
@@ -1345,7 +1345,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$da_summary_box <- renderUI({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
-        shinydashboard::box(title="Number of differentially bound regions", width = NULL, status="success", solidHeader = T,
+        shinydashboard::box(title="Number of differentially bound regions", width = NULL, status="success", solidHeader = TRUE,
             column(5, align="left", br(), tableOutput("da_summary_kable")),
             column(7, align="left", plotOutput("da_barplot", height = 270, width = 250)),
             column(4, align="left", downloadButton("download_da_barplot", "Download barplot"))
@@ -1358,8 +1358,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
         scExp_cf()@metadata$diff$summary %>%
-          kableExtra::kable(escape = F, align="c") %>%
-          kableExtra::kable_styling(c("striped", "condensed"), full_width = F)
+          kableExtra::kable(escape = FALSE, align="c") %>%
+          kableExtra::kable_styling(c("striped", "condensed"), full_width = FALSE)
       }
     }
   }
@@ -1403,13 +1403,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                   input$qval.th, "_", input$cdiff.th, "_",
                                   input$de_type, ".csv")},
     content = function(file){
-      write.table(scExp_cf()@metadata$diff$res, file, row.names = F, quote = F, sep=",")
+      write.table(scExp_cf()@metadata$diff$res, file, row.names = FALSE, quote = FALSE, sep=",")
     })
   
   output$da_visu_box <- renderUI({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
-        shinydashboard::box(title="Detailed differential analysis per cluster", width = NULL, status="success", solidHeader = T,
+        shinydashboard::box(title="Detailed differential analysis per cluster", width = NULL, status="success", solidHeader = TRUE,
             column(4, align="left", selectInput("gpsamp", "Select cluster:", choices = scExp_cf()@metadata$diff$groups)),
             column(4, align="left", downloadButton("download_da_table", "Download table")),
             column(12, align="left", div(style = 'overflow-x: scroll', DT::dataTableOutput('da_table')), br()),
@@ -1561,7 +1561,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$enr_class_sel <- renderUI({
     req(MSIG.classes())
     shiny::checkboxGroupInput(
-    inputId = "enr_class_sel", inline = T,
+    inputId = "enr_class_sel", inline = TRUE,
     label =  "Select classes to display:",
     selected = MSIG.classes(), choiceNames = MSIG.classes(),
     choiceValues = MSIG.classes())
@@ -1635,8 +1635,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     req(input$gene_sel, annotFeat_long())
     subset <- annotFeat_long()[which(annotFeat_long()$Gene==input$gene_sel), ]
     if(!is.null(subset)){
-      subset <- subset[order(subset$distance),]
-      regions <- paste0(subset$ID, " (distance to gene TSS: ", subset$distance, ")")
+      subset <- subset[order(subset$distanceToTSS),]
+      regions <- paste0(subset$ID, " (distanceToTSS to gene TSS: ", subset$distanceToTSS, ")")
       selectInput("region_sel", "Select associated genomic region:", choices = regions)
     }
   })
@@ -1663,7 +1663,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     region <- strsplit(input$region_sel, " ")[[1]][1]
     if(region %in% rownames(scExp_cf())){
       output$gene_umap_plot <- plotly::renderPlotly({
-          plotly::ggplotly(gene_umap_p(), tooltip="Sample", dynamicTicks = T)
+          plotly::ggplotly(gene_umap_p(), tooltip="Sample", dynamicTicks = TRUE)
       })
       plotly::plotlyOutput("gene_umap_plot")
     }
