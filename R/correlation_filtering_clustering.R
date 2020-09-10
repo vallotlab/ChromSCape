@@ -1,4 +1,5 @@
-## Authors : Pacôme Prompsy Title : Wrappers & functions to filter and cluster
+## Authors : Pacôme Prompsy, Celine Vallot
+## Title : Wrappers & functions to filter and cluster
 ## single cell data based on correlation between cells Description : Wrappers &
 ## functions to filter and cluser single cell data based on correlation between
 ## cells
@@ -18,11 +19,14 @@
 #' @return Return a SingleCellExperiment object with correlation matrix & hiearchical clustering.
 #' @export
 #'
-#' @examples 
 #' @importFrom SingleCellExperiment reducedDim
 #' @importFrom Matrix t
 #' @importFrom stats cor hclust as.dist
 #' 
+#' @examples 
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#'  
 correlation_and_hierarchical_clust_scExp <- function(scExp, correlation = "pearson", 
     hc_linkage = "ward.D")
     {
@@ -61,20 +65,25 @@ correlation_and_hierarchical_clust_scExp <- function(scExp, correlation = "pears
 #' to be 'correlated' with another cell. [99]
 #' @param percent_correlation Percentage of the cells that any cell must be 'correlated' to in order to
 #' not be filtered. [1] 
-#' @param seed Random seed. [47]
-#' @param verbose [T]
+#' @param verbose [TRUE]
 #'
 #' @return Returns a SingleCellExperiment object without lowly correlated cells. The
 #' calculated correlation score limit threshold is saved in metadata. 
 #' @export
 #'
-#' @examples
 #' @importFrom SingleCellExperiment reducedDim
 #' @importFrom Matrix t
 #' @importFrom Rtsne Rtsne
 #' @importFrom stats cor hclust as.dist
+#'
+#' @examples 
+#' data("scExp")
+#' dim(scExp)
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = filter_correlated_cell_scExp(scExp_cf,corr_threshold = 99, percent_correlation = 5)
+#' dim(scExp_cf)
 filter_correlated_cell_scExp <- function(scExp, random_iter = 50, corr_threshold = 99, 
-    percent_correlation = 1, verbose = F, seed = 47)
+    percent_correlation = 1, verbose = FALSE)
     {
     
     stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(random_iter), is.numeric(corr_threshold), 
@@ -91,8 +100,7 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 50, corr_threshold
     corChIP <- SingleCellExperiment::reducedDim(scExp, "Cor")
     limitC <- 0
     
-    set.seed(seed)
-    for (i in 1:random_iter)
+    for (i in seq_len(random_iter))
     {
         random_mat <- matrix(sample(pca_t), nrow = dim(pca_t)[1])
         threshold <- quantile(stats::cor(random_mat), probs = seq(0, 1, 0.01))
@@ -100,7 +108,7 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 50, corr_threshold
         correlation_values[i] = limitC
     }
     
-    limitC_mean = mean(correlation_values, na.rm = T)
+    limitC_mean = mean(correlation_values, na.rm = TRUE)
     
     selection_cor_filtered <- (apply(corChIP, 1, function(x) length(which(x > limitC_mean)))) > 
         (percent_correlation * 0.01) * dim(corChIP)[1]
@@ -110,7 +118,6 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 50, corr_threshold
     tab = as.data.frame(SingleCellExperiment::reducedDim(scExp, "Cor"))[, selection_cor_filtered]
     SingleCellExperiment::reducedDim(scExp, "Cor") = tab
     
-    set.seed(seed)
     tsne = Rtsne::Rtsne(SingleCellExperiment::reducedDim(scExp, "PCA"), dims = 2, 
         max_iter = 1000, pca = FALSE, theta = 0, perplexity = choose_perplexity(SingleCellExperiment::reducedDim(scExp, 
             "PCA")), verbose = verbose)
@@ -140,13 +147,18 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 50, corr_threshold
 #'
 #' @param scExp 
 #'
-#' @return
+#' @return A colored kable with the number of cells per sample for display
 #'
 #' @export
-#' @examples
-#' @importFrom SingleCellExperiment colData
+#' 
 #' @importFrom dplyr bind_rows tibble left_join mutate
 #' @importFrom kableExtra kable kable_styling group_rows
+#' @importFrom SingleCellExperiment colData
+#' 
+#' @examples 
+#' data("scExp")
+#' num_cell_before_cor_filt_scExp(scExp)
+#'  
 num_cell_before_cor_filt_scExp <- function(scExp)
 {
     
@@ -168,9 +180,9 @@ num_cell_before_cor_filt_scExp <- function(scExp)
     table = table %>% dplyr::bind_rows(., dplyr::tibble(Sample = "", `#Cells` = sum(table[, 
         -1])))
     
-    table %>% dplyr::mutate(Sample = cell_spec(Sample, color = "white", bold = T, 
-        background = colors)) %>% kableExtra::kable(escape = F, align = "c") %>% 
-        kableExtra::kable_styling(c("striped", "condensed"), full_width = T) %>% 
+    table %>% dplyr::mutate(Sample = cell_spec(Sample, color = "white", bold = TRUE, 
+        background = colors)) %>% kableExtra::kable(escape = FALSE, align = "c") %>% 
+        kableExtra::kable_styling(c("striped", "condensed"), full_width = TRUE) %>% 
         kableExtra::group_rows("Total cell count", dim(table)[1], dim(table)[1])
 }
 
@@ -179,12 +191,19 @@ num_cell_before_cor_filt_scExp <- function(scExp)
 #' @param scExp SingleCellExperiment object before correlation filtering.
 #' @param scExp_cf SingleCellExperiment object atfer correlation filtering.
 #'
-#' @return
+#' @return A colored kable with the number of cells per sample before and after
+#' filtering for display
 #' @export
 #' @importFrom SingleCellExperiment colData
-#' @importFrom dplyr bind_rows tibble left_join mutate
 #' @importFrom kableExtra kable kable_styling group_rows cell_spec
-
+#' @importFrom dplyr bind_rows tibble left_join mutate
+#' 
+#' @examples 
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = filter_correlated_cell_scExp(scExp_cf,corr_threshold = 99, percent_correlation = 5)
+#' num_cell_after_cor_filt_scExp(scExp,scExp_cf)
+#' 
 num_cell_after_cor_filt_scExp <- function(scExp, scExp_cf)
 {
     
@@ -209,8 +228,8 @@ num_cell_after_cor_filt_scExp <- function(scExp, scExp_cf)
         2]), `#Cells After Filtering` = sum(table_both[, 3])))
     
     table_both %>% dplyr::mutate(Sample = kableExtra::cell_spec(Sample, color = "white", 
-        bold = T, background = colors)) %>% kableExtra::kable(escape = F, align = "c") %>% 
-        kableExtra::kable_styling(c("striped", "condensed"), full_width = T) %>% 
+        bold = TRUE, background = colors)) %>% kableExtra::kable(escape = FALSE, align = "c") %>% 
+        kableExtra::kable_styling(c("striped", "condensed"), full_width = TRUE) %>% 
         kableExtra::group_rows("Total cell count", dim(table_both)[1], dim(table_both)[1])
 }
 
@@ -242,7 +261,6 @@ num_cell_after_cor_filt_scExp <- function(scExp, scExp_cf)
 #' @param plot_consclust character value. NULL - print to screen, 'pdf', 'png', 'pngBMP' for bitmap png,
 #'  helpful for large datasets. ['pdf']
 #' @param plot_icl same as above for item consensus plot. ['png']
-#' @param seed Random seed. [47]
 #'
 #' @return Returns a SingleCellExperiment object containing consclust list, calculated cluster consensus
 #'  and item consensus scores in metadata.
@@ -251,15 +269,19 @@ num_cell_after_cor_filt_scExp <- function(scExp, scExp_cf)
 #' @references ConsensusClusterPlus package by 
 #' Wilkerson, M.D., Hayes, D.N. (2010). ConsensusClusterPlus: a class discovery tool 
 #' with confidence assessments and item tracking. Bioinformatics, 2010 Jun 15;26(12):1572-3. 
-#' @examples
 #' 
 #' @importFrom SingleCellExperiment reducedDim
 #' @importFrom Matrix t
 #' @importFrom ConsensusClusterPlus ConsensusClusterPlus calcICL
-#'
+#' 
+#' @examples 
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = consensus_clustering_scExp(scExp)
+#' 
 consensus_clustering_scExp <- function(scExp, prefix = NULL, maxK = 10, reps = 100, 
     pItem = 0.8, pFeature = 1, distance = "pearson", clusterAlg = "hc", innerLinkage = "ward.D", 
-    finalLinkage = "ward.D", plot_consclust = "pdf", plot_icl = "png", seed = 47)
+    finalLinkage = "ward.D", plot_consclust = "pdf", plot_icl = "png")
     {
     
     stopifnot(is(scExp, "SingleCellExperiment"))
@@ -279,7 +301,7 @@ consensus_clustering_scExp <- function(scExp, prefix = NULL, maxK = 10, reps = 1
     consclust <- ConsensusClusterPlus::ConsensusClusterPlus(pca_t, maxK = maxK, reps = reps, 
         pItem = pItem, pFeature = pFeature, title = prefix, clusterAlg = clusterAlg, 
         distance = distance, innerLinkage = innerLinkage, finalLinkage = finalLinkage, 
-        seed = seed, plot = plot_consclust)
+        plot = plot_consclust)
     
     
     icl <- ConsensusClusterPlus::calcICL(consclust, plot = plot_icl, title = prefix)
@@ -312,13 +334,22 @@ consensus_clustering_scExp <- function(scExp, prefix = NULL, maxK = 10, reps = 1
 #' @return Returns a SingleCellExperiment object with each cell assigned to a correlation cluster in colData.
 #' @export
 #'
-#' @examples
 #' @importFrom SingleCellExperiment reducedDim colData
 #' @importFrom SummarizedExperiment colData
 #' @importFrom Matrix t
 #' @importFrom stats hclust as.dist
-
-choose_cluster_scExp <- function(scExp, nclust = 3, consensus = T, hc_linkage = "ward.D")
+#' 
+#' @examples 
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=3,consensus=FALSE)
+#' num_cell_in_cluster_scExp(scExp_cf)
+#' 
+#' scExp_cf = consensus_clustering_scExp(scExp)
+#' scExp_cf_consensus = choose_cluster_scExp(scExp_cf,nclust=3,consensus=TRUE)
+#' num_cell_in_cluster_scExp(scExp_cf_consensus)
+#' 
+choose_cluster_scExp <- function(scExp, nclust = 3, consensus = TRUE, hc_linkage = "ward.D")
 {
     
     stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(nclust),
@@ -371,11 +402,16 @@ choose_cluster_scExp <- function(scExp, nclust = 3, consensus = T, hc_linkage = 
 #' @return A formatted kable of cell assignation to each cluster.
 #' @export
 #'
-#' @examples
 #' @importFrom SingleCellExperiment colData
 #' @importFrom Matrix t rowSums
 #' @importFrom stats chisq.test
 #' @importFrom kableExtra kable kable_styling group_rows cell_spec
+#'
+#' @examples
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=3,consensus=FALSE)
+#' num_cell_in_cluster_scExp(scExp_cf)
 #' 
 num_cell_in_cluster_scExp <- function(scExp)
 {
@@ -385,7 +421,7 @@ num_cell_in_cluster_scExp <- function(scExp)
     table_raw <- as.data.frame.matrix(table(as.data.frame(SingleCellExperiment::colData(scExp))[, 
         c("cell_cluster", "sample_id")]))
     ord =  as.character(unique(SingleCellExperiment::colData(scExp)[, "sample_id"]))
-    table_raw = table_raw[,match(ord,colnames(table_raw)),drop=F]
+    table_raw = table_raw[,match(ord,colnames(table_raw)),drop=FALSE]
     
     # Overall goodness of fit testing : how fairly are cells allocated between the
     # clusters ?
@@ -394,7 +430,7 @@ num_cell_in_cluster_scExp <- function(scExp)
     # Cluster goodness of fit testing : how fairly are cells allocated to a
     # particular cluster ?
     chi_pvalues = c()
-    for (i in 1:(dim(as.matrix(table_raw))[1]))
+    for (i in seq_len((dim(as.matrix(table_raw))[1])))
     {
         contingency_tab = rbind(table_raw[i, ], colSums(table_raw))
         chi <- suppressWarnings( stats::chisq.test(x = contingency_tab, correct = FALSE))
@@ -418,22 +454,22 @@ num_cell_in_cluster_scExp <- function(scExp)
     tab <- rbind(tab, colSums(table_raw))
     tab <- cbind(tab, `#Cells` = c(Matrix::rowSums(table_raw), sum(Matrix::rowSums(table_raw))))
     tab <- cbind(tab, `p-value` = chi_pvalues)
-    tab <- as.data.frame(cbind(Cluster = c(rownames(tab)[1:length(rownames(tab)) - 
+    tab <- as.data.frame(cbind(Cluster = c(rownames(tab)[seq_along(rownames(tab)) - 
         1], ""), tab))
     tab$Cluster = as.character(tab$Cluster)
     rownames(tab) <- NULL
     
-    tab = rbind(rep("", nrow(tab)), tab[(1:nrow(tab)), ])
+    tab = rbind(rep("", nrow(tab)), tab[(seq_len(nrow(tab))), ])
     samples = kableExtra::cell_spec(colnames(tab)[2:(length(colors_sample_id) + 1)], 
-        color = "white", bold = T, background = colors_sample_id)
+        color = "white", bold = TRUE, background = colors_sample_id)
     tab[1, 2:(length(colors_sample_id) + 1)] = samples
     colnames(tab)[2:(length(colors_sample_id) + 1)] = rep("", length(colors_sample_id))
     
     tab[2:(length(colors_chromatin_group) + 1), "Cluster"] = kableExtra::cell_spec(tab[2:(length(colors_chromatin_group) + 
-        1), "Cluster"], color = "white", bold = T, background = colors_chromatin_group)
+        1), "Cluster"], color = "white", bold = TRUE, background = colors_chromatin_group)
     
-    tab %>% kableExtra::kable(escape = F, align = "c") %>% kableExtra::kable_styling(c("striped", 
-        "condensed"), full_width = F) %>% kableExtra::group_rows("Total", dim(tab)[1], 
+    tab %>% kableExtra::kable(escape = FALSE, align = "c") %>% kableExtra::kable_styling(c("striped", 
+        "condensed"), full_width = FALSE) %>% kableExtra::group_rows("Total", dim(tab)[1], 
         dim(tab)[1])
 }
 

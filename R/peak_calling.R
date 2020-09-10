@@ -1,6 +1,4 @@
-
-# odir must be a full path inputBam must be a vector p.value must be either '-p
-# <thresh>' or '-q <thresh>'
+## Authors : Pacôme Prompsy, Celine Vallot
 
 #' Peak calling on cell clusters
 #' 
@@ -43,7 +41,7 @@
 #' @param geneTSS_annotation A data.frame annotation of genes TSS. If NULL will automatically load 
 #' Gencode list of genes fro specified reference genome.
 #'
-#' @return
+#' @return A SingleCellExperiment with refinded annotation
 #' @export
 #'
 #' @examples
@@ -128,8 +126,8 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "
     # --binSize 50 --smoothLength 500 --extendReads 150 --ignoreForNormalization chrX
     # --numberOfProcessors 4 --normalizeUsing RPKM; done'))
     
-    system(paste0("rm ", file.path(odir, "*.barcode_class"), " ", file.path(odir, 
-        "*.sam")))
+    # system(paste0("rm ", file.path(odir, "*.barcode_class"), " ", file.path(odir, 
+    #     "*.sam")))
     
     # Peak calling with macs2
     print("Using MACS2 to call peaks in each cluster...")
@@ -143,7 +141,7 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "
             " | grep \"properly paired\" | sed \"s/.*properly paired (//g\" | cut -f1 -d\" \" | sed \"s/\\%//g\""))
         percent_properlyPaired = as.double(system(paste0("samtools flagstat ", file.path(odir, 
             paste0(class, ".bam")), " | grep \"properly paired\" | sed \"s/.*properly paired (//g\" | cut -f1 -d\" \" | sed \"s/\\%//g\""), 
-            intern = T))
+            intern = TRUE))
         
         # If there are enough paired and mapped reads -> use the model
         if (!is.na(percent_properlyPaired) & percent_properlyPaired > 50)
@@ -188,12 +186,12 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "
     }
     
     # Clean up files unlink(file.path(odir, 'bam_list.txt'))
-    unlink(file.path(odir, "*.xls"))
-    unlink(file.path(odir, "*.gappedPeak"))
-    unlink(file.path(odir, "*_model.r"))
-    unlink(file.path(odir, "header.sam"))
-    unlink(file.path(odir, 'merged.bam'))
-    
+    # unlink(file.path(odir, "*.xls"))
+    # unlink(file.path(odir, "*.gappedPeak"))
+    # unlink(file.path(odir, "*_model.r"))
+    # unlink(file.path(odir, "header.sam"))
+    # unlink(file.path(odir, 'merged.bam'))
+    # 
     # call makePeakAnnot file
     print("Merging BAM files together...")
     
@@ -210,11 +208,11 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "
     }
     
     pairs <- IRanges::findOverlapPairs(segmentation, merged_peak, ignore.strand = TRUE)
-    refined_annotation = GenomicRanges::pintersect(pairs, ignore.strand = T)
+    refined_annotation = GenomicRanges::pintersect(pairs, ignore.strand = TRUE)
     S4Vectors::mcols(refined_annotation)$hit = NULL
     
     hits_genes = GenomicRanges::distanceToNearest(refined_annotation, geneTSS_annotation, 
-        ignore.strand = T, select = "all")
+        ignore.strand = TRUE, select = "all")
     
     refined_annotation = refined_annotation[S4Vectors::queryHits(hits_genes)]
     refined_annotation$Gene = as.character(geneTSS_annotation$gene[S4Vectors::subjectHits(hits_genes)])
