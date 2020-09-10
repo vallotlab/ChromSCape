@@ -16,7 +16,7 @@ Module_preprocessing_filtering_and_reduction <- function(input, output, session,
             "batchCorrected" else "uncorrected"
         incProgress(amount = 0.1, detail = paste("Loading raw data..."))
         
-        print(system.time({scExp = create_scExp(datamatrix(), annot_raw(), remove_zero_cells = T, remove_zero_features = T)}))
+        print(system.time({scExp = create_scExp(datamatrix(), annot_raw(), remove_zero_cells = TRUE, remove_zero_features = TRUE)}))
         gc()
         
         ### 2. Filtering & Window selection ###
@@ -65,7 +65,7 @@ Module_preprocessing_filtering_and_reduction <- function(input, output, session,
         print(system.time({scExp = reduce_dims_scExp(
             scExp, dimension_reductions = methods,
             batch_correction = doBatchCorr(), batch_list = batch_sels(), 
-            verbose = F)}))
+            verbose = FALSE)}))
         gc()
         
         ### 7. Add default colors ###
