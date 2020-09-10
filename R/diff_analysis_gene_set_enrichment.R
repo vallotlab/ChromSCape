@@ -25,11 +25,17 @@
 #' @return Returns a SingleCellExperiment object containing a differential list.
 #' @export
 #'
-#' @examples
 #' @importFrom Matrix rowMeans
 #' @importFrom scran combineMarkers 
 #' @importFrom SingleCellExperiment colData normcounts rowData
 #' @importFrom rlist list.append
+#' 
+#' @examples 
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=3,consensus=FALSE)
+#' scExp_cf = differential_analysis_scExp(scExp_cf)
+#' 
 differential_analysis_scExp = function(scExp, de_type = "one_vs_rest", 
                                        method = "wilcox",
                                        qval.th = 0.01, 
@@ -69,17 +75,17 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
     if (de_type == "one_vs_rest")
     {
         # compare each cluster to all the rest
-        mygps = lapply(1:nclust, function(i)
+        mygps = lapply(seq_len(nclust), function(i)
         {
             affectation[which(affectation$cell_cluster == paste0("C", i)), "cell_id"]
         })
-        names(mygps) = paste0("C", 1:nclust)
+        names(mygps) = paste0("C", seq_len(nclust))
         groups = names(mygps)
-        myrefs = lapply(1:nclust, function(i)
+        myrefs = lapply(seq_len(nclust), function(i)
         {
             affectation[which(affectation$cell_cluster != paste0("C", i)), "cell_id"]
         })
-        names(myrefs) = paste0("notC", 1:nclust)
+        names(myrefs) = paste0("notC", seq_len(nclust))
         refs = names(myrefs)
         if(method == "wilcox"){ res = CompareWilcox(
             dataMat = counts, annot = affectation, ref = myrefs, 
@@ -101,7 +107,7 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
         count_save = data.frame(ID = feature$ID)
         single_results = list()
         pairs = setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("group", "ref"))
-        for (i in 1:(as.integer(nclust) - 1))
+        for (i in seq_len((as.integer(nclust) - 1)))
         {
             mygps = list(affectation[which(affectation$cell_cluster == paste0("C", 
                 i)), "cell_id"])
@@ -151,9 +157,9 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
         combinedTests = scran::combineMarkers(de.lists = single_results, pairs = pairs, 
             pval.field = "p.val", effect.field = "cdiff", pval.type = "any", log.p.in = FALSE, 
             log.p.out = FALSE, output.field = "stats", full.stats = TRUE)
-        for (i in 1:as.integer(nclust))
+        for (i in seq_len(as.integer(nclust)))
         {
-            cdiffs = sapply(1:(as.integer(nclust) - 1), function(k)
+            cdiffs = sapply(seq_len((as.integer(nclust) - 1)), function(k)
             {
                 combinedTests[[paste0("C", i)]][feature$ID, k + 3]$cdiff
             })
@@ -166,23 +172,23 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
             res[, paste0("qval.C", i)] = combinedTests[[paste0("C", i)]][feature$ID, 
                 "FDR"]
         }
-        groups = paste0("C", 1:nclust)  #needed for following code
-        refs = paste0("pairedTest", 1:nclust)
+        groups = paste0("C", seq_len(nclust))  #needed for following code
+        refs = paste0("pairedTest", seq_len(nclust))
     }
     
     diff$summary = matrix(nrow = 3, ncol = length(groups), dimnames = list(c("differential", 
         "over", "under"), groups))
-    for (k in 1:length(groups))
+    for (k in seq_along(groups))
     {
         gpsamp = groups[k]
         
         # For log2(x1/x2) > 1 || log2(x1/x2) > -1
         diff$summary["differential", gpsamp] = sum(res[, paste("qval", gpsamp, sep = ".")] <= 
-            qval.th & abs(res[, paste("cdiff", gpsamp, sep = ".")]) > cdiff.th, na.rm = T)
+            qval.th & abs(res[, paste("cdiff", gpsamp, sep = ".")]) > cdiff.th, na.rm = TRUE)
         diff$summary["over", gpsamp] = sum(res[, paste("qval", gpsamp, sep = ".")] <= 
-            qval.th & res[, paste("cdiff", gpsamp, sep = ".")] > cdiff.th, na.rm = T)
+            qval.th & res[, paste("cdiff", gpsamp, sep = ".")] > cdiff.th, na.rm = TRUE)
         diff$summary["under", gpsamp] = sum(res[, paste("qval", gpsamp, sep = ".")] <= 
-            qval.th & res[, paste("cdiff", gpsamp, sep = ".")] < -cdiff.th, na.rm = T)
+            qval.th & res[, paste("cdiff", gpsamp, sep = ".")] < -cdiff.th, na.rm = TRUE)
         
     }
     
@@ -214,20 +220,25 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
 #' Gencode list of genes fro specified reference genome. [NULL] 
 #' @param qval.th Adjusted p-value threshold to define differential features. [0.01]
 #' @param cdiff.th Fold change threshold to define differential features. [1]
-#' @param peak_distance Maximum distance of feature to gene TSS to consider associated, in bp. [1000]
-#' @param use_peaks Use peak calling method (must be calculated beforehand). [F]
+#' @param peak_distance Maximum distanceToTSS of feature to gene TSS to consider associated, in bp. [1000]
+#' @param use_peaks Use peak calling method (must be calculated beforehand). [FALSE]
 #'
 #' @return Returns a SingleCellExperiment object containing list of enriched Gene Sets for each cluster, either
 #' in depleted features, enriched features or simply differential features (both). 
 #' 
 #' @export
-#'
-#' @examples
-#' 
 #' @importFrom SingleCellExperiment colData normcounts rowData
+#' 
+#' @examples 
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
+#' scExp_cf = differential_analysis_scExp(scExp_cf)
+#' scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf)
+#' 
 gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref = "hg38", 
     GeneSets = NULL, GeneSetsDf = NULL, GenePool = NULL, qval.th = 0.01, cdiff.th = 1, 
-    peak_distance = 1000, use_peaks = F)
+    peak_distance = 1000, use_peaks = FALSE)
     {
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(ref), is.numeric(enrichment_qval), 
         is.numeric(peak_distance), is.numeric(qval.th), is.numeric(cdiff.th))
@@ -240,7 +251,7 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
          using feature_annotation_scExp first.")
     
     if (is.null(use_peaks)) 
-        use_peaks = F
+        use_peaks = FALSE
     
     if (use_peaks & (!"refined_annotation" %in% names(scExp@metadata))) 
         stop("ChromSCape::gene_set_enrichment_analysis_scExp - When use_peaks is TRUE, metadata must contain refined_annotation object.")
@@ -288,21 +299,21 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
     annotFeat_long = as.data.frame(tidyr::separate_rows(as.data.frame(SingleCellExperiment::rowData(scExp)), 
         Gene, sep = ", "))
     
-    for (i in 1:length(groups))
+    for (i in seq_along(groups))
     {
         gp = groups[i]
         ref = diff$refs[i]
         signific = res$ID[which(res[, paste("qval", gp, sep = ".")] <= qval.th & 
             abs(res[, paste("cdiff", gp, sep = ".")]) > cdiff.th)]
-        significG = unique(annotFeat_long$Gene[annotFeat_long$distance < peak_distance & 
+        significG = unique(annotFeat_long$Gene[annotFeat_long$distanceToTSS < peak_distance & 
             annotFeat_long$ID %in% signific])
         over = res$ID[which(res[, paste("qval", gp, sep = ".")] <= qval.th & res[, 
             paste("cdiff", gp, sep = ".")] > cdiff.th)]
-        overG = unique(annotFeat_long$Gene[annotFeat_long$distance < peak_distance & 
+        overG = unique(annotFeat_long$Gene[annotFeat_long$distanceToTSS < peak_distance & 
             annotFeat_long$ID %in% over])
         under = res$ID[which(res[, paste("qval", gp, sep = ".")] <= qval.th & res[, 
             paste("cdiff", gp, sep = ".")] < -cdiff.th)]
-        underG = unique(annotFeat_long$Gene[annotFeat_long$distance < peak_distance & 
+        underG = unique(annotFeat_long$Gene[annotFeat_long$distanceToTSS < peak_distance & 
             annotFeat_long$ID %in% under])
         if (!is.null(use_peaks))
         {
@@ -316,11 +327,11 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
                 under_associated_peak = refined_annotation$peak_ID[refined_annotation$window_ID %in% 
                   under]
                 signific_associated_gene = refined_annotation$Gene[refined_annotation$peak_ID %in% 
-                  signific_associated_peak & refined_annotation$distance < peak_distance]
+                  signific_associated_peak & refined_annotation$distanceToTSS < peak_distance]
                 over_associated_gene = refined_annotation$Gene[refined_annotation$peak_ID %in% 
-                  over_associated_peak & refined_annotation$distance < peak_distance]
+                  over_associated_peak & refined_annotation$distanceToTSS < peak_distance]
                 under_associated_gene = refined_annotation$Gene[refined_annotation$peak_ID %in% 
-                  under_associated_peak & refined_annotation$distance < peak_distance]
+                  under_associated_peak & refined_annotation$distanceToTSS < peak_distance]
                 significG = unique(signific_associated_gene)
                 overG = unique(over_associated_gene)
                 underG = unique(under_associated_gene)
@@ -339,7 +350,7 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
             ind = which(enrich.test$`q-value` <= enrichment_qval)
             if (!length(ind))
             {
-                ind = 1:10
+                ind = seq_len(10)
             }
             Both[[i]] = enrich.test[ind, ]
         }
@@ -355,7 +366,7 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
             ind = which(enrich.test$`q-value` <= enrichment_qval)
             if (!length(ind))
             {
-                ind = 1:10
+                ind = seq_len(10)
             }
             Overexpressed[[i]] = enrich.test[ind, ]
         }
@@ -371,7 +382,7 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
             ind = which(enrich.test$`q-value` <= enrichment_qval)
             if (!length(ind))
             {
-                ind = 1:10
+                ind = seq_len(10)
             }
             Underexpressed[[i]] = enrich.test[ind, ]
         }
@@ -395,6 +406,14 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
 #'
 #' @importFrom DT datatable
 #' @importFrom tidyr unite
+#' 
+#' @examples
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
+#' scExp_cf = differential_analysis_scExp(scExp_cf)
+#' scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf)
+#' table_enriched_genes_scExp(scExp_cf)
 table_enriched_genes_scExp <- function(scExp, set = "Both", cell_cluster = "C1", 
     enr_class_sel = c("c1_positional", "c2_curated", "c3_motif", "c4_computational", 
         "c5_GO", "c6_oncogenic", "c7_immunologic", "hallmark"))

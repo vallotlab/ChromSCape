@@ -1,4 +1,5 @@
-## Authors : Pacôme Prompsy Title : Wrappers & function to create variety of plot
+## Authors : Pacôme Prompsy, Celine Vallot
+##Title : Wrappers & function to create variety of plot
 ## to uncover heterogeneity in single cell Dataset
 
 #' Plotting distribution of signal
@@ -9,32 +10,35 @@
 #' @param pseudo_counts 
 #' @param bins 
 #'
-#' @return
+#' @return A ggplot histogram representing the distribution of count per cell
 #' @export
 #'
-#' @examples
 #' 
 #' @import ggplot2
 #' @importFrom Matrix colSums
 #' @importFrom SummarizedExperiment assayNames
-plot_distribution_scExp <- function(scExp, raw = T, log10 = F, pseudo_counts = 1, 
+#' 
+#' @examples
+#' data("scExp")
+#' plot_distribution_scExp(scExp)
+plot_distribution_scExp <- function(scExp, raw = TRUE, log10 = FALSE, pseudo_counts = 1, 
     bins = 150)
     {
     
     stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(pseudo_counts))
-    if (!raw %in% c(T, F) | !log10 %in% c(T, F)) 
+    if (!raw %in% c(TRUE, FALSE) | !log10 %in% c(TRUE, FALSE)) 
         stop("ChromSCape::plot_distribution_scExp - raw and log10 must be true or false.")
-    if (raw == F && !("normcounts" %in% SummarizedExperiment::assayNames(scExp))) 
+    if (raw == FALSE && !("normcounts" %in% SummarizedExperiment::assayNames(scExp))) 
         stop("ChromSCape::plot_distribution_scExp - If raw is false, normcounts must not be empty - run normalize_scExp first.")
     
     if (raw) 
-        cell_cov_df = data.frame(coverage = Matrix::colSums(counts(scExp))) else cell_cov_df = data.frame(coverage = Matrix::colSums(normcounts(scExp)))
+        cell_cov_df = data.frame(coverageByCell = Matrix::colSums(counts(scExp))) else cell_cov_df = data.frame(coverageByCell = Matrix::colSums(normcounts(scExp)))
     
     if (log10) 
-        cell_cov_df$coverage = log10(cell_cov_df$coverage + pseudo_counts)
+        cell_cov_df$coverageByCell = log10(cell_cov_df$coverageByCell + pseudo_counts)
     
-    ggplot(cell_cov_df, aes(x = coverage)) + geom_histogram(color = "black", fill = "steelblue", 
-        bins = bins) + labs(x = "read coverage per cell") + theme(panel.grid.major = element_blank(), 
+    ggplot(cell_cov_df, aes(x = coverageByCell)) + geom_histogram(color = "black", fill = "steelblue", 
+        bins = bins) + labs(x = "read coverageByCell per cell") + theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"), 
         panel.border = element_rect(colour = "black", fill = NA))
 }
@@ -46,12 +50,22 @@ plot_distribution_scExp <- function(scExp, raw = T, log10 = F, pseudo_counts = 1
 #' @param color_by 
 #' @param color_df 
 #'
-#' @return
+#' @return A SingleCellExperiment with additionnal "color" columns in colData
 #' @export
 #'
-#' @examples
 #' @importFrom SingleCellExperiment colData
 #' @importFrom SummarizedExperiment colData
+#' 
+#' @examples
+#' data("scExp")
+#' scExp = colors_scExp(scExp,annotCol = c("sample_id","total_counts","batch_id"),
+#'  color_by =  c("sample_id","total_counts","batch_id"))
+#' 
+#' #Specific colors using a manually created data.frame :
+#' color_df = data.frame(sample_id=unique(scExp$sample_id),
+#'  sample_id_color=c("red","blue","green","yellow"))
+#' scExp = colors_scExp(scExp,annotCol="sample_id",color_by="sample_id",color_df=color_df)
+#' num_cell_before_cor_filt_scExp(scExp)
 colors_scExp <- function(scExp, annotCol = "sample_id", color_by = "sample_id", color_df = NULL)
 {
     
@@ -59,10 +73,10 @@ colors_scExp <- function(scExp, annotCol = "sample_id", color_by = "sample_id", 
     
     # initialization
     annot = as.data.frame(SingleCellExperiment::colData(scExp))
-    anocol <- annotToCol2(annotS = annot[, annotCol, drop = F], annotT = annot, 
-        plotLegend = F, categCol = NULL)
+    anocol <- annotToCol2(annotS = annot[, annotCol, drop = FALSE], annotT = annot, 
+        plotLegend = FALSE, categCol = NULL)
     SummarizedExperiment::colData(scExp)[, paste0(annotCol, "_color")] = as.data.frame(anocol, 
-        stringsAsFactors = F)[, annotCol]  # factor or not ?
+        stringsAsFactors = FALSE)[, annotCol]  # factor or not ?
     
     if (!is.null(color_df))
     {
@@ -71,7 +85,7 @@ colors_scExp <- function(scExp, annotCol = "sample_id", color_by = "sample_id", 
             stop("ChromSCape::color_scExp - color_by must be present in colnames of color_df is not null.")
         
         SummarizedExperiment::colData(scExp)[, paste0(annotCol, "_color")] = color_df[match(SingleCellExperiment::colData(scExp)[, 
-            color_by], color_df[, color_by]), paste0(color_by, "_color"), drop = F]
+            color_by], color_df[, color_by]), paste0(color_by, "_color"), drop = FALSE]
     }
     return(scExp)
 }
@@ -83,10 +97,11 @@ colors_scExp <- function(scExp, annotCol = "sample_id", color_by = "sample_id", 
 #' @param color_by 
 #' @param input_id_prefix 
 #'
-#' @return
+#' @return A data.frame with the feature levels and the colors of each level of this feature.
 #'
 #' @export
 #' @importFrom tibble rownames_to_column
+#' 
 get_color_dataframe_from_input <- function(input, levels_selected, color_by = c("sample_id", 
     "total_counts"), input_id_prefix = "color_")
     {
@@ -98,7 +113,7 @@ get_color_dataframe_from_input <- function(input, levels_selected, color_by = c(
 
     color_list <- eval(parse(text = color_list))
     # Transform into dataframe with right column names
-    color_df = as.matrix(color_list) %>% as.data.frame(stringsAsFactors = F) %>% 
+    color_df = as.matrix(color_list) %>% as.data.frame(stringsAsFactors = FALSE) %>% 
         tibble::rownames_to_column(color_by)
     color_df[, 2] = as.character(color_df[, 2])
     colnames(color_df)[2] = paste0(color_by, "_color")
@@ -115,14 +130,21 @@ get_color_dataframe_from_input <- function(input, levels_selected, color_by = c(
 #' @param select_x 
 #' @param select_y 
 #'
-#' @return
+#' @return A ggplot geom_point plot of reduced dimension 2D reprensentation 
 #' @export
 #'
 #' @examples
 #' @importFrom SingleCellExperiment reducedDim reducedDimNames colData
 #' @import ggplot2
 #' @importFrom colorRamps matlab.like
-
+#' 
+#' @examples
+#' data("scExp")
+#' plot_reduced_dim_scExp(scExp, color_by = "sample_id")
+#' plot_reduced_dim_scExp(scExp, color_by = "total_counts")
+#' plot_reduced_dim_scExp(scExp, reduced_dim = "UMAP")
+#' plot_reduced_dim_scExp(scExp, reduced_dim = "TSNE")
+#' 
 plot_reduced_dim_scExp <- function(scExp, color_by = "sample_id", reduced_dim = c("PCA", 
     "TSNE", "UMAP"), select_x = "Component_1", select_y = "Component_2")
     {
@@ -177,12 +199,18 @@ plot_reduced_dim_scExp <- function(scExp, color_by = "sample_id", reduced_dim = 
 #' @param corColors 
 #' @param color_by 
 #'
-#' @return
+#' @return A heatmap of cell to cell correlation, grouping cells by
+#' hierarchical clustering.
 #' @export
 #'
-#' @examples
 #' @importFrom SingleCellExperiment reducedDim reducedDimNames colData
 #' @importFrom grDevices colorRampPalette
+#' 
+#' @examples
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' plot_heatmap_scExp(scExp_cf, color_by = "sample_id")
+#' 
 plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (grDevices::colorRampPalette(c("royalblue", 
     "white", "indianred1")))(256),
     color_by = NULL)
@@ -200,18 +228,18 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (grDevices
         stop("ChromSCape::plot_heatmap_scExp - Dendrogram has different number of cells than dataset.")
 
     anocol = as.matrix(SingleCellExperiment::colData(scExp)[, grep("_color", colnames(SingleCellExperiment::colData(scExp))), 
-        drop = F])
+        drop = FALSE])
     colnames(anocol) = gsub("_color","",colnames(anocol))
     
     if(!is.null(color_by)) {
         if(length(intersect(color_by,colnames(anocol)))>0) 
-            anocol = anocol[,color_by,drop=F]
+            anocol = anocol[,color_by,drop=FALSE]
     }
     
     return(
         hclustAnnotHeatmapPlot(x = SingleCellExperiment::reducedDim(scExp, "Cor")[scExp@metadata[[name_hc]]$order, 
         scExp@metadata[[name_hc]]$order], hc = scExp@metadata[[name_hc]], hmColors = corColors, 
-        anocol = as.matrix(anocol[scExp@metadata[[name_hc]]$order, ]), xpos = c(0.15, 
+        anocol = anocol[scExp@metadata[[name_hc]]$order, ,drop=FALSE], xpos = c(0.15, 
             0.9, 0.164, 0.885), ypos = c(0.1, 0.5, 0.5, 0.6, 0.62, 0.95), dendro.cex = 0.04, 
         xlab.cex = 0.8, hmRowNames = FALSE)
     )
@@ -222,10 +250,15 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (grDevices
 #'
 #' @param scExp_cf 
 #'
-#' @return
+#' @return A barplot summary of differential analysis
 #' @export
 #'
 #' @examples
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
+#' scExp_cf = differential_analysis_scExp(scExp_cf)
+#' plot_differential_summary_scExp(scExp_cf)
 plot_differential_summary_scExp <- function(scExp_cf)
 {
     
@@ -237,8 +270,8 @@ plot_differential_summary_scExp <- function(scExp_cf)
     summary = scExp_cf@metadata$diff$summary
     myylim <- range(c(summary["over", ], -summary["under", ]))
     barplot(summary["over", ], col = "red", las = 1, ylim = myylim, main = "Differentially bound regions", 
-        ylab = "Number of regions", axes = F)
-    barplot(-summary["under", ], col = "forestgreen", ylim = myylim, add = T, axes = F, 
+        ylab = "Number of regions", axes = FALSE)
+    barplot(-summary["under", ], col = "forestgreen", ylim = myylim, add = TRUE, axes = FALSE, 
         names.arg = "")
     z <- axis(2, pos = -10)
     axis(2, at = z, labels = abs(z), las = 1)
@@ -249,10 +282,16 @@ plot_differential_summary_scExp <- function(scExp_cf)
 #' @param scExp_cf 
 #' @param cell_cluster 
 #'
-#' @return
+#' @return A barplot of H1 distribution
 #' @export
 #'
+#' @importFrom graphics hist barplot axis plot abline
 #' @examples
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
+#' scExp_cf = differential_analysis_scExp(scExp_cf)
+#' plot_differential_H1_scExp(scExp_cf)
 plot_differential_H1_scExp <- function(scExp_cf, cell_cluster = "C1")
 {
     
@@ -280,10 +319,15 @@ plot_differential_H1_scExp <- function(scExp_cf, cell_cluster = "C1")
 #' @param cdiff.th 
 #' @param qval.th 
 #'
-#' @return
+#' @return A volcano plot of differential analysis of a specific cluster
 #' @export
 #'
 #' @examples
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
+#' scExp_cf = differential_analysis_scExp(scExp_cf)
+#' plot_differential_volcano_scExp(scExp_cf,"C1")
 plot_differential_volcano_scExp <- function(scExp_cf, cell_cluster = "C1", cdiff.th = 1, 
     qval.th = 0.01)
     {
@@ -324,10 +368,11 @@ plot_differential_volcano_scExp <- function(scExp_cf, cell_cluster = "C1", cdiff
 #'
 #' @importFrom grDevices hcl
 #' @export
+#' @return A color in HEX format 
 gg_fill_hue <- function(n)
 {
     hues = seq(15, 375, length = n + 1)
-    grDevices::hcl(h = hues, l = 65, c = 100)[1:n]
+    grDevices::hcl(h = hues, l = 65, c = 100)[seq_len(n)]
 }
 
 
@@ -337,10 +382,9 @@ gg_fill_hue <- function(n)
 #'
 #' @param cname 
 #'
-#' @return
+#' @return The HEX color code of a particular color
 #' @importFrom grDevices col2rgb rgb
 #'
-#' @examples
 col2hex <- function(cname)
 {
     colMat <- grDevices::col2rgb(cname)
@@ -354,13 +398,17 @@ col2hex <- function(cname)
 #'
 #' @param cname 
 #'
-#' @return
+#' @return The consensus score for each cluster for each k as a barplot
 #' @importFrom dplyr as_tibble
 #' @import ggplot2
 #' 
 #' @export
 #'
 #' @examples
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = consensus_clustering_scExp(scExp_cf)
+#' plot_cluster_consensus_scExp(scExp_cf)
 plot_cluster_consensus_scExp <- function(scExp)
 {
     stopifnot(is(scExp,"SingleCellExperiment"))

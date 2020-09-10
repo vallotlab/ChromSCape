@@ -2,9 +2,12 @@
 #'
 #' @param m 
 #'
-#' @return
+#' @return A dist object
 #' @importFrom stats cor as.dist
 #'
+#' @examples
+#' m = matrix(runif(100),runif(100),ncol=100,nrow=100)
+#' distPearson(m)
 distPearson <- function(m)
 {
     stats::as.dist(1 - stats::cor(t(m), method = "pearson"))
@@ -14,28 +17,40 @@ distPearson <- function(m)
 #'
 #' @param dataMat 
 #' @param annot 
-#' @param ref 
+#' @param ref_group 
 #' @param groups 
 #' @param featureTab 
 #' @param block 
 #'
-#' @return
+#' @return A dataframe containing the foldchange and p.value of each feature
 #' @importFrom stats p.adjust wilcox.test
 #' @export
-#'
-CompareWilcox <- function(dataMat = NULL, annot = NULL, ref = NULL, groups = NULL, 
+#' @authors Eric Letouze & Celine Vallot
+#' 
+#' @examples
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
+#' featureTab = as.data.frame(rowRanges(scExp_cf))
+#' rownames(featureTab) = featureTab$ID
+#' ref_group = list("C1"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C1")])
+#' groups = list("C2"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C2")])
+#' myres = CompareWilcox(as.matrix(normcounts(scExp_cf)),annot=as.data.frame(colData(scExp_cf)),
+#'               ref_group=ref_group,groups=groups, featureTab=featureTab)
+#' 
+CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL, groups = NULL, 
     featureTab = NULL, block = NULL)
     {
     res = featureTab
     # res = res[order(res$ID), ] dataMat = dataMat[order(row.names(dataMat)), ]
-    for (k in 1:length(groups))
+    for (k in seq_along(groups))
     {
-        if (length(ref) == 1)
+        if (length(ref_group) == 1)
         {
-            refsamp <- ref[[1]]
+            refsamp <- ref_group[[1]]
         } else
         {
-            refsamp <- ref[[k]]
+            refsamp <- ref_group[[k]]
         }
         gpsamp <- groups[[k]]
         
@@ -68,7 +83,7 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref = NULL, groups = NUL
         res <- data.frame(res, Rank.gpsamp, Count.gpsamp, cdiff.gpsamp, pval.gpsamp, 
             qval.gpsamp)
         
-        colnames(res) <- sub("ref", names(ref)[min(c(k, length(ref)))], sub("gpsamp", 
+        colnames(res) <- sub("ref", names(ref_group)[min(c(k, length(ref_group)))], sub("gpsamp", 
             names(groups)[k], colnames(res)))
     }
     res
@@ -86,26 +101,37 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref = NULL, groups = NUL
 #' @param norm_method 
 #' @param groups List containing the IDs of groups to be compared with the reference samples. Names of the vectors will be used in the results table
 #'
-#' @return Results table
+#' @return A dataframe containing the foldchange and p.value of each feature
 #'
 #' @importFrom edgeR DGEList calcNormFactors estimateDisp glmFit glmLRT
-#' @author Eric Letouze & Celine Vallot
+#' @authors Eric Letouze & Celine Vallot
+#' 
 #' @examples
+#' data("scExp")
+#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
+#' featureTab = as.data.frame(rowRanges(scExp_cf))
+#' rownames(featureTab) = featureTab$ID
+#' ref_group = list("C1"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C1")])
+#' groups = list("C2"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C2")])
+#' myres = CompareedgeRGLM(as.matrix(counts(scExp_cf)),annot=as.data.frame(colData(scExp_cf)),
+#'               ref_group=ref_group,groups=groups, featureTab=featureTab)
+#' 
 CompareedgeRGLM <- function(dataMat=NULL,
-                                 annot=NULL,
-                                 ref=NULL,
-                                 groups=NULL,
-                                 featureTab=NULL,
-                                 norm_method="RLE"
+                            annot=NULL,
+                            ref_group=NULL,
+                            groups=NULL,
+                            featureTab=NULL,
+                            norm_method="upperquartile"
 )
 {
     res <- featureTab
-    for(k in 1:length(groups))
+    for(k in seq_along(groups))
     {
-        print(paste("Comparing",names(ref)[min(c(k,length(ref)))],"versus",names(groups)[k]))
-        if(length(ref)==1){refsamp <- ref[[1]]}else{refsamp <- ref[[k]]}
+        print(paste("Comparing",names(ref_group)[min(c(k,length(ref_group)))],"versus",names(groups)[k]))
+        if(length(ref_group)==1){refsamp <- ref_group[[1]]}else{refsamp <- ref_group[[k]]}
         gpsamp <- groups[[k]]
-        annot. <- annot[c(refsamp,gpsamp),1:2];annot.$Condition <- c(rep("ref",length(refsamp)),rep("gpsamp",length(gpsamp)))
+        annot. <- annot[c(refsamp,gpsamp),seq_len(2)];annot.$Condition <- c(rep("ref",length(refsamp)),rep("gpsamp",length(gpsamp)))
         mat.<-dataMat [,c(as.character(refsamp),as.character(gpsamp))]
         edgeRgroup <- c(rep(1,length(refsamp)),rep(2,length(gpsamp)))	
         y <- edgeR::DGEList(counts=mat.,group=edgeRgroup)
@@ -118,7 +144,7 @@ CompareedgeRGLM <- function(dataMat=NULL,
         colnames(pvals) <- c("log2FC.gpsamp","logCPM.gpsamp","LR.gpsamp","pval.gpsamp")
         pvals$qval.gpsamp <- stats::p.adjust(pvals$pval.gpsamp, method = "BH")
         res <- data.frame(res,pvals[,c("log2FC.gpsamp","logCPM.gpsamp","pval.gpsamp","qval.gpsamp")])
-        colnames(res) <- sub("ref",names(ref)[min(c(k,length(ref)))],sub("gpsamp",names(groups)[k],colnames(res)))		
+        colnames(res) <- sub("ref",names(ref_group)[min(c(k,length(ref_group)))],sub("gpsamp",names(groups)[k],colnames(res)))		
         
     }
     
@@ -133,8 +159,11 @@ CompareedgeRGLM <- function(dataMat=NULL,
 #' @param newmin 
 #' @param newmax 
 #'
-#' @return
-#'
+#' @return A matrix with values scaled between newmin and newmax
+#' @examples
+#' mat = matrix(runif(100),runif(100),ncol=1,nrow=100)
+#' mat. = changeRange(mat,0,1)
+#' summary(mat.)
 changeRange <- function(v, newmin = 1, newmax = 10)
 {
     oldmin <- min(v, na.rm = TRUE)
@@ -147,10 +176,13 @@ changeRange <- function(v, newmin = 1, newmax = 10)
 #' @param pv 
 #' @param lambda 
 #'
-#' @return
+#' @return H1 proportion value
 #' @export
 #'
 #' @examples
+#' p.value = runif(100)
+#' H1proportion(p.value) = changeRange(mat,0,1)
+#' 
 H1proportion <- function(pv = NA, lambda = 0.5)
 {
     pi1 = 1 - mean(pv > lambda, na.rm = TRUE)/(1 - lambda)
@@ -176,8 +208,9 @@ H1proportion <- function(pv = NA, lambda = 0.5)
 #' @param silent 
 #'
 #' @importFrom stats phyper
-#' @return
-enrichmentTest <- function(gene.sets, mylist, possibleIds, sep = ";", silent = F)
+#' @return A dataframe with the gene sets and their enrichment p.value
+#' 
+enrichmentTest <- function(gene.sets, mylist, possibleIds, sep = ";", silent = FALSE)
 {
     possibleIds <- unique(possibleIds)
     mylist <- unique(mylist)
@@ -200,13 +233,13 @@ enrichmentTest <- function(gene.sets, mylist, possibleIds, sep = ";", silent = F
         y <- intersect(x, mylist)
         nx <- length(x)
         ny <- length(y)
-        pval <- stats::phyper(ny - 1, nx, nids - nx, n, lower.tail = F)
+        pval <- stats::phyper(ny - 1, nx, nids - nx, n, lower.tail = FALSE)
         c(nx, ny, pval, paste(y, collapse = sep))
     }
     tmp <- as.data.frame(t(sapply(gene.sets, fun)))
     rownames(tmp) <- names(gene.sets)
-    for (i in 1:3) tmp[, i] <- as.numeric(as.character(tmp[, i]))
-    tmp <- data.frame(tmp[, 1:3], p.adjust(tmp[, 3], method = "BH"), tmp[, 4])
+    for (i in seq_len(3)) tmp[, i] <- as.numeric(as.character(tmp[, i]))
+    tmp <- data.frame(tmp[, seq_len(3)], p.adjust(tmp[, 3], method = "BH"), tmp[, 4])
     names(tmp) <- c("Nb_of_genes", "Nb_of_deregulated_genes", "p-value", "q-value", 
         "Deregulated_genes")
     tmp
@@ -225,7 +258,9 @@ enrichmentTest <- function(gene.sets, mylist, possibleIds, sep = ";", silent = F
 #' @param hmRowNames 
 #' @param hmRowNames.cex 
 #'
-#' @return
+#' @importFrom  graphics par plot image axis
+#' 
+#' @return A heatmap
 #'
 hclustAnnotHeatmapPlot <- function(x = NULL, hc = NULL, hmColors = NULL, anocol = NULL, 
     xpos = c(0.1, 0.9, 0.114, 0.885), ypos = c(0.1, 0.5, 0.5, 0.6, 0.62, 0.95), dendro.cex = 1, 
@@ -257,22 +292,14 @@ hclustAnnotHeatmapPlot <- function(x = NULL, hc = NULL, hmColors = NULL, anocol 
 #' @param drawLines 
 #' @param ... 
 #'
-#' @return
+#' @importFrom  graphics image axis abline par
+#' @return A rectangular image
 #'
 imageCol <- function(matcol = NULL, strat = NULL, xlab.cex = 0.5, ylab.cex = 0.5, 
     drawLines = c("none", "h", "v", "b")[1], ...)
     {
-    if (is.null(ncol(matcol)))
-    {
-        matcol <- data.frame(matcol)
-        colnames(matcol) = colnames(anocol)
-    }
-    matcol <- matcol[, ncol(matcol):1]
-    if (is.null(ncol(matcol)))
-    {
-        matcol <- data.frame(matcol)
-        colnames(matcol) = colnames(anocol)
-    }
+    stopifnot(!is.null(ncol(matcol)))
+    matcol <- matcol[, ncol(matcol):1,drop=FALSE]
     csc <- matcol
     csc.colors <- matrix()
     csc.names <- names(table(csc))
@@ -295,13 +322,21 @@ imageCol <- function(matcol = NULL, strat = NULL, xlab.cex = 0.5, ylab.cex = 0.5
     image(csc, col = as.vector(csc.colors), axes = FALSE, ...)
     if (xlab.cex != 0)
     {
-        axis(2, 0:(dim(csc)[2] - 1)/(dim(csc)[2] - 1), colnames(matcol), las = 2, 
-            tick = FALSE, cex.axis = xlab.cex, ...)
+        if(ncol(csc)>1) axis(2, 0:(dim(csc)[2] - 1)/(dim(csc)[2] - 1),
+                             colnames(matcol), las = 2, 
+                             tick = FALSE, cex.axis = xlab.cex, ...)
+        if(ncol(csc)==1) axis(2, 0,
+                              colnames(matcol), las = 2, 
+                              tick = FALSE, cex.axis = xlab.cex, ...)
     }
     if (ylab.cex != 0)
     {
-        axis(3, 0:(dim(csc)[1] - 1)/(dim(csc)[1] - 1), rownames(matcol), las = 2, 
-            tick = FALSE, cex.axis = ylab.cex, ...)
+        if(nrow(csc)>1)  axis(3, 0:(dim(csc)[1] - 1)/(dim(csc)[1] - 1),
+                              rownames(matcol), las = 2, 
+                              tick = FALSE, cex.axis = ylab.cex, ...)
+        if(nrow(csc)==1)  axis(3, 0,
+                              rownames(matcol), las = 2, 
+                              tick = FALSE, cex.axis = ylab.cex, ...)
     }
     if (drawLines %in% c("h", "b")) 
         abline(h = -0.5:(dim(csc)[2] - 1)/(dim(csc)[2] - 1))
@@ -312,7 +347,7 @@ imageCol <- function(matcol = NULL, strat = NULL, xlab.cex = 0.5, ylab.cex = 0.5
     if (!is.null(strat))
     {
         z <- factor(matcol[, strat])
-        levels(z) <- 1:length(levels(z))
+        levels(z) <- seq_along(levels(z))
         z <- vectorToSegments(as.numeric(z))
         abline(v = changeRange(c(0.5, z$Ind_K + 0.5)/max(z$Ind_K), newmin = par()$usr[1], 
             newmax = par()$usr[2]), lwd = 2, lty = 2)
@@ -332,10 +367,14 @@ imageCol <- function(matcol = NULL, strat = NULL, xlab.cex = 0.5, ylab.cex = 0.5
 #' @param plotLegend 
 #' @param plotLegendFile 
 #'
-#' @return
-#'
+#' @importFrom graphics par plot legend image 
+#' @return A matrix of continuous or discrete colors
+#' @examples
+#' data("scExp")
+#' annotToCol2(colData(scExp))
+#' 
 annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), anotype = NULL, 
-    maxnumcateg = 2, categCol = NULL, quantitCol = NULL, plotLegend = T, plotLegendFile = NULL)
+    maxnumcateg = 2, categCol = NULL, quantitCol = NULL, plotLegend = TRUE, plotLegendFile = NULL)
     {
     if (is.null(ncol(annotS)))
     {
@@ -343,13 +382,13 @@ annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), anoty
         colnames(annotS) = annotCol
         rownames(annotS) = rownames(annotT)
     }
-    for (j in 1:ncol(annotS)) annotS[which(annotS[, j] %in% missing), j] <- NA
+    for (j in seq_len(ncol(annotS)) ) annotS[which(annotS[, j] %in% missing), j] <- NA
     if (is.null(anotype))
     {
         anotype <- rep("categ", ncol(annotS))
         names(anotype) <- colnames(annotS)
-        classes <- sapply(1:ncol(annotS), function(j) class(annotS[, j]))
-        nmodal <- sapply(1:ncol(annotS), function(j) length(unique(setdiff(annotS[, 
+        classes <- sapply(seq_len(ncol(annotS)), function(j) class(annotS[, j]))
+        nmodal <- sapply(seq_len(ncol(annotS)), function(j) length(unique(setdiff(annotS[, 
             j], NA))))
         anotype[which(classes %in% c("integer", "numeric") & nmodal > maxnumcateg)] <- "quantit"
         anotype[which(nmodal == 2)] <- "binary"
@@ -381,7 +420,7 @@ annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), anoty
         if (plotLegend)
         {
             par(mar = c(0, 0, 0, 0))
-            plot(-10, axes = F, xlim = c(0, 5), ylim = c(0, 5), xlab = "", ylab = "")
+            plot(-10, axes = FALSE, xlim = c(0, 5), ylim = c(0, 5), xlab = "", ylab = "")
             legend(1, 5, legend = classes, fill = fill, title = colnames(anocol)[j], 
                 xjust = 0.5, yjust = 1)
         }
@@ -402,14 +441,14 @@ annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), anoty
             names(memcol)[length(memcol)] <- new
         }
         anocol[, j] <- as.character(anocol[, j])
-        for (z in 1:length(memcol))
+        for (z in seq_along(memcol))
         {
             anocol[which(anocol[, j] == names(memcol)[z]), j] <- memcol[z]
         }
         if (plotLegend)
         {
             par(mar = c(0, 0, 0, 0))
-            plot(-10, axes = F, xlim = c(0, 5), ylim = c(0, 5), xlab = "", ylab = "")
+            plot(-10, axes = FALSE, xlim = c(0, 5), ylim = c(0, 5), xlab = "", ylab = "")
             classes <- intersect(names(memcol), annotS[, j])
             fill <- memcol[classes]
             legend(1, 5, legend = classes, fill = fill, title = colnames(anocol)[j], 
@@ -435,25 +474,24 @@ annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), anoty
         {
             par(mar = c(8, 2, 5, 1))
             lims <- seq(-1, 1, length.out = 200)
-            image(matrix(lims, ncol = 1), col = colrange, axes = F, xlab = colnames(anocol)[j])
+            image(matrix(lims, ncol = 1), col = colrange, axes = FALSE, xlab = colnames(anocol)[j])
         }
     }
     if (plotLegend) 
         dev.off()
-    for (j in 1:ncol(anocol)) anocol[which(is.na(anocol[, j])), j] <- "white"
+    for (j in seq_len(ncol(anocol))) anocol[which(is.na(anocol[, j])), j] <- "white"
     as.matrix(anocol)
 }
 
-#' Title
+#' groupMat
 #'
 #' @param mat 
 #' @param margin 
 #' @param groups 
 #' @param method 
 #'
-#' @return
+#' @return A grouped matrix
 #'
-#' @examples
 groupMat <- function(mat = NA, margin = 1, groups = NA, method = "mean")
 {
     if (!method %in% c("mean", "median"))
@@ -461,12 +499,12 @@ groupMat <- function(mat = NA, margin = 1, groups = NA, method = "mean")
         print("Method must be mean or median")
         return()
     }
-    if (!margin %in% 1:2)
+    if (!margin %in% seq_len(2))
     {
         print("Margin must be 1 or 2")
         return()
     }
-    for (i in 1:length(groups))
+    for (i in seq_along(groups))
     {
         if (margin == 1)
         {
