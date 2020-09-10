@@ -5,7 +5,7 @@ library(testthat)
 # Functions for testing purposes
 create_scDataset_raw <- function(cells=300,features=600,
                                  featureType = c("window","peak","gene"),
-                                sparse=T, nsamp=4, ref = "hg38",batch_id = rep(1,nsamp)) {
+                                sparse=TRUE, nsamp=4, ref = "hg38",batch_id = rep(1,nsamp)) {
   
   stopifnot(featureType %in% c("window","peak","gene"), ref %in% c("mm10","hg38"),
             nsamp >= 1, cells >= nsamp, features >=1, length(batch_id) == nsamp)
@@ -43,7 +43,7 @@ create_scDataset_raw <- function(cells=300,features=600,
     chr_ranges_list = GRangesList()
     for(i in 1:length(peaks)){
       chr_ranges = unlist(tileGenome(setNames(width(chr),seqnames(chr)),
-                                     tilewidth = size_peaks[i], cut.last.tile.in.chrom = F))
+                                     tilewidth = size_peaks[i], cut.last.tile.in.chrom = FALSE))
       chr_ranges_list[[i]] = chr_ranges[sample(1:length(chr_ranges),size = peaks[i]),]
     }
     chr_ranges = GenomicRanges::sort.GenomicRanges(unlist(chr_ranges_list))[1:features]
@@ -54,7 +54,7 @@ create_scDataset_raw <- function(cells=300,features=600,
   }
   if(featureType[1] == "gene") {
     eval(parse(text = paste0("chr <- ChromSCape::",ref,".GeneTSS"))) #load species chromsizes
-    features_names = as.character(sample(chr$gene,features,replace = F))
+    features_names = as.character(sample(chr$gene,features,replace = FALSE))
   }
   vec = rpois(cells*features,0.5) #Add count to values > 0, iteratively
   for(i in 1:10) vec[vec >= i] = vec[vec >= i]  +  i^2*rpois(length(vec[vec >= i]),0.5)
@@ -127,11 +127,11 @@ test_that("Filtering lowly correlated cells - Right inputs.", {
                   "SingleCellExperiment")
   
   # No filtering :
-  expect_equal(dim(filter_correlated_cell_scExp(scExp, corr_threshold = 0,verbose = F )),
+  expect_equal(dim(filter_correlated_cell_scExp(scExp, corr_threshold = 0,verbose = FALSE )),
                dim(scExp))
-  expect_equal(dim(filter_correlated_cell_scExp(scExp, percent_correlation = 0, verbose = F)),
+  expect_equal(dim(filter_correlated_cell_scExp(scExp, percent_correlation = 0, verbose = FALSE)),
                dim(scExp))
-  expect_lt(ncol(filter_correlated_cell_scExp(scExp,percent_correlation = 5, verbose = F)),
+  expect_lt(ncol(filter_correlated_cell_scExp(scExp,percent_correlation = 5, verbose = FALSE)),
                    ncol(scExp))
   
 })
@@ -157,7 +157,7 @@ test_that("Consensus Clustering - Right inputs.", {
 
   expect_equal(file.exists("tests/test_scChIP/consensus_test/consensus.pdf"),TRUE)
   expect_equal(file.exists("tests/test_scChIP/consensus_test/icl001.png"),TRUE)
-  if(dir.exists("tests/test_scChIP/consensus_test")) unlink("tests/test_scChIP/consensus_test",recursive = T)
+  if(dir.exists("tests/test_scChIP/consensus_test")) unlink("tests/test_scChIP/consensus_test",recursive = TRUE)
   
   # No filtering :
   expect_is(scExp_cf@metadata$consclust, "list")

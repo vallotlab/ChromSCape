@@ -17,7 +17,7 @@ scExp = feature_annotation_scExp(scExp,ref = "hg38")
 
 scExp = correlation_and_hierarchical_clust_scExp(scExp)
 
-scExp_cf = filter_correlated_cell_scExp(scExp,random_iter = 10, verbose = F)
+scExp_cf = filter_correlated_cell_scExp(scExp,random_iter = 10, verbose = FALSE)
 
 scExp_cf = consensus_clustering_scExp(scExp_cf, prefix = "",reps = 50, seed = 3.14)
 
@@ -58,7 +58,7 @@ test_that("Differential Analysis - Right inputs.", {
 
 
 scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf, enrichment_qval = 0.1, ref = "hg38", qval.th = 0.8, cdiff.th = 0.3,
-                                              peak_distance = 1000, use_peaks = F)
+                                              peak_distance = 1000, use_peaks = FALSE)
 
 test_that("GSEA - Wrong inputs.", {
   expect_error(gene_set_enrichment_analysis_scExp(NULL))
