@@ -9,14 +9,20 @@ subsample_scExp(scExp, n_cells = 500)
 \arguments{
 \item{scExp}{A SingleCellExperiment}
 
-\item{n_cells}{An integer number of cells to subsample for each sample [500]}
+\item{n_cells}{An integer number of cells to subsample for each sample \link{500}}
 }
 \value{
-
+A subsampled SingleCellExperiment
 }
 \description{
 Randomly sample x cells from each sample in a SingleCellExperiment to return
 a subsampled SingleCellExperiment with all samples having maximum n cells. If
 n is higher than the number of cell in a sample, this sample will not be
 subsampled.
+}
+\examples{
+scExp = create_scExp(create_scDataset_raw()$mat, create_scDataset_raw()$annot)
+scExp_sub = subsample_scExp(scExp,50)
+num_cell_scExp(scExp_sub)
+
 }

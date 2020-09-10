@@ -3,7 +3,7 @@
 \name{create_scExp}
 \alias{create_scExp}
 \title{Wrapper to create the single cell experiment from count matrix and feature
- dataframe}
+dataframe}
 \usage{
 create_scExp(
   datamatrix,
@@ -22,25 +22,27 @@ create_scExp(
 \item{annot}{A data.frame containing informations on cells. Should have the
 same number of rows as the number of columns in datamatrix.}
 
-\item{remove_zero_cells}{remove cells with zero counts ? [T]}
+\item{remove_zero_cells}{remove cells with zero counts ? \link{TRUE}}
 
-\item{remove_zero_features}{remove cells with zero counts ? [T]}
+\item{remove_zero_features}{remove cells with zero counts ? \link{TRUE}}
 
-\item{remove_non_canonical}{remove non canonical chromosomes ?[T]}
+\item{remove_non_canonical}{remove non canonical chromosomes ?\link{TRUE}}
 
-\item{remove_chr_M}{remove chromosomes M ? [T]}
+\item{remove_chr_M}{remove chromosomes M ? \link{TRUE}}
 
-\item{verbose}{[TRUE]}
+\item{verbose}{\link{TRUE}}
 }
 \value{
 Returns a SingleCellExperiment object.
 }
 \description{
-Create the single cell experiment from (sparse) datamatrix and feature 
+Create the single cell experiment from (sparse) datamatrix and feature
 dataframe containing feature names and location.
 Also optionally removes zero count Features, zero count Cells, non canconical
- chromosomes, and chromosome M. Calculates QC Metrics (scran).
+chromosomes, and chromosome M. Calculates QC Metrics (scran).
 }
 \examples{
+scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
+scExp
 
 }

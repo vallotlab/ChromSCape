@@ -27,7 +27,7 @@ imageCol(
 \item{...}{}
 }
 \value{
-
+A rectangular image
 }
 \description{
 imageCol

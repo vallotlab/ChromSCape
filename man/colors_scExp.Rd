@@ -21,8 +21,19 @@ colors_scExp(
 \item{color_df}{}
 }
 \value{
-
+A SingleCellExperiment with additionnal "color" columns in colData
 }
 \description{
 Adding colors to cells & features
+}
+\examples{
+data("scExp")
+scExp = colors_scExp(scExp,annotCol = c("sample_id","total_counts","batch_id"),
+ color_by =  c("sample_id","total_counts","batch_id"))
+
+#Specific colors using a manually created data.frame :
+color_df = data.frame(sample_id=unique(scExp$sample_id),
+ sample_id_color=c("red","blue","green","yellow"))
+scExp = colors_scExp(scExp,annotCol="sample_id",color_by="sample_id",color_df=color_df)
+num_cell_before_cor_filt_scExp(scExp)
 }

@@ -16,8 +16,14 @@ genomic coordinates.}
 }
 \value{
 A SingleCellExperiment object containing normalized counts.
- (See ?normcounts())
+(See ?normcounts())
 }
 \description{
 Normalize counts
+}
+\examples{
+scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
+scExp = normalize_scExp(scExp)
+head(normcounts(scExp))
+
 }

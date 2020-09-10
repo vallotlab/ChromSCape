@@ -6,8 +6,8 @@
 \usage{
 plot_distribution_scExp(
   scExp,
-  raw = T,
-  log10 = F,
+  raw = TRUE,
+  log10 = FALSE,
   pseudo_counts = 1,
   bins = 150
 )
@@ -24,11 +24,12 @@ plot_distribution_scExp(
 \item{bins}{}
 }
 \value{
-
+A ggplot histogram representing the distribution of count per cell
 }
 \description{
 Plotting distribution of signal
 }
 \examples{
-
+data("scExp")
+plot_distribution_scExp(scExp)
 }

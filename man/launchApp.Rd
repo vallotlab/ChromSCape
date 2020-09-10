@@ -6,6 +6,9 @@
 \usage{
 launchApp()
 }
+\value{
+Launches the shiny application
+}
 \description{
 Launch ChromSCape
 }

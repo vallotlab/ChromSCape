@@ -4,7 +4,7 @@
 \alias{enrichmentTest}
 \title{enrichmentTest}
 \usage{
-enrichmentTest(gene.sets, mylist, possibleIds, sep = ";", silent = F)
+enrichmentTest(gene.sets, mylist, possibleIds, sep = ";", silent = FALSE)
 }
 \arguments{
 \item{gene.sets}{}
@@ -18,7 +18,7 @@ enrichmentTest(gene.sets, mylist, possibleIds, sep = ";", silent = F)
 \item{silent}{}
 }
 \value{
-
+A dataframe with the gene sets and their enrichment p.value
 }
 \description{
 enrichmentTest

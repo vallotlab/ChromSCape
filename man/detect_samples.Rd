@@ -7,13 +7,20 @@
 detect_samples(barcodes, nb_samples = 1)
 }
 \arguments{
-\item{barcodes}{}
-
 \item{nb_samples}{}
 }
 \value{
 character vector of sample names the same length as cell labels
 }
 \description{
-Heuristic discovery of samples based on cell labels
+Identify a fixed number of common string (samples) in a set of varying strings (cells).
+E.g. in the set "Sample1_cell1","Sample1_cell2","Sample2_cell1","Sample2_cell2" and with
+nb_samples=2, the function returns "Sample1","Sample1","Sample2","Sample2".
+}
+\examples{
+
+barcodes = c(paste0("HBCx22_BC_",seq_len(100)),
+paste0("mouse_sample_XX",208:397))
+samples = detect_samples(barcodes, nb_samples=2)
+
 }

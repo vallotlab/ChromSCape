@@ -7,10 +7,10 @@
 \format{
 mm10.GeneTSS - a data frame with 24 rows and 3 variables:
 \describe{
-  \item{chr}{Chromosome name}
-  \item{start}{TSS start}
-  \item{end}{TSS end}
-  \item{gene}{Gene symbol}
+\item{chr}{Chromosome name}
+\item{start}{TSS start}
+\item{end}{TSS end}
+\item{gene}{Gene symbol}
 }
 }
 \usage{

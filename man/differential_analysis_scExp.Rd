@@ -16,12 +16,12 @@ differential_analysis_scExp(
 \arguments{
 \item{scExp}{A SingleCellExperiment object containing consclust with selected number of cluster.}
 
-\item{de_type}{Type of comparisons. Either 'one_vs_rest', to compare each cluster against all others, or 
-'pairwise' to make 1 to 1 comparisons. ['one_vs_rest']}
+\item{de_type}{Type of comparisons. Either 'one_vs_rest', to compare each cluster against all others, or
+'pairwise' to make 1 to 1 comparisons. \link{'one_vs_rest'}}
 
-\item{qval.th}{Adjusted p-value threshold. [0.01]}
+\item{qval.th}{Adjusted p-value threshold. \link{0.01}}
 
-\item{cdiff.th}{Fold change threshold. [1]}
+\item{cdiff.th}{Fold change threshold. \link{1}}
 
 \item{block}{}
 }
@@ -33,10 +33,17 @@ Based on clusters of cell defined previously, runs non-parametric Wilcoxon Rank 
 find significantly depleted or enriched features, in 'one_vs_rest' mode or 'pairwise' mode.
 In pairwise mode, each cluster is compared to all other cluster individually, and then pairwise
 comparisons between clusters are combined to find overall differential features using combineMarkers
- function from scran.
+function from scran.
 }
 \details{
-This functions takes as input a SingleCellExperiment object with consclust, the type of comparison, either 
-'one_vs_rest' or 'pairwise', the adjusted p-value threshold (qval.th) and the fold-change threshold (cdiff.th). 
+This functions takes as input a SingleCellExperiment object with consclust, the type of comparison, either
+'one_vs_rest' or 'pairwise', the adjusted p-value threshold (qval.th) and the fold-change threshold (cdiff.th).
 It outputs a SingleCellExperiment object containing a differential list.
+}
+\examples{
+data("scExp")
+scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+scExp_cf = choose_cluster_scExp(scExp_cf,nclust=3,consensus=FALSE)
+scExp_cf = differential_analysis_scExp(scExp_cf)
+
 }

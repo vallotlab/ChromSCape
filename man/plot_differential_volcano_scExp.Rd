@@ -21,8 +21,15 @@ plot_differential_volcano_scExp(
 \item{qval.th}{}
 }
 \value{
-
+A volcano plot of differential analysis of a specific cluster
 }
 \description{
 Volcano plot of differential features
+}
+\examples{
+data("scExp")
+scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
+scExp_cf = differential_analysis_scExp(scExp_cf)
+plot_differential_volcano_scExp(scExp_cf,"C1")
 }

@@ -12,8 +12,15 @@ plot_differential_H1_scExp(scExp_cf, cell_cluster = "C1")
 \item{cell_cluster}{}
 }
 \value{
-
+A barplot of H1 distribution
 }
 \description{
 Differential H1 distribution plot
+}
+\examples{
+data("scExp")
+scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
+scExp_cf = differential_analysis_scExp(scExp_cf)
+plot_differential_H1_scExp(scExp_cf)
 }

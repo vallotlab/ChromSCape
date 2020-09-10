@@ -2,7 +2,7 @@
 % Please edit documentation in R/support_functions.R
 \name{groupMat}
 \alias{groupMat}
-\title{Title}
+\title{groupMat}
 \usage{
 groupMat(mat = NA, margin = 1, groups = NA, method = "mean")
 }
@@ -16,8 +16,8 @@ groupMat(mat = NA, margin = 1, groups = NA, method = "mean")
 \item{method}{}
 }
 \value{
-
+A grouped matrix
 }
 \description{
-Title
+groupMat
 }

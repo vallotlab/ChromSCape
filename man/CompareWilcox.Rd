@@ -7,7 +7,7 @@
 CompareWilcox(
   dataMat = NULL,
   annot = NULL,
-  ref = NULL,
+  ref_group = NULL,
   groups = NULL,
   featureTab = NULL,
   block = NULL
@@ -18,7 +18,7 @@ CompareWilcox(
 
 \item{annot}{}
 
-\item{ref}{}
+\item{ref_group}{}
 
 \item{groups}{}
 
@@ -27,8 +27,20 @@ CompareWilcox(
 \item{block}{}
 }
 \value{
-
+A dataframe containing the foldchange and p.value of each feature
 }
 \description{
 CompareWilcox
+}
+\examples{
+data("scExp")
+scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
+scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
+featureTab = as.data.frame(rowRanges(scExp_cf))
+rownames(featureTab) = featureTab$ID
+ref_group = list("C1"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C1")])
+groups = list("C2"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C2")])
+myres = CompareWilcox(as.matrix(normcounts(scExp_cf)),annot=as.data.frame(colData(scExp_cf)),
+              ref_group=ref_group,groups=groups, featureTab=featureTab)
+
 }

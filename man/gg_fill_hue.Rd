@@ -9,6 +9,9 @@ gg_fill_hue(n)
 \arguments{
 \item{n}{num hues}
 }
+\value{
+A color in HEX format
+}
 \description{
 gg_fill_hue
 }

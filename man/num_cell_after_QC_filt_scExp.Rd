@@ -17,3 +17,9 @@ A formatted kable in HTML.
 \description{
 Table of cells before / after QC
 }
+\examples{
+scExp = create_scExp(create_scDataset_raw()$mat, create_scDataset_raw()$annot)
+scExp_filtered = filter_scExp(scExp)
+num_cell_after_QC_filt_scExp(scExp_filtered,colData(scExp))
+
+}

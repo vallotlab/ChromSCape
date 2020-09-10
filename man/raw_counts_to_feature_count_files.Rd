@@ -2,7 +2,7 @@
 % Please edit documentation in R/preprocessing_filtering_reduction.R
 \name{raw_counts_to_feature_count_files}
 \alias{raw_counts_to_feature_count_files}
-\title{Transforms a peaks x cells count matrix into a bins x cells count matrix.}
+\title{Create a sparse count matrix from various format of input data.}
 \usage{
 raw_counts_to_feature_count_files(
   files_dir,
@@ -12,42 +12,28 @@ raw_counts_to_feature_count_files(
   bin_width = NULL,
   geneTSS = NULL,
   aroundTSS = 2500,
-  verbose = T,
+  verbose = TRUE,
   ref = "hg38"
 )
 }
 \arguments{
-\item{files_dir}{}
-
 \item{file_type}{}
 
-\item{peak_file}{}
-
-\item{n_bins}{}
-
-\item{bin_width}{}
-
-\item{geneTSS}{}
-
-\item{aroundTSS}{}
-
-\item{verbose}{}
-
-\item{ref}{reference genome to use [hg38]}
+\item{ref}{reference genome to use \link{hg38}}
 }
 \value{
-
+A sparse matrix of features x cells
 }
 \description{
-This functions is best used to re-count large number of small peaks (e.g. <= 5000bp)
-into equal or larger bins.
-The genome is either cut in fixed bins (e.g. 50,000bp) or into an user defined 
-number of bins. Bins are calculated based on the canconical chromosomes. Note
-that if peaks are larger than bins, or if peaks are overlapping multiple bins, 
-the signal is added to each bin. Users can increase the minimum overlap to 
-consider peaks overlapping bins (by default 150bp, size of a nucleosome) to 
-disminish the number of peaks overlapping multiple region. Any peak smaller 
-than the minimum overlapp threshold will be dismissed. Therefore, library size
-might be slightly different from peaks to bins if signal was duplicated into 
-multiple bins or ommitted due to peaks smaller than minimum overlap.
+This function takes three different type of single-cell input:
+\itemize{
+\item Single cell BAM files (sorted)
+\item Single cell BED files (gzipped)
+\item A combination of an index file, a peak file and cell barcode file
+(The index file is composed of three column: index i, index j and value x for the
+non zeroes entries in the sparse matrix. @seealso Matrix::sparseMatrix)
+}
+
+This functions re-counts signal on either fixed genomic bins, a set of
+user-defined peaks or around the TSS of genes.
 }

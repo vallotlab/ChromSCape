@@ -24,8 +24,16 @@ plot_reduced_dim_scExp(
 \item{select_y}{}
 }
 \value{
-
+A ggplot geom_point plot of reduced dimension 2D reprensentation
 }
 \description{
 Plot reduced dimensions (PCA, TSNE, UMAP)
+}
+\examples{
+data("scExp")
+plot_reduced_dim_scExp(scExp, color_by = "sample_id")
+plot_reduced_dim_scExp(scExp, color_by = "total_counts")
+plot_reduced_dim_scExp(scExp, reduced_dim = "UMAP")
+plot_reduced_dim_scExp(scExp, reduced_dim = "TSNE")
+
 }

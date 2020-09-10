@@ -4,7 +4,12 @@
 \alias{exclude_features_scExp}
 \title{Remove specific features (CNA, repeats)}
 \usage{
-exclude_features_scExp(scExp, features_to_exclude, by = "region", verbose = T)
+exclude_features_scExp(
+  scExp,
+  features_to_exclude,
+  by = "region",
+  verbose = TRUE
+)
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment object.}
@@ -12,14 +17,26 @@ exclude_features_scExp(scExp, features_to_exclude, by = "region", verbose = T)
 \item{features_to_exclude}{A data.frame containing features to exclude.}
 
 \item{by}{Type of features. Either 'region' or 'feature_name'. If 'region',
- will look for genomic coordinates in columns 1-3 (chr,start,stop). 
-If 'feature_name', will look for a genes in first column. ['region']}
+will look for genomic coordinates in columns 1-3 (chr,start,stop).
+If 'feature_name', will look for a genes in first column. \link{'region'}}
 
-\item{verbose}{[T]}
+\item{verbose}{\link{TRUE}}
 }
 \value{
 A SingleCellExperiment object without features to exclude.
 }
 \description{
 Remove specific features (CNA, repeats)
+}
+\examples{
+
+scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
+features_to_exclude = data.frame(chr=c("chr4","chr7","chr17"),
+start=c(50000,8000000,2000000),
+end=c(100000,16000000,2500000))
+
+scExp
+scExp = exclude_features_scExp(scExp,features_to_exclude)
+scExp
+
 }
