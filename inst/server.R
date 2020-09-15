@@ -4,7 +4,7 @@ shinyServer(function(input, output, session) {
   library(ggplot2)
   library(dplyr)
   
-  options(shiny.maxRequestSize = 5000*1024^2) # allow upload of files with max 5GB
+  options(shiny.maxRequestSize = 50000*1024^2) # allow upload of files with max 15GB
   
   ###############################################################
   # 0. Global variables and functions
@@ -15,8 +15,6 @@ shinyServer(function(input, output, session) {
   volumes = c(Home = fs::path_home(), "R Installation" = R.home(), shinyFiles::getVolumes()())
 shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
-  # addResourcePath("www",directoryPath = "/media/pprompsy/LaCie/InstitutCurie/Documents/GitLab/ChromSCape/inst/www/") #system.file("www", package="ChromSCape")
-  # addResourcePath("www",directoryPath = system.file("www", package="ChromSCape"))
   tab_vector = c("filter_normalize",
                  "vizualize_dim_red",
                  "cons_clustering",
@@ -176,8 +174,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     else{
       column(12,
              br(),
-             HTML(paste0("<b>Upload all ", input$data_choice_box," files:</b><br>")),
-             shinyFiles::shinyDirButton(id = "datafile_folder", label = "Browse...",
+             HTML(paste0("<b>Upload folder (", input$data_choice_box,")</b><br>")),
+             shinyFiles::shinyDirButton(id = "datafile_folder", label = "Select folder containing raw files",
                                         title =  paste0("Select a directory containing your ",
                                                         input$data_choice_box," files."),
                                         icon = icon("folder-open")),

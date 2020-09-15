@@ -138,13 +138,13 @@ An example of such dataset is availablefor H3K27me3 mouse scChIP-seq of
 paired PDX samples at: [PDX mouse cells H3K27me3 scChIP-seq matrices](https://ndownloader.figshare.com/files/22629317).
 <br>
 
-```{r, eval=FALSE}
+>
  	BC969404	BC893525	BC239068	BC073314
 chr10:0-50000	0	0	0	0
 chr10:50000-100000	0	0	0	0
 chr10:100000-150000	0	0	0	0
 ...
-```
+>
   
 <br>
 
@@ -153,31 +153,34 @@ chr10:100000-150000	0	0	0	0
 This format regroups three files containing signal of all samples of one or multiple experiment:  
 
  * The **barcode file** contains one cell barcode per line and finish by '_barcode.txt' :
-```{r, eval=FALSE}
+
+>
 HBCx95_BC969404
 HBCx95_BC893525
 HBCx22_BC239068
 HBCx22_BC073314
 ...
-```
+>
+  
 * The **peak file** contains feature location (usually peaks) must be in BED format 
 and finish by '_peaks.bed': 
-```{r, eval=FALSE}
+
+>
 chr3	197959001	197961500
 chr3	198080001	198081500
 chr4	53001	55500
 ...
-```
+>
+  
 * The **index file** contains indexes of non-zero signal and finish by '_indexes.txt',
 the first column is the index of peaks, the second column contains barcode index,
 the last column contains the signal: 
-```{r, eval=FALSE}
+
+>
 459	1	1
 461	1	1
 556	1	2
-...
-```
-
+>
 
 <br>
 
@@ -203,12 +206,12 @@ to the column names of the corresponding count matrix.
 
 <br>
 
-```{r, eval=FALSE}
-samtools view example_matrix.bam | head
+
+>samtools view example_matrix.bam | head
 NS500388:436:HNG5VAFXX:2:21311:26430:3816	89	chr10	3102405	255	51M	*	0	0	CTTGGTGTCTAGTGGATCTGCTGCAGTCTTCTGTTGTCAGTGCTAAATCAC	EEEEE/E6EEEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAAAAA	NH:i:1	HI:i:1	AS:i:50	nM:i:0	XS:i:2147483647	XD:Z:GATGACAAAG	XB:Z:BC969404
 ...
-```
-  
+>
+
 ## Create & import a dataset
 
 Once you have launched the application, you arrive on the "**Select & Import**". Here you
