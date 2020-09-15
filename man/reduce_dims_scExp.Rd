@@ -17,16 +17,16 @@ reduce_dims_scExp(
 \item{scExp}{A SingleCellExperiment object.}
 
 \item{dimension_reductions}{A character vector of methods to apply.
-\link{c('PCA','TSNE','UMAP')}}
+(c('PCA','TSNE','UMAP'))}
 
-\item{n}{Numbers of dimensions to keep for PCA. \link{50}}
+\item{n}{Numbers of dimensions to keep for PCA. (50)}
 
-\item{batch_correction}{Do batch correction ? \link{FALSE}}
+\item{batch_correction}{Do batch correction ? (FALSE)}
 
 \item{batch_list}{List of characters. Names are batch names, characters are
 sample names.}
 
-\item{verbose}{\link{TRUE}}
+\item{verbose}{(TRUE)}
 }
 \value{
 A SingleCellExperiment object containing feature spaces. See

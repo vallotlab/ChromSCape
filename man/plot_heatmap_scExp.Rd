@@ -12,13 +12,13 @@ plot_heatmap_scExp(
 )
 }
 \arguments{
-\item{scExp}{}
+\item{scExp}{A SingleCellExperiment Object}
 
-\item{name_hc}{}
+\item{name_hc}{Name of the hclust contained in the SingleCellExperiment object}
 
-\item{corColors}{}
+\item{corColors}{A palette of colors for the heatmap}
 
-\item{color_by}{}
+\item{color_by}{Which features to add as additional bands on top of plot}
 }
 \value{
 A heatmap of cell to cell correlation, grouping cells by

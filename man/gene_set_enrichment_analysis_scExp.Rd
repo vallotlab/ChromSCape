@@ -20,26 +20,26 @@ gene_set_enrichment_analysis_scExp(
 \arguments{
 \item{scExp}{A SingleCellExperiment object containing list of differential features.}
 
-\item{enrichment_qval}{Adjusted p-value threshold for gene set enrichment. \link{0.1}}
+\item{enrichment_qval}{Adjusted p-value threshold for gene set enrichment. (0.1)}
 
-\item{ref}{A reference annotation. \link{'hg38'}}
+\item{ref}{A reference annotation. ('hg38')}
 
 \item{GeneSets}{A named list of gene sets. If NULL will automatically load MSigDB list
-of gene sets for specified reference genome. \link{NULL}}
+of gene sets for specified reference genome. (NULL)}
 
 \item{GeneSetsDf}{A dataframe containing gene sets & class of gene sets. If NULL will automatically
-load MSigDB dataframe of gene sets for specified reference genome. \link{NULL}}
+load MSigDB dataframe of gene sets for specified reference genome. (NULL)}
 
 \item{GenePool}{The pool of genes to run enrichment in. If NULL will automatically load
-Gencode list of genes fro specified reference genome. \link{NULL}}
+Gencode list of genes fro specified reference genome. (NULL)}
 
-\item{qval.th}{Adjusted p-value threshold to define differential features. \link{0.01}}
+\item{qval.th}{Adjusted p-value threshold to define differential features. (0.01)}
 
-\item{cdiff.th}{Fold change threshold to define differential features. \link{1}}
+\item{cdiff.th}{Fold change threshold to define differential features. (1)}
 
-\item{peak_distance}{Maximum distanceToTSS of feature to gene TSS to consider associated, in bp. \link{1000}}
+\item{peak_distance}{Maximum distanceToTSS of feature to gene TSS to consider associated, in bp. (1000)}
 
-\item{use_peaks}{Use peak calling method (must be calculated beforehand). \link{FALSE}}
+\item{use_peaks}{Use peak calling method (must be calculated beforehand). (FALSE)}
 }
 \value{
 Returns a SingleCellExperiment object containing list of enriched Gene Sets for each cluster, either

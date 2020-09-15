@@ -13,9 +13,9 @@ correlation_and_hierarchical_clust_scExp(
 \arguments{
 \item{scExp}{A SingleCellExperiment object, containing 'PCA' in reducedDims.}
 
-\item{correlation}{A correlation method to use. See \link[stats]{hclust}. \link{'pearson'}}
+\item{correlation}{A correlation method to use. See \link[stats]{hclust}. ('pearson')}
 
-\item{hc_linkage}{A linkage method for hierarchical clustering. See \link[stats]{cor}. \link{'ward.D'}}
+\item{hc_linkage}{A linkage method for hierarchical clustering. See \link[stats]{cor}. ('ward.D')}
 }
 \value{
 Return a SingleCellExperiment object with correlation matrix & hiearchical clustering.

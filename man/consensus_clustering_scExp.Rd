@@ -25,29 +25,29 @@ consensus_clustering_scExp(
 \item{prefix}{character value for output directory. Directory is created only if plot_consclust is not NULL.
 This title can be an abosulte or relative path.}
 
-\item{maxK}{integer value. maximum cluster number to evaluate. \link{10}}
+\item{maxK}{integer value. maximum cluster number to evaluate. (10)}
 
-\item{reps}{integer value. number of subsamples. \link{100}}
+\item{reps}{integer value. number of subsamples. (100)}
 
-\item{pItem}{numerical value. proportion of items to sample. \link{0.8}}
+\item{pItem}{numerical value. proportion of items to sample. (0.8)}
 
-\item{pFeature}{numerical value. proportion of features to sample. \link{1}}
+\item{pFeature}{numerical value. proportion of features to sample. (1)}
 
 \item{distance}{character value. 'pearson': (1 - Pearson correlation), 'spearman' (1 - Spearman correlation),
-'euclidean', 'binary', 'maximum', 'canberra', 'minkowski' or custom distance function. \link{'pearson'}}
+'euclidean', 'binary', 'maximum', 'canberra', 'minkowski' or custom distance function. ('pearson')}
 
 \item{clusterAlg}{character value. cluster algorithm. 'hc' heirarchical (hclust),
-'pam' for paritioning around medoids, 'km' for k-means upon data matrix, 'kmdist' \link{'hc'}
-for k-means upon distance matrices (former km option), or a function that returns a clustering. \link{'hc'}}
+'pam' for paritioning around medoids, 'km' for k-means upon data matrix, 'kmdist' ('hc')
+for k-means upon distance matrices (former km option), or a function that returns a clustering. ('hc')}
 
-\item{innerLinkage}{hierarchical linkage method for subsampling. \link{'ward.D'}}
+\item{innerLinkage}{hierarchical linkage method for subsampling. ('ward.D')}
 
-\item{finalLinkage}{hierarchical linkage method for consensus matrix. \link{'ward.D'}}
+\item{finalLinkage}{hierarchical linkage method for consensus matrix. ('ward.D')}
 
 \item{plot_consclust}{character value. NULL - print to screen, 'pdf', 'png', 'pngBMP' for bitmap png,
-helpful for large datasets. \link{'pdf'}}
+helpful for large datasets. ('pdf')}
 
-\item{plot_icl}{same as above for item consensus plot. \link{'png'}}
+\item{plot_icl}{same as above for item consensus plot. ('png')}
 }
 \value{
 Returns a SingleCellExperiment object containing consclust list, calculated cluster consensus

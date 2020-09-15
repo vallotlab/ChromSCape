@@ -7,18 +7,13 @@
 H1proportion(pv = NA, lambda = 0.5)
 }
 \arguments{
-\item{pv}{}
+\item{pv}{P.value vector}
 
-\item{lambda}{}
+\item{lambda}{Lambda value}
 }
 \value{
 H1 proportion value
 }
 \description{
 H1proportion
-}
-\examples{
-p.value = runif(100)
-H1proportion(p.value) = changeRange(mat,0,1)
-
 }

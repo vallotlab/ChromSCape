@@ -7,20 +7,15 @@
 changeRange(v, newmin = 1, newmax = 10)
 }
 \arguments{
-\item{v}{}
+\item{v}{A numeric vector}
 
-\item{newmin}{}
+\item{newmin}{New min}
 
-\item{newmax}{}
+\item{newmax}{New max}
 }
 \value{
 A matrix with values scaled between newmin and newmax
 }
 \description{
 changeRange
-}
-\examples{
-mat = matrix(runif(100),runif(100),ncol=1,nrow=100)
-mat. = changeRange(mat,0,1)
-summary(mat.)
 }

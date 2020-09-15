@@ -12,13 +12,13 @@ get_color_dataframe_from_input(
 )
 }
 \arguments{
-\item{input}{}
+\item{input}{Shiny input object}
 
-\item{levels_selected}{}
+\item{levels_selected}{Names of the features}
 
-\item{color_by}{}
+\item{color_by}{Which feature color to retrieve}
 
-\item{input_id_prefix}{}
+\item{input_id_prefix}{Prefix in front of the feature names}
 }
 \value{
 A data.frame with the feature levels and the colors of each level of this feature.

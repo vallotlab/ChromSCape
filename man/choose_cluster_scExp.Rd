@@ -14,9 +14,11 @@ choose_cluster_scExp(
 \arguments{
 \item{scExp}{A SingleCellExperiment object containing consclust in metadata.}
 
-\item{nclust}{Number of cluster to pick \link{3}}
+\item{nclust}{Number of cluster to pick (3)}
 
-\item{hc_linkage}{A linkage method for hierarchical clustering. See \link[stats]{cor}. \link{'ward.D'}}
+\item{consensus}{Use consensus clustering results instead of simple hierarchical clustering ? (TRUE)}
+
+\item{hc_linkage}{A linkage method for hierarchical clustering. See \link[stats]{cor}. ('ward.D')}
 }
 \value{
 Returns a SingleCellExperiment object with each cell assigned to a correlation cluster in colData.

@@ -12,13 +12,13 @@ colors_scExp(
 )
 }
 \arguments{
-\item{scExp}{}
+\item{scExp}{A SingleCellExperiment Object}
 
-\item{annotCol}{}
+\item{annotCol}{Column names to color}
 
-\item{color_by}{}
+\item{color_by}{If specifying color_df, column names to color}
 
-\item{color_df}{}
+\item{color_df}{Color data.frame to specify which color for which condition}
 }
 \value{
 A SingleCellExperiment with additionnal "color" columns in colData

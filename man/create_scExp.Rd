@@ -22,15 +22,15 @@ create_scExp(
 \item{annot}{A data.frame containing informations on cells. Should have the
 same number of rows as the number of columns in datamatrix.}
 
-\item{remove_zero_cells}{remove cells with zero counts ? \link{TRUE}}
+\item{remove_zero_cells}{remove cells with zero counts ? (TRUE)}
 
-\item{remove_zero_features}{remove cells with zero counts ? \link{TRUE}}
+\item{remove_zero_features}{remove cells with zero counts ? (TRUE)}
 
-\item{remove_non_canonical}{remove non canonical chromosomes ?\link{TRUE}}
+\item{remove_non_canonical}{remove non canonical chromosomes ?(TRUE)}
 
-\item{remove_chr_M}{remove chromosomes M ? \link{TRUE}}
+\item{remove_chr_M}{remove chromosomes M ? (TRUE)}
 
-\item{verbose}{\link{TRUE}}
+\item{verbose}{(TRUE)}
 }
 \value{
 Returns a SingleCellExperiment object.

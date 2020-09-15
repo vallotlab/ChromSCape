@@ -13,15 +13,15 @@ plot_reduced_dim_scExp(
 )
 }
 \arguments{
-\item{scExp}{}
+\item{scExp}{A SingleCellExperiment Object}
 
-\item{color_by}{}
+\item{color_by}{Feature used for coloration}
 
-\item{reduced_dim}{}
+\item{reduced_dim}{Reduced Dimension used for plotting}
 
-\item{select_x}{}
+\item{select_x}{Which variable to select for x axis}
 
-\item{select_y}{}
+\item{select_y}{Which variable to select for y axis}
 }
 \value{
 A ggplot geom_point plot of reduced dimension 2D reprensentation

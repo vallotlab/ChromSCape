@@ -7,7 +7,7 @@
 has_genomic_coordinates(scExp)
 }
 \arguments{
-\item{scExp}{}
+\item{scExp}{A SingleCellExperiment object}
 }
 \value{
 TRUE or FALSE

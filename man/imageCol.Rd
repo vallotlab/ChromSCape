@@ -14,17 +14,17 @@ imageCol(
 )
 }
 \arguments{
-\item{matcol}{}
+\item{matcol}{A matrix of colors}
 
-\item{strat}{}
+\item{strat}{Strat}
 
-\item{xlab.cex}{}
+\item{xlab.cex}{X label size}
 
-\item{ylab.cex}{}
+\item{ylab.cex}{Y label size}
 
-\item{drawLines}{}
+\item{drawLines}{Draw lines ?}
 
-\item{...}{}
+\item{...}{Additional parameteres}
 }
 \value{
 A rectangular image

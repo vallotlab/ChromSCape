@@ -7,7 +7,7 @@
 num_cell_before_cor_filt_scExp(scExp)
 }
 \arguments{
-\item{scExp}{}
+\item{scExp}{A SingleCellExperiment Object}
 }
 \value{
 A colored kable with the number of cells per sample for display

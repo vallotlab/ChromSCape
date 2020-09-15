@@ -7,7 +7,7 @@
 preprocess_feature_size_only(scExp)
 }
 \arguments{
-\item{scExp}{}
+\item{scExp}{A SingleCellExperiment Object}
 }
 \value{
 A SingleCellExperiment object.

@@ -18,25 +18,25 @@ hclustAnnotHeatmapPlot(
 )
 }
 \arguments{
-\item{x}{}
+\item{x}{A correlation matrix}
 
-\item{hc}{}
+\item{hc}{An hclust object}
 
-\item{hmColors}{}
+\item{hmColors}{A color palette}
 
-\item{anocol}{}
+\item{anocol}{A matrix of colors}
 
-\item{xpos}{}
+\item{xpos}{Xpos}
 
-\item{ypos}{}
+\item{ypos}{Ypos}
 
-\item{dendro.cex}{}
+\item{dendro.cex}{Size of denro names}
 
-\item{xlab.cex}{}
+\item{xlab.cex}{Size of x label}
 
-\item{hmRowNames}{}
+\item{hmRowNames}{Write rownames ?}
 
-\item{hmRowNames.cex}{}
+\item{hmRowNames.cex}{Size of rownames ?}
 }
 \value{
 A heatmap

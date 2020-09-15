@@ -7,7 +7,7 @@
 col2hex(cname)
 }
 \arguments{
-\item{cname}{}
+\item{cname}{Color name}
 }
 \value{
 The HEX color code of a particular color

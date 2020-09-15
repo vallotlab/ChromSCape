@@ -7,7 +7,7 @@
 plot_cluster_consensus_scExp(scExp)
 }
 \arguments{
-\item{cname}{}
+\item{scExp}{A SingleCellExperiment}
 }
 \value{
 The consensus score for each cluster for each k as a barplot

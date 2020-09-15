@@ -15,8 +15,3 @@ A number between 5 and 30 to use in Rtsne function
 \description{
 Choose perplexity depending on number of cells for Tsne
 }
-\examples{
-choose_perplexity(matrix(runif(100),nrow = 500,ncol=500))
-choose_perplexity(matrix(runif(100),nrow = 250,ncol=500))
-choose_perplexity(matrix(runif(100),nrow = 50,ncol=500))
-}

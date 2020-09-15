@@ -14,17 +14,17 @@ CompareWilcox(
 )
 }
 \arguments{
-\item{dataMat}{}
+\item{dataMat}{A raw count matrix}
 
-\item{annot}{}
+\item{annot}{A cell annotation data.frame}
 
-\item{ref_group}{}
+\item{ref_group}{List with cells in reference group(s)}
 
-\item{groups}{}
+\item{groups}{List with cells in group(s) to test}
 
-\item{featureTab}{}
+\item{featureTab}{data.frame with feature annotation}
 
-\item{block}{}
+\item{block}{Use a blocking factor to conteract batch effect ?}
 }
 \value{
 A dataframe containing the foldchange and p.value of each feature
@@ -36,11 +36,15 @@ CompareWilcox
 data("scExp")
 scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
 scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
-featureTab = as.data.frame(rowRanges(scExp_cf))
+featureTab = as.data.frame(SummarizedExperiment::rowRanges(scExp_cf))
 rownames(featureTab) = featureTab$ID
 ref_group = list("C1"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C1")])
 groups = list("C2"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C2")])
-myres = CompareWilcox(as.matrix(normcounts(scExp_cf)),annot=as.data.frame(colData(scExp_cf)),
+myres = CompareWilcox(as.matrix(SingleCellExperiment::normcounts(scExp_cf)),
+annot=as.data.frame(SingleCellExperiment::colData(scExp_cf)),
               ref_group=ref_group,groups=groups, featureTab=featureTab)
 
+}
+\author{
+Eric Letouze & Celine Vallot
 }

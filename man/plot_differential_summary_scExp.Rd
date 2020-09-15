@@ -7,7 +7,7 @@
 plot_differential_summary_scExp(scExp_cf)
 }
 \arguments{
-\item{scExp_cf}{}
+\item{scExp_cf}{A SingleCellExperiment object}
 }
 \value{
 A barplot summary of differential analysis

@@ -9,7 +9,7 @@ feature_annotation_scExp(scExp, ref = "hg38", reference_annotation = NULL)
 \arguments{
 \item{scExp}{A SingleCellExperiment object.}
 
-\item{ref}{Reference genome. Either 'hg38' or 'mm10'. \link{'hg38'}}
+\item{ref}{Reference genome. Either 'hg38' or 'mm10'. ('hg38')}
 
 \item{reference_annotation}{A data.frame containing gene (or else) annotation with
 genomic coordinates.}
@@ -29,5 +29,5 @@ head(rowRanges(scExp))
 scExp = create_scExp(create_scDataset_raw(ref="mm10")$mat,
   create_scDataset_raw(ref="mm10")$annot)
 scExp = feature_annotation_scExp(scExp,ref="mm10")
-head(rowRanges(scExp))
+head(SummarizedExperiment::rowRanges(scExp))
 }

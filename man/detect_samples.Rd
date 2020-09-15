@@ -7,7 +7,9 @@
 detect_samples(barcodes, nb_samples = 1)
 }
 \arguments{
-\item{nb_samples}{}
+\item{barcodes}{Vector of cell barcode names (e.g. Sample1_cell1, Sample1_cell2...)}
+
+\item{nb_samples}{Number of samples to find}
 }
 \value{
 character vector of sample names the same length as cell labels

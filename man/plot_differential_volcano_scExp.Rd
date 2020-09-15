@@ -12,13 +12,13 @@ plot_differential_volcano_scExp(
 )
 }
 \arguments{
-\item{scExp_cf}{}
+\item{scExp_cf}{A SingleCellExperiment object}
 
-\item{cell_cluster}{}
+\item{cell_cluster}{Which cluster to plot}
 
-\item{cdiff.th}{}
+\item{cdiff.th}{Fold change threshold}
 
-\item{qval.th}{}
+\item{qval.th}{Adjusted p.value threshold}
 }
 \value{
 A volcano plot of differential analysis of a specific cluster

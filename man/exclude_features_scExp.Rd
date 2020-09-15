@@ -18,9 +18,9 @@ exclude_features_scExp(
 
 \item{by}{Type of features. Either 'region' or 'feature_name'. If 'region',
 will look for genomic coordinates in columns 1-3 (chr,start,stop).
-If 'feature_name', will look for a genes in first column. \link{'region'}}
+If 'feature_name', will look for a genes in first column. ('region')}
 
-\item{verbose}{\link{TRUE}}
+\item{verbose}{(TRUE)}
 }
 \value{
 A SingleCellExperiment object without features to exclude.

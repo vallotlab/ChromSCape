@@ -16,16 +16,16 @@ peaks_to_bins(
 \arguments{
 \item{mat}{A matrix of peaks x cells}
 
-\item{bin_width}{width of bins to produce in base pairs (minimum 500) \link{50000}}
+\item{bin_width}{width of bins to produce in base pairs (minimum 500) (50000)}
 
 \item{n_bins}{number of bins (exclusive with bin_width)}
 
 \item{minoverlap}{Minimum overlap between a peak and a bin to consider the
-peak as overlapping the bin \link{150}.}
+peak as overlapping the bin (150).}
 
-\item{verbose}{}
+\item{verbose}{Verbose}
 
-\item{ref}{reference genome to use \link{hg38}}
+\item{ref}{reference genome to use (hg38)}
 }
 \value{
 A sparse matrix of bins instead of peaks

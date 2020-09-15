@@ -7,7 +7,7 @@
 num_cell_scExp(annot)
 }
 \arguments{
-\item{scExp}{A SingleCellExperiment object.}
+\item{annot}{An annotation of cells. Can be obtain through 'colData(scExp)'.}
 }
 \value{
 A formatted kable in HTML.
@@ -17,5 +17,5 @@ Table of cells
 }
 \examples{
 scExp = create_scExp(create_scDataset_raw()$mat, create_scDataset_raw()$annot)
-num_cell_scExp(colData(scExp))
+num_cell_scExp(SingleCellExperiment::colData(scExp))
 }
