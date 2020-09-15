@@ -207,7 +207,8 @@ to the column names of the corresponding count matrix.
 <br>
 
 
->samtools view example_matrix.bam | head
+>
+samtools view example_matrix.bam | head
 NS500388:436:HNG5VAFXX:2:21311:26430:3816	89	chr10	3102405	255	51M	*	0	0	CTTGGTGTCTAGTGGATCTGCTGCAGTCTTCTGTTGTCAGTGCTAAATCAC	EEEEE/E6EEEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAAAAA	NH:i:1	HI:i:1	AS:i:50	nM:i:0	XS:i:2147483647	XD:Z:GATGACAAAG	XB:Z:BC969404
 ...
 >
