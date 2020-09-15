@@ -165,7 +165,7 @@ num_cell_before_cor_filt_scExp <- function(scExp)
     stopifnot(is(scExp, "SingleCellExperiment"))
     
     
-    table <- as.data.frame(table(as.data.frame(colData(scExp))$sample_id))
+    table <- as.data.frame(table(as.data.frame(SummarizedExperiment::colData(scExp))$sample_id))
     colnames(table) = c("Sample", "#Cells")
     rownames(table) = NULL
     
@@ -209,15 +209,15 @@ num_cell_after_cor_filt_scExp <- function(scExp, scExp_cf)
     
     stopifnot(is(scExp, "SingleCellExperiment"), is(scExp_cf, "SingleCellExperiment"))
     
-    table <- as.data.frame(table(as.data.frame(colData(scExp))$sample_id))
-    table_filtered <- as.data.frame(table(as.data.frame(colData(scExp_cf))$sample_id))
+    table <- as.data.frame(table(as.data.frame(SummarizedExperiment::colData(scExp))$sample_id))
+    table_filtered <- as.data.frame(table(as.data.frame(SummarizedExperiment::colData(scExp_cf))$sample_id))
     colnames(table) = c("Sample", "#Cells Before Filtering")
     rownames(table) = NULL
     colnames(table_filtered) = c("Sample", "#Cells After Filtering")
     rownames(table_filtered) = NULL
     
     # Retrieve sample colors from user specified colors & add to table
-    colors = unique(as.data.frame(colData(scExp))[, c("sample_id", "sample_id_color")])
+    colors = unique(as.data.frame(SummarizedExperiment::colData(scExp))[, c("sample_id", "sample_id_color")])
     colors = as.vector(as.character(dplyr::left_join(table, colors, by = c(Sample = "sample_id"))[, 
         "sample_id_color"]))
     colors = c(col2hex(colors), "")
@@ -372,7 +372,7 @@ choose_cluster_scExp <- function(scExp, nclust = 3, consensus = TRUE, hc_linkage
         cell_clusters = scExp@metadata$consclust[[nclust]]$consensusClass[as.character(scExp$cell_id)]
     } else {
         cell_clusters = stats::cutree(scExp@metadata$hc_cor, k = nclust)
-        names(cell_clusters) = colData(scExp)$cell_id
+        names(cell_clusters) = SummarizedExperiment::colData(scExp)$cell_id
     }
 
     SummarizedExperiment::colData(scExp)[, "cell_cluster"] = paste("C", cell_clusters, 

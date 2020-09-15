@@ -1230,8 +1230,10 @@ create_scExp <- function(datamatrix,
         rownames(scExp) <- rows
     }
     
-    SummarizedExperiment::colData(scExp) <- cbind(colData(scExp),scater::perCellQCMetrics(scExp))
-    colnames(SummarizedExperiment::colData(scExp))[which(colnames(colData(scExp)) == "sum")] = "total_counts"
+    SummarizedExperiment::colData(scExp) <- cbind(SummarizedExperiment::colData(scExp),
+                                                  scater::perCellQCMetrics(scExp))
+    colnames(SummarizedExperiment::colData(scExp))[which(
+        colnames(SummarizedExperiment::colData(scExp)) == "sum")] = "total_counts"
     
     return(scExp)
     }
@@ -1345,8 +1347,10 @@ filter_scExp =  function (scExp,
     }
     scExp <- scExp[, sel]
     scExp <- scExp[fixedFeature,]
-    SummarizedExperiment::colData(scExp) <- cbind(colData(scExp)[,seq_len(4)],scater::perCellQCMetrics(scExp))
-    colnames(SummarizedExperiment::colData(scExp))[which(colnames(colData(scExp)) == "sum")] = "total_counts"
+    SummarizedExperiment::colData(scExp) <- cbind(SummarizedExperiment::colData(scExp)
+                                                  [,seq_len(4)],scater::perCellQCMetrics(scExp))
+    colnames(SummarizedExperiment::colData(scExp))[which(
+        colnames(SummarizedExperiment::colData(scExp)) == "sum")] = "total_counts"
     return(scExp)
 }
 
@@ -1711,7 +1715,7 @@ normalize_scExp <- function(scExp,
 #' @examples 
 #' scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
 #' scExp = feature_annotation_scExp(scExp)
-#' head(rowRanges(scExp))
+#' head(SummarizedExperiment::rowRanges(scExp))
 #'
 #' # Mouse 
 #' scExp = create_scExp(create_scDataset_raw(ref="mm10")$mat,
