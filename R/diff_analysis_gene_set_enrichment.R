@@ -17,10 +17,11 @@
 #' 
 #' @param scExp A SingleCellExperiment object containing consclust with selected number of cluster.
 #' @param de_type Type of comparisons. Either 'one_vs_rest', to compare each cluster against all others, or 
-#' 'pairwise' to make 1 to 1 comparisons. ['one_vs_rest']
-#' @param qval.th Adjusted p-value threshold. [0.01]
-#' @param cdiff.th Fold change threshold. [1]
-#' @param block 
+#' 'pairwise' to make 1 to 1 comparisons. ('one_vs_rest')
+#' @param qval.th Adjusted p-value threshold. (0.01)
+#' @param cdiff.th Fold change threshold. (1)
+#' @param method Wilcoxon or edgerGLM
+#' @param block Use batches as blocking factors ?
 #'
 #' @return Returns a SingleCellExperiment object containing a differential list.
 #' @export
@@ -88,11 +89,11 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
         names(myrefs) = paste0("notC", seq_len(nclust))
         refs = names(myrefs)
         if(method == "wilcox"){ res = CompareWilcox(
-            dataMat = counts, annot = affectation, ref = myrefs, 
+            dataMat = counts, annot = affectation, ref_group = myrefs, 
             groups = mygps, featureTab = feature, block = block)
         } else {
             res = CompareedgeRGLM( dataMat = counts, 
-                                        annot = affectation, ref = myrefs,
+                                        annot = affectation, ref_group = myrefs,
                                         groups = mygps, featureTab = feature)
             colnames(res)[grep("logCPM",colnames(res))] = gsub("logCPM","Count",
                                                                colnames(res)[grep("logCPM",colnames(res))])
@@ -141,12 +142,12 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
                     colnames(tmp_result)[5:8] = c("cdiff", "count",  "p.val", "adj.p.val")
                 }
                 count_save[, paste0("C", i)] = tmp_result$count
-                single_results = list.append(single_results, tmp_result)
+                single_results = rlist::list.append(single_results, tmp_result)
                 pairs[nrow(pairs) + 1, ] = list(groups[1], refs[1])
                 tmp_mirror = tmp_result
                 tmp_mirror$cdiff = tmp_mirror$cdiff * (-1)
                 tmp_mirror$count = 0  #not correct, but doesn't matter because it won't be used
-                single_results = list.append(single_results, tmp_mirror)
+                single_results = rlist::list.append(single_results, tmp_mirror)
                 pairs[nrow(pairs) + 1, ] = list(refs[1], groups[1])
             }
         }
@@ -161,7 +162,7 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
         {
             cdiffs = sapply(seq_len((as.integer(nclust) - 1)), function(k)
             {
-                combinedTests[[paste0("C", i)]][feature$ID, k + 3]$cdiff
+                combinedTests[[paste0("C", i)]][feature$ID, k + 4]$cdiff
             })
             res[, paste0("Rank.C", i)] = combinedTests[[paste0("C", i)]][feature$ID, 
                 "Top"]
@@ -209,25 +210,27 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
 #' This functions takes as input a SingleCellExperiment object with consclust, the type of comparison, either 
 #' 'one_vs_rest' or 'pairwise', the adjusted p-value threshold (qval.th) and the fold-change threshold (cdiff.th). 
 #' It outputs a SingleCellExperiment object containing a differential list.
+#'
 #' @param scExp A SingleCellExperiment object containing list of differential features.
-#' @param ref A reference annotation. ['hg38']
-#' @param enrichment_qval Adjusted p-value threshold for gene set enrichment. [0.1]
+#' @param ref A reference annotation. ('hg38')
+#' @param enrichment_qval Adjusted p-value threshold for gene set enrichment. (0.1)
 #' @param GeneSets A named list of gene sets. If NULL will automatically load MSigDB list
-#' of gene sets for specified reference genome. [NULL]
+#' of gene sets for specified reference genome. (NULL)
 #' @param GeneSetsDf A dataframe containing gene sets & class of gene sets. If NULL will automatically 
-#' load MSigDB dataframe of gene sets for specified reference genome. [NULL]
+#' load MSigDB dataframe of gene sets for specified reference genome. (NULL)
 #' @param GenePool The pool of genes to run enrichment in. If NULL will automatically load 
-#' Gencode list of genes fro specified reference genome. [NULL] 
-#' @param qval.th Adjusted p-value threshold to define differential features. [0.01]
-#' @param cdiff.th Fold change threshold to define differential features. [1]
-#' @param peak_distance Maximum distanceToTSS of feature to gene TSS to consider associated, in bp. [1000]
-#' @param use_peaks Use peak calling method (must be calculated beforehand). [FALSE]
+#' Gencode list of genes fro specified reference genome. (NULL)
+#' @param qval.th Adjusted p-value threshold to define differential features. (0.01)
+#' @param cdiff.th Fold change threshold to define differential features. (1)
+#' @param peak_distance Maximum distanceToTSS of feature to gene TSS to consider associated, in bp. (1000)
+#' @param use_peaks Use peak calling method (must be calculated beforehand). (FALSE)
 #'
 #' @return Returns a SingleCellExperiment object containing list of enriched Gene Sets for each cluster, either
 #' in depleted features, enriched features or simply differential features (both). 
 #' 
 #' @export
 #' @importFrom SingleCellExperiment colData normcounts rowData
+#' @importFrom msigdbr msigdbr
 #' 
 #' @examples 
 #' data("scExp")
@@ -266,13 +269,43 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
     
     if (is.null(GeneSets) | is.null(GeneSetsDf))
     {
-        message(paste0("ChromSCape::gene_set_enrichment_analysis_scExp - Selecting ", 
-            ref, " MSigDB gene sets."))
-        eval(parse(text = paste0("data(", ref, ".MSIG.ls)")))
-        eval(parse(text = paste0("data(", ref, ".MSIG.gs)")))
-        eval(parse(text = paste0("GeneSets = ", ref, ".MSIG.ls")))
-        eval(parse(text = paste0("GeneSetsDf = ", ref, ".MSIG.gs")))
-        
+        message(
+            paste0(
+                "ChromSCape::gene_set_enrichment_analysis_scExp - Loading ",
+                ref,
+                " MSigDB gene sets."
+            )
+        )
+
+        if (ref == "hg38")
+            GeneSetsDf = msigdbr::msigdbr("Homo sapiens")[, -c(1, 4, 6, 7, 8, 9)]
+        if (ref == "mm10")
+            GeneSetsDf = msigdbr::msigdbr("Mus musculus")[, -c(1, 4, 6, 7, 8, 9)]
+        colnames(GeneSetsDf) = c("Gene.Set", "Class", "Genes")
+        system.time({
+            GeneSetsDf <- GeneSetsDf %>% dplyr::group_by(Gene.Set, Class) %>%
+                dplyr::summarise(Genes = paste(Genes,
+                                               collapse = ","))
+        })
+        corres = data.frame(
+            long_name = c(
+                "c1_positional",
+                "c2_curated",
+                "c3_motif",
+                "c4_computational",
+                "c5_GO",
+                "c6_oncogenic",
+                "c7_immunologic",
+                "hallmark"
+            )
+            ,
+            short_name = c(paste0("C", seq_len(7)), "H")
+        )
+        GeneSetsDf$Class = corres$long_name[match(GeneSetsDf$Class, corres$short_name)]
+        GeneSets = lapply(GeneSetsDf$Gene.Set, function(x) {
+            unlist(strsplit(GeneSetsDf$Genes[which(GeneSetsDf$Gene.Set == x)], split = ","))
+        })
+        names(GeneSets) = GeneSetsDf$Gene.Set
     }
     
     if (is.null(GenePool))
@@ -397,9 +430,9 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
 #' Creates table of enriched genes sets
 #'
 #' @param scExp  A SingleCellExperiment object containing list of enriched gene sets.
-#' @param set A character vector, either 'Both', 'Overexpressed' or 'Underexpressed'. ['Both']
-#' @param cell_cluster Cell cluster. ['C1']
-#' @param enr_class_sel Which classes of gene sets to show. [c('c1_positional', 'c2_curated', ...)]
+#' @param set A character vector, either 'Both', 'Overexpressed' or 'Underexpressed'. ('Both')
+#' @param cell_cluster Cell cluster. ('C1')
+#' @param enr_class_sel Which classes of gene sets to show. (c('c1_positional', 'c2_curated', ...))
 #'
 #' @return A DT::data.table of enriched gene sets.
 #' @export

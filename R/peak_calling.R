@@ -9,7 +9,7 @@
 #' Taking BAM files of each sample as input, samtools pools then splits reads from 
 #' each cell barcode into 1 BAM file per cell cluster (pseudo-bulk). Then MACS2 calls 
 #' peaks on each cluster. The peaks are aggregated and merged if closer to a certain distance 
-#' defined by user [default to 10000bp]. Then, 
+#' defined by user (10000bp). Then, 
 #' 
 #' This function takes as input a SingleCellExperiment, that must contain 
 #' a 'cell_cluster' column in it's colData, an output directory where to 
@@ -27,24 +27,23 @@
 #'  Note that the user must have samtools & MACS2 installed and available in the PATH.
 #'  Users can open command terminal and type 'which samtools' & 'which macs2' to verify
 #'  the availability of these programs. Will only work on unix operating system. Check 
-#'  operating system with 'print(.Platform[1])'.
+#'  operating system with 'print(.Platform)'.
 #' 
 #'
-#' @param scExp 
+#' @param scExp A SingleCellExperiment object
 #' @param odir Output directory where to write temporary files and each cluster's BAM file
 #' @param inputBam A character vector of file paths to each sample's BAM file, containing cell
 #' barcode information as tags. BAM files can be paired-end or single-end.
-#' @param p.value a p-value to use for MACS2 to determine significant peaks. [0.05]
-#' @param ref A reference genome, either hg38 or mm10. ['hg38']
+#' @param p.value a p-value to use for MACS2 to determine significant peaks. (0.05)
+#' @param ref A reference genome, either hg38 or mm10. ('hg38')
 #' @param peak_distance_to_merge Maximal distance to merge peaks together after peak calling
-#' , in bp. [10000]
+#' , in bp. (10000)
 #' @param geneTSS_annotation A data.frame annotation of genes TSS. If NULL will automatically load 
 #' Gencode list of genes fro specified reference genome.
 #'
 #' @return A SingleCellExperiment with refinded annotation
 #' @export
 #'
-#' @examples
 #' 
 #' @importFrom SingleCellExperiment colData
 #' @importFrom GenomicRanges GRanges start end union pintersect distanceToNearest ranges

@@ -4,11 +4,11 @@
 
 #' Plotting distribution of signal
 #'
-#' @param scExp 
-#' @param raw 
-#' @param log10 
-#' @param pseudo_counts 
-#' @param bins 
+#' @param scExp A SingleCellExperiment Object
+#' @param raw Use raw counts ?
+#' @param log10 Transform using log10 ?
+#' @param pseudo_counts Pseudo-count to add if using log10 
+#' @param bins Number of bins in the histogram
 #'
 #' @return A ggplot histogram representing the distribution of count per cell
 #' @export
@@ -45,10 +45,10 @@ plot_distribution_scExp <- function(scExp, raw = TRUE, log10 = FALSE, pseudo_cou
 
 #' Adding colors to cells & features
 #'
-#' @param scExp 
-#' @param annotCol 
-#' @param color_by 
-#' @param color_df 
+#' @param scExp A SingleCellExperiment Object
+#' @param annotCol Column names to color
+#' @param color_by If specifying color_df, column names to color
+#' @param color_df Color data.frame to specify which color for which condition
 #'
 #' @return A SingleCellExperiment with additionnal "color" columns in colData
 #' @export
@@ -92,10 +92,10 @@ colors_scExp <- function(scExp, annotCol = "sample_id", color_by = "sample_id", 
 
 #' Get color dataframe from shiny::colorInput 
 #'
-#' @param input 
-#' @param levels_selected 
-#' @param color_by 
-#' @param input_id_prefix 
+#' @param input Shiny input object
+#' @param levels_selected Names of the features
+#' @param color_by Which feature color to retrieve
+#' @param input_id_prefix Prefix in front of the feature names
 #'
 #' @return A data.frame with the feature levels and the colors of each level of this feature.
 #'
@@ -124,16 +124,15 @@ get_color_dataframe_from_input <- function(input, levels_selected, color_by = c(
 # Wrapper for plotting PCA & TSNE & UMAP
 #' Plot reduced dimensions (PCA, TSNE, UMAP)
 #'
-#' @param scExp 
-#' @param color_by 
-#' @param reduced_dim 
-#' @param select_x 
-#' @param select_y 
+#' @param scExp A SingleCellExperiment Object
+#' @param color_by Feature used for coloration
+#' @param reduced_dim Reduced Dimension used for plotting
+#' @param select_x Which variable to select for x axis
+#' @param select_y Which variable to select for y axis
 #'
 #' @return A ggplot geom_point plot of reduced dimension 2D reprensentation 
 #' @export
 #'
-#' @examples
 #' @importFrom SingleCellExperiment reducedDim reducedDimNames colData
 #' @import ggplot2
 #' @importFrom colorRamps matlab.like
@@ -194,10 +193,10 @@ plot_reduced_dim_scExp <- function(scExp, color_by = "sample_id", reduced_dim = 
 
 #' Plot cell correlation heatmap with annotations
 #'
-#' @param scExp 
-#' @param name_hc 
-#' @param corColors 
-#' @param color_by 
+#' @param scExp A SingleCellExperiment Object
+#' @param name_hc Name of the hclust contained in the SingleCellExperiment object
+#' @param corColors A palette of colors for the heatmap
+#' @param color_by Which features to add as additional bands on top of plot
 #'
 #' @return A heatmap of cell to cell correlation, grouping cells by
 #' hierarchical clustering.
@@ -248,7 +247,7 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (grDevices
 
 #' Differential summary barplot
 #'
-#' @param scExp_cf 
+#' @param scExp_cf A SingleCellExperiment object
 #'
 #' @return A barplot summary of differential analysis
 #' @export
@@ -279,8 +278,8 @@ plot_differential_summary_scExp <- function(scExp_cf)
 
 #' Differential H1 distribution plot
 #'
-#' @param scExp_cf 
-#' @param cell_cluster 
+#' @param scExp_cf A SingleCellExperiment object
+#' @param cell_cluster Which cluster to plot
 #'
 #' @return A barplot of H1 distribution
 #' @export
@@ -314,10 +313,10 @@ plot_differential_H1_scExp <- function(scExp_cf, cell_cluster = "C1")
 
 #' Volcano plot of differential features
 #'
-#' @param scExp_cf 
-#' @param cell_cluster 
-#' @param cdiff.th 
-#' @param qval.th 
+#' @param scExp_cf A SingleCellExperiment object
+#' @param cell_cluster Which cluster to plot
+#' @param cdiff.th Fold change threshold
+#' @param qval.th Adjusted p.value threshold
 #'
 #' @return A volcano plot of differential analysis of a specific cluster
 #' @export
@@ -380,7 +379,7 @@ gg_fill_hue <- function(n)
 #'
 #' Transform character color to hexadecimal color code.
 #'
-#' @param cname 
+#' @param cname Color name
 #'
 #' @return The HEX color code of a particular color
 #' @importFrom grDevices col2rgb rgb
@@ -396,7 +395,7 @@ col2hex <- function(cname)
 #'
 #' Plot cluster consensus score for each k as a bargraph.
 #'
-#' @param cname 
+#' @param scExp A SingleCellExperiment
 #'
 #' @return The consensus score for each cluster for each k as a barplot
 #' @importFrom dplyr as_tibble
