@@ -131,18 +131,18 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                                       sliderInput("quant_removal", shiny::HTML("<p><span style='color: red'>Select the upper percentile of cells to remove (potential doublets):</span></p>"),
                                                                                                    min=80, max=100, value=95, step=1),
                                                                                       sliderInput("min_cells_window", "Select minimum percentage of cells to support a window :", min=0, max=20, value=1, step=0.25),
-                                                                                      checkboxInput("run_tsne", "Run TRUE-SNE", value= FALSE) %>%
+                                                                                      checkboxInput("run_tsne", "Run T-SNE", value= FALSE) %>%
                                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                                               content = "run_tsne"),
                                                                                       checkboxInput("do_subsample", "Perform subsampling", value=FALSE)%>%
                                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                                               content = "subsampling"),
                                                                                       uiOutput("do_subsample"),
-                                                                                      checkboxInput("exclude_regions", "exclude specific genomic regions", value=FALSE)  %>%
+                                                                                      checkboxInput("exclude_regions", "Exclude specific genomic regions", value=FALSE)  %>%
                                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                                               content = "exclude_region"),
                                                                                       uiOutput("exclude_file"),
-                                                                                      checkboxInput("do_batch_corr", "perform batch correction", value=FALSE) %>%
+                                                                                      checkboxInput("do_batch_corr", "Perform batch correction", value=FALSE) %>%
                                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                                               content = "batch_correction"),
                                                                                       uiOutput("num_batches")),
@@ -240,8 +240,8 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                                             content = "filter_correlation_distrib")),
                                                              column(12, align = "left",
                                                                     hr(),
-                                                                    sliderInput("corr_threshold", "correlation threshold quantile:", min=75, max=99, value=99, step=1),
-                                                                    sliderInput("percent_correlation", "min percent correlation of cells to others in data set:", min=0, max=15, value=1, step=0.25)),
+                                                                    sliderInput("corr_threshold", "Correlation threshold quantile:", min=75, max=99, value=99, step=1),
+                                                                    sliderInput("percent_correlation", "Minimum percentage of cells to correlate with (%)", min=0, max=15, value=1, step=0.25)),
                                                              column(3, align="left", br(),
                                                                     actionButton("filter_corr_cells", "Filter & save")),
                                                              column(12,  uiOutput("table_cor_filtered")
