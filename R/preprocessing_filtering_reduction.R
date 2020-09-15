@@ -656,7 +656,7 @@ create_scDataset_raw <- function(cells = 300,
     indices_vec <- which(vec > 0)
     j <- ceiling(indices_vec / features)
     i <- ceiling(indices_vec %% (features))
-    i[i == 0] <- 600
+    i[i == 0] <- max(features)
     if (sparse)
     {
         mat <- Matrix::sparseMatrix(i,

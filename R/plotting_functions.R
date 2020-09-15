@@ -143,7 +143,8 @@ plot_reduced_dim_scExp <- function(scExp, color_by = "sample_id", reduced_dim = 
     select_x = "Component_1",
     select_y = "Component_2",
     downsample = 5000,
-    transparency = 0.6)
+    transparency = 0.6,
+    size = 1)
     {
     
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(color_by), is.character(reduced_dim), 
@@ -173,7 +174,8 @@ plot_reduced_dim_scExp <- function(scExp, color_by = "sample_id", reduced_dim = 
         SingleCellExperiment::colData(scExp)))
     
     p <- ggplot(plot_df, aes_string(x = select_x, y = select_y)) + geom_point(alpha = transparency,
-        aes(color = SingleCellExperiment::colData(scExp)[, color_by])) + labs(color = color_by) +
+        size = size, aes(color = SingleCellExperiment::colData(scExp)[, color_by])) +
+      labs(color = color_by) +
         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.background = element_blank(), axis.line = element_line(colour = "black"),
             panel.border = element_rect(colour = "black", fill = NA))
@@ -355,7 +357,8 @@ plot_differential_volcano_scExp <- function(scExp_cf, cell_cluster = "C1", cdiff
       top_res = res[which(res[,qval] < qval.th & abs(res[,cdiff]) > cdiff.th),]
       if(nrow(top_res) < n_top) n_top = nrow(top_res)
       if(n_top > 0){
-        top_res = top_res[order(top_res[,qval],abs(top_res[,cdiff])),]
+        top_res = top_res[order(top_res[,qval]),]
+        top_res = top_res[order(abs(top_res[,cdiff]),decreasing = T),]
         top_res = top_res[1:n_top,]
         top_features_IDs = as.character(top_res$ID)
         top_features_df = as.data.frame(rowRanges(scExp_cf)[top_features_IDs,])

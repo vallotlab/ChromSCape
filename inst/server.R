@@ -486,9 +486,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     myData = new.env()
     load(filename_sel, envir = myData)
     if(is.reactive(myData$scExp)) {
+      print("Was reactive, isolating")
       myData$scExp = isolate(myData$scExp())
     }
+   
     scExp(myData$scExp) # retrieve filtered scExp
+
     rm(myData)
     # gc()
     # t2 = system.time({scExp. = correlation_and_hierarchical_clust_scExp(scExp.)})
@@ -1092,8 +1095,26 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     color_df = get_color_dataframe_from_input(input,levels_selected_cf(), input$color_by_cf, "color_cf_")
     scExp_cf. = colors_scExp(scExp_cf(), annotCol = input$color_by_cf,
                              color_by = input$color_by_cf, color_df = color_df)
+    data = list()
+    data$scExp_cf = scExp_cf.
+    
+    if("diff" %in% names(data$scExp_cf@metadata)){
+      dir =file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), 
+                     "Diff_Analysis_Gene_Sets", paste0(
+                       selected_filtered_dataset(), "_",
+                       length(unique(data$scExp_cf$cell_cluster)),
+                       "_", input$qval.th, "_", input$cdiff.th, "_",
+                       input$de_type, ".RData"))
+    } else{
+      dir = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
+                      "correlation_clustering",
+                      paste0(selected_filtered_dataset(), 
+                             ".RData"))
+    }
+    save(data, file = dir)
     scExp_cf(scExp_cf.)
-    rm(scExp_cf.)
+    
+    rm(scExp_cf.,data)
   })
   
   observeEvent(input$col_reset_cf, {
