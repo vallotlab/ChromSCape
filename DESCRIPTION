@@ -67,6 +67,7 @@ Imports:
     utils,
     S4Vectors,
     SingleCellExperiment,
-    SummarizedExperiment
+    SummarizedExperiment,
+    msigdbr
 Depends: 
     R (>= 4.0)
