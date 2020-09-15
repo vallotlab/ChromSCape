@@ -1,13 +1,10 @@
 #' distPearson
 #'
-#' @param m 
+#' @param m A matrix
 #'
 #' @return A dist object
 #' @importFrom stats cor as.dist
 #'
-#' @examples
-#' m = matrix(runif(100),runif(100),ncol=100,nrow=100)
-#' distPearson(m)
 distPearson <- function(m)
 {
     stats::as.dist(1 - stats::cor(t(m), method = "pearson"))
@@ -15,27 +12,28 @@ distPearson <- function(m)
 
 #' CompareWilcox
 #'
-#' @param dataMat 
-#' @param annot 
-#' @param ref_group 
-#' @param groups 
-#' @param featureTab 
-#' @param block 
+#' @param dataMat A raw count matrix
+#' @param annot A cell annotation data.frame
+#' @param ref_group List with cells in reference group(s)
+#' @param groups List with cells in group(s) to test
+#' @param featureTab data.frame with feature annotation
+#' @param block Use a blocking factor to conteract batch effect ? 
 #'
 #' @return A dataframe containing the foldchange and p.value of each feature
 #' @importFrom stats p.adjust wilcox.test
 #' @export
-#' @authors Eric Letouze & Celine Vallot
+#' @author Eric Letouze & Celine Vallot
 #' 
 #' @examples
 #' data("scExp")
 #' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
 #' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
-#' featureTab = as.data.frame(rowRanges(scExp_cf))
+#' featureTab = as.data.frame(SummarizedExperiment::rowRanges(scExp_cf))
 #' rownames(featureTab) = featureTab$ID
 #' ref_group = list("C1"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C1")])
 #' groups = list("C2"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C2")])
-#' myres = CompareWilcox(as.matrix(normcounts(scExp_cf)),annot=as.data.frame(colData(scExp_cf)),
+#' myres = CompareWilcox(as.matrix(SingleCellExperiment::normcounts(scExp_cf)),
+#' annot=as.data.frame(SingleCellExperiment::colData(scExp_cf)),
 #'               ref_group=ref_group,groups=groups, featureTab=featureTab)
 #' 
 CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL, groups = NULL, 
@@ -94,27 +92,28 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL, groups
 
 #' Creates a summary table with the number of genes under- or overexpressed in each group and outputs several graphical representations
 #'
-#' @param ref List containing one or more vectors of reference samples. Name of the vectors will be used in the results table. The length of this list should be 1 or the same length as the groups list
+#' @param ref_group List containing one or more vectors of reference samples. Name of the vectors will be used in the results table. The length of this list should be 1 or the same length as the groups list
 #' @param dataMat reads matrix
 #' @param annot selected annotation of interest
 #' @param featureTab Feature annotations to be added to the results table
-#' @param norm_method 
+#' @param norm_method Which method to use for normalizing ('upperquantile')
 #' @param groups List containing the IDs of groups to be compared with the reference samples. Names of the vectors will be used in the results table
 #'
 #' @return A dataframe containing the foldchange and p.value of each feature
 #'
 #' @importFrom edgeR DGEList calcNormFactors estimateDisp glmFit glmLRT
-#' @authors Eric Letouze & Celine Vallot
-#' 
+#' @author Eric Letouze & Celine Vallot
+#' @export
 #' @examples
 #' data("scExp")
 #' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
 #' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
-#' featureTab = as.data.frame(rowRanges(scExp_cf))
+#' featureTab = as.data.frame(SummarizedExperiment::rowRanges(scExp_cf))
 #' rownames(featureTab) = featureTab$ID
 #' ref_group = list("C1"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C1")])
 #' groups = list("C2"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C2")])
-#' myres = CompareedgeRGLM(as.matrix(counts(scExp_cf)),annot=as.data.frame(colData(scExp_cf)),
+#' myres = CompareedgeRGLM(as.matrix(SingleCellExperiment::counts(scExp_cf)),
+#' annot=as.data.frame(SingleCellExperiment::colData(scExp_cf)),
 #'               ref_group=ref_group,groups=groups, featureTab=featureTab)
 #' 
 CompareedgeRGLM <- function(dataMat=NULL,
@@ -155,15 +154,11 @@ CompareedgeRGLM <- function(dataMat=NULL,
 
 #' changeRange
 #'
-#' @param v 
-#' @param newmin 
-#' @param newmax 
+#' @param v A numeric vector
+#' @param newmin New min
+#' @param newmax New max
 #'
 #' @return A matrix with values scaled between newmin and newmax
-#' @examples
-#' mat = matrix(runif(100),runif(100),ncol=1,nrow=100)
-#' mat. = changeRange(mat,0,1)
-#' summary(mat.)
 changeRange <- function(v, newmin = 1, newmax = 10)
 {
     oldmin <- min(v, na.rm = TRUE)
@@ -173,16 +168,10 @@ changeRange <- function(v, newmin = 1, newmax = 10)
 
 #' H1proportion
 #'
-#' @param pv 
-#' @param lambda 
+#' @param pv P.value vector
+#' @param lambda Lambda value
 #'
 #' @return H1 proportion value
-#' @export
-#'
-#' @examples
-#' p.value = runif(100)
-#' H1proportion(p.value) = changeRange(mat,0,1)
-#' 
 H1proportion <- function(pv = NA, lambda = 0.5)
 {
     pi1 = 1 - mean(pv > lambda, na.rm = TRUE)/(1 - lambda)
@@ -201,11 +190,11 @@ H1proportion <- function(pv = NA, lambda = 0.5)
 
 #' enrichmentTest
 #'
-#' @param gene.sets 
-#' @param mylist 
-#' @param possibleIds 
-#' @param sep 
-#' @param silent 
+#' @param gene.sets A list of reference gene sets
+#' @param mylist A list of genes to test
+#' @param possibleIds All existing genes
+#' @param sep Separator used to collapse genes
+#' @param silent Silent mode ?
 #'
 #' @importFrom stats phyper
 #' @return A dataframe with the gene sets and their enrichment p.value
@@ -247,16 +236,16 @@ enrichmentTest <- function(gene.sets, mylist, possibleIds, sep = ";", silent = F
 
 #' hclustAnnotHeatmapPlot
 #'
-#' @param x 
-#' @param hc 
-#' @param hmColors 
-#' @param anocol 
-#' @param xpos 
-#' @param ypos 
-#' @param dendro.cex 
-#' @param xlab.cex 
-#' @param hmRowNames 
-#' @param hmRowNames.cex 
+#' @param x A correlation matrix
+#' @param hc An hclust object
+#' @param hmColors A color palette
+#' @param anocol A matrix of colors
+#' @param xpos Xpos
+#' @param ypos Ypos
+#' @param dendro.cex Size of denro names 
+#' @param xlab.cex Size of x label
+#' @param hmRowNames Write rownames ?
+#' @param hmRowNames.cex Size of rownames ?
 #'
 #' @importFrom  graphics par plot image axis
 #' 
@@ -285,12 +274,12 @@ hclustAnnotHeatmapPlot <- function(x = NULL, hc = NULL, hmColors = NULL, anocol 
 
 #' imageCol
 #'
-#' @param matcol 
-#' @param strat 
-#' @param xlab.cex 
-#' @param ylab.cex 
-#' @param drawLines 
-#' @param ... 
+#' @param matcol A matrix of colors
+#' @param strat Strat
+#' @param xlab.cex X label size
+#' @param ylab.cex Y label size
+#' @param drawLines Draw lines ?
+#' @param ...  Additional parameteres
 #'
 #' @importFrom  graphics image axis abline par
 #' @return A rectangular image
@@ -344,34 +333,27 @@ imageCol <- function(matcol = NULL, strat = NULL, xlab.cex = 0.5, ylab.cex = 0.5
     if (drawLines %in% c("v", "b")) 
         abline(v = 0.5:(dim(csc)[1] - 1)/(dim(csc)[1] - 1))
     graphics::box()
-    if (!is.null(strat))
-    {
-        z <- factor(matcol[, strat])
-        levels(z) <- seq_along(levels(z))
-        z <- vectorToSegments(as.numeric(z))
-        abline(v = changeRange(c(0.5, z$Ind_K + 0.5)/max(z$Ind_K), newmin = par()$usr[1], 
-            newmax = par()$usr[2]), lwd = 2, lty = 2)
-    }
 }
 
 
 #' annotToCol2
 #'
-#' @param annotS 
-#' @param annotT 
-#' @param missing 
-#' @param anotype 
-#' @param maxnumcateg 
-#' @param categCol 
-#' @param quantitCol 
-#' @param plotLegend 
-#' @param plotLegendFile 
+#' @param annotS A color matrix
+#' @param annotT A color matrix
+#' @param missing Convert missing to NA
+#' @param anotype Annotation type
+#' @param maxnumcateg Maximum number of categories
+#' @param categCol Categorical columns 
+#' @param quantitCol Quantitative columns
+#' @param plotLegend Plot legend ?
+#' @param plotLegendFile Which file to plot legend ?
 #'
 #' @importFrom graphics par plot legend image 
 #' @return A matrix of continuous or discrete colors
+#' @export
 #' @examples
 #' data("scExp")
-#' annotToCol2(colData(scExp))
+#' annotToCol2(SingleCellExperiment::colData(scExp))
 #' 
 annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), anotype = NULL, 
     maxnumcateg = 2, categCol = NULL, quantitCol = NULL, plotLegend = TRUE, plotLegendFile = NULL)
@@ -379,7 +361,7 @@ annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), anoty
     if (is.null(ncol(annotS)))
     {
         annotS <- data.frame(annotS)
-        colnames(annotS) = annotCol
+        colnames(annotS) = colnames(annotT)
         rownames(annotS) = rownames(annotT)
     }
     for (j in seq_len(ncol(annotS)) ) annotS[which(annotS[, j] %in% missing), j] <- NA
@@ -485,10 +467,10 @@ annotToCol2 <- function(annotS = NULL, annotT = NULL, missing = c("", NA), anoty
 
 #' groupMat
 #'
-#' @param mat 
-#' @param margin 
-#' @param groups 
-#' @param method 
+#' @param mat A matrix
+#' @param margin By row or columns ?
+#' @param groups Groups
+#' @param method Method to group
 #'
 #' @return A grouped matrix
 #'

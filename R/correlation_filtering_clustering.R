@@ -13,8 +13,8 @@
 #' and outputs a SingleCellExperiment object with correlation matrix and hierarchical clustering.
 #'
 #' @param scExp A SingleCellExperiment object, containing 'PCA' in reducedDims.
-#' @param correlation A correlation method to use. See \link[stats]{hclust}. ['pearson']
-#' @param hc_linkage A linkage method for hierarchical clustering. See \link[stats]{cor}. ['ward.D']
+#' @param correlation A correlation method to use. See \link[stats]{hclust}. ('pearson')
+#' @param hc_linkage A linkage method for hierarchical clustering. See \link[stats]{cor}. ('ward.D')
 #'
 #' @return Return a SingleCellExperiment object with correlation matrix & hiearchical clustering.
 #' @export
@@ -60,12 +60,12 @@ correlation_and_hierarchical_clust_scExp <- function(scExp, correlation = "pears
 #' TSNE is recalculated.
 #'
 #' @param scExp A SingleCellExperiment object containing 'Cor', a correlation matrix, in reducedDims.
-#' @param random_iter Number of random matrices to create to calculate random correlation scores. [50]
+#' @param random_iter Number of random matrices to create to calculate random correlation scores. (50)
 #' @param corr_threshold Quantile of random correlation score above which a cell is considered 
-#' to be 'correlated' with another cell. [99]
+#' to be 'correlated' with another cell. (99)
 #' @param percent_correlation Percentage of the cells that any cell must be 'correlated' to in order to
-#' not be filtered. [1] 
-#' @param verbose [TRUE]
+#' not be filtered. (1) 
+#' @param verbose (TRUE)
 #'
 #' @return Returns a SingleCellExperiment object without lowly correlated cells. The
 #' calculated correlation score limit threshold is saved in metadata. 
@@ -145,7 +145,7 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 50, corr_threshold
 
 #' Table of number of cells before correlation filtering
 #'
-#' @param scExp 
+#' @param scExp A SingleCellExperiment Object
 #'
 #' @return A colored kable with the number of cells per sample for display
 #'
@@ -247,20 +247,20 @@ num_cell_after_cor_filt_scExp <- function(scExp, scExp_cf)
 #' @param scExp A SingleCellExperiment object containing 'PCA' in reducedDims.
 #' @param prefix character value for output directory. Directory is created only if plot_consclust is not NULL.
 #'  This title can be an abosulte or relative path. 
-#' @param maxK integer value. maximum cluster number to evaluate. [10]
-#' @param reps integer value. number of subsamples. [100]
-#' @param pItem numerical value. proportion of items to sample. [0.8]
-#' @param pFeature numerical value. proportion of features to sample. [1]
+#' @param maxK integer value. maximum cluster number to evaluate. (10)
+#' @param reps integer value. number of subsamples. (100)
+#' @param pItem numerical value. proportion of items to sample. (0.8)
+#' @param pFeature numerical value. proportion of features to sample. (1)
 #' @param distance character value. 'pearson': (1 - Pearson correlation), 'spearman' (1 - Spearman correlation),
-#'  'euclidean', 'binary', 'maximum', 'canberra', 'minkowski' or custom distance function. ['pearson']
+#'  'euclidean', 'binary', 'maximum', 'canberra', 'minkowski' or custom distance function. ('pearson')
 #' @param clusterAlg character value. cluster algorithm. 'hc' heirarchical (hclust), 
-#' 'pam' for paritioning around medoids, 'km' for k-means upon data matrix, 'kmdist' ['hc']
-#'  for k-means upon distance matrices (former km option), or a function that returns a clustering. ['hc']
-#' @param innerLinkage hierarchical linkage method for subsampling. ['ward.D']
-#' @param finalLinkage hierarchical linkage method for consensus matrix. ['ward.D']
+#' 'pam' for paritioning around medoids, 'km' for k-means upon data matrix, 'kmdist' ('hc')
+#'  for k-means upon distance matrices (former km option), or a function that returns a clustering. ('hc')
+#' @param innerLinkage hierarchical linkage method for subsampling. ('ward.D')
+#' @param finalLinkage hierarchical linkage method for consensus matrix. ('ward.D')
 #' @param plot_consclust character value. NULL - print to screen, 'pdf', 'png', 'pngBMP' for bitmap png,
-#'  helpful for large datasets. ['pdf']
-#' @param plot_icl same as above for item consensus plot. ['png']
+#'  helpful for large datasets. ('pdf')
+#' @param plot_icl same as above for item consensus plot. ('png')
 #'
 #' @return Returns a SingleCellExperiment object containing consclust list, calculated cluster consensus
 #'  and item consensus scores in metadata.
@@ -328,8 +328,9 @@ consensus_clustering_scExp <- function(scExp, prefix = NULL, maxK = 10, reps = 1
 #' calculates a hierarchical clustering of the consensus associations calculated by ConsensusClusterPlus.
 #' 
 #' @param scExp A SingleCellExperiment object containing consclust in metadata.
-#' @param hc_linkage A linkage method for hierarchical clustering. See \link[stats]{cor}. ['ward.D'] 
-#' @param nclust Number of cluster to pick [3]
+#' @param hc_linkage A linkage method for hierarchical clustering. See \link[stats]{cor}. ('ward.D') 
+#' @param nclust Number of cluster to pick (3)
+#' @param consensus Use consensus clustering results instead of simple hierarchical clustering ? (TRUE)
 #'
 #' @return Returns a SingleCellExperiment object with each cell assigned to a correlation cluster in colData.
 #' @export

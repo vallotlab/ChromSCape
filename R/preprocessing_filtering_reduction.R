@@ -9,8 +9,8 @@
 #' nb_samples=2, the function returns "Sample1","Sample1","Sample2","Sample2".
 #'
 #'
-#' @param barcodes
-#' @param nb_samples
+#' @param barcodes Vector of cell barcode names (e.g. Sample1_cell1, Sample1_cell2...)
+#' @param nb_samples Number of samples to find
 #'
 #' @return character vector of sample names the same length as cell labels
 #' @export
@@ -101,12 +101,12 @@ detect_samples <- function(barcodes, nb_samples = 1) {
 
 #' split_bam_file_into_single_cell_bams
 #'
-#' @param bam_file
-#' @param sample_id
-#' @param outdir
-#' @param min_coverage
-#' @param barcode_tag
-#' @param verbose
+#' @param bam_file BAM file
+#' @param sample_id Name of the sample
+#' @param outdir Output directory
+#' @param min_coverage Minimum coverage to keep a cell (500)
+#' @param barcode_tag Under which tag is the barcode information stored ? ("XB")
+#' @param verbose Verbose (TRUE)
 #'
 #' @return Splitted single-cell Bam files
 #' 
@@ -169,20 +169,20 @@ split_bam_file_into_single_cell_bams <- function(bam_file,
 #'  - Single cell BED files (gzipped)
 #'  - A combination of an index file, a peak file and cell barcode file
 #'  (The index file is composed of three column: index i, index j and value x for the
-#'  non zeroes entries in the sparse matrix. @seealso Matrix::sparseMatrix) 
+#'  non zeroes entries in the sparse matrix.) 
 #'  
 #'  This functions re-counts signal on either fixed genomic bins, a set of 
 #'  user-defined peaks or around the TSS of genes.
 #'  
-#' @param ref reference genome to use [hg38]
-#' @param verbose
-#' @param files_dir
-#' @param peak_file
-#' @param n_bins
-#' @param bin_width
-#' @param geneTSS
-#' @param aroundTSS
-#' @param file_type
+#' @param ref reference genome to use (hg38)
+#' @param verbose Verbose (TRUE)
+#' @param files_dir The directory containing the files
+#' @param peak_file A file containing genomic location of peaks (NULL)
+#' @param n_bins The number of bins to tile the genome (NULL)
+#' @param bin_width The size of bins to tile the genome (NULL)
+#' @param geneTSS Use geneTSS regions for annotation ? (NULL)
+#' @param aroundTSS Space up and downstream of TSS to use (2500)
+#' @param file_type Input file(s) type(s) ('BAM')
 #'
 #' @return A sparse matrix of features x cells
 #' 
@@ -369,15 +369,14 @@ raw_counts_to_feature_count_files <- function(files_dir,
 
 #' Count bam files on interval to create count indexes
 #'
-#' @param files_dir 
-#' @param which 
+#' @param files_dir Directory containing the single cell BAM files
+#' @param which Genomic Range on which to count
 #'
 #' @return A list containing a "feature index" data.frame and a 
 #' count vector for non 0 entries, both used to form the sparse matrix
 #'
 #' @importFrom Rsamtools BamFileList indexBam ScanBamParam countBam
 #' @importFrom BiocParallel bplapply
-#' @examples
 bams_to_matrix_indexes = function(files_dir, which) {
     single_cell_bams = list.files(files_dir,
                                   full.names = TRUE,
@@ -424,11 +423,12 @@ bams_to_matrix_indexes = function(files_dir, which) {
 #' Read index-peaks-barcodes trio files on interval to create count indexes
 #'
 #'
-#' @param peak_file 
-#' @param index_file 
-#' @param name_cells 
-#' @param binarize 
-#' @param ref 
+#' @param peak_file A file containing the peak genomic locations
+#' @param index_file A file containing the indexes of non-zeroes values and their value
+#' (respectively i,j,x,see sparseMatrix)
+#' @param name_cells A vector with cell names
+#' @param binarize Binarize matrix ?
+#' @param ref Reference genome
 #'
 #' @importFrom GenomicRanges GRanges
 #' 
@@ -462,8 +462,8 @@ index_peaks_barcodes_to_matrix_indexes = function(peak_file,
 
 #' Count bed files on interval to create count indexes
 #'
-#' @param files_dir 
-#' @param which 
+#' @param files_dir Directory containing the single cell BAM files
+#' @param which Genomic Range on which to count
 #'
 #' @importFrom BiocParallel bplapply
 #' @importFrom GenomicRanges GRanges countOverlaps
@@ -527,12 +527,12 @@ beds_to_matrix_indexes = function(files_dir, which) {
 #' multiple bins or ommitted due to peaks smaller than minimum overlap.
 #'
 #' @param mat A matrix of peaks x cells
-#' @param bin_width width of bins to produce in base pairs (minimum 500) [50000]
-#' @param ref reference genome to use [hg38]
+#' @param bin_width width of bins to produce in base pairs (minimum 500) (50000)
+#' @param ref reference genome to use (hg38)
 #' @param n_bins number of bins (exclusive with bin_width)
 #' @param minoverlap Minimum overlap between a peak and a bin to consider the
-#' peak as overlapping the bin [150].
-#' @param verbose
+#' peak as overlapping the bin (150).
+#' @param verbose Verbose
 #'
 #' @return A sparse matrix of bins instead of peaks
 #' @export
@@ -652,13 +652,13 @@ peaks_to_bins <- function(mat,
 
 #' Create a simulated single cell datamatrix & cell annotation
 #'
-#' @param cells
-#' @param features
-#' @param featureType
-#' @param sparse
-#' @param nsamp
-#' @param ref
-#' @param batch_id
+#' @param cells Number of cells (300)
+#' @param features Number of features (600)
+#' @param featureType Type of feature (window)
+#' @param sparse Is matrix sparse ? (TRUE)
+#' @param nsamp Number of samples (4)
+#' @param ref Reference genome ('hg38')
+#' @param batch_id Batch origin (c(1,2,3,4))
 #'
 #' @return A list composed of 
 #'  * mat : a sparse matrix following an approximation of the negative binomial law (adapted to scChIPseq)
@@ -807,7 +807,7 @@ create_scDataset_raw <- function(cells = 300,
     indices_vec <- which(vec > 0)
     j <- ceiling(indices_vec / features)
     i <- ceiling(indices_vec %% (features))
-    i[i == 0] <- 600
+    i[i == 0] <- features
     if (sparse)
     {
         mat <- Matrix::sparseMatrix(i,
@@ -854,7 +854,7 @@ create_scDataset_raw <- function(cells = 300,
 #' @param file_names A character vector of file names towards single cell
 #' epigenomic matrices (features x cells) (must be .txt / .tsv)
 #' @param path_to_matrix In case matrices are stored in temporary folder,
-#' a character vector of path towards temporary files. [NULL]
+#' a character vector of path towards temporary files. (NULL)
 #'
 #' @return A list containing:  
 #' * datamatrix: a sparseMatrix of features x cells  
@@ -1088,11 +1088,11 @@ import_scExp <- function(file_names,
 #'  (rows x columns).
 #' @param annot A data.frame containing informations on cells. Should have the
 #' same number of rows as the number of columns in datamatrix.
-#' @param remove_zero_cells remove cells with zero counts ? [TRUE]
-#' @param remove_zero_features remove cells with zero counts ? [TRUE]
-#' @param remove_non_canonical remove non canonical chromosomes ?[TRUE]
-#' @param remove_chr_M remove chromosomes M ? [TRUE]
-#' @param verbose [TRUE]
+#' @param remove_zero_cells remove cells with zero counts ? (TRUE)
+#' @param remove_zero_features remove cells with zero counts ? (TRUE)
+#' @param remove_non_canonical remove non canonical chromosomes ?(TRUE)
+#' @param remove_chr_M remove chromosomes M ? (TRUE)
+#' @param verbose (TRUE)
 #'
 #' @return Returns a SingleCellExperiment object.
 #' @export
@@ -1244,12 +1244,12 @@ create_scExp <- function(datamatrix,
 #' cells that might be doublets.
 #'
 #' @param scExp A SingleCellExperiment object.
-#' @param min_cov_cell Minimum counts for each cell. [1600]
+#' @param min_cov_cell Minimum counts for each cell. (1600)
 #' @param quant_removal Centile of cell counts above which cells are removed.
-#'  [95]
-#' @param percentMin Minimum percent of cells 'ON' in feature. [1]
-#' @param bin_min_count Minimum number of counts to define if cell is 'ON'. [2]
-#' @param verbose [TRUE]
+#'  (95)
+#' @param percentMin Minimum percent of cells 'ON' in feature. (1)
+#' @param bin_min_count Minimum number of counts to define if cell is 'ON'. (2)
+#' @param verbose (TRUE)
 #'
 #' @return Returns a filtered SingleCellExperiment object.
 #'
@@ -1353,10 +1353,10 @@ filter_scExp =  function (scExp,
 
 #' Does SingleCellExperiment has genomic coordinates in features ?
 #'
-#' @param scExp
+#' @param scExp A SingleCellExperiment object
 #'
 #' @return TRUE or FALSE
-#'
+#' @export
 #' @examples 
 #' 
 #' scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
@@ -1392,7 +1392,7 @@ has_genomic_coordinates <- function(scExp)
 #'
 #' @return A GRanges object of genomic coordinates.
 #' @importFrom GenomicRanges GRanges
-#' 
+#' @export
 #' @examples 
 #' 
 #' scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
@@ -1438,8 +1438,8 @@ get_genomic_coordinates <- function(scExp)
 #' @param features_to_exclude A data.frame containing features to exclude.
 #' @param by Type of features. Either 'region' or 'feature_name'. If 'region',
 #'  will look for genomic coordinates in columns 1-3 (chr,start,stop).
-#' If 'feature_name', will look for a genes in first column. ['region']
-#' @param verbose [TRUE]
+#' If 'feature_name', will look for a genes in first column. ('region')
+#' @param verbose (TRUE)
 #'
 #' @return A SingleCellExperiment object without features to exclude.
 #' @export
@@ -1550,14 +1550,14 @@ exclude_features_scExp <-
 
 #' Preprocess scExp - Transcripts per Million (TPM)
 #'
-#' @param scExp
+#' @param scExp A SingleCellExperiment Object
 #'
 #' @return A SingleCellExperiment object.
 #' @importFrom GenomicRanges width
 #' @importFrom SummarizedExperiment rowRanges
 #' @importFrom SingleCellExperiment counts normcounts
 #' @importFrom Matrix t colSums
-#' 
+#' @export
 #' @examples 
 #' 
 #' scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
@@ -1577,13 +1577,14 @@ preprocess_TPM <- function(scExp)
 
 #' Preprocess scExp - Read per Kilobase Per Million (RPKM)
 #'
-#' @param scExp
+#' @param scExp A SingleCellExperiment Object
 #'
 #' @return A SingleCellExperiment object.
 #' @importFrom GenomicRanges width
 #' @importFrom SummarizedExperiment rowRanges
 #' @importFrom SingleCellExperiment counts normcounts
 #' @importFrom Matrix t colSums
+#' @export
 #' @examples 
 #' 
 #' scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
@@ -1606,13 +1607,13 @@ preprocess_RPKM <- function(scExp)
 
 #' Preprocess scExp - Counts Per Million (CPM)
 #'
-#' @param scExp
+#' @param scExp A SingleCellExperiment Object
 #'
 #' @return A SingleCellExperiment object.
 #' @importFrom SummarizedExperiment rowRanges
 #' @importFrom SingleCellExperiment counts normcounts
 #' @importFrom Matrix t colSums
-#' 
+#' @export
 #' @examples 
 #' scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
 #' scExp = preprocess_CPM(scExp)
@@ -1630,14 +1631,14 @@ preprocess_CPM <- function(scExp)
 
 #' Preprocess scExp - size only
 #'
-#' @param scExp
+#' @param scExp A SingleCellExperiment Object
 #'
 #' @return A SingleCellExperiment object.
 #' @importFrom GenomicRanges width
 #' @importFrom SummarizedExperiment rowRanges
 #' @importFrom SingleCellExperiment counts normcounts
 #' @importFrom Matrix t colSums
-#' 
+#' @export
 #' @examples 
 #' scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
 #' scExp = preprocess_feature_size_only(scExp)
@@ -1696,7 +1697,7 @@ normalize_scExp <- function(scExp,
 #' Add gene annotations to features
 #'
 #' @param scExp A SingleCellExperiment object.
-#' @param ref Reference genome. Either 'hg38' or 'mm10'. ['hg38']
+#' @param ref Reference genome. Either 'hg38' or 'mm10'. ('hg38')
 #' @param reference_annotation A data.frame containing gene (or else) annotation with
 #' genomic coordinates.
 #'
@@ -1716,7 +1717,7 @@ normalize_scExp <- function(scExp,
 #' scExp = create_scExp(create_scDataset_raw(ref="mm10")$mat,
 #'   create_scDataset_raw(ref="mm10")$annot)
 #' scExp = feature_annotation_scExp(scExp,ref="mm10")
-#' head(rowRanges(scExp))
+#' head(SummarizedExperiment::rowRanges(scExp))
 feature_annotation_scExp <- function(scExp,
                                      ref = "hg38",
                                      reference_annotation = NULL)
@@ -1804,11 +1805,6 @@ feature_annotation_scExp <- function(scExp,
 #' @param dataset A matrix of features x cells (rows x columns)
 #'
 #' @return A number between 5 and 30 to use in Rtsne function
-#'
-#' @examples 
-#' choose_perplexity(matrix(runif(100),nrow = 500,ncol=500))
-#' choose_perplexity(matrix(runif(100),nrow = 250,ncol=500))
-#' choose_perplexity(matrix(runif(100),nrow = 50,ncol=500))
 choose_perplexity <- function(dataset)
 {
     stopifnot(!is.null(dataset), !is.null(dim(dataset)))
@@ -1840,12 +1836,12 @@ choose_perplexity <- function(dataset)
 #'
 #' @param scExp A SingleCellExperiment object.
 #' @param dimension_reductions A character vector of methods to apply.
-#' [c('PCA','TSNE','UMAP')]
-#' @param n Numbers of dimensions to keep for PCA. [50]
-#' @param batch_correction Do batch correction ? [FALSE]
+#' (c('PCA','TSNE','UMAP'))
+#' @param n Numbers of dimensions to keep for PCA. (50)
+#' @param batch_correction Do batch correction ? (FALSE)
 #' @param batch_list List of characters. Names are batch names, characters are
 #'  sample names.
-#' @param verbose [TRUE]
+#' @param verbose (TRUE)
 #'
 #' @return A SingleCellExperiment object containing feature spaces. See
 #'  ?reduceDims().
@@ -1924,26 +1920,27 @@ reduce_dims_scExp <-
             adj_annot <- data.frame()
             b_names <- unique(scExp$batch_name)
             
-            if (is(mat, "dgCMatrix") | is(mat, "dgTMatrix"))
-            {
-                pca <- pca_irlba_for_sparseMatrix(Matrix::t(mat), n)
-            } else
-            {
-                pca <- stats::prcomp(Matrix::t(mat),
-                                     center = TRUE,
-                                     scale. = FALSE)
-                pca <- pca$x[, seq_len(n)]
-            }
+            # if (is(mat, "dgCMatrix") | is(mat, "dgTMatrix"))
+            # {
+            #     pca <- pca_irlba_for_sparseMatrix(Matrix::t(mat), n)
+            # } else
+            # {
+            #     pca <- stats::prcomp(Matrix::t(mat),
+            #                          center = TRUE,
+            #                          scale. = FALSE)
+            #     pca <- pca$x[, seq_len(n)]
+            # }
             for (i in seq_along(b_names))
             {
                 b_name <- b_names[i]
                 batches[[i]] <-
-                    as.matrix(pca[scExp$batch_name == b_name, ])
-                adj_annot <- rbind(adj_annot,
-                                   SummarizedExperiment::colData(scExp)[scExp$batch_name ==
-                                                                            b_name, ])
+                    as.matrix(mat[scExp$batch_name == b_name, ])
+                adj_annot <- rbind(adj_annot, as.data.frame(
+                    SummarizedExperiment::colData(
+                        scExp)[scExp$batch_name ==b_name, ]))
             }
-            
+            # for(i in seq_len(num_batches)) colnames(batches[[i]]) = paste0("PC",seq_len(n))
+            batches = lapply(batches,Matrix::t)
             mnn.out <-
                 do.call(batchelor::fastMNN, c(
                     batches,
@@ -1951,14 +1948,13 @@ reduce_dims_scExp <-
                         k = 25,
                         d = 50,
                         ndist = 3,
-                        pc.input = TRUE,
-                        auto.order = TRUE,
+                        auto.merge = FALSE,
                         cos.norm = FALSE
                     )
                 ))
             
-            pca <- mnn.out$corrected
-            SummarizedExperiment::colData(scExp) <- adj_annot
+            pca <- SingleCellExperiment::rowData(mnn.out)
+            SummarizedExperiment::colData(scExp) <- as(adj_annot,"DataFrame")
         } else
         {
             scExp$batch_id <- "batch_1"
@@ -2021,19 +2017,14 @@ reduce_dims_scExp <-
 
 #' Run sparse PCA using irlba SVD
 #'
-#' @param x
-#' @param n_comp
+#' @param x A sparse normalized matrix (features x cells)
+#' @param n_comp The number of principal components to keep
 #'
 #' @return The rotated data, e.g. the cells x PC column in case of sc data.
 #'
 #' @importFrom irlba irlba
 #' @importFrom Matrix colMeans
 #'
-#' @examples 
-#' 
-#' pca_irlba_for_sparseMatrix(matrix(runif(100),nrow = 250,ncol=250),15)
-#' pca_irlba_for_sparseMatrix(as(matrix(runif(100),nrow = 250,ncol=250),"dgCMatrix"),15)
-#' 
 pca_irlba_for_sparseMatrix <- function(x, n_comp)
 {
     x.means <- Matrix::colMeans(x)
@@ -2046,7 +2037,7 @@ pca_irlba_for_sparseMatrix <- function(x, n_comp)
 
 #' Table of cells
 #'
-#' @param scExp A SingleCellExperiment object.
+#' @param annot An annotation of cells. Can be obtain through 'colData(scExp)'. 
 #'
 #' @export
 #' @return A formatted kable in HTML.
@@ -2056,7 +2047,7 @@ pca_irlba_for_sparseMatrix <- function(x, n_comp)
 #' 
 #' @examples 
 #' scExp = create_scExp(create_scDataset_raw()$mat, create_scDataset_raw()$annot)
-#' num_cell_scExp(colData(scExp))
+#' num_cell_scExp(SingleCellExperiment::colData(scExp))
 num_cell_scExp <- function(annot)
 {
     stopifnot(!is.null(annot))
@@ -2089,7 +2080,7 @@ num_cell_scExp <- function(annot)
 #' @examples 
 #' scExp = create_scExp(create_scDataset_raw()$mat, create_scDataset_raw()$annot)
 #' scExp_filtered = filter_scExp(scExp)
-#' num_cell_after_QC_filt_scExp(scExp_filtered,colData(scExp))
+#' num_cell_after_QC_filt_scExp(scExp_filtered,SingleCellExperiment::colData(scExp))
 #' 
 num_cell_after_QC_filt_scExp <- function(scExp, annot)
 {
@@ -2134,7 +2125,7 @@ num_cell_after_QC_filt_scExp <- function(scExp, annot)
 #' subsampled.
 #'
 #' @param scExp A SingleCellExperiment
-#' @param n_cells An integer number of cells to subsample for each sample [500]
+#' @param n_cells An integer number of cells to subsample for each sample (500)
 #'
 #' @return A subsampled SingleCellExperiment
 #' @export
