@@ -1,6 +1,6 @@
 // initialize an introjs instance          
 var intro = introJs();
-
+console.log('app.js is read.')
 $(document).ready(function() {
   tabs = $('a[data-toggle="tab"]')
     intro.setOptions({
