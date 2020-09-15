@@ -16,6 +16,7 @@ shinyServer(function(input, output, session) {
 shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   # addResourcePath("www",directoryPath = "/media/pprompsy/LaCie/InstitutCurie/Documents/GitLab/ChromSCape/inst/www/") #system.file("www", package="ChromSCape")
+  # addResourcePath("www",directoryPath = system.file("www", package="ChromSCape"))
   tab_vector = c("filter_normalize",
                  "vizualize_dim_red",
                  "cons_clustering",
@@ -1480,12 +1481,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   ###############################################################
   
   MSIG.classes <- reactive({
-    if(input$tabs == "enrich_analysis"){
-      myData = new.env()
-      eval(parse(text = paste0("data(", annotation_id(), ".MSIG.gs)")))
-      eval(parse(text = paste0("classes = ",annotation_id(), ".MSIG.gs$Class")))
-      unique(classes)
-    }
+    c("c1_positional","c2_curated","c3_motif","c4_computational",
+      "c5_GO","c6_oncogenic","c7_immunologic","hallmark")
   })
 
   annotFeat_long <- reactive({
