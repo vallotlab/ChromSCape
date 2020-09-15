@@ -13,11 +13,13 @@ batches = out$batches
 #test sparse matrix
 test_that("Sparse matrices", {
 scExp = create_scExp(mat,annot)
-expect_is(counts(scExp),"dgCMatrix")
+expect_is(SingleCellExperiment::counts(scExp),"dgCMatrix")
 scExp = filter_scExp(scExp)
-expect_is(counts(scExp),"dgCMatrix")
+expect_is(SingleCellExperiment::counts(scExp),"dgCMatrix")
 scExp = normalize_scExp(scExp,type = "RPKM")
-expect_is(normcounts(scExp),"dgCMatrix")
+expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
+scExp=feature_annotation_scExp(scExp)
+expect_is(SummarizedExperiment::rowRanges(scExp),"GRanges")
 scExp = reduce_dims_scExp(scExp,n = 50,batch_correction = FALSE)
 expect_is(reducedDim(scExp,"PCA"),"data.frame")
 
@@ -25,30 +27,29 @@ scExp = colors_scExp(scExp,annotCol = c("sample_id","batch_id","total_counts"))
 plot_reduced_dim_scExp(scExp,reduced_dim = "PCA",color_by = "sample_id")
 
 scExp = correlation_and_hierarchical_clust_scExp(scExp)
-expect_is(normcounts(scExp),"dgCMatrix")
+expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
 scExp = filter_correlated_cell_scExp(scExp)
-expect_is(normcounts(scExp),"dgCMatrix")
-scExp = consensus_clustering_scExp(scExp,prefix = "")
-expect_is(normcounts(scExp),"dgCMatrix")
+expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
+scExp = consensus_clustering_scExp(scExp)
+expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
 expect_is(scExp@metadata$consclust,"list")
-expect_is(scExp@metadata$consclust[[2]]$consensusMatrix,"matrix")
-scExp = choose_cluster_scExp(scExp)
-expect_is(normcounts(scExp),"dgCMatrix")
+expect_is(scExp@metadata$consclust[[2]]$consensusClass,"integer")
+scExp = choose_cluster_scExp(scExp,nclust = 2)
+expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
 scExp = differential_analysis_scExp(scExp)
-expect_is(normcounts(scExp),"dgCMatrix")
+expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
 scExp = gene_set_enrichment_analysis_scExp(scExp,ref = "hg38",use_peaks = FALSE)
-expect_is(normcounts(scExp),"dgCMatrix")
-
+expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
 })
 
 #test sparse matrix + batch correction
 test_that("Sparse matrices + Batch Correction", {
   scExp = create_scExp(mat,annot)
-  expect_is(counts(scExp),"dgCMatrix")
+  expect_is(SingleCellExperiment::counts(scExp),"dgCMatrix")
   scExp = filter_scExp(scExp)
-  expect_is(counts(scExp),"dgCMatrix")
-  # scExp = normalize_scExp(scExp,type = "feature_size_only")
-  # expect_is(normcounts(scExp),"dgCMatrix")
+  expect_is(SingleCellExperiment::counts(scExp),"dgCMatrix")
+  scExp = normalize_scExp(scExp)
+  expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
   scExp = reduce_dims_scExp(scExp,n = 50,batch_correction = TRUE,
                             batch_list = list("batch_1"=c("sample_1","sample_2"),
                                               "batch_2"=c("sample_3","sample_4")))
@@ -142,7 +143,7 @@ test_that("No feature filter doesn't change number features", {
 test_that("Max cell filters remove all cells", {
   
   expect_equal(ncol(filter_scExp(scExp,
-                    min_cov_cell = max(Matrix::colSums(counts(scExp))) )),0 )
+                    min_cov_cell = max(Matrix::colSums(SingleCellExperiment::counts(scExp))) )),0 )
 })
 
 test_that("Max feature filters remove all features", {
@@ -214,47 +215,32 @@ test_that("Normalize features ", {
   expect_s4_class(normalize_scExp(scExp,"CPM"),"SingleCellExperiment")
   expect_s4_class(normalize_scExp(scExp,"RPKM"),"SingleCellExperiment")
   expect_s4_class(normalize_scExp(scExp,"feature_size_only"),"SingleCellExperiment")
-  rownames(scExp.) = paste0("Gene", 1:nrow(scExp.))
-  expect_warning(normalize_scExp(scExp.))
-  
+  rownames(scExp) = paste0("Gene", 1:nrow(scExp))
+  expect_warning(normalize_scExp(scExp))
 })
-
-reference_annotation = read.table("/media/pacome/LaCie/InstitutCurie/Documents/GitLab/ChromSCape/annotation/hg38/Gencode_TSS_pc_lincRNA_antisense.bed",col.names = c("chr","start","end","Gene"))
 
 #### feature_annotation
 # Function to normalize scExp
 # by library size, feature size or both
 test_that("Feature annotation wrong input", {
-  expect_error(feature_annotation_scExp(scExp))
   expect_error(feature_annotation_scExp(scExp,NULL))
   expect_error(feature_annotation_scExp(scExp,data.frame()))
-
 })
-
-# test_that("Feature annotation right inputf", {
-#   
-#   expect_s4_class(feature_annotation_scExp(scExp,reference_annotation),
-#                   "SingleCellExperiment")
-#   expect_s4_class(feature_annotation_scExp(scExp,makeGRangesFromDataFrame(reference_annotation,keep.extra.columns = TRUE) ),
-#                   "SingleCellExperiment")
-#   
-# })
 
 
 test_that("Dimensionality reduction wrong input", {
   expect_error(reduce_dims_scExp(scExp,"PCB"))
-  expect_error(reduce_dims_scExp(scExp,NULL))
+  expect_warning(reduce_dims_scExp(scExp,NULL))
   expect_error(reduce_dims_scExp(data.frame()))
 })
 
 
 test_that("Dimensionality reduction right input", {
-  expect_warning(normalize_scExp(scExp.))
-  scExp. = scExp
-  scExp. = normalize_scExp(scExp.)
-  pca_1 = reducedDim(reduce_dims_scExp(scExp.),"PCA")
-  pca_2 = as.data.frame(prcomp(Matrix::t(normcounts(scExp.)), retx = TRUE, center = TRUE, scale. = FALSE)$x[,1:50])
-  expect_equal(pca_1, pca_2)
+  set.seed(47)
+  scExp. = normalize_scExp(scExp)
+  pca_1 = SingleCellExperiment::reducedDim(reduce_dims_scExp(scExp.),"PCA")
+  pca_2 = as.data.frame(prcomp(Matrix::t(SingleCellExperiment::normcounts(scExp.)), retx = TRUE, center = TRUE, scale. = FALSE)$x[,1:50])
+  expect_equal(abs(pca_1[,1]), abs(pca_2[,1]))
 })
 
 
