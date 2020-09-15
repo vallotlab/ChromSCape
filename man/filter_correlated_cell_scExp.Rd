@@ -15,15 +15,15 @@ filter_correlated_cell_scExp(
 \arguments{
 \item{scExp}{A SingleCellExperiment object containing 'Cor', a correlation matrix, in reducedDims.}
 
-\item{random_iter}{Number of random matrices to create to calculate random correlation scores. \link{50}}
+\item{random_iter}{Number of random matrices to create to calculate random correlation scores. (50)}
 
 \item{corr_threshold}{Quantile of random correlation score above which a cell is considered
-to be 'correlated' with another cell. \link{99}}
+to be 'correlated' with another cell. (99)}
 
 \item{percent_correlation}{Percentage of the cells that any cell must be 'correlated' to in order to
-not be filtered. \link{1}}
+not be filtered. (1)}
 
-\item{verbose}{\link{TRUE}}
+\item{verbose}{(TRUE)}
 }
 \value{
 Returns a SingleCellExperiment object without lowly correlated cells. The

@@ -17,23 +17,23 @@ annotToCol2(
 )
 }
 \arguments{
-\item{annotS}{}
+\item{annotS}{A color matrix}
 
-\item{annotT}{}
+\item{annotT}{A color matrix}
 
-\item{missing}{}
+\item{missing}{Convert missing to NA}
 
-\item{anotype}{}
+\item{anotype}{Annotation type}
 
-\item{maxnumcateg}{}
+\item{maxnumcateg}{Maximum number of categories}
 
-\item{categCol}{}
+\item{categCol}{Categorical columns}
 
-\item{quantitCol}{}
+\item{quantitCol}{Quantitative columns}
 
-\item{plotLegend}{}
+\item{plotLegend}{Plot legend ?}
 
-\item{plotLegendFile}{}
+\item{plotLegendFile}{Which file to plot legend ?}
 }
 \value{
 A matrix of continuous or discrete colors
@@ -43,6 +43,6 @@ annotToCol2
 }
 \examples{
 data("scExp")
-annotToCol2(colData(scExp))
+annotToCol2(SingleCellExperiment::colData(scExp))
 
 }

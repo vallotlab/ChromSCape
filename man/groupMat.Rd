@@ -7,13 +7,13 @@
 groupMat(mat = NA, margin = 1, groups = NA, method = "mean")
 }
 \arguments{
-\item{mat}{}
+\item{mat}{A matrix}
 
-\item{margin}{}
+\item{margin}{By row or columns ?}
 
-\item{groups}{}
+\item{groups}{Groups}
 
-\item{method}{}
+\item{method}{Method to group}
 }
 \value{
 A grouped matrix

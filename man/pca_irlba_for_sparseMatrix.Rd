@@ -7,17 +7,13 @@
 pca_irlba_for_sparseMatrix(x, n_comp)
 }
 \arguments{
-\item{n_comp}{}
+\item{x}{A sparse normalized matrix (features x cells)}
+
+\item{n_comp}{The number of principal components to keep}
 }
 \value{
 The rotated data, e.g. the cells x PC column in case of sc data.
 }
 \description{
 Run sparse PCA using irlba SVD
-}
-\examples{
-
-pca_irlba_for_sparseMatrix(matrix(runif(100),nrow = 250,ncol=250),15)
-pca_irlba_for_sparseMatrix(as(matrix(runif(100),nrow = 250,ncol=250),"dgCMatrix"),15)
-
 }

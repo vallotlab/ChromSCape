@@ -7,9 +7,9 @@
 bams_to_matrix_indexes(files_dir, which)
 }
 \arguments{
-\item{files_dir}{}
+\item{files_dir}{Directory containing the single cell BAM files}
 
-\item{which}{}
+\item{which}{Genomic Range on which to count}
 }
 \value{
 A list containing a "feature index" data.frame and a

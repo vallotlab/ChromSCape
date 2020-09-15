@@ -15,7 +15,19 @@ create_scDataset_raw(
 )
 }
 \arguments{
-\item{batch_id}{}
+\item{cells}{Number of cells (300)}
+
+\item{features}{Number of features (600)}
+
+\item{featureType}{Type of feature (window)}
+
+\item{sparse}{Is matrix sparse ? (TRUE)}
+
+\item{nsamp}{Number of samples (4)}
+
+\item{ref}{Reference genome ('hg38')}
+
+\item{batch_id}{Batch origin (c(1,2,3,4))}
 }
 \value{
 A list composed of

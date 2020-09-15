@@ -17,9 +17,23 @@ raw_counts_to_feature_count_files(
 )
 }
 \arguments{
-\item{file_type}{}
+\item{files_dir}{The directory containing the files}
 
-\item{ref}{reference genome to use \link{hg38}}
+\item{file_type}{Input file(s) type(s) ('BAM')}
+
+\item{peak_file}{A file containing genomic location of peaks (NULL)}
+
+\item{n_bins}{The number of bins to tile the genome (NULL)}
+
+\item{bin_width}{The size of bins to tile the genome (NULL)}
+
+\item{geneTSS}{Use geneTSS regions for annotation ? (NULL)}
+
+\item{aroundTSS}{Space up and downstream of TSS to use (2500)}
+
+\item{verbose}{Verbose (TRUE)}
+
+\item{ref}{reference genome to use (hg38)}
 }
 \value{
 A sparse matrix of features x cells
@@ -31,7 +45,7 @@ This function takes three different type of single-cell input:
 \item Single cell BED files (gzipped)
 \item A combination of an index file, a peak file and cell barcode file
 (The index file is composed of three column: index i, index j and value x for the
-non zeroes entries in the sparse matrix. @seealso Matrix::sparseMatrix)
+non zeroes entries in the sparse matrix.)
 }
 
 This functions re-counts signal on either fixed genomic bins, a set of

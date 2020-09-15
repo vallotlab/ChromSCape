@@ -17,13 +17,15 @@ differential_analysis_scExp(
 \item{scExp}{A SingleCellExperiment object containing consclust with selected number of cluster.}
 
 \item{de_type}{Type of comparisons. Either 'one_vs_rest', to compare each cluster against all others, or
-'pairwise' to make 1 to 1 comparisons. \link{'one_vs_rest'}}
+'pairwise' to make 1 to 1 comparisons. ('one_vs_rest')}
 
-\item{qval.th}{Adjusted p-value threshold. \link{0.01}}
+\item{method}{Wilcoxon or edgerGLM}
 
-\item{cdiff.th}{Fold change threshold. \link{1}}
+\item{qval.th}{Adjusted p-value threshold. (0.01)}
 
-\item{block}{}
+\item{cdiff.th}{Fold change threshold. (1)}
+
+\item{block}{Use batches as blocking factors ?}
 }
 \value{
 Returns a SingleCellExperiment object containing a differential list.

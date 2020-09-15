@@ -9,7 +9,7 @@ subsample_scExp(scExp, n_cells = 500)
 \arguments{
 \item{scExp}{A SingleCellExperiment}
 
-\item{n_cells}{An integer number of cells to subsample for each sample \link{500}}
+\item{n_cells}{An integer number of cells to subsample for each sample (500)}
 }
 \value{
 A subsampled SingleCellExperiment

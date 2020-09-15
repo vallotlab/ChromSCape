@@ -7,15 +7,15 @@
 enrichmentTest(gene.sets, mylist, possibleIds, sep = ";", silent = FALSE)
 }
 \arguments{
-\item{gene.sets}{}
+\item{gene.sets}{A list of reference gene sets}
 
-\item{mylist}{}
+\item{mylist}{A list of genes to test}
 
-\item{possibleIds}{}
+\item{possibleIds}{All existing genes}
 
-\item{sep}{}
+\item{sep}{Separator used to collapse genes}
 
-\item{silent}{}
+\item{silent}{Silent mode ?}
 }
 \value{
 A dataframe with the gene sets and their enrichment p.value

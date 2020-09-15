@@ -14,7 +14,17 @@ split_bam_file_into_single_cell_bams(
 )
 }
 \arguments{
-\item{verbose}{}
+\item{bam_file}{BAM file}
+
+\item{sample_id}{Name of the sample}
+
+\item{outdir}{Output directory}
+
+\item{min_coverage}{Minimum coverage to keep a cell (500)}
+
+\item{barcode_tag}{Under which tag is the barcode information stored ? ("XB")}
+
+\item{verbose}{Verbose (TRUE)}
 }
 \value{
 Splitted single-cell Bam files

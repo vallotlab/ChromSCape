@@ -7,15 +7,11 @@
 distPearson(m)
 }
 \arguments{
-\item{m}{}
+\item{m}{A matrix}
 }
 \value{
 A dist object
 }
 \description{
 distPearson
-}
-\examples{
-m = matrix(runif(100),runif(100),ncol=100,nrow=100)
-distPearson(m)
 }

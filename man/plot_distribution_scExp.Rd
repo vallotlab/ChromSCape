@@ -13,15 +13,15 @@ plot_distribution_scExp(
 )
 }
 \arguments{
-\item{scExp}{}
+\item{scExp}{A SingleCellExperiment Object}
 
-\item{raw}{}
+\item{raw}{Use raw counts ?}
 
-\item{log10}{}
+\item{log10}{Transform using log10 ?}
 
-\item{pseudo_counts}{}
+\item{pseudo_counts}{Pseudo-count to add if using log10}
 
-\item{bins}{}
+\item{bins}{Number of bins in the histogram}
 }
 \value{
 A ggplot histogram representing the distribution of count per cell

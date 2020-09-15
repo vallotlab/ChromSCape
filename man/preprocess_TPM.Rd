@@ -7,7 +7,7 @@
 preprocess_TPM(scExp)
 }
 \arguments{
-\item{scExp}{}
+\item{scExp}{A SingleCellExperiment Object}
 }
 \value{
 A SingleCellExperiment object.

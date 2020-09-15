@@ -15,19 +15,19 @@ subset_bam_call_peaks(
 )
 }
 \arguments{
-\item{scExp}{}
+\item{scExp}{A SingleCellExperiment object}
 
 \item{odir}{Output directory where to write temporary files and each cluster's BAM file}
 
 \item{inputBam}{A character vector of file paths to each sample's BAM file, containing cell
 barcode information as tags. BAM files can be paired-end or single-end.}
 
-\item{p.value}{a p-value to use for MACS2 to determine significant peaks. \link{0.05}}
+\item{p.value}{a p-value to use for MACS2 to determine significant peaks. (0.05)}
 
-\item{ref}{A reference genome, either hg38 or mm10. \link{'hg38'}}
+\item{ref}{A reference genome, either hg38 or mm10. ('hg38')}
 
 \item{peak_distance_to_merge}{Maximal distance to merge peaks together after peak calling
-, in bp. \link{10000}}
+, in bp. (10000)}
 
 \item{geneTSS_annotation}{A data.frame annotation of genes TSS. If NULL will automatically load
 Gencode list of genes fro specified reference genome.}
@@ -43,7 +43,7 @@ in-silico cell sorting is applied based on previously defined clusters contained
 Taking BAM files of each sample as input, samtools pools then splits reads from
 each cell barcode into 1 BAM file per cell cluster (pseudo-bulk). Then MACS2 calls
 peaks on each cluster. The peaks are aggregated and merged if closer to a certain distance
-defined by user \link{default to 10000bp}. Then,
+defined by user (10000bp). Then,
 }
 \details{
 This function takes as input a SingleCellExperiment, that must contain
@@ -62,8 +62,5 @@ The peaks may be present in several rows if multiple genes are close / overlap t
 Note that the user must have samtools & MACS2 installed and available in the PATH.
 Users can open command terminal and type 'which samtools' & 'which macs2' to verify
 the availability of these programs. Will only work on unix operating system. Check
-operating system with 'print(.Platform\link{1})'.
-}
-\examples{
-
+operating system with 'print(.Platform)'.
 }

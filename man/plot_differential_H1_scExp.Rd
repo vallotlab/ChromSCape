@@ -7,9 +7,9 @@
 plot_differential_H1_scExp(scExp_cf, cell_cluster = "C1")
 }
 \arguments{
-\item{scExp_cf}{}
+\item{scExp_cf}{A SingleCellExperiment object}
 
-\item{cell_cluster}{}
+\item{cell_cluster}{Which cluster to plot}
 }
 \value{
 A barplot of H1 distribution

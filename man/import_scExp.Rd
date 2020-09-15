@@ -11,7 +11,7 @@ import_scExp(file_names, path_to_matrix = NULL)
 epigenomic matrices (features x cells) (must be .txt / .tsv)}
 
 \item{path_to_matrix}{In case matrices are stored in temporary folder,
-a character vector of path towards temporary files. \link{NULL}}
+a character vector of path towards temporary files. (NULL)}
 }
 \value{
 A list containing:

@@ -16,16 +16,16 @@ filter_scExp(
 \arguments{
 \item{scExp}{A SingleCellExperiment object.}
 
-\item{min_cov_cell}{Minimum counts for each cell. \link{1600}}
+\item{min_cov_cell}{Minimum counts for each cell. (1600)}
 
 \item{quant_removal}{Centile of cell counts above which cells are removed.
-\link{95}}
+(95)}
 
-\item{percentMin}{Minimum percent of cells 'ON' in feature. \link{1}}
+\item{percentMin}{Minimum percent of cells 'ON' in feature. (1)}
 
-\item{bin_min_count}{Minimum number of counts to define if cell is 'ON'. \link{2}}
+\item{bin_min_count}{Minimum number of counts to define if cell is 'ON'. (2)}
 
-\item{verbose}{\link{TRUE}}
+\item{verbose}{(TRUE)}
 }
 \value{
 Returns a filtered SingleCellExperiment object.
