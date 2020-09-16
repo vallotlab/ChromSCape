@@ -24,7 +24,7 @@ imageCol(
 
 \item{drawLines}{Draw lines ?}
 
-\item{...}{Additional parameteres}
+\item{...}{Additional parameters}
 }
 \value{
 A rectangular image

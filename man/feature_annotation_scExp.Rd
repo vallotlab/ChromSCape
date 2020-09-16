@@ -23,7 +23,7 @@ Add gene annotations to features
 \examples{
 scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
 scExp = feature_annotation_scExp(scExp)
-head(rowRanges(scExp))
+head(SummarizedExperiment::rowRanges(scExp))
 
 # Mouse 
 scExp = create_scExp(create_scDataset_raw(ref="mm10")$mat,

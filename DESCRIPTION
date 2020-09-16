@@ -13,7 +13,7 @@ Authors@R: c(person(given = "Pacome",
            comment = c(ORCID = "0000-0003-1601-2359")))
 Description: ChromSCape - single-cell chromatin landscape profiling - is a ready-to-launch user-friendly Shiny application for the analysis of single-cell epigenomic datasets (scChIP-seq, scATAC-seq...) from raw data to differential analysis & gene set enrichment analysis. It is highly interactive, let user save their analysis and covers the whole single-cell analysis : QC, preprocessing, filtering, dimensionality reduction, vizualisation, clustering, differential analysis, gene set analysis... 
 License: GPL-3
-biocViews: Software, SingleCell, ChIPSeq, ATACSeq, MethylSeq, Classification, Clustering, Epigenetics, PrincipalComponent, SingleCell, ATACSeq, ChIPSeq, Annotation, BatchEffect, MultipleComparison, Normalization, Pathways, Preprocessing, QualityControl, ReportWriting, Visualization, GeneSetEnrichment
+biocViews: Software, SingleCell, ChIPSeq, ATACSeq, MethylSeq, Classification, Clustering, Epigenetics, PrincipalComponent, SingleCell, ATACSeq, ChIPSeq, Annotation, BatchEffect, MultipleComparison, Normalization, Pathways, Preprocessing, QualityControl, ReportWriting, Visualization, GeneSetEnrichment, DifferentialPeakCalling
 VignetteBuilder: knitr
 URL: https://github.com/vallotlab/ChromSCape
 BugReports: https://github.com/vallotlab/ChromSCape/issues

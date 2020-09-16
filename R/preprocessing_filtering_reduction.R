@@ -588,11 +588,11 @@ peaks_to_bins <- function(mat,
     }
     
     peaks = rownames(mat)
-    peaks_chr = sapply(strsplit(peaks, ":|-|_"), function(x)
-        x[1])
-    peaks_start = as.numeric(sapply(strsplit(peaks, ":|-|_"), function(x)
+    peaks_chr = as.character(lapply(strsplit(peaks, ":|-|_"), function(x)
+        x[1]))
+    peaks_start = as.numeric(lapply(strsplit(peaks, ":|-|_"), function(x)
         x[2]))
-    peaks_end = as.numeric(sapply(strsplit(peaks, ":|-|_"), function(x)
+    peaks_end = as.numeric(lapply(strsplit(peaks, ":|-|_"), function(x)
         x[3]))
     
     if (anyNA(peaks_start) | anyNA(peaks_end))
@@ -711,8 +711,8 @@ create_scDataset_raw <- function(cells = 300,
     
     # Create cell names
     cell_counts <-
-        sapply(split(seq_len(cells), sample(nsamp, cells, repl = TRUE)),
-               length)
+        as.numeric(lapply(split(seq_len(cells), sample(nsamp, cells, repl = TRUE)),
+               length))
     cell_names <- sample <- batches <- list()
     for (i in seq_along(cell_counts))
     {
@@ -752,11 +752,11 @@ create_scDataset_raw <- function(cells = 300,
     {
         size_peaks <- c(1000, 2500, 7999, 10000, 150000, 10 ^ 6)
         # Different size of peaks
-        peaks <- sapply(split(seq_len(features), sample(
+        peaks <- as.numeric(lapply(split(seq_len(features), sample(
             length(size_peaks),
             features, repl = TRUE
         )),
-        length)
+        length))
         chr_ranges_list <- GenomicRanges::GRangesList()
         for (i in seq_along(peaks))
         {
@@ -877,7 +877,7 @@ import_scExp <- function(file_names,
     if (is.null(path_to_matrix))
         path_to_matrix = file_names
     
-    if (FALSE %in% sapply(path_to_matrix, file.exists))
+    if (FALSE %in% as.logical(lapply(path_to_matrix, file.exists)) )
         stop(paste0(
             "ChromSCape::import_scExp - can't find one of the matrix files."
         ))
@@ -887,17 +887,7 @@ import_scExp <- function(file_names,
     for (i in seq_along(file_names)) {
         sample_name <- gsub('.{4}$', '', basename(file_names[i]))
         
-        format_test = as.character(read.table(
-            path_to_matrix[i],
-            header = FALSE,
-            sep = "\t",
-            nrows = 5
-        )[4, ])
-        
-        if (length(format_test) > 3)
-            separator = "\t"
-        else
-            separator = ","
+        separator <- separator_count_mat(path_to_matrix[i])
         
         format_test = read.table(
             path_to_matrix[i],
@@ -905,6 +895,7 @@ import_scExp <- function(file_names,
             sep = separator,
             nrows = 5
         )
+        
         separated_chr_start_end = c(
             grep("chr", colnames(format_test)[seq_len(3)]),
             grep("start|begin", colnames(format_test)[seq_len(3)]),
@@ -914,32 +905,12 @@ import_scExp <- function(file_names,
         
         if (length(separated_chr_start_end) > 0 &&
             all.equal(separated_chr_start_end, c(1, 2, 3))) {
-            val = c("NULL", "NULL", "NULL",
-                    rep("integer", length(colnames(
-                        format_test
-                    )) - 3))
-            datamatrix_single = as(as.matrix(
-                read.table(
-                    path_to_matrix[i],
-                    header = TRUE,
-                    sep = separator,
-                    colClasses = val
-                )
-            ), "dgCMatrix")
-            gc()
             
-            val = c("character",
-                    "integer",
-                    "integer",
-                    rep("NULL", ncol(datamatrix_single)))
-            regions = read.table(
+            datamatrix_single = read_count_mat_with_separated_chr_start_end(
                 path_to_matrix[i],
-                header = TRUE,
-                sep = separator,
-                colClasses = val
+                format_test,
+                separator
             )
-            regions = paste0(regions[, 1], ":", regions[, 2], "-", regions[, 3])
-            rownames(datamatrix_single) = regions
             
         } else{
             datamatrix_single <- scater::readSparseCounts(path_to_matrix[i],
@@ -947,74 +918,9 @@ import_scExp <- function(file_names,
                                                           chunk = 1000L)
         }
         gc()
-        #perform some checks on data format
-        matchingRN <-
-            grep(
-                "[[:alnum:]]+(:|_)[[:digit:]]+(-|_)[[:digit:]]+",
-                rownames(datamatrix_single)
-            ) # check rowname format
         
-        if (length(matchingRN) < length(rownames(datamatrix_single))) {
-            warning(
-                paste0(
-                    "ChromSCape::import_scExp - ",
-                    sample_name,
-                    " contains ",
-                    (length(
-                        rownames(datamatrix_single)
-                    ) - length(matchingRN)),
-                    " rownames that do not conform to the required format.
-                    Please check your data matrix and try again."
-                )
-                )
-            if (length(matchingRN) < 5) {
-                # almost all rownames are wrong
-                stop(
-                    "ChromSCape::import_scExp - Maybe your rownames are contained
-                    in the first column instead? In this case, remove the header of
-                    this column so that they are interpreted as rownames."
-                )
-            }
-            return()
-            }
+        datamatrix_single <- check_correct_datamatrix(datamatrix_single)
         
-        numericC <-
-            apply(datamatrix_single[seq_len(5), seq_len(5)], MARGIN = 2, is.numeric) # check if matrix is numeric
-        if (sum(numericC) < 5) {
-            stop(
-                paste0(
-                    "ChromSCape::import_scExp - ",
-                    sample_name,
-                    " contains non-numeric columns at the following indices: ",
-                    which(numericC == FALSE),
-                    ". Please check your data matrix and try again."
-                )
-            )
-        }
-        
-        if (all.equal(rownames(datamatrix_single)[seq_len(5)],
-                      c("1", "2", "3", "4", "5")) == TRUE) {
-            warning(
-                paste0(
-                    "ChromSCape::import_scExp - ",
-                    sample_name,
-                    " contains numeric rownames, taking first column as rownames."
-                )
-            )
-            names = datamatrix_single$X0
-            datamatrix_single = datamatrix_single[, -1]
-            rownames(datamatrix_single) = names
-        }
-        
-        datamatrix_single <-
-            datamatrix_single[!duplicated(rownames(datamatrix_single)), ]
-        
-        if (length(grep("chr", rownames(datamatrix_single)[seq_len(10)], perl = TRUE)) >= 9) {
-            rownames(datamatrix_single) <-
-                gsub(":", "_", rownames(datamatrix_single))
-            rownames(datamatrix_single) <-
-                gsub("-", "_", rownames(datamatrix_single))
-        }
         gc()
         total_cell <- length(datamatrix_single[1, ])
         annot_single <-
@@ -1074,6 +980,161 @@ import_scExp <- function(file_names,
         }
     out = list("datamatrix" = datamatrix, "annot_raw" = annot_raw)
     return(out)
+}
+
+
+
+#' Determine Count matrix separator ("tab" or ",")
+#'
+#' @param path Path towards count matrix
+#'
+#' @return A character separator
+#'
+
+separator_count_mat <- function(path_to_matrix){
+    format_test = as.character(read.table(
+        path_to_matrix,
+        header = FALSE,
+        sep = "\t",
+        nrows = 5
+    )[4, ])
+    
+    if (length(format_test) > 3)
+        separator = "\t"
+    else
+        separator = ","
+    
+    return(separator)
+}
+
+#' Read a count matrix with three first columns (chr,start,end)
+#'
+#' @param path_to_matrix Path to the count matrix
+#' @param format_test Sample of the read.table
+#' @param separator Separator character
+#'
+#' @return A sparseMatrix with rownames in the form "chr1:1222-55555"
+#'
+read_count_mat_with_separated_chr_start_end <- function(
+    path_to_matrix,
+    format_test,
+    separator
+){
+    val = c("NULL", "NULL", "NULL",
+            rep("integer", length(colnames(
+                format_test
+            )) - 3))
+    
+    datamatrix_single = as(as.matrix(
+        read.table(
+            path_to_matrix,
+            header = TRUE,
+            sep = separator,
+            colClasses = val
+        )
+    ), "dgCMatrix")
+    gc()
+    
+    val = c("character",
+            "integer",
+            "integer",
+            rep("NULL", ncol(datamatrix_single)))
+    regions = read.table(
+        path_to_matrix,
+        header = TRUE,
+        sep = separator,
+        colClasses = val
+    )
+    regions = paste0(regions[, 1], ":", regions[, 2], "-", regions[, 3])
+    rownames(datamatrix_single) = regions
+    
+    return(datamatrix_single)
+}
+
+
+#' Check if matrix rownames are well formated and correct if needed
+#'
+#' Throws warnings / error if matrix is in the wrong format
+#' 
+#' @param datamatrix_single A sparse matrix
+#' @param sample_name Matrix sample name for warnings
+#' 
+#' 
+#' @return A sparseMatrix in the right rownames format 
+#'
+#' @examples
+#' check_correct_datamatrix(create_scDataset_raw()$mat)
+check_correct_datamatrix <- function(datamatrix_single,sample_name=""){
+    #perform some checks on data format
+    matchingRN <-
+        grep(
+            "[[:alnum:]]+(:|_)[[:digit:]]+(-|_)[[:digit:]]+",
+            rownames(datamatrix_single)
+        ) # check rowname format
+    
+    if (length(matchingRN) < length(rownames(datamatrix_single))) {
+        warning(
+            paste0(
+                "ChromSCape::import_scExp - ",
+                sample_name,
+                " contains ",
+                (length(
+                    rownames(datamatrix_single)
+                ) - length(matchingRN)),
+                " rownames that do not conform to the required format.
+                    Please check your data matrix and try again."
+            )
+        )
+        if (length(matchingRN) < 5) {
+            # almost all rownames are wrong
+            stop(
+                "ChromSCape::import_scExp - Maybe your rownames are contained
+                    in the first column instead? In this case, remove the header of
+                    this column so that they are interpreted as rownames."
+            )
+        }
+        return()
+    }
+    
+    numericC <-
+        apply(datamatrix_single[seq_len(5), seq_len(5)], MARGIN = 2, is.numeric) # check if matrix is numeric
+    if (sum(numericC) < 5) {
+        stop(
+            paste0(
+                "ChromSCape::import_scExp - ",
+                sample_name,
+                " contains non-numeric columns at the following indices: ",
+                which(numericC == FALSE),
+                ". Please check your data matrix and try again."
+            )
+        )
+    }
+    
+    if (all.equal(rownames(datamatrix_single)[seq_len(5)],
+                  c("1", "2", "3", "4", "5")) == TRUE) {
+        warning(
+            paste0(
+                "ChromSCape::import_scExp - ",
+                sample_name,
+                " contains numeric rownames, taking first column as rownames."
+            )
+        )
+        names = datamatrix_single$X0
+        datamatrix_single = datamatrix_single[, -1]
+        rownames(datamatrix_single) = names
+    }
+    
+    datamatrix_single <-
+        datamatrix_single[!duplicated(rownames(datamatrix_single)), ]
+    
+    if (length(grep("chr", rownames(datamatrix_single)[seq_len(10)], perl = TRUE)) >= 9) {
+        rownames(datamatrix_single) <-
+            gsub(":", "_", rownames(datamatrix_single))
+        rownames(datamatrix_single) <-
+            gsub("-", "_", rownames(datamatrix_single))
+    }
+    
+    return(datamatrix_single)
 }
 
 #' Wrapper to create the single cell experiment from count matrix and feature
@@ -1157,11 +1218,11 @@ create_scExp <- function(datamatrix,
         if (remove_non_canonical)
         {
             # Removing non-canonical chromosomes
-            splitID <- sapply(rownames(scExp), function(x)
+            splitID <- lapply(rownames(scExp), function(x)
             {
-                strsplit(as.character(x),
+                unlist(strsplit(as.character(x),
                          split = "_|:|-",
-                         fixed = FALSE)
+                         fixed = FALSE))
             })
             normal_chr <- which(sapply(splitID, length) <= 3)
             # weird chromosomes contain _/:/- in the name

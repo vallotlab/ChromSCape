@@ -139,10 +139,10 @@ paired PDX samples at: [PDX mouse cells H3K27me3 scChIP-seq matrices](https://nd
 <br>
 
 >
- 	BC969404	BC893525	BC239068	BC073314
-chr10:0-50000	0	0	0	0
-chr10:50000-100000	0	0	0	0
-chr10:100000-150000	0	0	0	0
+ BC969404 BC893525 BC239068 BC073314
+chr10:0-50000 0 0 0 0
+chr10:50000-100000 0 0 0 0
+chr10:100000-150000 0 0 0 0
 ...
 >
   
@@ -166,9 +166,9 @@ HBCx22_BC073314
 and finish by '_peaks.bed': 
 
 >
-chr3	197959001	197961500
-chr3	198080001	198081500
-chr4	53001	55500
+chr3 197959001 197961500
+chr3 198080001 198081500
+chr4 53001 55500
 ...
 >
   
@@ -177,9 +177,9 @@ the first column is the index of peaks, the second column contains barcode index
 the last column contains the signal: 
 
 >
-459	1	1
-461	1	1
-556	1	2
+459 1 1
+461 1 1
+556 1 2
 >
 
 <br>
@@ -209,7 +209,7 @@ to the column names of the corresponding count matrix.
 
 >
 samtools view example_matrix.bam | head
-NS500388:436:HNG5VAFXX:2:21311:26430:3816	89	chr10	3102405	255	51M	*	0	0	CTTGGTGTCTAGTGGATCTGCTGCAGTCTTCTGTTGTCAGTGCTAAATCAC	EEEEE/E6EEEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAAAAA	NH:i:1	HI:i:1	AS:i:50	nM:i:0	XS:i:2147483647	XD:Z:GATGACAAAG	XB:Z:BC969404
+NS500388:436:HNG5VAFXX:2:21311:26430:3816 89 chr10 3102405 255 51M * 0 0 CTTGGTGTCTAGTGGATCTGCTGCAGTCTTCTGTTGTCAGTGCTAAATCAC EEEEE/E6EEEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAAAAA NH:i:1 HI:i:1 AS:i:50 nM:i:0 XS:i:2147483647 XD:Z:GATGACAAAG XB:Z:BC969404
 ...
 >
 
@@ -357,7 +357,7 @@ This step of the analysis is optional, but recommended for Gene Set Analysis if 
 You need to input BAM files for the samples (one separate BAM file per sample), with each read being labeled with the barcode ID in the 'XB' tag. ChromSCape merges all files and splits them again according to the previously determined clusters of cells (one separate BAM file per cluster). To do so, place all your BAM files in a folder and click on the 'Choose a folder containing the BAM files' button to browse for your folder. If some of the BAM files in the folder are not part of your analyis, remove them by pressing the write box and deleting them.    
 
 You  can select significance threshold for peak detection (passed to MACS2) and merging distance for peaks (defaults to p-value=0.05 and peak merge distance to 5,000). This allows to identify peaks in close proximity (<1,000bp) to a gene transcription start site (TSS); these genes will be later used as input for the enrichment analysis.  
-	
+ 
 <br>
 
 ![<br> <br> **Peak Calling to refine bins to gene annotation: ** Call peaks on 'pseudo-bulk' cell clusters, and refine bins to genes annotation.](../inst/www/Guide_images/Step5_peak_calling.png) 

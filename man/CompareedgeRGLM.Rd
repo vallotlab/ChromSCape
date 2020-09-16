@@ -42,7 +42,7 @@ ref_group = list("C1"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C1")])
 groups = list("C2"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C2")])
 myres = CompareedgeRGLM(as.matrix(SingleCellExperiment::counts(scExp_cf)),
 annot=as.data.frame(SingleCellExperiment::colData(scExp_cf)),
-              ref_group=ref_group,groups=groups, featureTab=featureTab)
+            ref_group=ref_group,groups=groups, featureTab=featureTab)
 
 }
 \author{

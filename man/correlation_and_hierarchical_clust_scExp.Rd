@@ -31,5 +31,5 @@ and outputs a SingleCellExperiment object with correlation matrix and hierarchic
 \examples{
 data("scExp")
 scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
- 
+
 }

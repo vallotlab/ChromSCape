@@ -41,9 +41,9 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
                                        method = "wilcox",
                                        qval.th = 0.01, 
                                        cdiff.th = 1, block = NULL)
-    {
+{
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(de_type), is.numeric(qval.th), 
-        is.numeric(cdiff.th))
+              is.numeric(cdiff.th))
     
     if (!de_type %in% c("one_vs_rest", "pairwise")) 
         stop("ChromSCape::run_differential_analysis_scExp - de_type must be 'one_vs_rest' or 'pairwise'.")
@@ -67,8 +67,8 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
     }
     
     feature = data.frame(ID = SingleCellExperiment::rowData(scExp)[, "ID"], chr = SingleCellExperiment::rowData(scExp)[, 
-        "chr"], start = SingleCellExperiment::rowData(scExp)[, "start"], end = SingleCellExperiment::rowData(scExp)[, 
-        "end"])
+                                                                                                                       "chr"], start = SingleCellExperiment::rowData(scExp)[, "start"], end = SingleCellExperiment::rowData(scExp)[, 
+                                                                                                                                                                                                                                   "end"])
     affectation = as.data.frame(SingleCellExperiment::colData(scExp))
     
     diff = list(res = NULL, summary = NULL, groups = NULL, refs = NULL)
@@ -93,8 +93,8 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
             groups = mygps, featureTab = feature, block = block)
         } else {
             res = CompareedgeRGLM( dataMat = counts, 
-                                        annot = affectation, ref_group = myrefs,
-                                        groups = mygps, featureTab = feature)
+                                   annot = affectation, ref_group = myrefs,
+                                   groups = mygps, featureTab = feature)
             colnames(res)[grep("logCPM",colnames(res))] = gsub("logCPM","Count",
                                                                colnames(res)[grep("logCPM",colnames(res))])
             colnames(res)[grep("log2FC",colnames(res))] = gsub("log2FC","cdiff",
@@ -111,13 +111,13 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
         for (i in seq_len((as.integer(nclust) - 1)))
         {
             mygps = list(affectation[which(affectation$cell_cluster == paste0("C", 
-                i)), "cell_id"])
+                                                                              i)), "cell_id"])
             names(mygps) = paste0("C", i)
             groups = names(mygps)
             for (j in (i + 1):as.integer(nclust))
             {
                 myrefs = list(affectation[which(affectation$cell_cluster == paste0("C", 
-                  j)), "cell_id"])
+                                                                                   j)), "cell_id"])
                 names(myrefs) = paste0("C", j)
                 refs = names(myrefs)
                 if(method == "wilcox") tmp_result = CompareWilcox(
@@ -125,12 +125,12 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
                     groups = mygps, featureTab = feature)
                 else {
                     tmp_result = CompareedgeRGLM(
-                    dataMat = counts, annot = affectation, ref = myrefs,
-                    groups = mygps, featureTab = feature)
-                colnames(tmp_result)[grep("logCPM",colnames(tmp_result))] = gsub("logCPM","Count",
-                                                                   colnames(tmp_result)[grep("logCPM",colnames(tmp_result))])
-                colnames(tmp_result)[grep("log2FC",colnames(tmp_result))] = gsub("log2FC","cdiff",
-                                                                   colnames(tmp_result)[grep("log2FC",colnames(tmp_result))])
+                        dataMat = counts, annot = affectation, ref = myrefs,
+                        groups = mygps, featureTab = feature)
+                    colnames(tmp_result)[grep("logCPM",colnames(tmp_result))] = gsub("logCPM","Count",
+                                                                                     colnames(tmp_result)[grep("logCPM",colnames(tmp_result))])
+                    colnames(tmp_result)[grep("log2FC",colnames(tmp_result))] = gsub("log2FC","cdiff",
+                                                                                     colnames(tmp_result)[grep("log2FC",colnames(tmp_result))])
                 }
                 
                 tmp_result = tmp_result[match(count_save$ID, tmp_result$ID), ]
@@ -153,11 +153,11 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
         }
         # get count for last group as the loop doesn't cover it
         tmp.gp = list(affectation[which(affectation$cell_cluster == paste0("C", 
-            nclust)), "cell_id"])
+                                                                           nclust)), "cell_id"])
         count_save[, paste0("C", nclust)] = apply(counts, 1, function(x) mean(x[as.character(tmp.gp[[1]])]))
         combinedTests = scran::combineMarkers(de.lists = single_results, pairs = pairs, 
-            pval.field = "p.val", effect.field = "cdiff", pval.type = "any", log.p.in = FALSE, 
-            log.p.out = FALSE, output.field = "stats", full.stats = TRUE)
+                                              pval.field = "p.val", effect.field = "cdiff", pval.type = "any", log.p.in = FALSE, 
+                                              log.p.out = FALSE, output.field = "stats", full.stats = TRUE)
         for (i in seq_len(as.integer(nclust)))
         {
             cdiffs = sapply(seq_len((as.integer(nclust) - 1)), function(k)
@@ -165,31 +165,31 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
                 combinedTests[[paste0("C", i)]][feature$ID, k + 4]$cdiff
             })
             res[, paste0("Rank.C", i)] = combinedTests[[paste0("C", i)]][feature$ID, 
-                "Top"]
+                                                                         "Top"]
             res[, paste0("Count.C", i)] = as.numeric(count_save[, paste0("C", i)])
             res[, paste0("cdiff.C", i)] = Matrix::rowMeans(cdiffs)
             res[, paste0("pval.C", i)] = combinedTests[[paste0("C", i)]][feature$ID, 
-                "p.value"]
+                                                                         "p.value"]
             res[, paste0("qval.C", i)] = combinedTests[[paste0("C", i)]][feature$ID, 
-                "FDR"]
+                                                                         "FDR"]
         }
         groups = paste0("C", seq_len(nclust))  #needed for following code
         refs = paste0("pairedTest", seq_len(nclust))
     }
     
     diff$summary = matrix(nrow = 3, ncol = length(groups), dimnames = list(c("differential", 
-        "over", "under"), groups))
+                                                                             "over", "under"), groups))
     for (k in seq_along(groups))
     {
         gpsamp = groups[k]
         
         # For log2(x1/x2) > 1 || log2(x1/x2) > -1
         diff$summary["differential", gpsamp] = sum(res[, paste("qval", gpsamp, sep = ".")] <= 
-            qval.th & abs(res[, paste("cdiff", gpsamp, sep = ".")]) > cdiff.th, na.rm = TRUE)
+                                                       qval.th & abs(res[, paste("cdiff", gpsamp, sep = ".")]) > cdiff.th, na.rm = TRUE)
         diff$summary["over", gpsamp] = sum(res[, paste("qval", gpsamp, sep = ".")] <= 
-            qval.th & res[, paste("cdiff", gpsamp, sep = ".")] > cdiff.th, na.rm = TRUE)
+                                               qval.th & res[, paste("cdiff", gpsamp, sep = ".")] > cdiff.th, na.rm = TRUE)
         diff$summary["under", gpsamp] = sum(res[, paste("qval", gpsamp, sep = ".")] <= 
-            qval.th & res[, paste("cdiff", gpsamp, sep = ".")] < -cdiff.th, na.rm = TRUE)
+                                                qval.th & res[, paste("cdiff", gpsamp, sep = ".")] < -cdiff.th, na.rm = TRUE)
         
     }
     
@@ -240,11 +240,11 @@ differential_analysis_scExp = function(scExp, de_type = "one_vs_rest",
 #' scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf)
 #' 
 gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref = "hg38", 
-    GeneSets = NULL, GeneSetsDf = NULL, GenePool = NULL, qval.th = 0.01, cdiff.th = 1, 
-    peak_distance = 1000, use_peaks = FALSE)
-    {
+                                              GeneSets = NULL, GeneSetsDf = NULL, GenePool = NULL, qval.th = 0.01, cdiff.th = 1, 
+                                              peak_distance = 1000, use_peaks = FALSE)
+{
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(ref), is.numeric(enrichment_qval), 
-        is.numeric(peak_distance), is.numeric(qval.th), is.numeric(cdiff.th))
+              is.numeric(peak_distance), is.numeric(qval.th), is.numeric(cdiff.th))
     
     if (is.null(scExp@metadata$diff)) 
         stop("ChromSCape::gene_set_enrichment_analysis_scExp - No DA, please run run_differential_analysis_scExp first.")
@@ -253,178 +253,248 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
         stop("ChromSCape::gene_set_enrichment_analysis_scExp - No Gene Annotation, please annotate features with genes 
          using feature_annotation_scExp first.")
     
-    if (is.null(use_peaks)) 
-        use_peaks = FALSE
+    if (is.null(use_peaks)) use_peaks = FALSE
     
     if (use_peaks & (!"refined_annotation" %in% names(scExp@metadata))) 
         stop("ChromSCape::gene_set_enrichment_analysis_scExp - When use_peaks is TRUE, metadata must contain refined_annotation object.")
     
+    refined_annotation = NULL
+    if(use_peaks) refined_annotation = scExp@metadata$refined_annotation
+    
     if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))) 
         stop("ChromSCape::gene_set_enrichment_analysis_scExp - scExp object must have selected number of clusters.")
     
-    if ((!ref %in% c("hg38", "mm10")) & (is.null(GeneSets) | is.null(GeneSetsDf) | 
-        is.null(GenePool))) 
-        stop("ChromSCape::gene_set_enrichment_analysis_scExp - Reference genome (ref) must be 'hg38' or 'mm10' if gene sets 
-         not specified.")
-    
-    if (is.null(GeneSets) | is.null(GeneSetsDf))
-    {
-        message(
-            paste0(
-                "ChromSCape::gene_set_enrichment_analysis_scExp - Loading ",
-                ref,
-                " MSigDB gene sets."
-            )
-        )
-
-        if (ref == "hg38")
-            GeneSetsDf = msigdbr::msigdbr("Homo sapiens")[, -c(1, 4, 6, 7, 8, 9)]
-        if (ref == "mm10")
-            GeneSetsDf = msigdbr::msigdbr("Mus musculus")[, -c(1, 4, 6, 7, 8, 9)]
-        colnames(GeneSetsDf) = c("Gene.Set", "Class", "Genes")
-        system.time({
-            GeneSetsDf <- GeneSetsDf %>% dplyr::group_by(Gene.Set, Class) %>%
-                dplyr::summarise(Genes = paste(Genes,
-                                               collapse = ","))
-        })
-        corres = data.frame(
-            long_name = c(
-                "c1_positional",
-                "c2_curated",
-                "c3_motif",
-                "c4_computational",
-                "c5_GO",
-                "c6_oncogenic",
-                "c7_immunologic",
-                "hallmark"
-            )
-            ,
-            short_name = c(paste0("C", seq_len(7)), "H")
-        )
-        GeneSetsDf$Class = corres$long_name[match(GeneSetsDf$Class, corres$short_name)]
-        GeneSets = lapply(GeneSetsDf$Gene.Set, function(x) {
-            unlist(strsplit(GeneSetsDf$Genes[which(GeneSetsDf$Gene.Set == x)], split = ","))
-        })
-        names(GeneSets) = GeneSetsDf$Gene.Set
-    }
-    
-    if (is.null(GenePool))
-    {
-        message(paste0("ChromSCape::gene_set_enrichment_analysis_scExp - Selecting ", 
-            ref, " genes from Gencode."))
-        eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
-        GenePool = eval(parse(text = paste0("", ref, ".GeneTSS")))
-        GenePool = unique(as.character(GenePool[, "gene"]))
-    }
+    database_MSIG <- load_MSIGdb(ref)
+    GeneSets = database_MSIG$GeneSets
+    GeneSetsDf = database_MSIG$GeneSetsDf
+    GeneSetsPool = database_MSIG$GenePool
     
     nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
     
-    enr = list(Both = NULL, Overexpressed = NULL, Underexpressed = NULL)
-    
-    Both = list()
-    Overexpressed = list()
-    Underexpressed = list()
-    
-    groups = scExp@metadata$diff$groups
-    res = scExp@metadata$diff$res
-    diff = scExp@metadata$diff
-    
-    annotFeat_long = as.data.frame(tidyr::separate_rows(as.data.frame(SingleCellExperiment::rowData(scExp)), 
+    annotFeat_long = as.data.frame(tidyr::separate_rows(
+        as.data.frame(SingleCellExperiment::rowData(scExp)), 
         Gene, sep = ", "))
     
+    enr <- combine_enrichmentTests(diff, qval.th, cdiff.th,
+                              annotFeat_long, peak_distance, refined_annotation)
+    
+    scExp@metadata$enr <- enr
+    return(scExp)
+}
+
+
+#' Load and format MSIGdb pathways using msigdbr package
+#'
+#' @param ref Reference genome, either mm10 or hg38
+#'
+#' @return A list containing the GeneSet (list), GeneSetDf (data.frame) and 
+#' GenePool character vector of all possible genes
+#'
+#' @examples 
+#' load_MSIGdb("hg38") 
+#' load_MSIGdb("mm10") 
+load_MSIGdb <- function(ref){
+    if ((!ref %in% c("hg38", "mm10")) ) 
+        stop("ChromSCape::gene_set_enrichment_analysis_scExp - Reference genome (ref) must be 'hg38' or 'mm10' if gene sets 
+         not specified.")
+    
+    message(
+        paste0(
+            "ChromSCape::gene_set_enrichment_analysis_scExp - Loading ",
+            ref,
+            " MSigDB gene sets."
+        )
+    )
+    
+    if (ref == "hg38")
+        GeneSetsDf = msigdbr::msigdbr("Homo sapiens")[, -c(1, 4, 6, 7, 8, 9)]
+    if (ref == "mm10")
+        GeneSetsDf = msigdbr::msigdbr("Mus musculus")[, -c(1, 4, 6, 7, 8, 9)]
+    colnames(GeneSetsDf) = c("Gene.Set", "Class", "Genes")
+    system.time({
+        GeneSetsDf <- GeneSetsDf %>% dplyr::group_by(Gene.Set, Class) %>%
+            dplyr::summarise(Genes = paste(Genes,
+                                           collapse = ","))
+    })
+    corres = data.frame(
+        long_name = c(
+            "c1_positional",
+            "c2_curated",
+            "c3_motif",
+            "c4_computational",
+            "c5_GO",
+            "c6_oncogenic",
+            "c7_immunologic",
+            "hallmark"
+        )
+        ,
+        short_name = c(paste0("C", seq_len(7)), "H")
+    )
+    GeneSetsDf$Class = corres$long_name[match(GeneSetsDf$Class, corres$short_name)]
+    GeneSets = lapply(GeneSetsDf$Gene.Set, function(x) {
+        unlist(strsplit(GeneSetsDf$Genes[which(GeneSetsDf$Gene.Set == x)], split = ","))
+    })
+    names(GeneSets) = GeneSetsDf$Gene.Set
+    
+    
+    message(paste0("ChromSCape::gene_set_enrichment_analysis_scExp - Selecting ", 
+                   ref, " genes from Gencode."))
+    eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
+    GenePool = eval(parse(text = paste0("", ref, ".GeneTSS")))
+    GenePool = unique(as.character(GenePool[, "gene"]))
+    
+    database_MSIG <- list("GeneSets" <- GeneSets,
+                          "GeneSetsDf" <- GeneSetsDf,
+                          "GenePool" <- GenePool)
+    return(database_MSIG)
+}
+
+
+#' Resutls of hypergeometric gene set enrichment test
+#'
+#' Run hypergeometric enrichment test and combine significant pathways into
+#' a data.frame
+#'
+#' @param significG Genes significantly differential 
+#' @param enrichment_qval Adusted p-value threshold above which a pathway is
+#' considered significative
+#' @param GeneSets List of pathways
+#' @param GeneSetsDf Data.frame of pathways
+#' @param GenePool Pool of possible genes for testing
+#'
+#' @return A data.frame with pathways passing q.value threshold
+#'
+results_enrichmentTest <- function(
+    differentialGenes,
+    enrichment_qval,
+    GeneSets,
+    GeneSetsDf,
+    GenePool
+){
+    enrich.test = enrichmentTest(gene.sets = GeneSets,
+                                 mylist = differentialGenes, 
+                                 possibleIds = GenePool)
+    
+    enrich.test = data.frame(Gene_set_name = rownames(enrich.test),
+                             enrich.test, 
+                             check.names = FALSE)
+    
+    enrich.test = merge(subset(GeneSetsDf, select = -Genes), enrich.test, 
+                        by.x = "Gene.Set", by.y = "Gene_set_name",
+                        all.y = TRUE, sort = FALSE)  ## Get class of gene set
+    
+    enrich.test = enrich.test[order(enrich.test$`p-value`), ]
+    ind = which(enrich.test$`q-value` <= enrichment_qval)
+    if (!length(ind))
+    {
+        ind = seq_len(10)
+    }
+    return(enrich.test[ind, ]) 
+}
+
+
+#' Run enrichment tests and combine into list
+#' 
+#' @param diff Differential list
+#' @param qval.th Differential analysis adjusted p.value threshold
+#' @param cdiff.th Differential analysis log-fold change threshold
+#' @param annotFeat_long Long annotation
+#' @param peak_distance Maximum gene to peak distance
+#' @param refined_annotation Refined annotation data.frame if peak calling is 
+#' done
+#'
+#' @return
+#'
+combine_enrichmentTests <- function(
+    diff,
+    qval.th,
+    cdiff.th,
+    annotFeat_long,
+    peak_distance,
+    refined_annotation
+    ){
+    groups <- diff$groups
+    res <- diff$res
+    
+    enr = list(Both = list(), Overexpressed = list(), Underexpressed = list())
     for (i in seq_along(groups))
     {
         gp = groups[i]
-        ref = diff$refs[i]
         signific = res$ID[which(res[, paste("qval", gp, sep = ".")] <= qval.th & 
-            abs(res[, paste("cdiff", gp, sep = ".")]) > cdiff.th)]
+                                    abs(res[, paste("cdiff", gp, sep = ".")]) > cdiff.th)]
         significG = unique(annotFeat_long$Gene[annotFeat_long$distanceToTSS < peak_distance & 
-            annotFeat_long$ID %in% signific])
+                                                   annotFeat_long$ID %in% signific])
         over = res$ID[which(res[, paste("qval", gp, sep = ".")] <= qval.th & res[, 
-            paste("cdiff", gp, sep = ".")] > cdiff.th)]
+                                                                                 paste("cdiff", gp, sep = ".")] > cdiff.th)]
         overG = unique(annotFeat_long$Gene[annotFeat_long$distanceToTSS < peak_distance & 
-            annotFeat_long$ID %in% over])
+                                               annotFeat_long$ID %in% over])
         under = res$ID[which(res[, paste("qval", gp, sep = ".")] <= qval.th & res[, 
-            paste("cdiff", gp, sep = ".")] < -cdiff.th)]
+                                                                                  paste("cdiff", gp, sep = ".")] < -cdiff.th)]
         underG = unique(annotFeat_long$Gene[annotFeat_long$distanceToTSS < peak_distance & 
-            annotFeat_long$ID %in% under])
-        if (!is.null(use_peaks))
+                                                annotFeat_long$ID %in% under])
+        if (!is.null(refined_annotation))
         {
-            if (use_peaks == TRUE)
-            {
-                refined_annotation = scExp@metadata$refined_annotation
-                signific_associated_peak = refined_annotation$peak_ID[refined_annotation$window_ID %in% 
-                  signific]
-                over_associated_peak = refined_annotation$peak_ID[refined_annotation$window_ID %in% 
-                  over]
-                under_associated_peak = refined_annotation$peak_ID[refined_annotation$window_ID %in% 
-                  under]
-                signific_associated_gene = refined_annotation$Gene[refined_annotation$peak_ID %in% 
-                  signific_associated_peak & refined_annotation$distanceToTSS < peak_distance]
-                over_associated_gene = refined_annotation$Gene[refined_annotation$peak_ID %in% 
-                  over_associated_peak & refined_annotation$distanceToTSS < peak_distance]
-                under_associated_gene = refined_annotation$Gene[refined_annotation$peak_ID %in% 
-                  under_associated_peak & refined_annotation$distanceToTSS < peak_distance]
-                significG = unique(signific_associated_gene)
-                overG = unique(over_associated_gene)
-                underG = unique(under_associated_gene)
-            }
+            filter_genes_with_refined_peak_annotation(refined_annotation,
+                                                      peak_distance,
+                                                      signific, over, under)
         }
         
         if (length(significG))
         {
-            enrich.test = enrichmentTest(gene.sets = GeneSets, mylist = significG, 
-                possibleIds = GenePool)
-            enrich.test = data.frame(Gene_set_name = rownames(enrich.test), enrich.test, 
-                check.names = FALSE)
-            enrich.test = merge(subset(GeneSetsDf, select = -Genes), enrich.test, 
-                by.x = "Gene.Set", by.y = "Gene_set_name", all.y = TRUE, sort = FALSE)  ## Get class of gene set
-            enrich.test = enrich.test[order(enrich.test$`p-value`), ]
-            ind = which(enrich.test$`q-value` <= enrichment_qval)
-            if (!length(ind))
-            {
-                ind = seq_len(10)
-            }
-            Both[[i]] = enrich.test[ind, ]
+            enr$Both[[i]] = results_enrichmentTest(
+                differentialGenes = significG,  enrichment_qval, GeneSets,
+                GeneSetsDf, GenePool
+            )
         }
         if (length(overG))
         {
-            enrich.test = enrichmentTest(gene.sets = GeneSets, mylist = overG, 
-                possibleIds = GenePool)
-            enrich.test = data.frame(Gene_set_name = rownames(enrich.test), enrich.test, 
-                check.names = FALSE)
-            enrich.test = merge(subset(GeneSetsDf, select = -Genes), enrich.test, 
-                by.x = "Gene.Set", by.y = "Gene_set_name", all.y = TRUE, sort = FALSE)  ## Get class of gene set
-            enrich.test = enrich.test[order(enrich.test$`p-value`), ]
-            ind = which(enrich.test$`q-value` <= enrichment_qval)
-            if (!length(ind))
-            {
-                ind = seq_len(10)
-            }
-            Overexpressed[[i]] = enrich.test[ind, ]
+            enr$Overexpressed[[i]] =  results_enrichmentTest(
+                differentialGenes = overG,  enrichment_qval, GeneSets,
+                GeneSetsDf, GenePool
+            )
         }
         if (length(underG))
         {
-            enrich.test = enrichmentTest(gene.sets = GeneSets, mylist = underG, 
-                possibleIds = GenePool)
-            enrich.test = data.frame(Gene_set_name = rownames(enrich.test), enrich.test, 
-                check.names = FALSE)
-            enrich.test = merge(subset(GeneSetsDf, select = -Genes), enrich.test, 
-                by.x = "Gene.Set", by.y = "Gene_set_name", all.y = TRUE, sort = FALSE)  ## Get class of gene set
-            enrich.test = enrich.test[order(enrich.test$`p-value`), ]
-            ind = which(enrich.test$`q-value` <= enrichment_qval)
-            if (!length(ind))
-            {
-                ind = seq_len(10)
-            }
-            Underexpressed[[i]] = enrich.test[ind, ]
+            enr$Underexpressed[[i]] =  results_enrichmentTest(
+                differentialGenes = underG,  enrichment_qval, GeneSets,
+                GeneSetsDf, GenePool
+            )
         }
+        
     }
-    enr$Both = Both
-    enr$Overexpressed = Overexpressed
-    enr$Underexpressed = Underexpressed
-    scExp@metadata$enr = enr
-    return(scExp)
+   return(enr)
+}
+
+#' Filter genes based on peak calling refined annotation
+#'
+#' @param refined_annotation A data.frame containing each gene distance to real 
+#' peak
+#' @param peak_distance Minimum distance to an existing peak to accept a given 
+#' gene 
+#' @param signific Indexes of all significantly differential genes 
+#' @param over Indexes of all significantly overexpressed genes
+#' @param under Indexes of all significantly underexpressed genes
+#'
+#' @return List of significantly differential, overexpressed 
+#' and underexpressed close enough to existing peaks
+#' 
+filter_genes_with_refined_peak_annotation <- function(refined_annotation, peak_distance, 
+                 signific, over, under){
+    signific_associated_peak = refined_annotation$peak_ID[refined_annotation$window_ID %in% 
+                                                              signific]
+    over_associated_peak = refined_annotation$peak_ID[refined_annotation$window_ID %in% 
+                                                          over]
+    under_associated_peak = refined_annotation$peak_ID[refined_annotation$window_ID %in% 
+                                                           under]
+    signific_associated_gene = refined_annotation$Gene[refined_annotation$peak_ID %in% 
+                                                           signific_associated_peak & refined_annotation$distanceToTSS < peak_distance]
+    over_associated_gene = refined_annotation$Gene[refined_annotation$peak_ID %in% 
+                                                       over_associated_peak & refined_annotation$distanceToTSS < peak_distance]
+    under_associated_gene = refined_annotation$Gene[refined_annotation$peak_ID %in% 
+                                                        under_associated_peak & refined_annotation$distanceToTSS < peak_distance]
+    significG = unique(signific_associated_gene)
+    overG = unique(over_associated_gene)
+    underG = unique(under_associated_gene)
 }
 
 #' Creates table of enriched genes sets
@@ -448,12 +518,12 @@ gene_set_enrichment_analysis_scExp = function(scExp, enrichment_qval = 0.1, ref 
 #' scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf)
 #' table_enriched_genes_scExp(scExp_cf)
 table_enriched_genes_scExp <- function(scExp, set = "Both", cell_cluster = "C1", 
-    enr_class_sel = c("c1_positional", "c2_curated", "c3_motif", "c4_computational", 
-        "c5_GO", "c6_oncogenic", "c7_immunologic", "hallmark"))
-        {
+                                       enr_class_sel = c("c1_positional", "c2_curated", "c3_motif", "c4_computational", 
+                                                         "c5_GO", "c6_oncogenic", "c7_immunologic", "hallmark"))
+{
     
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(set), is.character(cell_cluster), 
-        is.character(enr_class_sel))
+              is.character(enr_class_sel))
     
     if (is.null(scExp@metadata$enr)) 
         stop("ChromSCape::table_enriched_genes_scExp - No GSEA, please run gene_set_enrichment_analysis_scExp first.")
@@ -470,12 +540,12 @@ table_enriched_genes_scExp <- function(scExp, set = "Both", cell_cluster = "C1",
     if (is.null(table))
     {
         return(setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("Gene_set", "Class", 
-            "Num_deregulated_genes", "p.value", "q.value", "Deregulated_genes")))
+                                                                  "Num_deregulated_genes", "p.value", "q.value", "Deregulated_genes")))
     }
     table <- tidyr::unite(table, "dereg_genes", c("Nb_of_deregulated_genes", "Nb_of_genes"), 
-        sep = "/")
+                          sep = "/")
     colnames(table) <- c("Gene_set", "Class", "Num_deregulated_genes", "p.value", 
-        "adj.p.value", "Deregulated_genes")
+                         "adj.p.value", "Deregulated_genes")
     table[, 4] <- round(table[, 4], 9)
     table[, 5] <- round(table[, 5], 9)
     table <- table[order(table$adj.p.value, table$p.value), ]
