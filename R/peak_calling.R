@@ -57,35 +57,40 @@
 #' @importFrom SummarizedExperiment rowRanges
 #' @importFrom IRanges findOverlapPairs subsetByOverlaps
 #' @importFrom utils read.table
-subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "hg38", 
-    peak_distance_to_merge = 10000, geneTSS_annotation = NULL)
+subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05,
+                                ref = "hg38", peak_distance_to_merge = 10000,
+                                geneTSS_annotation = NULL)
     {
-    stopifnot(is(scExp, "SingleCellExperiment"), dir.exists(odir), is.numeric(p.value), 
-        is.character(ref), is.numeric(peak_distance_to_merge))
+    stopifnot(is(scExp, "SingleCellExperiment"), dir.exists(odir),
+            is.numeric(p.value), is.character(ref),
+            is.numeric(peak_distance_to_merge))
     if (!ref %in% c("hg38", "mm10")) 
-        stop("ChromSCape::subset_bam_call_peaks - Reference genome (ref) must be 'hg38' or 'mm10'.")
+        stop("ChromSCape::subset_bam_call_peaks - 
+            Reference genome (ref) must be 'hg38' or 'mm10'.")
     if (!"barcode" %in% colnames(SingleCellExperiment::colData(scExp))) 
-        stop("ChromSCape::subset_bam_call_peaks - Colnames of cell annotation must contain 'barcode'.")
+        stop("ChromSCape::subset_bam_call_peaks - 
+            Colnames of cell annotation must contain 'barcode'.")
     if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))) 
-        stop("ChromSCape::subset_bam_call_peaks - Colnames of cell annotation must contain 'cell_cluster'.")
+        stop("ChromSCape::subset_bam_call_peaks -
+            Colnames of cell annotation must contain 'cell_cluster'.")
     
     if (is.null(geneTSS_annotation))
     {
-        message(paste0("ChromSCape::gene_set_enrichment_analysis_scExp - Selecting ", 
+        message(paste0("ChromSCape::gene_set_enrichment_analysis_scExp -
+                    Selecting ", 
             ref, " genes from Gencode."))
         eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
-        geneTSS_annotation = as(eval(parse(text = paste0("", ref, ".GeneTSS"))), 
-            "GRanges")
+        geneTSS_annotation = as(eval(parse(text = paste0("", ref, ".GeneTSS"
+                                                        ))),"GRanges")
     } else geneTSS_annotation = as(geneTSS_annotation, "GRanges")
     if (length(inputBam) > 1)
     {
         write(inputBam, file = file.path(odir, "bam_list.txt"))
         system(paste0("samtools merge -@ 4 -f -h ",
-                      inputBam[1], " -b ", file.path(odir, "bam_list.txt"),
-                      " ", file.path(odir, "merged.bam")))
+                    inputBam[1], " -b ", file.path(odir, "bam_list.txt"),
+                    " ", file.path(odir, "merged.bam")))
         merged_bam = file.path(odir, "merged.bam")
     } else merged_bam = inputBam[1]
-
     print("Writting barcode files...")
     affectation = SingleCellExperiment::colData(scExp)
     affectation$cell_cluster = as.factor(affectation$cell_cluster)
@@ -94,7 +99,7 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "
     
     separate_BAM_into_clusters(affectation, odir, merged_bam)
     merged_peaks <- call_macs2_merge_peaks(affectation,odir,p.value,ref,
-                                           peak_distance_to_merge)
+                                        peak_distance_to_merge)
     scExp@metadata$refined_annotation <- 
         annotation_from_merged_peaks(scExp, merged_peaks, geneTSS_annotation)
     return(scExp)
@@ -114,7 +119,7 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05, ref = "
 #'
 #' 
 call_macs2_merge_peaks <- function(affectation,odir,p.value,
-                                   ref,peak_distance_to_merge){
+                                ref,peak_distance_to_merge){
     for (class in levels(factor(affectation$cell_cluster)))
     {
         command <- paste0(
@@ -127,31 +132,31 @@ call_macs2_merge_peaks <- function(affectation,odir,p.value,
         if (!is.na(percent_properlyPaired) & percent_properlyPaired > 50)
         {
             print("Bam files provided have more than 50% of their reads properly
-                  mapped, running macs2 with default parameters...")
+                mapped, running macs2 with default parameters...")
             macs2_options = ""
         } else
         {
             print("Bam files provided have less than 50% of their reads properly
-                  mapped, flagging all reads as single end running macs2 with
-                  --nomodel --extsize 300...")
+                mapped, flagging all reads as single end running macs2 with
+                --nomodel --extsize 300...")
             macs2_options = " --nomodel --extsize 300 "
             print("Transforming bam so that all mapped reads are considered
-                  as single-end...")
+                as single-end...")
             system(paste0("samtools view -H ",
-                          file.path(odir, paste0(class, ".bam")), 
-                          " > ", file.path(odir, "header.sam")))
+                        file.path(odir, paste0(class, ".bam")), 
+                        " > ", file.path(odir, "header.sam")))
             system(paste0("samtools view -F4 ",
-                          file.path(odir, paste0(class, ".bam")), 
-                          " | awk -v OFS=\"\t\" \"{\\$2=0; print \\$0}\" >> ",
-                          file.path(odir, "header.sam")))
+                        file.path(odir, paste0(class, ".bam")), 
+                        " | awk -v OFS=\"\t\" \"{\\$2=0; print \\$0}\" >> ",
+                        file.path(odir, "header.sam")))
             system(paste0("samtools view -b ",
-                          file.path(odir, "header.sam"), " > ", 
-                          file.path(odir, paste0(class, ".bam"))))
+                        file.path(odir, "header.sam"), " > ", 
+                        file.path(odir, paste0(class, ".bam"))))
         }
         command = paste0("macs2 callpeak ", p.value,
-                     macs2_options, " --keep-dup all --broad -t ", 
-                     file.path(odir, paste0(class, ".bam")),
-                     " --outdir ", odir, " --name ", class)
+                    macs2_options, " --keep-dup all --broad -t ", 
+                    file.path(odir, paste0(class, ".bam")),
+                    " --outdir ", odir, " --name ", class)
         system(command)
         merged_peaks <- merge_MACS2_peaks(odir,class,peak_distance_to_merge,ref)
     }
@@ -175,7 +180,7 @@ call_macs2_merge_peaks <- function(affectation,odir,p.value,
 #' @importFrom IRanges subsetByOverlaps
 #' @importFrom GenomicRanges GRanges reduce ranges
 merge_MACS2_peaks <- function(odir,class,peak_distance_to_merge,
-                              ref){
+                            ref){
     merged_peaks = list()
     peaks = read.table(
         file = file.path(odir, paste0(class, "_peaks.broadPeak")),
@@ -184,12 +189,12 @@ merge_MACS2_peaks <- function(odir,class,peak_distance_to_merge,
     peaks = GenomicRanges::GRanges(peaks)
     peaks = peaks[which(width(GenomicRanges::ranges(peaks)) >= 500), ]
     peaks = GenomicRanges::reduce(peaks, min.gapwidth = peak_distance_to_merge, 
-                                  ignore.strand = TRUE)
+                                ignore.strand = TRUE)
     
     ref_chromosomes = GenomicRanges::GRanges(
         eval(parse(text = paste0(ref, ".chromosomes"))))
     peaks = suppressWarnings(IRanges::subsetByOverlaps(peaks, ref_chromosomes, 
-                                                       ignore.strand = TRUE))
+                                                    ignore.strand = TRUE))
     merged_peaks[[class]] = peaks
     return(merged_peaks)
 }
@@ -208,12 +213,12 @@ merge_MACS2_peaks <- function(odir,class,peak_distance_to_merge,
 #' @importFrom S4Vectors mcols queryHits subjectHits
 #' @importFrom IRanges findOverlapPairs
 annotation_from_merged_peaks <- function(scExp,
-                                         merged_peaks,
-                                         geneTSS_annotation){
+                                        merged_peaks,
+                                        geneTSS_annotation){
     segmentation = SummarizedExperiment::rowRanges(scExp)
     S4Vectors::mcols(segmentation) = NULL
     segmentation$window_ID = paste(
-        as.character(segmentation@seqnames), GenomicRanges::start(segmentation), 
+        as.character(segmentation@seqnames), GenomicRanges::start(segmentation),
         GenomicRanges::end(segmentation), sep = "_")
     
     merged_peak = merged_peaks[[1]]
@@ -221,7 +226,7 @@ annotation_from_merged_peaks <- function(scExp,
     {
         merged_peak = suppressWarnings(
             GenomicRanges::union(merged_peak, merged_peaks[[i]], 
-                                 ignore.strand = TRUE))
+                                ignore.strand = TRUE))
     }
     
     pairs <- IRanges::findOverlapPairs(
@@ -256,23 +261,23 @@ separate_BAM_into_clusters <- function(affectation, odir, merged_bam){
     for (class in levels(factor(affectation$cell_cluster)))
     {
         vec <- affectation$barcode[which(affectation$cell_cluster == 
-                                             as.character(class))]
+                                            as.character(class))]
         write(as.vector(vec), 
-              file = file.path(odir, paste0(class, ".barcode_class")))
+            file = file.path(odir, paste0(class, ".barcode_class")))
     }
     write(levels(factor(affectation$cell_cluster)),
-          file = file.path(odir, "barcodes.barcode_class"))
+        file = file.path(odir, "barcodes.barcode_class"))
     
     print("Using Samtools to extract reads from each cell...")
     system(paste0("samtools view -H ", merged_bam, " > ",
-                  file.path(odir, "header.sam")))  # keeping header
+                file.path(odir, "header.sam")))  # keeping header
     
     system(paste0(
         "for i in $(cat ",
         file.path(odir, "barcodes.barcode_class"), "); do samtools view -h ", 
         merged_bam, " | fgrep -w -f ", file.path(odir, "/$i.barcode_class"),
         " > ",file.path(odir, "$i.sam"), ";done")
-    )    
+    )
     
     system(paste0(
         "for i in $(cat ",

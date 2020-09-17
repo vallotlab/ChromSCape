@@ -1,6 +1,6 @@
 .onLoad <- function(libname, pkgname) {
-  
-  shiny::addResourcePath('www',
-                         system.file('www',
-                                     package = 'ChromSCape'))
+    
+    shiny::addResourcePath('www',
+                        system.file('www',
+                                    package = 'ChromSCape'))
 }

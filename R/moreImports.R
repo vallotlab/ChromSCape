@@ -19,7 +19,7 @@
 #' @import shiny
 #' @import ggplot2
 utils::globalVariables(c("chr","ID","distanceToTSS","Gene",
-                         "Gene.Set","Class","Genes",".",
-                         "Sample","cluster","clusterConsensus",
-                         "coverageByCell"))
+                        "Gene.Set","Class","Genes",".",
+                        "Sample","cluster","clusterConsensus",
+                        "coverageByCell"))
 
