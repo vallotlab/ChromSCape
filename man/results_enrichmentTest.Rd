@@ -13,6 +13,8 @@ results_enrichmentTest(
 )
 }
 \arguments{
+\item{differentialGenes}{Genes significantly over / under expressed}
+
 \item{enrichment_qval}{Adusted p-value threshold above which a pathway is
 considered significative}
 
@@ -21,8 +23,6 @@ considered significative}
 \item{GeneSetsDf}{Data.frame of pathways}
 
 \item{GenePool}{Pool of possible genes for testing}
-
-\item{significG}{Genes significantly differential}
 }
 \value{
 A data.frame with pathways passing q.value threshold

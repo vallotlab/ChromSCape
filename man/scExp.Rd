@@ -3,17 +3,17 @@
 \docType{data}
 \name{scExp}
 \alias{scExp}
-\title{A randomly generated SingleCellExperiment normalized and with reduced dimensions (hg38)}
+\title{A randomly generated SingleCellExperiment normalized and with reduced
+dimensions (hg38)}
 \format{
-scExp - a SingleCellExperiment with 300 cells and 600 features (genomic bins) in hg38:
-\describe{
-\item{chr}{A SingleCellExperiment}
-}
+scExp - a SingleCellExperiment with 300 cells and 600 features
+(genomic bins) in hg38: \describe{ \item{chr}{A SingleCellExperiment} }
 }
 \usage{
 scExp
 }
 \description{
-A randomly generated SingleCellExperiment normalized and with reduced dimensions (hg38)
+A randomly generated SingleCellExperiment normalized and with reduced
+dimensions (hg38)
 }
 \keyword{datasets}

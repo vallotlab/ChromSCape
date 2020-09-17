@@ -17,6 +17,3 @@ A sparseMatrix in the right rownames format
 \description{
 Throws warnings / error if matrix is in the wrong format
 }
-\examples{
-check_correct_datamatrix(create_scDataset_raw()$mat)
-}

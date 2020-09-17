@@ -31,17 +31,17 @@ peak as overlapping the bin (150).}
 A sparse matrix of bins instead of peaks
 }
 \description{
-This functions is best used to re-count large number of small peaks (e.g. <= 5000bp)
-into equal or larger bins.
-The genome is either cut in fixed bins (e.g. 50,000bp) or into an user defined
-number of bins. Bins are calculated based on the canconical chromosomes. Note
-that if peaks are larger than bins, or if peaks are overlapping multiple bins,
-the signal is added to each bin. Users can increase the minimum overlap to
-consider peaks overlapping bins (by default 150bp, size of a nucleosome) to
-disminish the number of peaks overlapping multiple region. Any peak smaller
-than the minimum overlapp threshold will be dismissed. Therefore, library size
-might be slightly different from peaks to bins if signal was duplicated into
-multiple bins or ommitted due to peaks smaller than minimum overlap.
+This functions is best used to re-count large number of small peaks (e.g. <=
+5000bp) into equal or larger bins. The genome is either cut in fixed bins
+(e.g. 50,000bp) or into an user defined number of bins. Bins are calculated
+based on the canconical chromosomes. Note that if peaks are larger than bins,
+or if peaks are overlapping multiple bins, the signal is added to each bin.
+Users can increase the minimum overlap to consider peaks overlapping bins (by
+default 150bp, size of a nucleosome) to disminish the number of peaks
+overlapping multiple region. Any peak smaller than the minimum overlapp
+threshold will be dismissed. Therefore, library size might be slightly
+different from peaks to bins if signal was duplicated into multiple bins or
+ommitted due to peaks smaller than minimum overlap.
 }
 \examples{
 mat = create_scDataset_raw()$mat

@@ -14,10 +14,12 @@ differential_analysis_scExp(
 )
 }
 \arguments{
-\item{scExp}{A SingleCellExperiment object containing consclust with selected number of cluster.}
+\item{scExp}{A SingleCellExperiment object containing consclust with selected
+number of cluster.}
 
-\item{de_type}{Type of comparisons. Either 'one_vs_rest', to compare each cluster against all others, or
-'pairwise' to make 1 to 1 comparisons. ('one_vs_rest')}
+\item{de_type}{Type of comparisons. Either 'one_vs_rest', to compare each
+cluster against all others, or 'pairwise' to make 1 to 1 comparisons.
+('one_vs_rest')}
 
 \item{method}{Wilcoxon or edgerGLM}
 
@@ -31,16 +33,18 @@ differential_analysis_scExp(
 Returns a SingleCellExperiment object containing a differential list.
 }
 \description{
-Based on clusters of cell defined previously, runs non-parametric Wilcoxon Rank Sum test to
-find significantly depleted or enriched features, in 'one_vs_rest' mode or 'pairwise' mode.
-In pairwise mode, each cluster is compared to all other cluster individually, and then pairwise
-comparisons between clusters are combined to find overall differential features using combineMarkers
-function from scran.
+Based on clusters of cell defined previously, runs non-parametric Wilcoxon
+Rank Sum test to find significantly depleted or enriched features, in
+'one_vs_rest' mode or 'pairwise' mode. In pairwise mode, each cluster is
+compared to all other cluster individually, and then pairwise comparisons
+between clusters are combined to find overall differential features using
+combineMarkers function from scran.
 }
 \details{
-This functions takes as input a SingleCellExperiment object with consclust, the type of comparison, either
-'one_vs_rest' or 'pairwise', the adjusted p-value threshold (qval.th) and the fold-change threshold (cdiff.th).
-It outputs a SingleCellExperiment object containing a differential list.
+This functions takes as input a SingleCellExperiment object with consclust,
+the type of comparison, either 'one_vs_rest' or 'pairwise', the adjusted
+p-value threshold (qval.th) and the fold-change threshold (cdiff.th). It
+outputs a SingleCellExperiment object containing a differential list.
 }
 \examples{
 data("scExp")

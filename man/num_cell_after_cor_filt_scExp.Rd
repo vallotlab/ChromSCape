@@ -21,7 +21,8 @@ Number of cells before & after correlation filtering
 \examples{
 data("scExp")
 scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-scExp_cf = filter_correlated_cell_scExp(scExp_cf,corr_threshold = 99, percent_correlation = 5)
+scExp_cf = filter_correlated_cell_scExp(scExp_cf,
+corr_threshold = 99, percent_correlation = 5)
 num_cell_after_cor_filt_scExp(scExp,scExp_cf)
 
 }

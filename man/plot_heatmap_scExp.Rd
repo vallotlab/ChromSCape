@@ -14,15 +14,16 @@ plot_heatmap_scExp(
 \arguments{
 \item{scExp}{A SingleCellExperiment Object}
 
-\item{name_hc}{Name of the hclust contained in the SingleCellExperiment object}
+\item{name_hc}{Name of the hclust contained in the SingleCellExperiment
+object}
 
 \item{corColors}{A palette of colors for the heatmap}
 
 \item{color_by}{Which features to add as additional bands on top of plot}
 }
 \value{
-A heatmap of cell to cell correlation, grouping cells by
-hierarchical clustering.
+A heatmap of cell to cell correlation, grouping cells by hierarchical
+clustering.
 }
 \description{
 Plot cell correlation heatmap with annotations

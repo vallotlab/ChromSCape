@@ -16,7 +16,7 @@ A SingleCellExperiment object.
 Preprocess scExp - size only
 }
 \examples{
-scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
+scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 scExp = preprocess_feature_size_only(scExp)
 head(normcounts(scExp))
 

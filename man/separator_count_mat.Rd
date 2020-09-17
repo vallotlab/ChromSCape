@@ -7,7 +7,7 @@
 separator_count_mat(path_to_matrix)
 }
 \arguments{
-\item{path}{Path towards count matrix}
+\item{path_to_matrix}{A path towards the count matrix to check}
 }
 \value{
 A character separator

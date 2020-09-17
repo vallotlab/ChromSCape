@@ -32,12 +32,12 @@ Returns a filtered SingleCellExperiment object.
 }
 \description{
 Function to filter out cells & features from SingleCellExperiment based on
-total count per cell, number of cells 'ON' in features and top covered
-cells that might be doublets.
+total count per cell, number of cells 'ON' in features and top covered cells
+that might be doublets.
 }
 \examples{
 
-scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
+scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 scExp. = filter_scExp(scExp)
 
 # No feature filtering (all features are valuable)
@@ -45,5 +45,5 @@ scExp. = filter_scExp(scExp,percentMin=0)
 
 # No cell filtering (all features are valuable)
 scExp. = filter_scExp(scExp,min_cov_cell=0,quant_removal=100)
- 
+
 }

@@ -2,7 +2,8 @@
 % Please edit documentation in R/support_functions.R
 \name{CompareedgeRGLM}
 \alias{CompareedgeRGLM}
-\title{Creates a summary table with the number of genes under- or overexpressed in each group and outputs several graphical representations}
+\title{Creates a summary table with the number of genes under- or overexpressed in
+each group and outputs several graphical representations}
 \usage{
 CompareedgeRGLM(
   dataMat = NULL,
@@ -18,9 +19,12 @@ CompareedgeRGLM(
 
 \item{annot}{selected annotation of interest}
 
-\item{ref_group}{List containing one or more vectors of reference samples. Name of the vectors will be used in the results table. The length of this list should be 1 or the same length as the groups list}
+\item{ref_group}{List containing one or more vectors of reference samples.
+Name of the vectors will be used in the results table. The length of this
+list should be 1 or the same length as the groups list}
 
-\item{groups}{List containing the IDs of groups to be compared with the reference samples. Names of the vectors will be used in the results table}
+\item{groups}{List containing the IDs of groups to be compared with the
+reference samples. Names of the vectors will be used in the results table}
 
 \item{featureTab}{Feature annotations to be added to the results table}
 
@@ -30,7 +34,8 @@ CompareedgeRGLM(
 A dataframe containing the foldchange and p.value of each feature
 }
 \description{
-Creates a summary table with the number of genes under- or overexpressed in each group and outputs several graphical representations
+Creates a summary table with the number of genes under- or overexpressed in
+each group and outputs several graphical representations
 }
 \examples{
 data("scExp")
@@ -42,7 +47,7 @@ ref_group = list("C1"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C1")])
 groups = list("C2"=scExp_cf$cell_id[which(scExp_cf$cell_cluster=="C2")])
 myres = CompareedgeRGLM(as.matrix(SingleCellExperiment::counts(scExp_cf)),
 annot=as.data.frame(SingleCellExperiment::colData(scExp_cf)),
-            ref_group=ref_group,groups=groups, featureTab=featureTab)
+   ref_group=ref_group,groups=groups, featureTab=featureTab)
 
 }
 \author{

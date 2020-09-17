@@ -27,7 +27,7 @@ gene}
 }
 \value{
 List of significantly differential, overexpressed
-and underexpressed close enough to existing peaks
+and underexpressed genes close enough to existing peaks
 }
 \description{
 Filter genes based on peak calling refined annotation

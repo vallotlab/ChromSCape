@@ -16,17 +16,22 @@ choose_cluster_scExp(
 
 \item{nclust}{Number of cluster to pick (3)}
 
-\item{consensus}{Use consensus clustering results instead of simple hierarchical clustering ? (TRUE)}
+\item{consensus}{Use consensus clustering results instead of simple
+hierarchical clustering ? (TRUE)}
 
-\item{hc_linkage}{A linkage method for hierarchical clustering. See \link[stats]{cor}. ('ward.D')}
+\item{hc_linkage}{A linkage method for hierarchical clustering. See
+\link[stats]{cor}. ('ward.D')}
 }
 \value{
-Returns a SingleCellExperiment object with each cell assigned to a correlation cluster in colData.
+Returns a SingleCellExperiment object with each cell assigned to a
+correlation cluster in colData.
 }
 \description{
-This functions takes as input a SingleCellExperiment object with consclust and a number of cluster to select.
-It outputs a SingleCellExperiment object with each cell assigned to a correlation cluster in colData. Also
-calculates a hierarchical clustering of the consensus associations calculated by ConsensusClusterPlus.
+This functions takes as input a SingleCellExperiment object with consclust
+and a number of cluster to select. It outputs a SingleCellExperiment object
+with each cell assigned to a correlation cluster in colData. Also calculates
+a hierarchical clustering of the consensus associations calculated by
+ConsensusClusterPlus.
 }
 \examples{
 data("scExp")

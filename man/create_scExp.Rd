@@ -37,12 +37,12 @@ Returns a SingleCellExperiment object.
 }
 \description{
 Create the single cell experiment from (sparse) datamatrix and feature
-dataframe containing feature names and location.
-Also optionally removes zero count Features, zero count Cells, non canconical
-chromosomes, and chromosome M. Calculates QC Metrics (scran).
+dataframe containing feature names and location. Also optionally removes zero
+count Features, zero count Cells, non canconical chromosomes, and chromosome
+M. Calculates QC Metrics (scran).
 }
 \examples{
-scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
+scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 scExp
 
 }

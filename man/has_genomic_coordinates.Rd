@@ -17,7 +17,7 @@ Does SingleCellExperiment has genomic coordinates in features ?
 }
 \examples{
 
-scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
+scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 has_genomic_coordinates(scExp)
 scExp_gene = create_scExp(create_scDataset_raw(featureType="gene")$mat,
   create_scDataset_raw(featureType="gene")$annot)

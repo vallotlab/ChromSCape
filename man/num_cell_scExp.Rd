@@ -16,6 +16,6 @@ A formatted kable in HTML.
 Table of cells
 }
 \examples{
-scExp = create_scExp(create_scDataset_raw()$mat, create_scDataset_raw()$annot)
+scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 num_cell_scExp(SingleCellExperiment::colData(scExp))
 }

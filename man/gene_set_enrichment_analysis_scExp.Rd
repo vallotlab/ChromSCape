@@ -2,7 +2,8 @@
 % Please edit documentation in R/diff_analysis_gene_set_enrichment.R
 \name{gene_set_enrichment_analysis_scExp}
 \alias{gene_set_enrichment_analysis_scExp}
-\title{Runs Gene Set Enrichment Analysis on genes associated with differential features}
+\title{Runs Gene Set Enrichment Analysis on genes associated with differential
+features}
 \usage{
 gene_set_enrichment_analysis_scExp(
   scExp,
@@ -18,40 +19,49 @@ gene_set_enrichment_analysis_scExp(
 )
 }
 \arguments{
-\item{scExp}{A SingleCellExperiment object containing list of differential features.}
+\item{scExp}{A SingleCellExperiment object containing list of differential
+features.}
 
-\item{enrichment_qval}{Adjusted p-value threshold for gene set enrichment. (0.1)}
+\item{enrichment_qval}{Adjusted p-value threshold for gene set enrichment.
+(0.1)}
 
 \item{ref}{A reference annotation. ('hg38')}
 
-\item{GeneSets}{A named list of gene sets. If NULL will automatically load MSigDB list
-of gene sets for specified reference genome. (NULL)}
+\item{GeneSets}{A named list of gene sets. If NULL will automatically load
+MSigDB list of gene sets for specified reference genome. (NULL)}
 
-\item{GeneSetsDf}{A dataframe containing gene sets & class of gene sets. If NULL will automatically
-load MSigDB dataframe of gene sets for specified reference genome. (NULL)}
+\item{GeneSetsDf}{A dataframe containing gene sets & class of gene sets. If
+NULL will automatically load MSigDB dataframe of gene sets for specified
+reference genome. (NULL)}
 
-\item{GenePool}{The pool of genes to run enrichment in. If NULL will automatically load
-Gencode list of genes fro specified reference genome. (NULL)}
+\item{GenePool}{The pool of genes to run enrichment in. If NULL will
+automatically load Gencode list of genes fro specified reference genome.
+(NULL)}
 
-\item{qval.th}{Adjusted p-value threshold to define differential features. (0.01)}
+\item{qval.th}{Adjusted p-value threshold to define differential features.
+(0.01)}
 
 \item{cdiff.th}{Fold change threshold to define differential features. (1)}
 
-\item{peak_distance}{Maximum distanceToTSS of feature to gene TSS to consider associated, in bp. (1000)}
+\item{peak_distance}{Maximum distanceToTSS of feature to gene TSS to consider
+associated, in bp. (1000)}
 
-\item{use_peaks}{Use peak calling method (must be calculated beforehand). (FALSE)}
+\item{use_peaks}{Use peak calling method (must be calculated beforehand).
+(FALSE)}
 }
 \value{
-Returns a SingleCellExperiment object containing list of enriched Gene Sets for each cluster, either
-in depleted features, enriched features or simply differential features (both).
+Returns a SingleCellExperiment object containing list of enriched
+Gene Sets for each cluster, either in depleted features, enriched features
+or simply differential features (both).
 }
 \description{
-This function takes previously calculated differential features and runs hypergeometric test
-to look for enriched gene sets in the genes associated with differential features, for each cell
-cluster.
-This functions takes as input a SingleCellExperiment object with consclust, the type of comparison, either
-'one_vs_rest' or 'pairwise', the adjusted p-value threshold (qval.th) and the fold-change threshold (cdiff.th).
-It outputs a SingleCellExperiment object containing a differential list.
+This function takes previously calculated differential features and runs
+hypergeometric test to look for enriched gene sets in the genes associated
+with differential features, for each cell cluster. This functions takes as
+input a SingleCellExperiment object with consclust, the type of comparison,
+either 'one_vs_rest' or 'pairwise', the adjusted p-value threshold (qval.th)
+and the fold-change threshold (cdiff.th). It outputs a SingleCellExperiment
+object containing a differential list.
 }
 \examples{
 data("scExp")

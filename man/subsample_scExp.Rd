@@ -21,7 +21,7 @@ n is higher than the number of cell in a sample, this sample will not be
 subsampled.
 }
 \examples{
-scExp = create_scExp(create_scDataset_raw()$mat, create_scDataset_raw()$annot)
+scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 scExp_sub = subsample_scExp(scExp,50)
 num_cell_scExp(scExp_sub)
 

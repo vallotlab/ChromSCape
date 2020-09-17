@@ -6,15 +6,22 @@
 \usage{
 combine_enrichmentTests(
   diff,
+  enrichment_qval,
   qval.th,
   cdiff.th,
   annotFeat_long,
   peak_distance,
-  refined_annotation
+  refined_annotation,
+  GeneSets,
+  GeneSetsDf,
+  GenePool
 )
 }
 \arguments{
 \item{diff}{Differential list}
+
+\item{enrichment_qval}{Adusted p-value threshold above which a pathway is
+considered significative list}
 
 \item{qval.th}{Differential analysis adjusted p.value threshold}
 
@@ -26,9 +33,16 @@ combine_enrichmentTests(
 
 \item{refined_annotation}{Refined annotation data.frame if peak calling is
 done}
+
+\item{GeneSets}{List of pathways}
+
+\item{GeneSetsDf}{Data.frame of pathways}
+
+\item{GenePool}{Pool of possible genes for testing}
 }
 \value{
-
+A list of list of pathway enrichment data.frames for
+Both / Over / Under and for each cluster
 }
 \description{
 Run enrichment tests and combine into list

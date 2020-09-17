@@ -7,7 +7,8 @@
 detect_samples(barcodes, nb_samples = 1)
 }
 \arguments{
-\item{barcodes}{Vector of cell barcode names (e.g. Sample1_cell1, Sample1_cell2...)}
+\item{barcodes}{Vector of cell barcode names (e.g. Sample1_cell1,
+Sample1_cell2...)}
 
 \item{nb_samples}{Number of samples to find}
 }
@@ -15,8 +16,9 @@ detect_samples(barcodes, nb_samples = 1)
 character vector of sample names the same length as cell labels
 }
 \description{
-Identify a fixed number of common string (samples) in a set of varying strings (cells).
-E.g. in the set "Sample1_cell1","Sample1_cell2","Sample2_cell1","Sample2_cell2" and with
+Identify a fixed number of common string (samples) in a set of varying
+strings (cells). E.g. in the set
+"Sample1_cell1","Sample1_cell2","Sample2_cell1","Sample2_cell2" and with
 nb_samples=2, the function returns "Sample1","Sample1","Sample2","Sample2".
 }
 \examples{

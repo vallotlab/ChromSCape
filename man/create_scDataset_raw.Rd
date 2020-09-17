@@ -30,12 +30,10 @@ create_scDataset_raw(
 \item{batch_id}{Batch origin (c(1,2,3,4))}
 }
 \value{
-A list composed of
-\itemize{
-\item mat : a sparse matrix following an approximation of the negative binomial law (adapted to scChIPseq)
-\item annot : a data.frame of cell annotation
-\item batches : an integer vector with the batch number for each cell
-}
+A list composed of * mat : a sparse matrix following an approximation
+of the negative binomial law (adapted to scChIPseq) * annot : a data.frame
+of cell annotation * batches : an integer vector with the batch number for
+each cell
 }
 \description{
 Create a simulated single cell datamatrix & cell annotation

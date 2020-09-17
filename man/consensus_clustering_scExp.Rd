@@ -22,8 +22,9 @@ consensus_clustering_scExp(
 \arguments{
 \item{scExp}{A SingleCellExperiment object containing 'PCA' in reducedDims.}
 
-\item{prefix}{character value for output directory. Directory is created only if plot_consclust is not NULL.
-This title can be an abosulte or relative path.}
+\item{prefix}{character value for output directory. Directory is created only
+if plot_consclust is not NULL. This title can be an abosulte or relative
+path.}
 
 \item{maxK}{integer value. maximum cluster number to evaluate. (10)}
 
@@ -33,36 +34,41 @@ This title can be an abosulte or relative path.}
 
 \item{pFeature}{numerical value. proportion of features to sample. (1)}
 
-\item{distance}{character value. 'pearson': (1 - Pearson correlation), 'spearman' (1 - Spearman correlation),
-'euclidean', 'binary', 'maximum', 'canberra', 'minkowski' or custom distance function. ('pearson')}
+\item{distance}{character value. 'pearson': (1 - Pearson correlation),
+'spearman' (1 - Spearman correlation), 'euclidean', 'binary', 'maximum',
+'canberra', 'minkowski' or custom distance function. ('pearson')}
 
-\item{clusterAlg}{character value. cluster algorithm. 'hc' heirarchical (hclust),
-'pam' for paritioning around medoids, 'km' for k-means upon data matrix, 'kmdist' ('hc')
-for k-means upon distance matrices (former km option), or a function that returns a clustering. ('hc')}
+\item{clusterAlg}{character value. cluster algorithm. 'hc' heirarchical
+(hclust), 'pam' for paritioning around medoids, 'km' for k-means upon data
+matrix, 'kmdist' ('hc') for k-means upon distance matrices (former km
+option), or a function that returns a clustering. ('hc')}
 
 \item{innerLinkage}{hierarchical linkage method for subsampling. ('ward.D')}
 
-\item{finalLinkage}{hierarchical linkage method for consensus matrix. ('ward.D')}
+\item{finalLinkage}{hierarchical linkage method for consensus matrix.
+('ward.D')}
 
-\item{plot_consclust}{character value. NULL - print to screen, 'pdf', 'png', 'pngBMP' for bitmap png,
-helpful for large datasets. ('pdf')}
+\item{plot_consclust}{character value. NULL - print to screen, 'pdf', 'png',
+'pngBMP' for bitmap png, helpful for large datasets. ('pdf')}
 
 \item{plot_icl}{same as above for item consensus plot. ('png')}
 }
 \value{
-Returns a SingleCellExperiment object containing consclust list, calculated cluster consensus
-and item consensus scores in metadata.
+Returns a SingleCellExperiment object containing consclust list,
+calculated cluster consensus and item consensus scores in metadata.
 }
 \description{
-Runs consensus hierarchical clustering on PCA feature space of scExp object. Plot consensus
-scores for each number of clusters. See \link[ConsensusClusterPlus]{ConsensusClusterPlus} -
-Wilkerson, M.D., Hayes, D.N. (2010). ConsensusClusterPlus: a class discovery tool with
-confidence assessments and item tracking. Bioinformatics, 2010 Jun 15;26(12):1572-3.
+Runs consensus hierarchical clustering on PCA feature space of scExp object.
+Plot consensus scores for each number of clusters. See
+\link[ConsensusClusterPlus]{ConsensusClusterPlus} - Wilkerson, M.D., Hayes,
+D.N. (2010). ConsensusClusterPlus: a class discovery tool with confidence
+assessments and item tracking. Bioinformatics, 2010 Jun 15;26(12):1572-3.
 }
 \details{
-This functions takes as input a SingleCellExperiment object that must have 'PCA' in reducedDims
-and outputs a SingleCellExperiment object containing consclust list calculated cluster consensus
-and item consensus scores in metadata.
+This functions takes as input a SingleCellExperiment object that must have
+'PCA' in reducedDims and outputs a SingleCellExperiment object containing
+consclust list calculated cluster consensus and item consensus scores in
+metadata.
 }
 \examples{
 data("scExp")
@@ -71,7 +77,7 @@ scExp_cf = consensus_clustering_scExp(scExp)
 
 }
 \references{
-ConsensusClusterPlus package by
-Wilkerson, M.D., Hayes, D.N. (2010). ConsensusClusterPlus: a class discovery tool
-with confidence assessments and item tracking. Bioinformatics, 2010 Jun 15;26(12):1572-3.
+ConsensusClusterPlus package by Wilkerson, M.D., Hayes, D.N.
+(2010). ConsensusClusterPlus: a class discovery tool with confidence
+assessments and item tracking. Bioinformatics, 2010 Jun 15;26(12):1572-3.
 }

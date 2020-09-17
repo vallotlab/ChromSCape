@@ -13,13 +13,16 @@ table_enriched_genes_scExp(
 )
 }
 \arguments{
-\item{scExp}{A SingleCellExperiment object containing list of enriched gene sets.}
+\item{scExp}{A SingleCellExperiment object containing list of enriched gene
+sets.}
 
-\item{set}{A character vector, either 'Both', 'Overexpressed' or 'Underexpressed'. ('Both')}
+\item{set}{A character vector, either 'Both', 'Overexpressed' or
+'Underexpressed'. ('Both')}
 
 \item{cell_cluster}{Cell cluster. ('C1')}
 
-\item{enr_class_sel}{Which classes of gene sets to show. (c('c1_positional', 'c2_curated', ...))}
+\item{enr_class_sel}{Which classes of gene sets to show. (c('c1_positional',
+'c2_curated', ...))}
 }
 \value{
 A DT::data.table of enriched gene sets.

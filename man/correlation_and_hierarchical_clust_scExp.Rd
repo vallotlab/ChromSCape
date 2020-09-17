@@ -13,20 +13,24 @@ correlation_and_hierarchical_clust_scExp(
 \arguments{
 \item{scExp}{A SingleCellExperiment object, containing 'PCA' in reducedDims.}
 
-\item{correlation}{A correlation method to use. See \link[stats]{hclust}. ('pearson')}
+\item{correlation}{A correlation method to use. See \link[stats]{hclust}.
+('pearson')}
 
-\item{hc_linkage}{A linkage method for hierarchical clustering. See \link[stats]{cor}. ('ward.D')}
+\item{hc_linkage}{A linkage method for hierarchical clustering. See
+\link[stats]{cor}. ('ward.D')}
 }
 \value{
-Return a SingleCellExperiment object with correlation matrix & hiearchical clustering.
+Return a SingleCellExperiment object with correlation matrix &
+hiearchical clustering.
 }
 \description{
-Calculates cell to cell correlation matrix based on the PCA feature space
-and runs hierarchical clustering taking 1 - correlation scores as distance.
+Calculates cell to cell correlation matrix based on the PCA feature space and
+runs hierarchical clustering taking 1 - correlation scores as distance.
 }
 \details{
-This functions takes as input a SingleCellExperiment object that must have PCA calculated
-and outputs a SingleCellExperiment object with correlation matrix and hierarchical clustering.
+This functions takes as input a SingleCellExperiment object that must have
+PCA calculated and outputs a SingleCellExperiment object with correlation
+matrix and hierarchical clustering.
 }
 \examples{
 data("scExp")

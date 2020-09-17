@@ -11,8 +11,8 @@ feature_annotation_scExp(scExp, ref = "hg38", reference_annotation = NULL)
 
 \item{ref}{Reference genome. Either 'hg38' or 'mm10'. ('hg38')}
 
-\item{reference_annotation}{A data.frame containing gene (or else) annotation with
-genomic coordinates.}
+\item{reference_annotation}{A data.frame containing gene (or else) annotation
+with genomic coordinates.}
 }
 \value{
 A SingleCellExperiment object with annotated rowData.
@@ -21,11 +21,11 @@ A SingleCellExperiment object with annotated rowData.
 Add gene annotations to features
 }
 \examples{
-scExp = create_scExp(create_scDataset_raw()$mat,  create_scDataset_raw()$annot)
+scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 scExp = feature_annotation_scExp(scExp)
 head(SummarizedExperiment::rowRanges(scExp))
 
-# Mouse 
+# Mouse
 scExp = create_scExp(create_scDataset_raw(ref="mm10")$mat,
   create_scDataset_raw(ref="mm10")$annot)
 scExp = feature_annotation_scExp(scExp,ref="mm10")
