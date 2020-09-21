@@ -24,6 +24,3 @@ additional parameters that you would pass to shiny::runApp
 launchApp()
 }
 }
-\seealso{
-
-}

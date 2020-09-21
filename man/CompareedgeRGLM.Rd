@@ -11,7 +11,7 @@ CompareedgeRGLM(
   ref_group = NULL,
   groups = NULL,
   featureTab = NULL,
-  norm_method = "upperquartile"
+  norm_method = "TMMwsp"
 )
 }
 \arguments{

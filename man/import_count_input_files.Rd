@@ -9,12 +9,8 @@ import_count_input_files(
   file_type,
   which,
   ref,
-  peak_file,
   peak_file_2,
   barcode_file,
-  n_bins,
-  bin_width,
-  geneTSS,
   index_file,
   verbose
 )
@@ -28,17 +24,9 @@ import_count_input_files(
 
 \item{ref}{Reference genome}
 
-\item{peak_file}{A bed file}
-
 \item{peak_file_2}{A bed file for peak annotation}
 
 \item{barcode_file}{A file containing barcode names}
-
-\item{n_bins}{Number of bins}
-
-\item{bin_width}{Bin width}
-
-\item{geneTSS}{Gene TSS annotation}
 
 \item{index_file}{A file containing indexes of non zero entries}
 
