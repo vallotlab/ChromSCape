@@ -126,7 +126,7 @@ scExp_cf = choose_cluster_scExp(scExp_cf, nclust = 4)
 
 scExp_cf = differential_analysis_scExp(scExp_cf, qval.th = 0.8, cdiff.th = 0.3)
 
-test_that("Differential Analysis - Right inputs. n = 4", {
+test_that("Differential Analysis + GSEA - Right inputs. n = 4", {
   expect_s4_class(differential_analysis_scExp(scExp_cf),
                   "SingleCellExperiment")
   #When 2 clusters, pairwise & one vs rest should yield the same results
@@ -139,17 +139,7 @@ test_that("Differential Analysis - Right inputs. n = 4", {
     method = "neg.binomial")
   scExp_cf.ovr.edgeR = differential_analysis_scExp(
     scExp_cf, qval.th = 0.8,cdiff.th = 0.3, method = "neg.binomial")
-  
-  scExp_cf.pw@metadata$diff$res[1:5,]
-  scExp_cf.ovr@metadata$diff$res[1:5,]
-  scExp_cf.pw.edgeR@metadata$diff$res[1:5,]
-  scExp_cf.ovr.edgeR@metadata$diff$res[1:5,]
-  
-  scExp_cf.pw@metadata$diff$summary
-  scExp_cf.ovr@metadata$diff$summary
-  scExp_cf.pw.edgeR@metadata$diff$summary
-  scExp_cf.ovr.edgeR@metadata$diff$summary
-  
+
   expect_equal(dim(scExp_cf.pw),dim(scExp_cf.ovr))
   expect_equal(dim(scExp_cf.pw.edgeR),dim(scExp_cf.ovr.edgeR))
   
@@ -161,24 +151,18 @@ test_that("Differential Analysis - Right inputs. n = 4", {
   expect_equal(as.character(scExp_cf.pw@metadata$diff$res$ID),
                rowData(scExp_cf.pw)$ID)
   
-})
-
-test_that("GSEA - all configs - Right inputs. n = 4", {
-  expect_s4_class(differential_analysis_scExp(scExp_cf),
-                  "SingleCellExperiment")
-  
   scExp_cf.pw = gene_set_enrichment_analysis_scExp(scExp_cf.pw,
-                                                qval.th = 0.8,
-                                                cdiff.th = 0.3)
+                                                   qval.th = 0.8,
+                                                   cdiff.th = 0.3)
   scExp_cf.ovr = gene_set_enrichment_analysis_scExp(scExp_cf.ovr,
-                                                qval.th = 0.8,
-                                                cdiff.th = 0.3)
+                                                    qval.th = 0.8,
+                                                    cdiff.th = 0.3)
   scExp_cf.pw.edgeR = gene_set_enrichment_analysis_scExp(scExp_cf.pw.edgeR,
-                                                qval.th = 0.8,
-                                                cdiff.th = 0.3)
+                                                         qval.th = 0.8,
+                                                         cdiff.th = 0.3)
   scExp_cf.ovr.edgeR = gene_set_enrichment_analysis_scExp(scExp_cf.ovr.edgeR,
-                                                qval.th = 0.8,
-                                                cdiff.th = 0.3)
+                                                          qval.th = 0.8,
+                                                          cdiff.th = 0.3)
   expect_is(scExp_cf.pw@metadata$enr$Both[[1]], "data.frame")
   expect_equal(length(scExp_cf.pw@metadata$enr$Both),
                length(unique(
@@ -222,7 +206,9 @@ test_that("GSEA - all configs - Right inputs. n = 4", {
   expect_equal(length(
     scExp_cf.ovr.edgeR@metadata$enr$Underexpressed), length(
       unique(SingleCellExperiment::colData(scExp_cf.ovr.edgeR)$cell_cluster)))
+  
 })
+
 
 scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf, enrichment_qval = 0.1,
                                               ref = "hg38", qval.th = 0.8,
