@@ -366,8 +366,8 @@ annotToCol2 <- function(
         colnames(annotS) = colnames(annotT)
         rownames(annotS) = rownames(annotT)
     }
-    for (j in seq_len(ncol(annotS)) ) 
-    annotS[which(annotS[, j] %in% missing), j] <- NA
+    for (j in seq_len(ncol(annotS)) ) {
+    annotS[which(annotS[, j] %in% missing), j] <- NA}
     if (is.null(anotype)){
         anotype <- rep("categ", ncol(annotS))
         names(anotype) <- colnames(annotS)
@@ -430,6 +430,11 @@ for (j in which(anotype == "categ")){
     tmp <- as.factor(anocol.[, j])
     classes <- as.character(levels(tmp))
     ncat <- length(levels(tmp))
+    if(ncat > length(categCol)){
+        color = grDevices::colors()[grep('gr(a|e)y',
+                                        grDevices::colors(), invert = TRUE)]
+        categCol <- sample(color, 200)
+    }
     if (k + ncat > length(categCol)) 
         categCol <- c(categCol, categCol)
     levels(tmp) <- categCol[k:(k + ncat - 1)]
