@@ -4,15 +4,26 @@
 \alias{launchApp}
 \title{Launch ChromSCape}
 \usage{
-launchApp()
+launchApp(launch.browser = TRUE, ...)
+}
+\arguments{
+\item{launch.browser}{Wether to launch browser or not}
+
+\item{...}{Additional parameters passed to \code{\link[shiny]{runApp}}}
 }
 \value{
 Launches the shiny application
 }
 \description{
-Launch ChromSCape
+Main function to launch ChromSCape in your favorite browser. You can pass
+additional parameters that you would pass to shiny::runApp
+(\code{\link[shiny]{runApp}})
 }
 \examples{
+\dontrun{
 launchApp()
+}
+}
+\seealso{
 
 }

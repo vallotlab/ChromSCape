@@ -14,6 +14,9 @@ cell_cluster columns}
 
 \item{merged_bam}{A list of merged bam file paths}
 }
+\value{
+Create one BAM per cluster from one BAM per condition
+}
 \description{
 Separate BAM files into cell cluster BAM files
 }

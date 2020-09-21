@@ -35,6 +35,9 @@ warning_raw_counts_to_feature_count_files(
 
 \item{ref}{reference genome to use (hg38)}
 }
+\value{
+Error or warnings if the input are not correct
+}
 \description{
 Warning for _raw_counts_to_feature_count_files
 }

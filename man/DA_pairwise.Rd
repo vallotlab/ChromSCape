@@ -7,7 +7,8 @@
 DA_pairwise(affectation, nclust, counts, method, feature, block)
 }
 \arguments{
-\item{affectation}{}
+\item{affectation}{An annotation data.frame with cell_cluster and cell_id
+columns}
 
 \item{nclust}{Number of clusters}
 
@@ -23,6 +24,5 @@ DA_pairwise(affectation, nclust, counts, method, feature, block)
 A list of results, groups compared and references
 }
 \description{
-#' @param affectation An annotation data.frame with cell_cluster and cell_id
-columns
+Run differential analysis in Pairwise mode
 }

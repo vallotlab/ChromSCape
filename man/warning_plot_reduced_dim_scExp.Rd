@@ -23,6 +23,9 @@ warning_plot_reduced_dim_scExp(
 
 \item{select_y}{Which variable to select for y axis}
 }
+\value{
+Warning or errors if the inputs are not correct
+}
 \description{
 A warning helper for plot_reduced_dim_scExp
 }

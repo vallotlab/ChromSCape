@@ -22,6 +22,9 @@ cluster against all others, or 'pairwise' to make 1 to 1 comparisons.
 
 \item{block}{Use batches as blocking factors ?}
 }
+\value{
+Warnings or Errors if the input are not correct
+}
 \description{
 Warning for differential_analysis_scExp
 }
