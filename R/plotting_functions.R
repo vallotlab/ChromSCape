@@ -116,7 +116,6 @@ colors_scExp <- function(
 #' @return A data.frame with the feature levels and the colors of each level of
 #'   this feature.
 #'
-#' @export
 #' @importFrom tibble rownames_to_column
 #'   
 get_color_dataframe_from_input <- function(
@@ -207,6 +206,8 @@ plot_reduced_dim_scExp <- function(
 #' @param select_x Which variable to select for x axis
 #' @param select_y Which variable to select for y axis
 #'
+#' @return Warning or errors if the inputs are not correct
+#' 
 warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
                                         select_x, select_y){
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(color_by),
@@ -432,7 +433,6 @@ plot_differential_volcano_scExp <- function(
 #' @param n num hues
 #'
 #' @importFrom grDevices hcl
-#' @export
 #' @return A color in HEX format 
 gg_fill_hue <- function(n)
 {
