@@ -6,7 +6,6 @@
 #'
 #' @param launch.browser Wether to launch browser or not
 #' @param ... Additional parameters passed to \code{\link[shiny]{runApp}}
-#' @seealso 
 #'
 #' @return Launches the shiny application
 #' @import shiny
