@@ -1,1 +1,0 @@
-ChromSCape::launchApp()
