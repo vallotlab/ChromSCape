@@ -257,6 +257,7 @@ annotation_from_merged_peaks <- function(scExp,
 #' @param odir A valid output directory path
 #' @param merged_bam A list of merged bam file paths
 #' 
+#' @return Create one BAM per cluster from one BAM per condition
 separate_BAM_into_clusters <- function(affectation, odir, merged_bam){
     for (class in levels(factor(affectation$cell_cluster)))
     {
