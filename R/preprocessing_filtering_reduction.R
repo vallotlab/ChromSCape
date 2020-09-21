@@ -209,13 +209,13 @@ raw_counts_to_feature_count_files <- function(
                 "Index Count type, the folder must contain exactly two files ",
                 "matching respectively *index.txt, peaks.bed, barcodes.txt"))
     }
-    which <- define_feature(ref,peak_file, n_bins, bin_width, geneTSS,
+    which <- define_feature(ref, peak_file, n_bins, bin_width, geneTSS,
                             aroundTSS)
     out <- import_count_input_files(
         files_dir, file_type, which, ref, peak_file, peak_file_2, barcode_file,
         n_bins, bin_width, geneTSS, index_file, verbose)
     which <- out$which
-    feature_indexes <- out$features_indexes
+    feature_indexes <- out$feature_indexes
     name_cells <- out$name_cells
     mat = Matrix::sparseMatrix(
         i = as.numeric(feature_indexes$feature_index),
@@ -242,6 +242,7 @@ raw_counts_to_feature_count_files <- function(
 #' @param aroundTSS Space up and downstream of TSS to use (2500)
 #' @param file_type Input file(s) type(s) ('BAM')
 #'
+#' @return Error or warnings if the input are not correct
 warning_raw_counts_to_feature_count_files <- function(
     files_dir, file_type = c("BAM", "BED", "Index_Peak_Barcode"),
     peak_file = NULL, n_bins = NULL, bin_width = NULL, geneTSS = NULL,
@@ -358,18 +359,18 @@ import_count_input_files <- function(files_dir, file_type,
         name_cells = l[[2]]
         if (verbose)
             cat(paste0("ChromSCape::raw_counts_to_feature_count_files - ",
-                    "Count matrix created from BAM files in", t1[3],
+                    "Count matrix created from BAM files in ", t1[3],
                     "sec.\n" ))
     }
     else if (file_type == "BED") {
         t1 = system.time({
             l = beds_to_matrix_indexes(files_dir, which)
         })
-        feature_indexes = l[[1]]
-        name_cells = l[[2]]
+        feature_indexes = l$feature_indexes
+        name_cells = l$names_cells
         if (verbose)
             cat(paste0("ChromSCape::raw_counts_to_feature_count_files - ",
-                    "Count matrix created from BED files in", t1[3],
+                    "Count matrix created from BED files in ", t1[3],
                     "sec.\n"))}
     else if (file_type == "Index_Peak_Barcode") {
         name_cells = read.table(barcode_file, sep = "", quote = "",
@@ -383,11 +384,12 @@ import_count_input_files <- function(files_dir, file_type,
         which = l[[2]]
         if (verbose)
             cat(paste0("ChromSCape::raw_counts_to_feature_count_files - ",
-                    "Count matrix created from Index-Peak-Barcodes files in",
+                    "Count matrix created from Index-Peak-Barcodes files in ",
                     t1[3], "sec.\n"))
     }
-    out <- list("which" = which, "feature_indexes" <- feature_indexes,
+    out <- list("which" = which, "feature_indexes" = feature_indexes,
                 "name_cells" = name_cells)
+
     return(out)
 }
 
@@ -540,7 +542,9 @@ beds_to_matrix_indexes <- function(files_dir, which) {
     feature_indexes = do.call(rbind, feature_list)
     feature_indexes$barcode_index = as.numeric(
         as.factor(feature_indexes$cell_id))
-    return(list(feature_indexes, names_cells))
+    out = list("feature_indexes" = feature_indexes,
+               "names_cells" = names_cells)
+    return(out)
 }
 
 #' Transforms a peaks x cells count matrix into a bins x cells count matrix.
@@ -833,7 +837,6 @@ generate_count_matrix <- function(cells, features, sparse,
 #' * annot_raw: an annotation of cells as data.frame  
 #'  
 #'
-#' @export
 #'
 #' @importFrom scater readSparseCounts
 #' @md
@@ -1246,7 +1249,6 @@ filter_scExp =  function (
     bina_counts = Matrix::sparseMatrix(i = 1, j = 1, x = 1, 
                                     dims = dim(bina_counts))
     bina_counts[1, 1] = 0
-    gc()
     bina_counts[sel_above_2] <- 1
     gc()
     nCells_in_feature <- Matrix::rowSums(bina_counts)
@@ -1447,10 +1449,10 @@ exclude_features_scExp <-
 preprocess_TPM <- function(scExp)
 {
     size <- GenomicRanges::width(SummarizedExperiment::rowRanges(scExp))
-    SingleCellExperiment::normcounts(scExp) <-
+    SummarizedExperiment::assay(scExp, "normcounts", withDimnames = FALSE) <-
         SingleCellExperiment::counts(scExp) / size
-    SingleCellExperiment::normcounts(scExp) <- 10 ^ 6 *
-        Matrix::t(Matrix::t(SingleCellExperiment::normcounts(scExp)) /
+    SummarizedExperiment::assay(scExp, "normcounts", withDimnames = FALSE) <-
+        10 ^ 6 * Matrix::t(Matrix::t(SingleCellExperiment::normcounts(scExp)) /
                     Matrix::colSums(normcounts(scExp)))
     return(scExp)
 }
@@ -1461,7 +1463,7 @@ preprocess_TPM <- function(scExp)
 #'
 #' @return A SingleCellExperiment object.
 #' @importFrom GenomicRanges width
-#' @importFrom SummarizedExperiment rowRanges
+#' @importFrom SummarizedExperiment rowRanges assay
 #' @importFrom SingleCellExperiment counts normcounts
 #' @importFrom Matrix t colSums
 #' @export
@@ -1472,14 +1474,14 @@ preprocess_TPM <- function(scExp)
 #' head(normcounts(scExp))
 preprocess_RPKM <- function(scExp)
 {
-    SingleCellExperiment::normcounts(scExp) <- 10 ^ 9 *
-        Matrix::t(
+    SummarizedExperiment::assay(scExp, "normcounts", withDimnames = FALSE) <-
+        10 ^ 9 * Matrix::t(
             Matrix::t(SingleCellExperiment::counts(scExp)) /
                 Matrix::colSums(SingleCellExperiment::counts(scExp))
         )
     size <-
         GenomicRanges::width(SummarizedExperiment::rowRanges(scExp))
-    SingleCellExperiment::normcounts(scExp) <-
+    SummarizedExperiment::assay(scExp, "normcounts", withDimnames = FALSE) <-
         SingleCellExperiment::normcounts(scExp) / size
     
     return(scExp)
@@ -1490,7 +1492,7 @@ preprocess_RPKM <- function(scExp)
 #' @param scExp A SingleCellExperiment Object
 #'
 #' @return A SingleCellExperiment object.
-#' @importFrom SummarizedExperiment rowRanges
+#' @importFrom SummarizedExperiment assay
 #' @importFrom SingleCellExperiment counts normcounts
 #' @importFrom Matrix t colSums
 #' @export
@@ -1501,10 +1503,9 @@ preprocess_RPKM <- function(scExp)
 #' 
 preprocess_CPM <- function(scExp)
 {
-    SingleCellExperiment::normcounts(scExp) <- 10 ^ 6 *
-        Matrix::t(
-            Matrix::t(SingleCellExperiment::counts(scExp)) /
-                Matrix::colSums(SingleCellExperiment::counts(scExp))
+    SummarizedExperiment::assay(scExp, "normcounts", withDimnames = FALSE) <- 
+        10 ^ 6 * Matrix::t(Matrix::t(SingleCellExperiment::counts(scExp)) /
+                            Matrix::colSums(SingleCellExperiment::counts(scExp))
         )
     return(scExp)
 }
@@ -1515,7 +1516,7 @@ preprocess_CPM <- function(scExp)
 #'
 #' @return A SingleCellExperiment object.
 #' @importFrom GenomicRanges width
-#' @importFrom SummarizedExperiment rowRanges
+#' @importFrom SummarizedExperiment rowRanges assay
 #' @importFrom SingleCellExperiment counts normcounts
 #' @importFrom Matrix t colSums
 #' @export
@@ -1527,7 +1528,7 @@ preprocess_CPM <- function(scExp)
 preprocess_feature_size_only <- function(scExp)
 {
     size <- GenomicRanges::width(SummarizedExperiment::rowRanges(scExp))
-    SingleCellExperiment::normcounts(scExp) <-
+    SummarizedExperiment::assay(scExp, "normcounts", withDimnames = FALSE) <-
         SingleCellExperiment::counts(scExp) / size
     return(scExp)
 }
