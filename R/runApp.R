@@ -1,16 +1,24 @@
 #' Launch ChromSCape
 #'
-#' @export
+#' Main function to launch ChromSCape in your favorite browser. You can pass
+#' additional parameters that you would pass to shiny::runApp
+#' (\code{\link[shiny]{runApp}})
 #'
-#' @examples launchApp()
-#' 
+#' @param launch.browser Wether to launch browser or not
+#' @param ... Additional parameters passed to \code{\link[shiny]{runApp}}
+#' @seealso 
+#'
 #' @return Launches the shiny application
 #' @import shiny
-#'  
-launchApp <- function(){
-    
-    # shinyApp(ui = shinyAppUI, server = shinyAppServer)
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' launchApp()
+#' }
+launchApp <- function(launch.browser=TRUE, ...){
     source(file.path(system.file(package="ChromSCape"),
                 "Module_preprocessing_filtering_and_reduction.R"),)
-    shiny::runApp(system.file(package="ChromSCape"),launch.browser = TRUE)
+    shiny::runApp(system.file(package="ChromSCape"),launch.browser = TRUE, ...)
 }
