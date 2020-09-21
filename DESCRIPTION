@@ -29,6 +29,7 @@ Roxygen: list(markdown = TRUE)
 Imports: 
     shiny,
     shinyjs,
+    rtracklayer,
     shinyFiles,
     shinyhelper,
     shinycssloaders,
