@@ -35,7 +35,7 @@ detect_samples <- function(barcodes, nb_samples = 1) {
         hc = stats::hclust(dist, method = 'ward.D')
         hc$labels = rep("", ncol(mat))
     })
-    cat("ChromSCape::detect_samples - found samples in", t[3], "secs.")
+    cat("ChromSCape::detect_samples - found samples in", t[3], "secs.\n")
     sample_groups = stats::cutree(hc, k = nb_samples)
     samp_name = c()
     for (i in seq_len(nb_samples)) {
@@ -194,7 +194,7 @@ raw_counts_to_feature_count_files <- function(
     warning_raw_counts_to_feature_count_files(
         files_dir, file_type, peak_file, n_bins, bin_width, geneTSS,
         aroundTSS, verbose, ref)
-    
+    peak_file_2 <- barcode_file <- index_file <- NULL
     if (file_type == "Index_Peak_Barcode") {
         peak_file_2 = list.files(path = files_dir, full.names = TRUE,
                                 pattern = ".*peaks.bed$")
@@ -212,8 +212,8 @@ raw_counts_to_feature_count_files <- function(
     which <- define_feature(ref, peak_file, n_bins, bin_width, geneTSS,
                             aroundTSS)
     out <- import_count_input_files(
-        files_dir, file_type, which, ref, peak_file, peak_file_2, barcode_file,
-        n_bins, bin_width, geneTSS, index_file, verbose)
+        files_dir, file_type, which, ref, peak_file_2, barcode_file,
+        index_file, verbose)
     which <- out$which
     feature_indexes <- out$feature_indexes
     name_cells <- out$name_cells
@@ -328,10 +328,6 @@ define_feature <- function(ref,peak_file, n_bins, bin_width,
 #' @param files_dir Path to the input files
 #' @param which A GRanges object of features 
 #' @param ref Reference genome
-#' @param peak_file A bed file
-#' @param n_bins Number of bins
-#' @param bin_width Bin width
-#' @param geneTSS Gene TSS annotation
 #' @param verbose Print ?
 #' @param file_type Input file type
 #' @param peak_file_2 A bed file for peak annotation
@@ -343,14 +339,8 @@ define_feature <- function(ref,peak_file, n_bins, bin_width,
 #' and the cell names
 #'
 import_count_input_files <- function(files_dir, file_type,
-                                    which, ref, peak_file, peak_file_2, 
-                                    barcode_file, n_bins, bin_width, geneTSS,
-                                    index_file, verbose){
-    type = length(which(c(!is.null(peak_file),!is.null(n_bins),
-                        !is.null(bin_width),!is.null(geneTSS))))
-    if (type > 1 | type == 0) {
-        stop("ChromSCape::raw_counts_to_feature_count_files - peak_file,
-            n_bins, bin_width & geneTSS are required and mutually exclusive.")}
+                                    which, ref, peak_file_2, 
+                                    barcode_file, index_file, verbose){
     if (file_type == "BAM") {
         t1 = system.time({
             l = bams_to_matrix_indexes(files_dir, which)
@@ -507,25 +497,7 @@ beds_to_matrix_indexes <- function(files_dir, which) {
         feature_list = BiocParallel::bplapply(
             names(single_cell_beds),
             function(bed_name) {
-                gzipped = (length(grep(".gz$",
-                                    single_cell_beds[[bed_name]])) > 0)
-                if (gzipped) {
-                    bed = read.table(
-                        gzfile(single_cell_beds[[bed_name]]),
-                        sep = "\t",
-                        quote = "",
-                        stringsAsFactors = FALSE
-                    )
-                } else {
-                    bed = read.table(
-                        single_cell_beds[[bed_name]],
-                        sep = "\t",
-                        quote = "",
-                        stringsAsFactors = FALSE
-                    )
-                }
-                bed = GenomicRanges::GRanges(setNames(bed[, seq_len(3)],
-                                                    c("chr", "start", "end")))
+                bed = import(single_cell_beds[[bed_name]], format = "bed")
                 suppressWarnings({
                     tmp = data.frame(
                         counts = GenomicRanges::countOverlaps(
@@ -533,8 +505,10 @@ beds_to_matrix_indexes <- function(files_dir, which) {
                 })
                 tmp$feature_index = as.numeric(rownames(tmp))
                 tmp = tmp[which(tmp$counts > 0), ]
-                tmp$cell_id = bed_name
-                tmp = tmp[, c("cell_id", "feature_index", "counts")]
+                if(nrow(tmp)>0) {
+                    tmp$cell_id = bed_name 
+                    tmp = tmp[, c("cell_id", "feature_index", "counts")]
+                } else { tmp = NULL}
                 tmp
             })
     })
@@ -543,7 +517,7 @@ beds_to_matrix_indexes <- function(files_dir, which) {
     feature_indexes$barcode_index = as.numeric(
         as.factor(feature_indexes$cell_id))
     out = list("feature_indexes" = feature_indexes,
-               "names_cells" = names_cells)
+            "names_cells" = names_cells)
     return(out)
 }
 

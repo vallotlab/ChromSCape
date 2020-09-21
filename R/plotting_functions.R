@@ -95,8 +95,8 @@ colors_scExp <- function(
     {
         # add custom colors
         if (!color_by %in% colnames(color_df)) 
-            stop(paste0("ChromSCape::color_scExp - color_by must be present in",
-            " colnames of color_df is not null."))
+            stop(paste0("ChromSCape::colors_scExp - color_by must be present ",
+            "in colnames of color_df is not null."))
         
         SummarizedExperiment::colData(scExp)[, paste0(annotCol, "_color")] = 
             color_df[match(SingleCellExperiment::colData(scExp)[, color_by],
@@ -226,7 +226,7 @@ warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
         colnames(SingleCellExperiment::colData(scExp))) 
         stop(paste0("ChromSCape::plot_reduced_dim_scExp - color_by's color ",
                     "column must be present in colnames of colData(scExp). ",
-                    "Please run color_scExp first."))
+                    "Please run colors_scExp first."))
     
     if (!select_x %in% 
         colnames(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]))) 
