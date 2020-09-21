@@ -20,7 +20,7 @@ additional parameters that you would pass to shiny::runApp
 (\code{\link[shiny]{runApp}})
 }
 \examples{
-\dontrun{
+\donttest{
 launchApp()
 }
 }

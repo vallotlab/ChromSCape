@@ -24,6 +24,6 @@ Normalize counts
 \examples{
 scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 scExp = normalize_scExp(scExp)
-head(normcounts(scExp))
+head(SingleCellExperiment::normcounts(scExp))
 
 }

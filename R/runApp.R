@@ -13,7 +13,7 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' launchApp()
 #' }
 launchApp <- function(launch.browser=TRUE, ...){
