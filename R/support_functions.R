@@ -115,14 +115,14 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL,
 #' 
 CompareedgeRGLM <- function(
     dataMat=NULL, annot=NULL, ref_group=NULL, groups=NULL, featureTab=NULL, 
-    norm_method="upperquartile"){
+    norm_method="TMMwsp"){
     res <- featureTab
     for(k in seq_along(groups)){
         print(
             paste("Comparing",names(ref_group)[min(c(k,length(ref_group)))],
                         "versus",names(groups)[k]))
-        if(length(ref_group)==1) refsamp <- ref_group[[1]]
-        else refsamp <- ref_group[[k]]
+        if(length(ref_group)==1){refsamp <- ref_group[[1]]
+        }else {refsamp <- ref_group[[k]]}
         gpsamp <- groups[[k]]
         annot. <- annot[c(refsamp,gpsamp),seq_len(2)]
         annot.$Condition <- c(
