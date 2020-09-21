@@ -50,15 +50,15 @@ differential_analysis_scExp = function(
     
     if (isFALSE(block)) block = NULL
     nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
-    if(method == "wilcox") counts = SingleCellExperiment::normcounts(scExp) 
-    else counts = SingleCellExperiment::counts(scExp) 
+    if(method == "wilcox"){counts = SingleCellExperiment::normcounts(scExp)
+    } else{counts = SingleCellExperiment::counts(scExp)}
     feature <- SingleCellExperiment::rowData(scExp)
     feature = data.frame(ID = feature[, "ID"], chr = feature[, "chr"],
         start = feature[, "start"], end = feature[, "end"])
     affectation = as.data.frame(SingleCellExperiment::colData(scExp))
     diff = list(res = NULL, summary = NULL, groups = NULL, refs = NULL)
     if (de_type == "one_vs_rest"){
-        out <- DA_one_vs_rest_fun(affectation,nclust, counts,
+        out <- DA_one_vs_rest_fun(affectation, nclust, counts,
                                 method, feature, block)
     } else {
         out <- DA_pairwise(affectation,nclust, counts, method, feature, block)
@@ -99,6 +99,7 @@ differential_analysis_scExp = function(
 #' @param method Wilcoxon or edgerGLM
 #' @param block Use batches as blocking factors ?
 #'
+#' @return Warnings or Errors if the input are not correct
 warning_DA <- function(scExp, de_type, method, qval.th, cdiff.th, block){
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(de_type),
             is.numeric(qval.th), is.numeric(cdiff.th))
@@ -240,10 +241,10 @@ run_pairwise_tests <- function(affectation, nclust, counts,
                 affectation$cell_cluster == paste0("C",j)), "cell_id"])
             names(myrefs) = paste0("C", j)
             refs = names(myrefs)
-            if(method == "wilcox") tmp_result = CompareWilcox(
+            if(method == "wilcox"){ tmp_result = CompareWilcox(
                 dataMat = counts, annot = affectation, ref_group = myrefs, 
                 groups = mygps, featureTab = feature)
-            else {
+            } else {
                 tmp_result = CompareedgeRGLM(
                     dataMat = counts, annot = affectation, ref_group = myrefs,
                     groups = mygps, featureTab = feature)
