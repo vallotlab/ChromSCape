@@ -380,9 +380,6 @@ gene_set_enrichment_analysis_scExp = function(
 #' @return A list containing the GeneSet (list), GeneSetDf (data.frame) and 
 #' GenePool character vector of all possible genes
 #'
-#' @examples 
-#' load_MSIGdb("hg38") 
-#' load_MSIGdb("mm10") 
 load_MSIGdb <- function(ref){
     if ((!ref %in% c("hg38", "mm10")) ) 
         stop(paste0("ChromSCape::gene_set_enrichment_analysis_scExp - ",

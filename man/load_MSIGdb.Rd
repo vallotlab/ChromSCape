@@ -16,7 +16,3 @@ GenePool character vector of all possible genes
 \description{
 Load and format MSIGdb pathways using msigdbr package
 }
-\examples{
-load_MSIGdb("hg38") 
-load_MSIGdb("mm10") 
-}
