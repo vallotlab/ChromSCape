@@ -1082,11 +1082,11 @@ create_scExp <- function(
         if (remove_chr_M) scExp <- remove_chr_M_fun(scExp, verbose)}
     dim_b <- dim(scExp)
     if (remove_zero_features)
-        scExp <- scExp[(Matrix::rowSums(counts(scExp) > 0) > 0), ]
-    
+        scExp <- scExp[(Matrix::rowSums(
+            SingleCellExperiment::counts(scExp) > 0) > 0), ]
     if (remove_zero_cells) 
-        scExp <- scExp[, (Matrix::colSums(counts(scExp) > 0) > 0)]
-    
+        scExp <- scExp[, (Matrix::colSums(
+            SingleCellExperiment::counts(scExp) > 0) > 0)]
     if (dim(scExp)[2] != dim_b[2]){
         cat("ChromSCape::create_scExp -", dim_b[2] - dim(scExp)[2],
             "cells with 0 signals were removed.\n")
@@ -1418,7 +1418,7 @@ exclude_features_scExp <-
 #' 
 #' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 #' scExp = preprocess_TPM(scExp)
-#' head(normcounts(scExp))
+#' head(SingleCellExperiment::normcounts(scExp))
 #' 
 preprocess_TPM <- function(scExp)
 {
@@ -1427,7 +1427,7 @@ preprocess_TPM <- function(scExp)
         SingleCellExperiment::counts(scExp) / size
     SummarizedExperiment::assay(scExp, "normcounts", withDimnames = FALSE) <-
         10 ^ 6 * Matrix::t(Matrix::t(SingleCellExperiment::normcounts(scExp)) /
-                    Matrix::colSums(normcounts(scExp)))
+                    Matrix::colSums(SingleCellExperiment::normcounts(scExp)))
     return(scExp)
 }
 
@@ -1445,7 +1445,7 @@ preprocess_TPM <- function(scExp)
 #' 
 #' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 #' scExp = preprocess_RPKM(scExp)
-#' head(normcounts(scExp))
+#' head(SingleCellExperiment::normcounts(scExp))
 preprocess_RPKM <- function(scExp)
 {
     SummarizedExperiment::assay(scExp, "normcounts", withDimnames = FALSE) <-
@@ -1473,7 +1473,7 @@ preprocess_RPKM <- function(scExp)
 #' @examples 
 #' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 #' scExp = preprocess_CPM(scExp)
-#' head(normcounts(scExp))
+#' head(SingleCellExperiment::normcounts(scExp))
 #' 
 preprocess_CPM <- function(scExp)
 {
@@ -1497,7 +1497,7 @@ preprocess_CPM <- function(scExp)
 #' @examples 
 #' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 #' scExp = preprocess_feature_size_only(scExp)
-#' head(normcounts(scExp))
+#' head(SingleCellExperiment::normcounts(scExp))
 #'
 preprocess_feature_size_only <- function(scExp)
 {
@@ -1522,7 +1522,7 @@ preprocess_feature_size_only <- function(scExp)
 #' @examples 
 #' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 #' scExp = normalize_scExp(scExp)
-#' head(normcounts(scExp))
+#' head(SingleCellExperiment::normcounts(scExp))
 #'
 normalize_scExp <- function(scExp,
                             type = c("RPKM", "CPM", "TPM",
