@@ -28,6 +28,7 @@ RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE)
 Imports: 
     shiny,
+    colourpicker,
     shinyjs,
     rtracklayer,
     shinyFiles,
