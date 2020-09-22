@@ -18,7 +18,7 @@
 #' @importFrom shinycssloaders withSpinner 
 #' @import shiny
 #' @import ggplot2
-#' @import colourpicker
+#' @importFrom colourpicker updateColourInput colourInput
 utils::globalVariables(c("chr","ID","distanceToTSS","Gene",
                         "Gene.Set","Class","Genes",".",
                         "Sample","cluster","clusterConsensus",
