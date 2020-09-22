@@ -1,0 +1,75 @@
+Package: ChromSCape
+Title: Analysis of single-cell Epigenomic data in a Shiny App
+Version: 0.0.9001
+Authors@R: c(person(given = "Pacome",
+           family = "Prompsy",
+           role = c("aut", "cre"),
+           email = "pacome.prompsy@curie.fr",
+           comment = c(ORCID = "0000-0003-4375-7583")),
+	   person(given = "Celine",
+           family = "Vallot",
+           role = c("aut"),
+           email = "celine.vallot@curie.fr",
+           comment = c(ORCID = "0000-0003-1601-2359")))
+Description: ChromSCape - single-cell chromatin landscape profiling - is a ready-to-launch user-friendly Shiny application for the analysis of single-cell epigenomic datasets (scChIP-seq, scATAC-seq...) from raw data to differential analysis & gene set enrichment analysis. It is highly interactive, let user save their analysis and covers the whole single-cell analysis : QC, preprocessing, filtering, dimensionality reduction, vizualisation, clustering, differential analysis, gene set analysis... 
+License: GPL-3
+biocViews: Software, SingleCell, ChIPSeq, ATACSeq, MethylSeq, Classification, Clustering, Epigenetics, PrincipalComponent, SingleCell, ATACSeq, ChIPSeq, Annotation, BatchEffect, MultipleComparison, Normalization, Pathways, Preprocessing, QualityControl, ReportWriting, Visualization, GeneSetEnrichment, DifferentialPeakCalling
+VignetteBuilder: knitr
+URL: https://github.com/vallotlab/ChromSCape
+BugReports: https://github.com/vallotlab/ChromSCape/issues
+Encoding: UTF-8
+LazyData: true
+Suggests: 
+    testthat,
+    knitr,
+    rmarkdown,
+    BiocStyle
+RoxygenNote: 7.1.1
+Roxygen: list(markdown = TRUE)
+Imports: 
+    shiny,
+    shinyjs,
+    rtracklayer,
+    shinyFiles,
+    shinyhelper,
+    shinycssloaders,
+    Matrix,
+    plotly,
+    shinydashboard,
+    colorRamps,
+    kableExtra,
+    viridis,
+    batchelor,
+    BiocParallel,
+    parallel,
+    Rsamtools,
+    ggplot2,
+    qualV,
+    stringdist,
+    fs,
+    DT,
+    scran,
+    scater,
+    ConsensusClusterPlus,
+    Rtsne,
+    dplyr,
+    tidyr,
+    GenomicRanges,
+    IRanges,
+    irlba,
+    rlist,
+    umap,
+    tibble,
+    methods,
+    jsonlite,
+    edgeR,
+    stats,
+    graphics,
+    grDevices,
+    utils,
+    S4Vectors,
+    SingleCellExperiment,
+    SummarizedExperiment,
+    msigdbr
+Depends: 
+    R (>= 4.0)
