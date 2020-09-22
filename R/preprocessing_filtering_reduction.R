@@ -1700,7 +1700,7 @@ reduce_dims_scExp <-
             stop("ChromSCape::reduce_dims_scExp - If doing batch correction,
                 batch_list must be a list of the samples IDs of each batch.")}
         if (batch_correction){
-            out <- reduce_dim_batch_correction(scExp, mat, batch_list)
+            out <- reduce_dim_batch_correction(scExp, mat, batch_list, n)
             scExp <- out$scExp
             pca <- out$pca
         } else{
@@ -1740,11 +1740,11 @@ reduce_dims_scExp <-
 #' @param scExp SingleCellExperiment
 #' @param batch_list List of batches
 #' @param mat The normalized count matrix
+#' @param n Number of PCs to keep
 #'
 #' @return A list containing the SingleCellExperiment with batch info and
 #' the corrected pca
-#'
-reduce_dim_batch_correction <- function(scExp, mat, batch_list){
+reduce_dim_batch_correction <- function(scExp, mat, batch_list, n){
     print("Running Batch Correction ...")
     num_batches <- length(batch_list)
     batch_names <- names(batch_list)
@@ -1762,29 +1762,28 @@ reduce_dim_batch_correction <- function(scExp, mat, batch_list){
     }
     adj_annot <- data.frame()
     b_names <- unique(scExp.$batch_name)
+    if (class(mat) %in% c("dgCMatrix", "dgTMatrix"))
+    {
+        pca <- pca_irlba_for_sparseMatrix(Matrix::t(mat), n)
+    } else
+    {
+        pca <- stats::prcomp(Matrix::t(mat),
+                            center = T,
+                            scale. = F)
+        pca <- pca$x[, seq_len(n)]
+    }
     for (i in seq_along(b_names))
     {
         b_name <- b_names[i]
         batches[[i]] <-
-            as.matrix(mat[scExp.$batch_name == b_name, ])
+            as.matrix(mat[,which(scExp.$batch_name == b_name)])
         adj_annot <- rbind(adj_annot, as.data.frame(
             SummarizedExperiment::colData(
                 scExp.)[scExp.$batch_name ==b_name, ]))
     }
-    batches = lapply(batches, Matrix::t)
-    mnn.out <-
-        do.call(batchelor::fastMNN, c(
-            batches,
-            list(
-                k = 25,
-                d = 50,
-                ndist = 3,
-                auto.merge = FALSE,
-                cos.norm = FALSE
-            )
-        ))
-    
-    pca <- SingleCellExperiment::rowData(mnn.out)
+    mnn.out <- batchelor::fastMNN(batches, k = 25, d = n, ndist = 3,
+                auto.merge = FALSE, cos.norm = FALSE)
+    pca <- SingleCellExperiment::reducedDim(mnn.out,"corrected")
     SummarizedExperiment::colData(scExp.) <- as(adj_annot,
                                             "DataFrame")
     out = list("scExp" = scExp., "pca"= pca)
