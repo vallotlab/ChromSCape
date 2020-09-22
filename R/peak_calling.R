@@ -51,12 +51,19 @@
 #' @return A SingleCellExperiment with refinded annotation
 #' @export
 #'
-#'
 #' @importFrom SingleCellExperiment colData
 #' @importFrom GenomicRanges GRanges pintersect ranges
 #' @importFrom SummarizedExperiment rowRanges
 #' @importFrom IRanges findOverlapPairs subsetByOverlaps
 #' @importFrom utils read.table
+#' 
+#' @examples 
+#' \dontrun{
+#' subset_bam_call_peaks(scExp, "path/to/out/", list("sample1" = 
+#'    "path/to/BAM/sample1.bam", "sample2" = "path/to/BAM/sample2.bam"),
+#'    p.value = 0.05, ref = "hg38", peak_distance_to_merge = 10000, 
+#'    geneTSS_annotation = NULL)
+#'}
 subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05,
                                 ref = "hg38", peak_distance_to_merge = 10000,
                                 geneTSS_annotation = NULL)
@@ -120,8 +127,8 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05,
 #' 
 call_macs2_merge_peaks <- function(affectation,odir,p.value,
                                 ref,peak_distance_to_merge){
-    for (class in levels(factor(affectation$cell_cluster)))
-    {
+    merged_peaks=list()
+    for (class in levels(factor(affectation$cell_cluster))){
         command <- paste0(
             "samtools flagstat ",
             file.path(odir, paste0(class, ".bam")),
@@ -129,13 +136,11 @@ call_macs2_merge_peaks <- function(affectation,odir,p.value,
             " (//g\" | cut -f1 -d\" \" | sed \"s/\\%//g\"")
         print(command)
         percent_properlyPaired = as.double(system(command,intern = TRUE))
-        if (!is.na(percent_properlyPaired) & percent_properlyPaired > 50)
-        {
+        if (!is.na(percent_properlyPaired) & percent_properlyPaired > 50){
             print("Bam files provided have more than 50% of their reads properly
                 mapped, running macs2 with default parameters...")
             macs2_options = ""
-        } else
-        {
+        } else{
             print("Bam files provided have less than 50% of their reads properly
                 mapped, flagging all reads as single end running macs2 with
                 --nomodel --extsize 300...")
@@ -158,8 +163,9 @@ call_macs2_merge_peaks <- function(affectation,odir,p.value,
                     file.path(odir, paste0(class, ".bam")),
                     " --outdir ", odir, " --name ", class)
         system(command)
-        merged_peaks <- merge_MACS2_peaks(odir,class,peak_distance_to_merge,ref)
-    }
+        merged_peaks[[class]] <-
+            merge_MACS2_peaks(odir,class,peak_distance_to_merge,ref)
+        }
     unlink(file.path(odir, "*.xls"))
     unlink(file.path(odir, "*.gappedPeak"))
     unlink(file.path(odir, "*_model.r"))
@@ -175,12 +181,11 @@ call_macs2_merge_peaks <- function(affectation,odir,p.value,
 #' @param peak_distance_to_merge Maximum distance to merge two peaks 
 #' @param ref Reference genome
 #'
-#' @return A list of merged peaks
+#' @return Peaks as GRanges
 #'
 #' @importFrom IRanges subsetByOverlaps
 #' @importFrom GenomicRanges GRanges reduce ranges
-merge_MACS2_peaks <- function(odir,class,peak_distance_to_merge,
-                            ref){
+merge_MACS2_peaks <- function(odir,class,peak_distance_to_merge,ref){
     merged_peaks = list()
     peaks = read.table(
         file = file.path(odir, paste0(class, "_peaks.broadPeak")),
@@ -195,8 +200,7 @@ merge_MACS2_peaks <- function(odir,class,peak_distance_to_merge,
         eval(parse(text = paste0(ref, ".chromosomes"))))
     peaks = suppressWarnings(IRanges::subsetByOverlaps(peaks, ref_chromosomes, 
                                                     ignore.strand = TRUE))
-    merged_peaks[[class]] = peaks
-    return(merged_peaks)
+    return(peaks)
 }
 
 
