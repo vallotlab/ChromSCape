@@ -71,3 +71,11 @@ PATH. Users can open command terminal and type 'which samtools' & 'which
 macs2' to verify the availability of these programs. Will only work on unix
 operating system. Check operating system with 'print(.Platform)'.
 }
+\examples{
+\dontrun{
+subset_bam_call_peaks(scExp, "path/to/out/", list("sample1" = 
+   "path/to/BAM/sample1.bam", "sample2" = "path/to/BAM/sample2.bam"),
+   p.value = 0.05, ref = "hg38", peak_distance_to_merge = 10000, 
+   geneTSS_annotation = NULL)
+}
+}

@@ -24,3 +24,13 @@ A list containing:
 Combine one or multiple matrices together to create a sparse matrix and cell
 annotation data.frame.
 }
+\examples{
+mat1 = mat2 = create_scDataset_raw()$mat
+tmp1 = tempfile(fileext = ".tsv")
+tmp2 = tempfile(fileext = ".tsv")
+write.table(as.matrix(mat1),file=tmp1,sep = "\t",
+row.names = TRUE,col.names = TRUE,quote = FALSE)
+write.table(as.matrix(mat1),file=tmp1, sep = "\t",
+row.names = TRUE,col.names = TRUE,quote = FALSE)
+out = import_scExp(c(tmp1,tmp2))
+}

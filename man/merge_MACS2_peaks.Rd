@@ -16,7 +16,7 @@ merge_MACS2_peaks(odir, class, peak_distance_to_merge, ref)
 \item{ref}{Reference genome}
 }
 \value{
-A list of merged peaks
+Peaks as GRanges
 }
 \description{
 Merge peak files from MACS2 peak caller
