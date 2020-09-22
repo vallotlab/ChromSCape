@@ -283,26 +283,26 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           }
           incProgress(0.2, detail=paste0("Reading ",type_file," files to create matrix. This might take a while."))
           
-          if(input$count_on_box == "bin_width") datamatrix = raw_counts_to_feature_count_files(
+          if(input$count_on_box == "bin_width") datamatrix = ChromSCape:::raw_counts_to_feature_count_files(
             files_dir = datafile_folder,
             file_type = type_file,
             bin_width = as.numeric(input$bin_width),
             ref = input$annotation)
           
-          if(input$count_on_box == "n_bins") datamatrix = raw_counts_to_feature_count_files(
+          if(input$count_on_box == "n_bins") datamatrix = ChromSCape:::raw_counts_to_feature_count_files(
             files_dir = datafile_folder,
             file_type = type_file,
             n_bins = as.numeric(input$n_bins),
             ref = input$annotation)
           
           
-          if(input$count_on_box == "peak_file") datamatrix = raw_counts_to_feature_count_files(
+          if(input$count_on_box == "peak_file") datamatrix = ChromSCape:::raw_counts_to_feature_count_files(
             files_dir = datafile_folder,
             file_type = type_file,
             peak_file = as.character(input$peak_file$datapath),
             ref = input$annotation)
           
-          if(input$count_on_box == "geneTSS") datamatrix = raw_counts_to_feature_count_files(
+          if(input$count_on_box == "geneTSS") datamatrix = ChromSCape:::raw_counts_to_feature_count_files(
             files_dir = datafile_folder,
             file_type = type_file,
             geneTSS = TRUE,
@@ -488,24 +488,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
     scExp(myData$scExp) # retrieve filtered scExp
     rm(myData)
-    # gc()
-    # t2 = system.time({scExp. = correlation_and_hierarchical_clust_scExp(scExp.)})
-    # cat("Took ",t2[3]," sec to run correlation hierarchical clustering...")
-    # scExp(scExp.)
-    # rm(scExp.)
     gc()
     })
     cat("Loaded reduced data in ",t1[3]," secs\n")
   })
 
-  # observeEvent(input$selected_reduced_dataset, {  # load scExp, add colors, add correlation
-  #   req(input$selected_reduced_dataset, reduced_dataset())
-  #   # Retrieve the scExp filtered
-  #   scExp. = reduced_dataset()$scExp # retrieve filtered scExp
-  #   scExp. = correlation_and_hierarchical_clust_scExp(scExp.)
-  #   scExp(scExp.)
-  #   rm(scExp.)
-  # })
 
   cell_cov_df <- reactive ({
     df = data.frame(coverage = sort(unname(Matrix::colSums(init$datamatrix)))) 
@@ -620,7 +607,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   observeEvent(input$col_reset, {
-    cols <- gg_fill_hue(length(levels_selected()))
+    cols <- ChromSCape:::gg_fill_hue(length(levels_selected()))
     for(i in seq_along(levels_selected())){
       colourpicker::updateColourInput(session=session, inputId=paste0("color_", levels_selected()[i]),
                                       value=cols[i])
@@ -642,7 +629,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(input$save_color, {  
     req(scExp(), input$color_by)
   
-    color_df = get_color_dataframe_from_input(input,levels_selected(),input$color_by)
+    color_df = ChromSCape:::get_color_dataframe_from_input(input,levels_selected(),input$color_by)
 
     scExp. = colors_scExp(scExp(),annotCol = input$color_by,color_by = input$color_by, color_df = color_df)
     scExp(scExp.)
@@ -1053,7 +1040,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$save_color_cf, {  
     req(scExp_cf(), input$color_by_cf)
-    color_df = get_color_dataframe_from_input(input,levels_selected_cf(), input$color_by_cf, "color_cf_")
+    color_df = ChromSCape:::get_color_dataframe_from_input(input,levels_selected_cf(), input$color_by_cf, "color_cf_")
     scExp_cf. = colors_scExp(scExp_cf(), annotCol = input$color_by_cf,
                              color_by = input$color_by_cf, color_df = color_df)
     scExp_cf(scExp_cf.)
@@ -1061,7 +1048,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   observeEvent(input$col_reset_cf, {
-    cols <- gg_fill_hue(length(levels_selected_cf()))
+    cols <- ChromSCape:::gg_fill_hue(length(levels_selected_cf()))
     for(i in seq_along(levels_selected_cf())){
       colourpicker::updateColourInput(session=session, inputId=paste0("color_cf_", levels_selected_cf()[i]),
                                       value=cols[i])
