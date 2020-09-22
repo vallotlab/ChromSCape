@@ -816,9 +816,10 @@ generate_count_matrix <- function(cells, features, sparse,
 #' tmp2 = tempfile(fileext = ".tsv")
 #' write.table(as.matrix(mat1),file=tmp1,sep = "\t",
 #' row.names = TRUE,col.names = TRUE,quote = FALSE)
-#' write.table(as.matrix(mat1),file=tmp1, sep = "\t",
+#' write.table(as.matrix(mat2),file=tmp2, sep = "\t",
 #' row.names = TRUE,col.names = TRUE,quote = FALSE)
-#' out = import_scExp(c(tmp1,tmp2))
+#' file_names = c(tmp1,tmp2)
+#' out = import_scExp(file_names)
 #' @importFrom scater readSparseCounts
 #' @md
 import_scExp <- function(file_names,
