@@ -43,14 +43,10 @@ ChromSCape takes as input one tab-separated count matrice (in .tsv or .txt) per 
 you input your own matrices, it is recommended you try playing around and familiarize
 with ChromSCape by downloading our example matrices and uploading them in ChromSCape :
 
-Try out ChromSCape with a test dataset :
+Try out ChromSCape with various kind of dataset :
+[Dropbox repository](https://www.dropbox.com/sh/vk7umx3ksgoez3x/AACEq9zn-rRbtwf_Al9uEUaQa?dl=0)
 
- * **Single-Cell ChIP-seq PDX dataset against H3K27me3**:  
- Input count matrices & BAM files
- corresponding to mouse cells from 2 PDX models, luminal and triple negative
- breast cancer tumours resistant or not to cancer therapy (respectively HBCx_22
- & HBCx_95, see Grosselin et al., 2019). [[scChIP-seq data FigShare](https://figshare.com/articles/PDX_mouse_cells_H3K27me3_scChIP-seq_matrices/12280631)]
-
+ 
 
 ## Run Time
 

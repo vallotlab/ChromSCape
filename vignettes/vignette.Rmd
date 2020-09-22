@@ -530,6 +530,10 @@ selected genes onto a t-SNE plot (right panel).
 
 ![<br> <br> **Gene Set Analysis: ** Look for pathways activated or depleted in most differential regions between clusters](../inst/www/Guide_images/Step7_GeneSetAnalysis.png)
 
+# Datasets
+Try out ChromSCape with various kind of dataset :
+[Dropbox repository](https://www.dropbox.com/sh/vk7umx3ksgoez3x/AACEq9zn-rRbtwf_Al9uEUaQa?dl=0)
+
 # Session information
 
 ```{r, eval=T}
