@@ -549,7 +549,7 @@ filter_genes_with_refined_peak_annotation <- function(
     w_ids <- refined_annotation$window_ID
     p_ids <- refined_annotation$peak_ID
     genes <- refined_annotation$Gene
-    distTSS <- refined_annotation$distanceToTSS
+    distTSS <- refined_annotation$distance
     signific_associated_peak = p_ids[w_ids %in% signific]
     over_associated_peak = p_ids[w_ids %in% over]
     under_associated_peak = p_ids[w_ids %in% under]
