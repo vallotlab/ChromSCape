@@ -4,7 +4,7 @@
 \alias{reduce_dim_batch_correction}
 \title{Reduce dimension with batch corrections}
 \usage{
-reduce_dim_batch_correction(scExp, mat, batch_list)
+reduce_dim_batch_correction(scExp, mat, batch_list, n)
 }
 \arguments{
 \item{scExp}{SingleCellExperiment}
@@ -12,6 +12,8 @@ reduce_dim_batch_correction(scExp, mat, batch_list)
 \item{mat}{The normalized count matrix}
 
 \item{batch_list}{List of batches}
+
+\item{n}{Number of PCs to keep}
 }
 \value{
 A list containing the SingleCellExperiment with batch info and
