@@ -180,7 +180,6 @@ split_bam_file_into_single_cell_bams <- function(bam_file,
 #'
 #' @return A sparse matrix of features x cells
 #'
-#' @export
 #'
 #' @importFrom IRanges IRanges
 #' @importFrom parallel detectCores mclapply
@@ -810,8 +809,16 @@ generate_count_matrix <- function(cells, features, sparse,
 #' * datamatrix: a sparseMatrix of features x cells  
 #' * annot_raw: an annotation of cells as data.frame  
 #'  
-#'
-#'
+#' @export
+#' @examples 
+#' mat1 = mat2 = create_scDataset_raw()$mat
+#' tmp1 = tempfile(fileext = ".tsv")
+#' tmp2 = tempfile(fileext = ".tsv")
+#' write.table(as.matrix(mat1),file=tmp1,sep = "\t",
+#' row.names = TRUE,col.names = TRUE,quote = FALSE)
+#' write.table(as.matrix(mat1),file=tmp1, sep = "\t",
+#' row.names = TRUE,col.names = TRUE,quote = FALSE)
+#' out = import_scExp(c(tmp1,tmp2))
 #' @importFrom scater readSparseCounts
 #' @md
 import_scExp <- function(file_names,
@@ -876,7 +883,7 @@ import_scExp <- function(file_names,
 
 separator_count_mat <- function(path_to_matrix){
     format_test = as.character(
-        read.table(path_to_matrix, header = FALSE, sep = "\t", nrows = 5)[4, ])
+        read.table(path_to_matrix, header = TRUE, sep = "\t", nrows = 5)[4, ])
     
     if (length(format_test) > 3)
         separator = "\t"
@@ -1768,8 +1775,8 @@ reduce_dim_batch_correction <- function(scExp, mat, batch_list, n){
     } else
     {
         pca <- stats::prcomp(Matrix::t(mat),
-                            center = T,
-                            scale. = F)
+                            center = TRUE,
+                            scale. = FALSE)
         pca <- pca$x[, seq_len(n)]
     }
     for (i in seq_along(b_names))
