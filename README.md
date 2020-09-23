@@ -46,7 +46,6 @@ with ChromSCape by downloading our example matrices and uploading them in ChromS
 Try out ChromSCape with various kind of dataset :
 [Dropbox repository](https://www.dropbox.com/sh/vk7umx3ksgoez3x/AACEq9zn-rRbtwf_Al9uEUaQa?dl=0)
 
- 
 
 ## Run Time
 
@@ -100,6 +99,23 @@ Please download and install Rtools 3.5 from https://cran.r-project.org/bin/windo
 Windows R version needs Rtools external software to install packages. Download Rtools 3.5 from https://cran.r-project.org/bin/windows/Rtools/history.html
 and install it.  
 
+## Docker
+
+A docker image with all dependencies is available at [DockerHub](https://hub.docker.com/repository/docker/pacomito/chromscape).
+To run the docker image and launch ChromSCape, run :
+```
+docker run --network host -v ~/ChromSCape_analyses:/root/ChromSCape_analyses -t pacomito/chromscape:v0.0.9001 R -e "library(ChromSCape); launchApp()"
+```
+
+After the downloading of the image and the loading of ChromSCape, the terminal should 
+display a local host address: `Listening on http://127.0.0.1:XXX`.  
+Open a browser to this address.
+  
+  
+MACS2 and Samtools are installed on the Docker image so this is a way to run the 
+peak calling on Windows.
+  
+All your analyses will be copied to the ~/ChromSCape_analyses folder.  
 
 # Authors
 Please do not hesitate to post an issue or contact the authors :
