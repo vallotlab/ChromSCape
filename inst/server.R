@@ -1348,7 +1348,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$da_summary_box <- renderUI({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
-        shinydashboard::box(title="Number of differentially bound regions", width = NULL, status="success", solidHeader = TRUE,
+        shinydashboard::box(title="Number of differentially enriched regions", width = NULL, status="success", solidHeader = TRUE,
             column(5, align="left", br(), tableOutput("da_summary_kable")),
             column(7, align="left", plotOutput("da_barplot", height = 270, width = 250)),
             column(4, align="left", downloadButton("download_da_barplot", "Download barplot"))

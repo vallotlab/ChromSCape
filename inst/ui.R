@@ -354,7 +354,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                     br(), br(), br(), br(), br(),
                                                     downloadButton("download_enr_data", "Download tables")))),
                                   column(width=6,
-                                         shinydashboard::box(title="Binding strength near TSS", width=NULL, status="success", solidHeader=TRUE,
+                                         shinydashboard::box(title="Enrichment near TSS", width=NULL, status="success", solidHeader=TRUE,
                                              column(4, align="left", uiOutput("gene_sel")),
                                              column(8, align="left", uiOutput("region_sel")),
                                              column(12, align="left", uiOutput("gene_umap_UI")))))
