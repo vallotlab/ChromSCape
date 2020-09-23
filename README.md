@@ -104,7 +104,7 @@ and install it.
 A docker image with all dependencies is available at [DockerHub](https://hub.docker.com/repository/docker/pacomito/chromscape).
 To run the docker image and launch ChromSCape, run :
 ```
-sudo docker run --rm -p 4747:4747 -v ~/ChromSCape_analyses_docker:/root/ -t pacomito/chromscape:v0.0.9001
+sudo docker run --rm -p 4747:4747 -v ~/ChromSCape_analyses_docker:/root/output/ -t pacomito/chromscape:v0.0.9001
 ```
 Explanation:
 
@@ -119,7 +119,7 @@ Explanation:
   
 Optionally, if you want to input BAM, BED of Peak-Index-Barcode files, add another -v option from your local machine directory to the docker container:
 ```
--v ~/file_inputs:/root/file_inputs
+-v ~/file_inputs:/root/input
 ```
 After the downloading of the image and the loading of ChromSCape, navigate to : [http://127.0.0.1:4747](http://127.0.0.1:4747)
 
