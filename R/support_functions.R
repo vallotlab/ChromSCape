@@ -55,7 +55,8 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL,
     {
     log2Datamat = log2(dataMat + 1)
     testWilc <- scran::pairwiseWilcox(
-        x = log2Datamat, clusters = cells_cluster$Condition, 
+        x = log2Datamat, groups = as.factor(as.numeric(
+            as.factor(cells_cluster$Condition))), 
         block = cells_cluster$batch_id, direction = "any")
     pval.gpsamp <- testWilc$statistics[[1]]$p.value
     } else

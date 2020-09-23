@@ -55,8 +55,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent({analysis_name()},{
     init$available_reduced_datasets = get.available.reduced.datasets(analysis_name())
   })
-  annotCol <- reactive({ c("sample_id","total_counts","batch_id") })
-  
+  annotCol <- reactive({
+    if("batch_name" %in% colnames(SummarizedExperiment::colData(scExp()))){
+      c("sample_id","total_counts","batch_name")} else{
+        c("sample_id","total_counts")
+    }
+    })
+  output$feature_color <- renderUI({selectInput("color_by", "Color by", choices=annotCol())})
   
   observeEvent(analysis_name(), { # application header (tells you which data set is selected)
     req(analysis_name())
@@ -264,7 +269,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
             annot_raw = data.frame(barcode = colnames(datamatrix),
                                    cell_id = colnames(datamatrix),
                                    sample_id = samples_ids,
-                                   batch_id = rep(1, ncol(datamatrix)))
+                                   batch_id = factor(rep(1, ncol(datamatrix))))
           } else{ annot_raw = tmp_list$annot_raw }
         }
         else if(type_file %in% c("BAM","BED","Index_Peak_Barcode") & !is.null(input$datafile_folder)) {
@@ -314,7 +319,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           annot_raw = data.frame(barcode = colnames(datamatrix),
                                  cell_id = colnames(datamatrix),
                                  sample_id = samples_ids,
-                                 batch_id = rep(1, ncol(datamatrix))
+                                 batch_id = factor(rep(1, ncol(datamatrix)))
           )
           
                   
@@ -454,7 +459,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
     callModule(Module_preprocessing_filtering_and_reduction, "Module_preprocessing_filtering_and_reduction", reactive({input$selected_analysis}), reactive({input$min_coverage_cell}),
                reactive({input$min_cells_window}), reactive({input$quant_removal}), reactive({init$datamatrix}), reactive({init$annot_raw}),
-               reactive({init$data_folder}),reactive({annotationId}), reactive({exclude_regions}), reactive({annotCol()}),reactive({input$do_batch_corr}),
+               reactive({init$data_folder}),reactive({annotationId}), reactive({exclude_regions}) ,reactive({input$do_batch_corr}),
                 reactive({batch_sels}), reactive({input$run_tsne}), reactive({subsample_n}))
     
     init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
@@ -564,20 +569,22 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$pc_select_y <- renderUI({ selectInput("pc_select_y", "Y",choices=paste0("Component_", c(1:15)), selected="Component_2") })
 
   pca_plot <- reactive({
-    req(scExp(), input$pc_select_x,input$pc_select_y,  input$color_by)
-
+    req(scExp(), annotCol(), input$pc_select_x,input$pc_select_y,  input$color_by)
+    if(input$color_by %in% colnames(SingleCellExperiment::colData(scExp())) ){
     p = plot_reduced_dim_scExp(scExp(),input$color_by, "PCA",
                                select_x = input$pc_select_x,
                                select_y = input$pc_select_y
     )
     unlocked$list$pca=TRUE
     p
+    }
   })
   output$pca_plot <- renderPlot(pca_plot())
   
   output$tsne_box <- renderUI({
-    req(scExp(), input$color_by)
+    req(scExp(), annotCol(), input$color_by)
     if("TSNE" %in% SingleCellExperiment::reducedDimNames(scExp())){
+      if(input$color_by %in% colnames(SingleCellExperiment::colData(scExp())) ){
       p = plot_reduced_dim_scExp(scExp(),input$color_by, "TSNE")
       output$tsne_plot = renderPlot(p)
       shinydashboard::box(title="t-SNE vizualisation 1", width = NULL, status="success", solidHeader=TRUE,
@@ -586,13 +593,16 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                    shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                        content = "tsne_plot")
                                  ))
+      }
     }
   })
 
   output$UMAP_plot <- renderPlot({
-    req(scExp(),input$color_by)
-    p = plot_reduced_dim_scExp(scExp(),input$color_by, "UMAP")
-    p
+    req(scExp(), annotCol(), input$color_by)
+    if(input$color_by %in% colnames(SingleCellExperiment::colData(scExp())) ){
+      p = plot_reduced_dim_scExp(scExp(), input$color_by, "UMAP")
+      p
+    }
      })
   
   output$color_box <- renderUI({
@@ -617,12 +627,14 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$color_picker <- renderUI({
     #Color picker
     if(input$color_by != "total_counts"){
+      if(input$color_by %in% colnames(SingleCellExperiment::colData(scExp())) ){
       colsModif <- SummarizedExperiment::colData(scExp())[,c(input$color_by,paste0(input$color_by,"_color"))] %>% unique()
       lapply(seq_along(levels_selected()), function(i) {
         colourpicker::colourInput(inputId=paste0("color_", levels_selected()[i]),
                                   label=paste0("Choose colour for ", levels_selected()[i]),
                                   value=colsModif[i,paste0(input$color_by,"_color")], returnName=TRUE) ## Add ", palette = "limited"" to get selectable color panel       
       })
+      }
     }
   })
   
@@ -678,7 +690,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                    gc()
                  }
                  output$hc_heatmap_plot <- renderPlot({
-                   plot_heatmap_scExp(scExp(), color_by = c("sample_id","total_counts","batch_id"))
+                   plot_heatmap_scExp(scExp(), color_by = annotCol())
                  })
                }
                })
@@ -973,10 +985,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   }
  
   output$tsne_box_cf <- renderUI({
-    req(scExp_cf(),input$color_by)
+    req(scExp_cf(), annotCol(), input$color_by)
     if(!is.null(scExp_cf())){
       if("TSNE" %in% SingleCellExperiment::reducedDimNames(scExp_cf())){
         req(scExp_cf(), input$color_by_cf)
+        if(input$color_by_cf %in% colnames(SingleCellExperiment::colData(scExp_cf())) ){
         p = plot_reduced_dim_scExp(scExp_cf(),input$color_by_cf, "TSNE",
                                    select_x = "Component_1",
                                    select_y = "Component_2") +
@@ -984,17 +997,19 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         output$tsne_plot_cf <- renderPlot(p)
         shinydashboard::box(title="t-SNE vizualisation 2", width = NULL, status="success", solidHeader=TRUE,
                             column(12, align="left", plotOutput("tsne_plot_cf")))
+        }
       }
     }
   })
   
   umap_p_cf <- reactive({
-    req(scExp_cf(), input$color_by_cf)
-    
-    p = plot_reduced_dim_scExp(scExp_cf(),input$color_by_cf, "UMAP",
-                               select_x = "Component_1",
-                               select_y = "Component_2")
-    p
+    req(scExp_cf(), annotCol(), input$color_by_cf)
+    if(input$color_by_cf %in% colnames(SingleCellExperiment::colData(scExp_cf())) ){
+      p = plot_reduced_dim_scExp(scExp_cf(),input$color_by_cf, "UMAP",
+                                 select_x = "Component_1",
+                                 select_y = "Component_2")
+      p
+    }
   })
 
   output$plot_CF_UMAP <- renderPlot({
@@ -1016,8 +1031,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                             column(6, align="left",
                                    selectInput("color_by_cf", "Color by",
                                                selected = "cell_cluster",
-                                               choices = c('sample_id', 'total_counts',
-                                                           'cell_cluster','batch_id'))),
+                                               choices = c(annotCol(),'cell_cluster'))),
                             column(12, align="left", plotOutput("plot_CF_UMAP")))
       }
     }
@@ -1057,6 +1071,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
   output$color_picker_cf <- renderUI({
     #Color picker
+    if( (input$color_by_cf %in% colnames(SummarizedExperiment::colData(scExp_cf()))) &
+        (paste0(input$color_by_cf,"_color") %in% colnames(SummarizedExperiment::colData(scExp_cf()))) ) {
     colsModif <- as.data.frame(SummarizedExperiment::colData(scExp_cf()))[,c(input$color_by_cf,paste0(input$color_by_cf,"_color"))] %>% unique()
     lapply(seq_along(levels_selected_cf()), function(i) {
       colourpicker::colourInput(inputId=paste0("color_cf_", levels_selected_cf()[i]),
@@ -1064,6 +1080,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                 value=colsModif[i,paste0(input$color_by_cf,"_color")],
                                 returnName = TRUE) ## Add ", palette = "limited"" to get selectable color panel       
     })
+    }
   })
   
   # observeEvent({

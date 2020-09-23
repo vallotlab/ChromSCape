@@ -173,7 +173,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                 fluidPage(
                                   column(width=6,
                                          shinydashboard::box(title="PCA", width = NULL, status="success", solidHeader=TRUE,
-                                             column(6, align="left", selectInput("color_by", "Color by", choices=c("sample_id","total_counts","batch_id"))),
+                                             column(6, align="left", uiOutput("feature_color")),
                                              column(12, align="left",plotOutput("pca_plot") %>%
                                                         shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
                                                         shinyhelper::helper(type = 'markdown', icon ="info-circle",

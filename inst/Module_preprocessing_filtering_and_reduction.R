@@ -6,7 +6,7 @@ Module_preprocessing_filtering_and_reductionUI <- function(id, label = "Module_p
 Module_preprocessing_filtering_and_reduction <- function(
     input, output, session, raw_dataset_name, min_cov_cell, percentMin,
     quant_removal, datamatrix, annot_raw, data_folder, annotation_id,
-    exclude_regions, annotCol, doBatchCorr, batch_sels, run_tsne, subsample_n)
+    exclude_regions, doBatchCorr, batch_sels, run_tsne, subsample_n)
     {
     withProgress(message = "Processing data set...", value = 0, {
         
@@ -78,7 +78,9 @@ Module_preprocessing_filtering_and_reduction <- function(
         
         ### 7. Add default colors ###
         print("Add colors ...")
-        print(system.time({scExp = colors_scExp(scExp, annotCol())}))
+        if(doBatchCorr()){ annotCol. = c("sample_id","total_counts", "batch_name")} 
+        else{annotCol. = c("sample_id","total_counts")}
+        print(system.time({scExp = colors_scExp(scExp, annotCol.)}))
         
         ### 8. Running hierarchical clustering ###
         print(system.time(

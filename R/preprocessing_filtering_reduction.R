@@ -613,7 +613,7 @@ peaks_to_bins <- function(mat, bin_width = 50000, n_bins = NULL,
 #' @param sparse Is matrix sparse ? (TRUE)
 #' @param nsamp Number of samples (4)
 #' @param ref Reference genome ('hg38')
-#' @param batch_id Batch origin (c(1,2,3,4))
+#' @param batch_id Batch origin (factor((1,1,1,1))
 #'
 #' @return A list composed of * mat : a sparse matrix following an approximation
 #'   of the negative binomial law (adapted to scChIPseq) * annot : a data.frame
@@ -638,7 +638,7 @@ peaks_to_bins <- function(mat, bin_width = 50000, n_bins = NULL,
 #' mouse_l = create_scDataset_raw(ref="mm10")
 #' 
 #' # Specifying batches
-#' batch_l = create_scDataset_raw(nsamp=4, batch_id = c(1,1,2,2))
+#' batch_l = create_scDataset_raw(nsamp=4, batch_id = factor(c(1,1,2,2)))
 #' 
 #' # Peaks of different size as features
 #' peak_l = create_scDataset_raw(featureType="peak")
@@ -649,11 +649,11 @@ peaks_to_bins <- function(mat, bin_width = 50000, n_bins = NULL,
 #' head(gene_l$mat)
 create_scDataset_raw <- function(
     cells = 300, features = 600, featureType = c("window", "peak", "gene"),
-    sparse = TRUE, nsamp = 4, ref = "hg38", batch_id = rep(1, nsamp)){
+    sparse = TRUE, nsamp = 4, ref = "hg38", batch_id = factor(rep(1, nsamp))){
     stopifnot( featureType %in% c("window", "peak", "gene"),
             ref %in% c("mm10", "hg38"), nsamp >= 1, cells >= nsamp,
             features >= 1, length(batch_id) == nsamp)
-    
+    stopifnot(is.factor(batch_id))
     # Create cell names
     cell_counts <-
         as.numeric(lapply(split(
@@ -667,15 +667,15 @@ create_scDataset_raw <- function(
     }
     cell_names <- as.character(unlist(cell_names))
     sample <- as.character(unlist(sample))
-    batches <- as.numeric(unlist(batches))
+    batches <- factor(as.numeric(unlist(batches)))
     
     feature_names <- generate_feature_names(featureType, ref, features)
     mat <- generate_count_matrix(cells, features, sparse,
                                 cell_names, feature_names)
     
-    if (length(unique(batches)) > 1)
+    if (length(levels(batches)) > 1)
     {
-        mat <- mat %*% as(Matrix::diag(batches * batches), "dgCMatrix")
+        mat <- mat %*% as(Matrix::diag(as.numeric(batches) * as.numeric(batches)), "dgCMatrix")
     }
     colnames(mat) <- cell_names
     annot <- data.frame(
@@ -825,7 +825,6 @@ generate_count_matrix <- function(cells, features, sparse,
 import_scExp <- function(file_names,
                         path_to_matrix = NULL) {
     stopifnot(is.character(file_names))
-    
     if (length(grep("(.tsv$)|(.txt$)|(.csv$)", file_names)) 
         < length(file_names))
         stop(paste0("ChromSCape::import_scExp - Matrix files must be in",
@@ -859,7 +858,7 @@ import_scExp <- function(file_names,
         annot_single <- data.frame(
             barcode = colnames(datamatrix_single),
             cell_id = paste0(sample_name, "_", colnames(datamatrix_single)),
-            sample_id = rep(sample_name, total_cell), batch_id = i)
+            sample_id = rep(sample_name, total_cell), batch_id = 1)
         colnames(datamatrix_single) <- annot_single$cell_id
         datamatrix <- combine_datamatrix(datamatrix,
                                         datamatrix_single, file_names, i)
@@ -869,6 +868,7 @@ import_scExp <- function(file_names,
         rm(annot_single)
         gc()
     }
+    annot_raw$batch_id <- as.factor(annot_raw$batch_id)
     out = list("datamatrix" = datamatrix, "annot_raw" = annot_raw)
     return(out)
 }
@@ -1712,7 +1712,7 @@ reduce_dims_scExp <-
             scExp <- out$scExp
             pca <- out$pca
         } else{
-            scExp$batch_id <- "batch_1"
+            scExp$batch_id <- factor(1)
             if (is(mat, "dgCMatrix") | is(mat, "dgTMatrix")) {
                 pca <- pca_irlba_for_sparseMatrix(Matrix::t(mat), n)
             } else{
@@ -1770,6 +1770,7 @@ reduce_dim_batch_correction <- function(scExp, mat, batch_list, n){
     }
     adj_annot <- data.frame()
     b_names <- unique(scExp.$batch_name)
+    scExp.$batch_id <- as.factor(as.numeric(as.factor(scExp.$batch_name)))
     if (class(mat) %in% c("dgCMatrix", "dgTMatrix"))
     {
         pca <- pca_irlba_for_sparseMatrix(Matrix::t(mat), n)

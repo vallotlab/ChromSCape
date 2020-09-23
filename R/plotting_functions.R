@@ -69,8 +69,8 @@ plot_distribution_scExp <- function(
 #' @examples
 #' data("scExp")
 #' scExp = colors_scExp(scExp,annotCol = c("sample_id",
-#' "total_counts","batch_id"),
-#'  color_by =  c("sample_id","total_counts","batch_id"))
+#' "total_counts"),
+#'  color_by =  c("sample_id","total_counts"))
 #' 
 #' #Specific colors using a manually created data.frame :
 #' color_df = data.frame(sample_id=unique(scExp$sample_id),
