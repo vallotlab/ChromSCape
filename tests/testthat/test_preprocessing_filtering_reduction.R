@@ -6,7 +6,7 @@ context("Testing preprocessing, filtering & reduction functions")
 
 
 out = create_scDataset_raw(featureType = "window",sparse = TRUE,
-                        batch_id = c(1,1,2,2))
+                        batch_id = factor(c(1,1,2,2)))
 mat = out$mat
 annot = out$annot
 batches = out$batches
