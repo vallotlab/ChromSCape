@@ -104,19 +104,34 @@ and install it.
 A docker image with all dependencies is available at [DockerHub](https://hub.docker.com/repository/docker/pacomito/chromscape).
 To run the docker image and launch ChromSCape, run :
 ```
-docker run --network host -v ~/ChromSCape_analyses:/root/ChromSCape_analyses -t pacomito/chromscape:v0.0.9001 R -e "library(ChromSCape); launchApp()"
+sudo docker run --rm -p 4747:4747 -v ~/ChromSCape_analyses_docker:/root/ -t pacomito/chromscape:v0.0.9001
 ```
+Explanation:
 
-After the downloading of the image and the loading of ChromSCape, the terminal should 
-display a local host address: `Listening on http://127.0.0.1:XXX`.  
-Open a browser to this address.
+ * `sudo` run with admin rights, a password will be asked
+ * `docker run -t pacomito/chromscape:v0.0.9001` download and run the image
+ * `--rm` supress container when run ends
+ * `-p 4747:4747` expose docker port 4747 to localhost:4747
+ * `-v ~/ChromSCape_analyses_docker:/root/` output folder where ChromSCape_analyses folder will be created
+ is linked to the container '/root/' folder. Change '~/ChromSCape_analyses_docker' to 
+ your preferred output path
+  
+  
+Optionally, if you want to input BAM, BED of Peak-Index-Barcode files, add another -v option from your local machine directory to the docker container:
+```
+-v ~/file_inputs:/root/file_inputs
+```
+After the downloading of the image and the loading of ChromSCape, navigate to : [http://127.0.0.1:4747](http://127.0.0.1:4747)
+
+You can change the port number if it is already taken, e.g. port = 5858, by changing the -p option and adding '0.0.0.0', '5858' as final argument :
+```
+sudo docker run --rm -p 5858:5858 -v ~/ChromSCape_analyses_docker:/root/ChromSCape_analyses -t pacomito/chromscape:v0.0.9001 0.0.0.0 5858
+```
   
   
 MACS2 and Samtools are installed on the Docker image so this is a way to run the 
 peak calling on Windows.
   
-All your analyses will be copied to the ~/ChromSCape_analyses folder.  
-
 # Authors
 Please do not hesitate to post an issue or contact the authors :
 
