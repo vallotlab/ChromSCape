@@ -11,7 +11,7 @@ create_scDataset_raw(
   sparse = TRUE,
   nsamp = 4,
   ref = "hg38",
-  batch_id = rep(1, nsamp)
+  batch_id = factor(rep(1, nsamp))
 )
 }
 \arguments{
@@ -27,7 +27,7 @@ create_scDataset_raw(
 
 \item{ref}{Reference genome ('hg38')}
 
-\item{batch_id}{Batch origin (c(1,2,3,4))}
+\item{batch_id}{Batch origin (factor((1,1,1,1))}
 }
 \value{
 A list composed of * mat : a sparse matrix following an approximation
@@ -52,7 +52,7 @@ l2 = create_scDataset_raw(cells = 500, features = 500, nsamp=2)
 mouse_l = create_scDataset_raw(ref="mm10")
 
 # Specifying batches
-batch_l = create_scDataset_raw(nsamp=4, batch_id = c(1,1,2,2))
+batch_l = create_scDataset_raw(nsamp=4, batch_id = factor(c(1,1,2,2)))
 
 # Peaks of different size as features
 peak_l = create_scDataset_raw(featureType="peak")
