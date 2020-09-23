@@ -327,7 +327,7 @@ plot_differential_summary_scExp <- function(scExp_cf)
     summary = scExp_cf@metadata$diff$summary
     myylim <- range(c(summary["over", ], -summary["under", ]))
     barplot(summary["over", ], col = "red", las = 1, ylim = myylim,
-            main = "Differentially bound regions", 
+            main = "Number of differentially enriched regions", 
         ylab = "Number of regions", axes = FALSE)
     barplot(-summary["under", ], col = "forestgreen", ylim = myylim,
             add = TRUE, axes = FALSE, names.arg = "")

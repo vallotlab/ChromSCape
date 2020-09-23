@@ -72,6 +72,7 @@ correlation_and_hierarchical_clust_scExp <- function(
 #'   is considered to be 'correlated' with another cell. (99)
 #' @param percent_correlation Percentage of the cells that any cell must be
 #'   'correlated' to in order to not be filtered. (1)
+#' @param run_tsne Re-run tsne ? (FALSE)
 #' @param verbose (TRUE)
 #'
 #' @return Returns a SingleCellExperiment object without lowly correlated cells.
@@ -90,17 +91,14 @@ correlation_and_hierarchical_clust_scExp <- function(
 #' scExp_cf = filter_correlated_cell_scExp(scExp_cf,
 #' corr_threshold = 99, percent_correlation = 5)
 #' dim(scExp_cf)
-filter_correlated_cell_scExp <- function(
-    scExp, random_iter = 50, corr_threshold = 99, percent_correlation = 1,
+filter_correlated_cell_scExp <- function(scExp, random_iter = 50,
+    corr_threshold = 99, percent_correlation = 1, run_tsne =FALSE,
     verbose = FALSE){
-    stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(random_iter),
-        is.numeric(corr_threshold), is.numeric(percent_correlation))
-    if (is.null(SingleCellExperiment::reducedDim(scExp, "Cor")))
-        stop("ChromSCape::correlation_and_hierarchical_clust_scExp - 
-                No correlation, run correlation_and_hierarchical_clust_scExp")
-    if (is.null(SingleCellExperiment::reducedDim(scExp, "PCA")))
-        stop("ChromSCape::correlation_and_hierarchical_clust_scExp - No PCA, 
-                run reduced_dim before filtering.")
+    
+    warning_filter_correlated_cell_scExp(
+        scExp, random_iter,corr_threshold, percent_correlation, run_tsne,
+        verbose)
+
     pca_t = Matrix::t(SingleCellExperiment::reducedDim(scExp, "PCA"))
     correlation_values <- vector(length = random_iter)
     corChIP <- SingleCellExperiment::reducedDim(scExp, "Cor")
@@ -119,13 +117,15 @@ filter_correlated_cell_scExp <- function(
     tab = as.data.frame(SingleCellExperiment::reducedDim(
         scExp,"Cor"))[, selection_cor_filtered]
     SingleCellExperiment::reducedDim(scExp, "Cor") = tab
-    tsne = Rtsne::Rtsne(SingleCellExperiment::reducedDim(scExp, "PCA"),
+    if(run_tsne){
+        tsne = Rtsne::Rtsne(SingleCellExperiment::reducedDim(scExp, "PCA"),
         dims = 2, max_iter = 1000, pca = FALSE, theta = 0, verbose = verbose, 
         perplexity = choose_perplexity(
             SingleCellExperiment::reducedDim(scExp,"PCA")))
     tsne = as.data.frame(tsne$Y)
     colnames(tsne) = c("Component_1", "Component_2")
     SingleCellExperiment::reducedDim(scExp, "TSNE") = tsne
+    }
     config = umap::umap.defaults
     config$metric = "cosine"
     umap = umap::umap(SingleCellExperiment::reducedDim(scExp, "PCA"),
@@ -139,7 +139,34 @@ filter_correlated_cell_scExp <- function(
     hc_cor_cor_filtered$labels = rep("", length(hc_cor_cor_filtered$labels))
     scExp@metadata$hc_cor = hc_cor_cor_filtered
     scExp@metadata$limitC = limitC_mean #specific to filtered scExp
-    return(scExp)}
+    return(scExp)
+    }
+
+#' warning_filter_correlated_cell_scExp
+#'
+#' @param scExp A SingleCellExperiment object containing 'Cor', a correlation
+#'   matrix, in reducedDims.
+#' @param random_iter Number of random matrices to create to calculate random
+#'   correlation scores. (50)
+#' @param corr_threshold Quantile of random correlation score above which a cell
+#'   is considered to be 'correlated' with another cell. (99)
+#' @param percent_correlation Percentage of the cells that any cell must be
+#'   'correlated' to in order to not be filtered. (1)
+#' @param run_tsne Re-run tsne ? (FALSE)
+#' @param verbose (TRUE)
+#'
+warning_filter_correlated_cell_scExp <- function(
+    scExp, random_iter,corr_threshold, percent_correlation, run_tsne,
+    verbose){
+    stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(random_iter),
+              is.numeric(corr_threshold), is.numeric(percent_correlation))
+    if (is.null(SingleCellExperiment::reducedDim(scExp, "Cor")))
+        stop("ChromSCape::correlation_and_hierarchical_clust_scExp - 
+                No correlation, run correlation_and_hierarchical_clust_scExp")
+    if (is.null(SingleCellExperiment::reducedDim(scExp, "PCA")))
+        stop("ChromSCape::correlation_and_hierarchical_clust_scExp - No PCA, 
+                run reduced_dim before filtering.")
+}
 
 #' Table of number of cells before correlation filtering
 #'
