@@ -995,7 +995,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                    select_y = "Component_2") +
           ggtitle("t-SNE")
         output$tsne_plot_cf <- renderPlot(p)
-        shinydashboard::box(title="t-SNE vizualisation 2", width = NULL, status="success", solidHeader=TRUE,
+        shinydashboard::box(title="t-SNE", width = NULL, status="success", solidHeader=TRUE,
                             column(12, align="left", plotOutput("tsne_plot_cf")))
         }
       }
