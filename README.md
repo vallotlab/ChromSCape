@@ -112,7 +112,7 @@ Explanation:
  * `docker run -t pacomito/chromscape:v0.0.9001` download and run the image
  * `--rm` supress container when run ends
  * `-p 4747:4747` expose docker port 4747 to localhost:4747
- * `-v ~/ChromSCape_analyses_docker:/root/` output folder where ChromSCape_analyses folder will be created
+ * `-v ~/ChromSCape_analyses_docker:/root/output/` output folder where ChromSCape_analyses folder will be created
  is linked to the container '/root/' folder. Change '~/ChromSCape_analyses_docker' to 
  your preferred output path
   
@@ -123,9 +123,9 @@ Optionally, if you want to input BAM, BED of Peak-Index-Barcode files, add anoth
 ```
 After the downloading of the image and the loading of ChromSCape, navigate to : [http://127.0.0.1:4747](http://127.0.0.1:4747)
 
-You can change the port number if it is already taken, e.g. port = 5858, by changing the -p option and adding '0.0.0.0', '5858' as final argument :
+You can change the port number if it is already taken, e.g. port = 5858, by changing the -p option and adding '5858' as final argument :
 ```
-sudo docker run --rm -p 5858:5858 -v ~/ChromSCape_analyses_docker:/root/ChromSCape_analyses -t pacomito/chromscape:v0.0.9001 0.0.0.0 5858
+sudo docker run --rm -p 4747:4747 -v ~/ChromSCape_analyses_docker:/root/output/ -t pacomito/chromscape:v0.0.9001 5858
 ```
   
   
