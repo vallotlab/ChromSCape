@@ -155,6 +155,7 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 50,
 #' @param run_tsne Re-run tsne ? (FALSE)
 #' @param verbose (TRUE)
 #'
+#' @return Warnings or Errors if the input are not correct
 warning_filter_correlated_cell_scExp <- function(
     scExp, random_iter,corr_threshold, percent_correlation, run_tsne,
     verbose){

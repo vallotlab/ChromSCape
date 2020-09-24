@@ -9,14 +9,6 @@ vignette: >
     %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
-```
-
-
 # Introduction
 
 Chromatin modifications orchestrate the dynamic regulation of gene expression
@@ -55,7 +47,7 @@ on various single-cell epigenomic data. The application has multiple advantages:
 
 To launch the application simply run:
 
-```{r, eval=F}
+```{r, eval=FALSE}
 if (!requireNamespace("BiocManager", quietly = TRUE)){
   install.packages("BiocManager")
 }
@@ -64,13 +56,13 @@ BiocManager::install("ChromSCape")
 
 Load **ChromSCape**  
 
-```{r, eval=T}
+```{r, eval=TRUE}
 library(ChromSCape)
 ```
 
 Launch the shiny application   
 
-```{r, eval=F}
+```{r, eval=FALSE}
 launchApp()
 ```
 
@@ -536,6 +528,6 @@ Try out ChromSCape with various kind of dataset :
 
 # Session information
 
-```{r, eval=T}
+```{r, eval=TRUE}
 sessionInfo()
 ```

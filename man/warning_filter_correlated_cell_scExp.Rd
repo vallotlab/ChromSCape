@@ -30,6 +30,9 @@ is considered to be 'correlated' with another cell. (99)}
 
 \item{verbose}{(TRUE)}
 }
+\value{
+Warnings or Errors if the input are not correct
+}
 \description{
 warning_filter_correlated_cell_scExp
 }
