@@ -55,7 +55,9 @@ BiocManager::install("ChromSCape")
 ```
 
 Load **ChromSCape**  
-
+```{r, eval=TRUE}
+print("Loading ChromSCape")
+```
 ```{r, eval=TRUE}
 library(ChromSCape)
 ```
