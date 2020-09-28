@@ -160,7 +160,7 @@ warning_filter_correlated_cell_scExp <- function(
     scExp, random_iter,corr_threshold, percent_correlation, run_tsne,
     verbose){
     stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(random_iter),
-              is.numeric(corr_threshold), is.numeric(percent_correlation))
+            is.numeric(corr_threshold), is.numeric(percent_correlation))
     if (is.null(SingleCellExperiment::reducedDim(scExp, "Cor")))
         stop("ChromSCape::correlation_and_hierarchical_clust_scExp - 
                 No correlation, run correlation_and_hierarchical_clust_scExp")

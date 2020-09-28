@@ -672,10 +672,10 @@ create_scDataset_raw <- function(
     feature_names <- generate_feature_names(featureType, ref, features)
     mat <- generate_count_matrix(cells, features, sparse,
                                 cell_names, feature_names)
-    
     if (length(levels(batches)) > 1)
     {
-        mat <- mat %*% as(Matrix::diag(as.numeric(batches) * as.numeric(batches)), "dgCMatrix")
+        mat <- mat %*% as(Matrix::diag(as.numeric(batches) * 
+                                           as.numeric(batches)), "dgCMatrix")
     }
     colnames(mat) <- cell_names
     annot <- data.frame(
