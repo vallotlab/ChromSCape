@@ -31,10 +31,6 @@ A DT::data.table of enriched gene sets.
 Creates table of enriched genes sets
 }
 \examples{
-data("scExp")
-scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
-scExp_cf = differential_analysis_scExp(scExp_cf)
-scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf)
+data("scExp_cf")
 table_enriched_genes_scExp(scExp_cf)
 }

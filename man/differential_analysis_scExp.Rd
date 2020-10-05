@@ -47,9 +47,7 @@ p-value threshold (qval.th) and the fold-change threshold (cdiff.th). It
 outputs a SingleCellExperiment object containing a differential list.
 }
 \examples{
-data("scExp")
-scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-scExp_cf = choose_cluster_scExp(scExp_cf,nclust=3,consensus=FALSE)
+ data("scExp_cf")
 scExp_cf = differential_analysis_scExp(scExp_cf)
 
 }

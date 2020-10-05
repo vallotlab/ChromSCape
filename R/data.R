@@ -54,6 +54,7 @@
 #' A randomly generated SingleCellExperiment normalized and with reduced
 #' dimensions, processed until GSA (hg38)
 #'
-#' @format scExp - a SingleCellExperiment with 300 cells and 600 features
-#'   (genomic bins) in hg38: \describe{ \item{chr}{A SingleCellExperiment} }
-"scExp"
+#' @format scExp_cf - a SingleCellExperiment with 300 cells and 600 features
+#'   (genomic bins) in hg38 and processed until GSA
+#'   : \describe{ \item{chr}{A SingleCellExperiment} }
+"scExp_cf"

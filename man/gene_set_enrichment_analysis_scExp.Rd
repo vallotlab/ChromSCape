@@ -64,10 +64,10 @@ and the fold-change threshold (cdiff.th). It outputs a SingleCellExperiment
 object containing a differential list.
 }
 \examples{
-data("scExp")
-scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
-scExp_cf = differential_analysis_scExp(scExp_cf)
-scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf)
+data("scExp_cf")
+
+#Usually recommanding qval.th = 0.01 & cdiff.th = 1 or 2
+scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf,
+ qval.th = 0.4, cdiff.th = 0.3)
 
 }
