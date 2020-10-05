@@ -675,7 +675,7 @@ create_scDataset_raw <- function(
     if (length(levels(batches)) > 1)
     {
         mat <- mat %*% as(Matrix::diag(as.numeric(batches) * 
-                                           as.numeric(batches)), "dgCMatrix")
+                                            as.numeric(batches)), "dgCMatrix")
     }
     colnames(mat) <- cell_names
     annot <- data.frame(
