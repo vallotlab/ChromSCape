@@ -4,7 +4,7 @@ context("Testing preprocessing, filtering & reduction functions")
 
 # Functions for testing purposes
 
-
+set.seed(47)
 out = create_scDataset_raw(featureType = "window",sparse = TRUE,
                         batch_id = factor(c(1,1,2,2)))
 mat = out$mat
