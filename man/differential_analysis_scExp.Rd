@@ -48,6 +48,6 @@ outputs a SingleCellExperiment object containing a differential list.
 }
 \examples{
  data("scExp_cf")
-scExp_cf = differential_analysis_scExp(scExp_cf)
+\dontrun{scExp_cf = differential_analysis_scExp(scExp_cf)}
 
 }

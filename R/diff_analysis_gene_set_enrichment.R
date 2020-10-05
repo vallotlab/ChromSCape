@@ -38,7 +38,7 @@
 #'
 #' @examples
 #'  data("scExp_cf")
-#' scExp_cf = differential_analysis_scExp(scExp_cf)
+#' \dontrun{scExp_cf = differential_analysis_scExp(scExp_cf)}
 #' 
 differential_analysis_scExp = function(
     scExp, de_type = "one_vs_rest", method = "wilcox", qval.th = 0.01, 
