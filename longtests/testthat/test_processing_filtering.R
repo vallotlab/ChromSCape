@@ -1,48 +1,13 @@
 context("Testing preprocessing, filtering & reduction functions")
 
-
-
 # Functions for testing purposes
 
 set.seed(47)
 out = create_scDataset_raw(featureType = "window",sparse = TRUE,
-                        batch_id = factor(c(1,1,2,2)))
+                           batch_id = factor(c(1,1,2,2)))
 mat = out$mat
 annot = out$annot
 batches = out$batches
-
-#test sparse matrix
-test_that("Sparse matrices", {
-scExp = create_scExp(mat,annot)
-expect_is(SingleCellExperiment::counts(scExp),"dgCMatrix")
-scExp = filter_scExp(scExp)
-expect_is(SingleCellExperiment::counts(scExp),"dgCMatrix")
-scExp = normalize_scExp(scExp,type = "CPM")
-expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
-scExp=feature_annotation_scExp(scExp)
-expect_is(SummarizedExperiment::rowRanges(scExp),"GRanges")
-scExp = reduce_dims_scExp(scExp,n = 50,batch_correction = FALSE)
-expect_is(SingleCellExperiment::reducedDim(scExp,"PCA"),"data.frame")
-
-scExp = colors_scExp(scExp,annotCol = c("sample_id","batch_id","total_counts"))
-plot_reduced_dim_scExp(scExp,reduced_dim = "PCA",color_by = "sample_id")
-
-scExp = correlation_and_hierarchical_clust_scExp(scExp)
-expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
-scExp = filter_correlated_cell_scExp(scExp)
-expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
-scExp = consensus_clustering_scExp(scExp)
-expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
-expect_is(scExp@metadata$consclust,"list")
-expect_is(scExp@metadata$consclust[[2]]$consensusClass,"integer")
-scExp = choose_cluster_scExp(scExp,nclust = 2)
-expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
-scExp = differential_analysis_scExp(scExp)
-expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
-scExp = gene_set_enrichment_analysis_scExp(
-    scExp, ref = "hg38", qval.th = 0.2, cdiff.th = 0.3)
-expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
-})
 
 #test sparse matrix + batch correction
 test_that("Sparse matrices + Batch Correction", {
@@ -53,15 +18,15 @@ test_that("Sparse matrices + Batch Correction", {
     scExp = normalize_scExp(scExp)
     expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
     scExp = reduce_dims_scExp(scExp, n = 50, batch_correction = TRUE,
-                            batch_list = list(
-                              "batch_1"=c("sample_1","sample_2"),
-                              "batch_2"=c("sample_3","sample_4")))
+                              batch_list = list(
+                                  "batch_1"=c("sample_1","sample_2"),
+                                  "batch_2"=c("sample_3","sample_4")))
     expect_is(SingleCellExperiment::reducedDim(scExp,"PCA"),"data.frame")
     
     scExp = colors_scExp(scExp,annotCol = c(
-    "sample_id","batch_id","total_counts"))
+        "sample_id","batch_id","total_counts"))
     plot_reduced_dim_scExp(scExp,reduced_dim = "PCA",color_by = "sample_id")
-
+    
 })
 
 #### create_scExp Wrapper to create the single cell experiment from sparse
@@ -87,7 +52,7 @@ test_that("Some cells are empty", {
     annot. = annot
     annot.$total_counts = Matrix::colSums(mat.)
     expect_output(create_scExp(mat.,annot.),
-              "cells with 0 signals were removed." )
+                  "cells with 0 signals were removed." )
 })
 
 test_that("Some features are empty", {
@@ -96,14 +61,14 @@ test_that("Some features are empty", {
     annot. = annot
     annot.$total_counts = Matrix::colSums(mat.)
     expect_output(create_scExp(mat.,annot.),
-                "features with 0 signals were removed." )
+                  "features with 0 signals were removed." )
 })
 
 test_that("Removing chrM - non canonical", {
     mat. = mat
     rownames(mat.)[sample(1:nrow(mat.),3)] = paste0("chrM_1_",1:3)
     expect_output(create_scExp(mat.,annot),
-                "chromosome M regions were removed." )
+                  "chromosome M regions were removed." )
     no_removal = create_scExp(mat,annot)
     removal = create_scExp(mat.,annot)
     expect_equal(nrow(no_removal), nrow(removal)+3)
@@ -113,7 +78,7 @@ test_that("Removing chrM - non canonical", {
     mat. = mat
     rownames(mat.)[sample(1:nrow(mat.),3)] = paste0("chrRandom_Unk_1_",1:3)
     expect_output(create_scExp(mat.,annot),
-              "non canonical regions were removed." )
+                  "non canonical regions were removed." )
     no_removal = create_scExp(mat,annot)
     removal = create_scExp(mat.,annot)
     expect_equal(nrow(no_removal), nrow(removal)+3)
@@ -134,23 +99,23 @@ test_that("Wrong input - basic", {
 test_that("No cell filter doesn't change number cells", {
     
     expect_equal(ncol(filter_scExp(scExp,
-        percentMin = 0,
-        quant_removal = 100,
-        min_cov_cell = 0)), ncol(scExp) )
+                                   percentMin = 0,
+                                   quant_removal = 100,
+                                   min_cov_cell = 0)), ncol(scExp) )
 })
 
 test_that("No feature filter doesn't change number features", {
     
     expect_equal(nrow(filter_scExp(scExp,
-        percentMin = 0, quant_removal = 100, 
-        min_cov_cell = 0)), nrow(scExp))
+                                   percentMin = 0, quant_removal = 100, 
+                                   min_cov_cell = 0)), nrow(scExp))
 })
 
 test_that("Max cell filters remove all cells", {
     
     expect_equal(
-    ncol(filter_scExp(scExp, min_cov_cell = max(
-        Matrix::colSums(SingleCellExperiment::counts(scExp))) )), 0)
+        ncol(filter_scExp(scExp, min_cov_cell = max(
+            Matrix::colSums(SingleCellExperiment::counts(scExp))) )), 0)
 })
 
 test_that("Max feature filters remove all features", {
@@ -208,12 +173,12 @@ test_that("Exclude features ", {
     
     expect_equal(
         exclude_features_scExp(scExp.,features_to_exclude = data.frame(
-        gene=paste0("Gene", 1:10)),by = "feature_name"),
-            scExp.[-c(1:10),])
-  rownames(scExp.) = rownames(scExp)
-  expect_warning(
-    exclude_features_scExp(scExp.,features_to_exclude = data.frame(
-      gene=paste0("Gene", 1:10)),by = "feature_name"))
+            gene=paste0("Gene", 1:10)),by = "feature_name"),
+        scExp.[-c(1:10),])
+    rownames(scExp.) = rownames(scExp)
+    expect_warning(
+        exclude_features_scExp(scExp.,features_to_exclude = data.frame(
+            gene=paste0("Gene", 1:10)),by = "feature_name"))
 })
 
 #### normalize_scExp
@@ -252,9 +217,6 @@ test_that("Dimensionality reduction right input", {
     pca_1 = SingleCellExperiment::reducedDim(reduce_dims_scExp(scExp.),"PCA")
     pca_2 = as.data.frame(
         prcomp(Matrix::t(SingleCellExperiment::normcounts(scExp.)),
-            retx = TRUE, center = TRUE, scale. = FALSE)$x[,1:50])
+               retx = TRUE, center = TRUE, scale. = FALSE)$x[,1:50])
     expect_equal(abs(pca_1[,1]), abs(pca_2[,1]))
 })
-
-
-
