@@ -67,7 +67,7 @@ object containing a differential list.
 data("scExp_cf")
 
 #Usually recommanding qval.th = 0.01 & cdiff.th = 1 or 2
-scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf,
- qval.th = 0.4, cdiff.th = 0.3)
+\dontrun{scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf,
+ qval.th = 0.4, cdiff.th = 0.3)}
 
 }

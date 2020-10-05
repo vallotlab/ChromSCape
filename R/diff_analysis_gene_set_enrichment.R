@@ -38,7 +38,7 @@
 #'
 #' @examples
 #'  data("scExp_cf")
-#' \dontrun{scExp_cf = differential_analysis_scExp(scExp_cf)}
+#' scExp_cf = differential_analysis_scExp(scExp_cf)
 #' 
 differential_analysis_scExp = function(
     scExp, de_type = "one_vs_rest", method = "wilcox", qval.th = 0.01, 
@@ -317,8 +317,8 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #' data("scExp_cf")
 #' 
 #' #Usually recommanding qval.th = 0.01 & cdiff.th = 1 or 2
-#' scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf,
-#'  qval.th = 0.4, cdiff.th = 0.3)
+#' \dontrun{scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf,
+#'  qval.th = 0.4, cdiff.th = 0.3)}
 #' 
 gene_set_enrichment_analysis_scExp = function(
     scExp, enrichment_qval = 0.1, ref = "hg38", GeneSets = NULL,
