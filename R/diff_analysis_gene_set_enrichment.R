@@ -37,9 +37,7 @@
 #' @importFrom rlist list.append
 #'
 #' @examples
-#' data("scExp")
-#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=3,consensus=FALSE)
+#'  data("scExp_cf")
 #' scExp_cf = differential_analysis_scExp(scExp_cf)
 #' 
 differential_analysis_scExp = function(
@@ -316,11 +314,11 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #' @importFrom msigdbr msigdbr
 #'
 #' @examples
-#' data("scExp")
-#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
-#' scExp_cf = differential_analysis_scExp(scExp_cf)
-#' scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf)
+#' data("scExp_cf")
+#' 
+#' #Usually recommanding qval.th = 0.01 & cdiff.th = 1 or 2
+#' scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf,
+#'  qval.th = 0.4, cdiff.th = 0.3)
 #' 
 gene_set_enrichment_analysis_scExp = function(
     scExp, enrichment_qval = 0.1, ref = "hg38", GeneSets = NULL,
@@ -584,11 +582,7 @@ filter_genes_with_refined_peak_annotation <- function(
 #' @importFrom tidyr unite
 #' 
 #' @examples
-#' data("scExp")
-#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
-#' scExp_cf = differential_analysis_scExp(scExp_cf)
-#' scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf)
+#' data("scExp_cf")
 #' table_enriched_genes_scExp(scExp_cf)
 table_enriched_genes_scExp <- function(
     scExp, set = "Both", cell_cluster = "C1", 

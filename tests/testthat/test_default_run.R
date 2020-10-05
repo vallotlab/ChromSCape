@@ -37,11 +37,6 @@ expect_is(scExp@metadata$consclust,"list")
 expect_is(scExp@metadata$consclust[[2]]$consensusClass,"integer")
 scExp = choose_cluster_scExp(scExp,nclust = 2)
 expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
-scExp = differential_analysis_scExp(scExp)
-expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
-scExp = gene_set_enrichment_analysis_scExp(
-    scExp, ref = "hg38", qval.th = 0.2, cdiff.th = 0.3)
-expect_is(SingleCellExperiment::normcounts(scExp),"dgCMatrix")
 })
 
 
