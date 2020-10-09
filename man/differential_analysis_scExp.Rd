@@ -47,7 +47,7 @@ p-value threshold (qval.th) and the fold-change threshold (cdiff.th). It
 outputs a SingleCellExperiment object containing a differential list.
 }
 \examples{
- data("scExp_cf")
+ data("scExp")
 scExp_cf = differential_analysis_scExp(scExp_cf)
 
 }

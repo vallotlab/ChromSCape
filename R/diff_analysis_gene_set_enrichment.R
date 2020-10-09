@@ -37,7 +37,7 @@
 #' @importFrom rlist list.append
 #'
 #' @examples
-#'  data("scExp_cf")
+#'  data("scExp")
 #' scExp_cf = differential_analysis_scExp(scExp_cf)
 #' 
 differential_analysis_scExp = function(
@@ -102,18 +102,18 @@ warning_DA <- function(scExp, de_type, method, qval.th, cdiff.th, block){
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(de_type),
             is.numeric(qval.th), is.numeric(cdiff.th))
     if (!de_type %in% c("one_vs_rest", "pairwise")) 
-        stop(paste0("ChromSCape::run_differential_analysis_scExp - de_type",
-                    "must be 'one_vs_rest' or 'pairwise'."))
+        stop("ChromSCape::run_differential_analysis_scExp - de_type",
+                    "must be 'one_vs_rest' or 'pairwise'.")
     if (!method %in% c("wilcox", "neg.binomial")) 
-        stop(paste0("ChromSCape::run_differential_analysis_scExp - method must",
-                    "be 'wilcox' or 'neg.binomial'."))
+        stop("ChromSCape::run_differential_analysis_scExp - method must",
+                    "be 'wilcox' or 'neg.binomial'.")
     if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))) 
-        stop(paste0("ChromSCape::run_differential_analysis_scExp - scExp ",
-                    "object must have selected number of clusters."))
+        stop("ChromSCape::run_differential_analysis_scExp - scExp ",
+                    "object must have selected number of clusters.")
     if (FALSE %in% (c("chr", "start", "end") %in% 
                     colnames(SingleCellExperiment::rowData(scExp)))) 
-        stop(paste0("ChromSCape::run_differential_analysis_scExp - Please run ",
-                    "feature_annotation_scExp first."))
+        stop("ChromSCape::run_differential_analysis_scExp - Please run ",
+                    "feature_annotation_scExp first.")
 }
 
 #' Differential Analysis in 'One vs Rest' mode
@@ -130,6 +130,9 @@ warning_DA <- function(scExp, de_type, method, qval.th, cdiff.th, block){
 #'   
 DA_one_vs_rest_fun <- function(affectation,nclust, counts, method, feature,
                             block){
+    stopifnot(is.data.frame(affectation),is.integer(nclust),
+              is.data.frame(counts), is.character(method),
+              is.data.frame(feature))
     # compare each cluster to all the rest
     mygps = lapply(seq_len(nclust), function(i)
     {
@@ -177,6 +180,9 @@ DA_one_vs_rest_fun <- function(affectation,nclust, counts, method, feature,
 #'
 DA_pairwise <- function(affectation,nclust, counts,
                         method, feature, block){
+    stopifnot(is.data.frame(affectation),is.integer(nclust),
+              is.data.frame(counts), is.character(method),
+              is.data.frame(feature))
     res = feature
     out <- run_pairwise_tests(affectation, nclust, counts,feature,method)
     count_save <- out$count_save
@@ -225,6 +231,8 @@ DA_pairwise <- function(affectation,nclust, counts,
 #'
 run_pairwise_tests <- function(affectation, nclust, counts, 
                             feature, method){
+    stopifnot(is.data.frame(affectation),is.integer(nclust),
+              is.data.frame(counts), is.character(method))
     count_save = data.frame(ID = feature$ID)
     single_results = list()
     pairs = setNames(data.frame(matrix(ncol = 2, nrow = 0)),
@@ -270,8 +278,7 @@ run_pairwise_tests <- function(affectation, nclust, counts,
             pairs[nrow(pairs) + 1, ] = list(refs[1], groups[1])}}
     out <- list("single_results" = single_results, "pairs" = pairs,
                 "count_save" = count_save)
-    return(out)
-}
+    return(out)}
 
 #' Runs Gene Set Enrichment Analysis on genes associated with differential
 #' features
@@ -304,6 +311,7 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #'   associated, in bp. (1000)
 #' @param use_peaks Use peak calling method (must be calculated beforehand).
 #'   (FALSE)
+#' @param GeneSetClasses Which classes of MSIGdb to look for.  
 #'
 #' @return Returns a SingleCellExperiment object containing list of enriched
 #'   Gene Sets for each cluster, either in depleted features, enriched features
@@ -314,7 +322,7 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #' @importFrom msigdbr msigdbr
 #'
 #' @examples
-#' data("scExp_cf")
+#' data("scExp")
 #' 
 #' #Usually recommanding qval.th = 0.01 & cdiff.th = 1 or 2
 #' \dontrun{scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf,
@@ -323,36 +331,36 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 gene_set_enrichment_analysis_scExp = function(
     scExp, enrichment_qval = 0.1, ref = "hg38", GeneSets = NULL,
     GeneSetsDf = NULL, GenePool = NULL, qval.th = 0.01, cdiff.th = 1, 
-    peak_distance = 1000, use_peaks = FALSE)
+    peak_distance = 1000, use_peaks = FALSE, GeneSetClasses = c(
+        "c1_positional","c2_curated","c3_motif","c4_computational",
+        "c5_GO","c6_oncogenic","c7_immunologic","hallmark"))
 {
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(ref),
             is.numeric(enrichment_qval), is.numeric(peak_distance),
-            is.numeric(qval.th), is.numeric(cdiff.th))
-    
+            is.numeric(qval.th), is.numeric(cdiff.th), 
+            is.character(GeneSetClasses))
     if (is.null(scExp@metadata$diff)) 
-        stop(paste0("ChromSCape::gene_set_enrichment_analysis_scExp - No DA, ",
-        "please run run_differential_analysis_scExp first."))
-    
+        stop("ChromSCape::gene_set_enrichment_analysis_scExp - No DA, ",
+        "please run run_differential_analysis_scExp first.")
     if (is.null(SingleCellExperiment::rowData(scExp)$Gene)) 
-        stop(paste0("ChromSCape::gene_set_enrichment_analysis_scExp - No Gene ",
+        stop("ChromSCape::gene_set_enrichment_analysis_scExp - No Gene ",
                     "annotation, please annotate features with genes using ",
-                    "feature_annotation_scExp first."))
-    
+                    "feature_annotation_scExp first.")
     if (is.null(use_peaks)) use_peaks = FALSE
     
     if (use_peaks & (!"refined_annotation" %in% names(scExp@metadata))) 
-        stop(paste0("ChromSCape::gene_set_enrichment_analysis_scExp - ",
+        stop("ChromSCape::gene_set_enrichment_analysis_scExp - ",
         "When use_peaks is TRUE, metadata must contain refined_annotation ",
-        "object."))
+        "object.")
     
     refined_annotation = NULL
     if(use_peaks) refined_annotation = scExp@metadata$refined_annotation
     
     if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))) 
-        stop(paste0("ChromSCape::gene_set_enrichment_analysis_scExp - scExp ",
-        "object must have selected number of clusters."))
+        stop("ChromSCape::gene_set_enrichment_analysis_scExp - scExp ",
+        "object must have selected number of clusters.")
     
-    database_MSIG <- load_MSIGdb(ref)
+    database_MSIG <- load_MSIGdb(ref,GeneSetClasses)
     GeneSets = database_MSIG$GeneSets
     GeneSetsDf = database_MSIG$GeneSetsDf
     GenePool = database_MSIG$GenePool
@@ -374,16 +382,17 @@ gene_set_enrichment_analysis_scExp = function(
 #' Load and format MSIGdb pathways using msigdbr package
 #'
 #' @param ref Reference genome, either mm10 or hg38
+#' @param GeneSetClasses Which classes of MSIGdb to load
 #'
 #' @return A list containing the GeneSet (list), GeneSetDf (data.frame) and 
 #' GenePool character vector of all possible genes
 #'
-load_MSIGdb <- function(ref){
+load_MSIGdb <- function(ref, GeneSetClasses){
     if ((!ref %in% c("hg38", "mm10")) ) 
-        stop(paste0("ChromSCape::gene_set_enrichment_analysis_scExp - ",
-                    "Reference genome (ref) must be 
-                'hg38' or 'mm10' if gene sets not specified."))
-    
+        stop("ChromSCape::gene_set_enrichment_analysis_scExp - ",
+                    "Reference genome (ref) must be ",
+                "'hg38' or 'mm10' if gene sets not specified.")
+    stopifnot(is.character(GeneSetClasses))
     message(
         paste0(
             "ChromSCape::gene_set_enrichment_analysis_scExp - Loading ",
@@ -409,6 +418,7 @@ load_MSIGdb <- function(ref){
                         paste0("C", seq_len(7)), "H"))
     GeneSetsDf$Class = corres$long_name[
         match(GeneSetsDf$Class, corres$short_name)]
+    GeneSetsDf = GeneSetsDf[which(GeneSetsDf$Class %in% GeneSetClasses),]
     GeneSets = lapply(GeneSetsDf$Gene.Set, function(x) {
         unlist(strsplit(
             GeneSetsDf$Genes[which(GeneSetsDf$Gene.Set == x)], split = ","))})
@@ -582,7 +592,7 @@ filter_genes_with_refined_peak_annotation <- function(
 #' @importFrom tidyr unite
 #' 
 #' @examples
-#' data("scExp_cf")
+#' data("scExp")
 #' table_enriched_genes_scExp(scExp_cf)
 table_enriched_genes_scExp <- function(
     scExp, set = "Both", cell_cluster = "C1", 
@@ -594,16 +604,16 @@ table_enriched_genes_scExp <- function(
             is.character(set), is.character(cell_cluster), 
             is.character(enr_class_sel))
     if (is.null(scExp@metadata$enr)) 
-        stop(paste0("ChromSCape::table_enriched_genes_scExp - No GSEA, please ",
-        "run gene_set_enrichment_analysis_scExp first."))
+        stop("ChromSCape::table_enriched_genes_scExp - No GSEA, please ",
+        "run gene_set_enrichment_analysis_scExp first.")
     
     if (!set %in% c("Both", "Overexpressed", "Underexpressed")) 
-        stop(paste0("ChromSCape::table_enriched_genes_scExp - set variable",
-        "must be 'Both', 'Overexpressed' or 'Underexpressed'."))
+        stop("ChromSCape::table_enriched_genes_scExp - set variable",
+        "must be 'Both', 'Overexpressed' or 'Underexpressed'.")
     
     if (!cell_cluster %in% scExp@metadata$diff$groups) 
-        stop(paste0("ChromSCape::table_enriched_genes_scExp - No GSEA, please",
-        "run gene_set_enrichment_analysis_scExp first."))
+        stop("ChromSCape::table_enriched_genes_scExp - No GSEA, please",
+        "run gene_set_enrichment_analysis_scExp first.")
     
     table <- scExp@metadata$enr[[set]][[match(cell_cluster,
                                             scExp@metadata$diff$groups)]]

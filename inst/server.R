@@ -1535,7 +1535,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       gc()
       scExp_cf(gene_set_enrichment_analysis_scExp(scExp_cf(), enrichment_qval = 0.01, qval.th = input$qval.th,
                                                   ref = annotation_id(), cdiff.th = input$cdiff.th,
-                                                  peak_distance = 1000, use_peaks = input$use_peaks))
+                                                  peak_distance = 1000, use_peaks = input$use_peaks,
+                                                  GeneSetClasses = MSIG.classes()))
       gc()
       incProgress(amount = 0.6, detail = paste("Finishing Pathway Enrichment Analysis..."))
       data = list("scExp_cf" = scExp_cf() )

@@ -15,7 +15,9 @@ gene_set_enrichment_analysis_scExp(
   qval.th = 0.01,
   cdiff.th = 1,
   peak_distance = 1000,
-  use_peaks = FALSE
+  use_peaks = FALSE,
+  GeneSetClasses = c("c1_positional", "c2_curated", "c3_motif", "c4_computational",
+    "c5_GO", "c6_oncogenic", "c7_immunologic", "hallmark")
 )
 }
 \arguments{
@@ -48,6 +50,8 @@ associated, in bp. (1000)}
 
 \item{use_peaks}{Use peak calling method (must be calculated beforehand).
 (FALSE)}
+
+\item{GeneSetClasses}{Which classes of MSIGdb to look for.}
 }
 \value{
 Returns a SingleCellExperiment object containing list of enriched
@@ -64,7 +68,7 @@ and the fold-change threshold (cdiff.th). It outputs a SingleCellExperiment
 object containing a differential list.
 }
 \examples{
-data("scExp_cf")
+data("scExp")
 
 #Usually recommanding qval.th = 0.01 & cdiff.th = 1 or 2
 \dontrun{scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf,

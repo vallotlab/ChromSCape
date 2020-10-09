@@ -4,10 +4,12 @@
 \alias{load_MSIGdb}
 \title{Load and format MSIGdb pathways using msigdbr package}
 \usage{
-load_MSIGdb(ref)
+load_MSIGdb(ref, GeneSetClasses)
 }
 \arguments{
 \item{ref}{Reference genome, either mm10 or hg38}
+
+\item{GeneSetClasses}{Which classes of MSIGdb to load}
 }
 \value{
 A list containing the GeneSet (list), GeneSetDf (data.frame) and
