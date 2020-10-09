@@ -118,13 +118,7 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 50,
         scExp,"Cor"))[, selection_cor_filtered]
     SingleCellExperiment::reducedDim(scExp, "Cor") = tab
     if(run_tsne){
-        tsne = Rtsne::Rtsne(SingleCellExperiment::reducedDim(scExp, "PCA"),
-        dims = 2, max_iter = 1000, pca = FALSE, theta = 0, verbose = verbose, 
-        perplexity = choose_perplexity(
-            SingleCellExperiment::reducedDim(scExp,"PCA")))
-    tsne = as.data.frame(tsne$Y)
-    colnames(tsne) = c("Component_1", "Component_2")
-    SingleCellExperiment::reducedDim(scExp, "TSNE") = tsne
+        scExp <- run_tsne_scExp(scExp)
     }
     config = umap::umap.defaults
     config$metric = "cosine"
@@ -167,6 +161,34 @@ warning_filter_correlated_cell_scExp <- function(
     if (is.null(SingleCellExperiment::reducedDim(scExp, "PCA")))
         stop("ChromSCape::correlation_and_hierarchical_clust_scExp - No PCA, 
                 run reduced_dim before filtering.")
+}
+
+#' Run tsne on single cell experiment
+#'
+#' @param scExp A SingleCellExperiment Object
+#'
+#' @return A colored kable with the number of cells per sample for display
+#'
+#' @export
+#'
+#' @importFrom Rtsne Rtsne
+#' @importFrom SingleCellExperiment reducedDim
+#'
+#
+run_tsne_scExp <- function(scExp){
+    stopifnot(is(scExp,"SingleCellExperiment"))
+    
+    perp = choose_perplexity(SingleCellExperiment::reducedDim(scExp,"PCA"))
+
+    tsne = Rtsne::Rtsne(SingleCellExperiment::reducedDim(scExp, "PCA"),
+                        dims = 2, max_iter = 1000, pca = FALSE, theta = 0,
+                        verbose = verbose, perplexity = perp)
+    tsne = as.data.frame(tsne$Y)
+    
+    colnames(tsne) = c("Component_1", "Component_2")
+    SingleCellExperiment::reducedDim(scExp, "TSNE") = tsne
+    
+    return(scExp)
 }
 
 #' Table of number of cells before correlation filtering
