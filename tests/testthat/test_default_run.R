@@ -1,7 +1,5 @@
 context("Testing a A to Z run with default parameters")
 
-
-
 # Functions for testing purposes
 
 set.seed(47)

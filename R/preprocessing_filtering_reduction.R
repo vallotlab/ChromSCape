@@ -35,7 +35,7 @@ detect_samples <- function(barcodes, nb_samples = 1) {
         hc = stats::hclust(dist, method = 'ward.D')
         hc$labels = rep("", ncol(mat))
     })
-    cat("ChromSCape::detect_samples - found samples in", t[3], "secs.\n")
+    message("ChromSCape::detect_samples - found samples in ", t[3], " secs.\n")
     sample_groups = stats::cutree(hc, k = nb_samples)
     samp_name = c()
     for (i in seq_len(nb_samples)) {
@@ -93,69 +93,6 @@ create_sample_name_mat <- function(nb_samples, samples_names){
     mat = as.character(mat)
     return(mat)
 }
-
-#' split_bam_file_into_single_cell_bams
-#'
-#' @param bam_file BAM file
-#' @param sample_id Name of the sample
-#' @param outdir Output directory
-#' @param min_coverage Minimum coverage to keep a cell (500)
-#' @param barcode_tag Under which tag is the barcode information stored ? ("XB")
-#' @param verbose Verbose (TRUE)
-#'
-#' @return Splitted single-cell Bam files
-#'
-#' @importFrom BiocParallel bpparam
-split_bam_file_into_single_cell_bams <- function(bam_file,
-                                                sample_id,
-                                                outdir,
-                                                min_coverage = 500,
-                                                barcode_tag = "XB",
-                                                verbose = TRUE)
-{
-    stopifnot(
-        file.exists(bam_file),
-        dir.exists(outdir),
-        is.character(sample_id),
-        is.numeric(min_coverage),
-        is.character(barcode_tag)
-    )
-    if (length(barcode_tag) > 2)
-        stop(
-            "ChromSCape::split_bam_file_into_single_cell_bams
-            The barcode tag ID should be two characters (e.g. 'XB')"
-        )
-    try({
-        samtools = system2("which", args = "samtools", stdout = TRUE)
-    })
-    
-    if (length(samtools) == 0)
-        stop(
-            "samtools is not found in path. Reinstall samtools or
-            launch application from terminal."
-        )
-    num_cores = BiocParallel::bpparam()
-    num_cores = as.numeric(num_cores@.xData$workers)
-    
-    system2(
-        command = paste0("bash ", file.path(
-            system.file(package = "ChromSCape"),
-            "split_bam.sh"
-        ))
-        ,
-        args = paste0(
-            bam_file,
-            sample_id,
-            outdir,
-            min_coverage,
-            barcode_tag,
-            num_cores
-        )
-    )
-    
-}
-
-
 
 #' Create a sparse count matrix from various format of input data.
 #'
@@ -287,13 +224,13 @@ define_feature <- function(ref,peak_file, n_bins, bin_width,
     )))
     chr <- GenomicRanges::GRanges(chr)
     if (!is.null(peak_file)) {
-        cat(paste0('ChromSCape::raw_counts_to_feature_count_files - ',
-                'Reading in peaks file...\n'))
+        message('ChromSCape::raw_counts_to_feature_count_files - ',
+                'Reading in peaks file...')
         features <- rtracklayer::import(peak_file, format="bed")
         which <- IRanges::subsetByOverlaps(features,chr)
     } else if (!is.null(n_bins) | !is.null(bin_width)) {
-        cat(paste0('ChromSCape::raw_counts_to_feature_count_files - ',
-                'Counting on genomic bins...\n'))
+        message('ChromSCape::raw_counts_to_feature_count_files - ',
+                'Counting on genomic bins...')
         if (!is.null(n_bins)) {
             which <- unlist(GenomicRanges::tileGenome(
                 setNames(
@@ -347,9 +284,8 @@ import_count_input_files <- function(files_dir, file_type,
         feature_indexes = l[[1]]
         name_cells = l[[2]]
         if (verbose)
-            cat(paste0("ChromSCape::raw_counts_to_feature_count_files - ",
-                    "Count matrix created from BAM files in ", t1[3],
-                    "sec.\n" ))
+            message("ChromSCape::raw_counts_to_feature_count_files - ",
+                    "Count matrix created from BAM files in ", t1[3], " sec.\n")
     }
     else if (file_type == "BED") {
         t1 = system.time({
@@ -358,9 +294,9 @@ import_count_input_files <- function(files_dir, file_type,
         feature_indexes = l$feature_indexes
         name_cells = l$names_cells
         if (verbose)
-            cat(paste0("ChromSCape::raw_counts_to_feature_count_files - ",
+            message("ChromSCape::raw_counts_to_feature_count_files - ",
                     "Count matrix created from BED files in ", t1[3],
-                    "sec.\n"))}
+                    " sec.")}
     else if (file_type == "Index_Peak_Barcode") {
         name_cells = read.table(barcode_file, sep = "", quote = "",
                                 stringsAsFactors = FALSE)[, 1]
@@ -372,9 +308,9 @@ import_count_input_files <- function(files_dir, file_type,
         feature_indexes = l[[1]]
         which = l[[2]]
         if (verbose)
-            cat(paste0("ChromSCape::raw_counts_to_feature_count_files - ",
+            message("ChromSCape::raw_counts_to_feature_count_files - ",
                     "Count matrix created from Index-Peak-Barcodes files in ",
-                    t1[3], "sec.\n"))
+                    t1[3], " sec.")
     }
     out <- list("which" = which, "feature_indexes" = feature_indexes,
                 "name_cells" = name_cells)
@@ -404,7 +340,7 @@ bams_to_matrix_indexes = function(files_dir, which) {
                         full.names = TRUE,
                         pattern = paste0(".*.bai$"))
     if (length(indexes) < length(bam_files)) {
-        cat("ChromSCape::bams_to_matrix_indexes - indexing BAM files...")
+        message("ChromSCape::bams_to_matrix_indexes - indexing BAM files...")
         BiocParallel::bplapply(bam_files, Rsamtools::indexBam)
         indexes = list.files(files_dir,
                             full.names = TRUE,
@@ -575,12 +511,12 @@ peaks_to_bins <- function(mat, bin_width = 50000, n_bins = NULL,
     peaks_start = as.numeric(lapply(strsplit(peaks, ":|-|_"), function(x) x[2]))
     peaks_end = as.numeric(lapply(strsplit(peaks, ":|-|_"), function(x) x[3]))
     if (anyNA(peaks_start) | anyNA(peaks_end))
-        stop("The rows of mat should be regions in format chr_start_end or
-            chr:start-end, without non canonical chromosomes")
+        stop("The rows of mat should be regions in format chr_start_end or",
+            "chr:start-end, without non canonical chromosomes")
     if (verbose) {
-        cat("ChromSCape::peaks_to_bins - converting", dim(mat)[1], "peaks into",
-            length(bin_ranges)[1], "bins of", mean(bin_ranges@ranges@width),
-            "bp in average.\n") }
+        message("ChromSCape::peaks_to_bins - converting ", dim(mat)[1],
+                " peaks into ", length(bin_ranges)[1], " bins of ",
+                mean(bin_ranges@ranges@width), " bp in average.") }
     peaks = GenomicRanges::GRanges(
         seqnames = peaks_chr, ranges = IRanges::IRanges(peaks_start, peaks_end))
     hits <- GenomicRanges::findOverlaps(
@@ -596,13 +532,13 @@ peaks_to_bins <- function(mat, bin_width = 50000, n_bins = NULL,
     t = system.time({ bin_mat = BiocParallel::bpaggregate(
         x = hits[, 3:dim(hits)[2]],
         by = list(bins = hits[, 1, drop = FALSE]), FUN = sum) })
-    cat("ChromSCape::peaks_to_bins - transformed peaks in bins in ",t[3],"s.\n")
+    message("ChromSCape::peaks_to_bins - From peaks to bins in ",t[3]," sec.")
     bin_mat = as(as.matrix(bin_mat[, 2:ncol(bin_mat)]), "dgCMatrix")
     rownames(bin_mat) = bins_names[unique(hits[, 1])]
     gc()
-    if (verbose) cat("ChromSCape::peaks_to_bins - removed",
+    if (verbose) message("ChromSCape::peaks_to_bins - removed ",
                     length(bin_ranges) - nrow(bin_mat),
-                    "empty bins from the binned matrix.\n")
+                    " empty bins from the binned matrix.")
     return(bin_mat)}
 
 #' Create a simulated single cell datamatrix & cell annotation
@@ -1074,14 +1010,14 @@ create_scExp <- function(
             remove_zero_features %in% c(TRUE, FALSE))
     if (ncol(datamatrix) != nrow(annot)) 
         stop(
-            "ChromSCape::create_scExp - datamatrix and annot should contain
-            the same number of cells")
+            "ChromSCape::create_scExp - datamatrix and annot should contain",
+            "the same number of cells")
     if (length(match(c("cell_id", "sample_id"), colnames(annot))) < 2) 
         stop("ChromSCape::create_scExp - annot should contain cell_id &
             sample_id as column names")
     if (is(datamatrix, "data.frame")) datamatrix <- as.matrix(datamatrix)
-    cat("ChromSCape::create_scExp - the matrix has",
-        dim(datamatrix)[2], "cells and ", dim(datamatrix)[1], "features.\n")
+    message("ChromSCape::create_scExp - the matrix has ",
+        dim(datamatrix)[2], " cells and ", dim(datamatrix)[1], " features.")
     scExp <- SingleCellExperiment::SingleCellExperiment(
         assays = list(counts = datamatrix), colData = annot)
     if (has_genomic_coordinates(scExp)) {
@@ -1096,12 +1032,12 @@ create_scExp <- function(
         scExp <- scExp[, (Matrix::colSums(
             SingleCellExperiment::counts(scExp) > 0) > 0)]
     if (dim(scExp)[2] != dim_b[2]){
-        cat("ChromSCape::create_scExp -", dim_b[2] - dim(scExp)[2],
-            "cells with 0 signals were removed.\n")
+        message("ChromSCape::create_scExp - ", dim_b[2] - dim(scExp)[2],
+            " cells with 0 signals were removed.")
     }
     if (dim(scExp)[1] != dim_b[1]){
-        cat("ChromSCape::create_scExp -",
-            dim_b[1] - dim(scExp)[1], "features with 0 signals were removed.\n")
+        message("ChromSCape::create_scExp - ",
+            dim_b[1] - dim(scExp)[1], " features with 0 signals were removed.")
     }
     if (has_genomic_coordinates(scExp)){
         rows <- rownames(scExp)
@@ -1138,11 +1074,8 @@ remove_non_canonical_fun <- function(scExp, verbose){
     scExp <- scExp[normal_chr, ]
     if (length(normal_chr) < nrow_init && verbose)
     {
-        cat(
-            "ChromSCape::create_scExp -",
-            nrow(scExp) - length(normal_chr),
-            "non canonical regions were removed.\n"
-        )
+        message("ChromSCape::create_scExp - ",nrow(scExp) - length(normal_chr),
+                " non canonical regions were removed.\n")
     }
     return(scExp)
 }
@@ -1162,11 +1095,8 @@ remove_chr_M_fun <- function(scExp, verbose){
         scExp <- scExp[-chrM_regions, ]
         if (verbose)
         {
-            cat(
-                "ChromSCape::create_scExp -",
-                length(chrM_regions),
-                "chromosome M regions were removed.\n"
-            )
+            message("ChromSCape::create_scExp - ", length(chrM_regions),
+                " chromosome M regions were removed.\n")
         }
     }
     return(scExp)
@@ -1217,11 +1147,11 @@ filter_scExp =  function (
     thresh <- stats::quantile(cellCounts, probs = seq(0, 1, 0.01))
     sel1000 <- (cellCounts > 1000 & cellCounts <= thresh[quant_removal +1])
     sel <- (cellCounts > min_cov_cell & cellCounts <= thresh[quant_removal + 1])
-    if (verbose) cat(
-        "ChromSCape::filter_scExp -", length(which(sel)), "cells pass the ",
-        "threshold of", min_cov_cell, "minimum reads and are lower than ",
-        "the ", quant_removal, "th centile of library size ~=",
-        round(thresh[quant_removal + 1]), "reads.\n")
+    if (verbose) message(
+        "ChromSCape::filter_scExp - ", length(which(sel)), " cells pass the ",
+        " threshold of ", min_cov_cell, " minimum reads and are lower than ",
+        "the ", quant_removal, "th centile of library size ~= ",
+        round(thresh[quant_removal + 1]), " reads.")
     rm(cellCounts)
     gc()
     bina_counts <- SingleCellExperiment::counts(scExp)[, sel1000]
@@ -1237,11 +1167,10 @@ filter_scExp =  function (
     gc()
     fixedFeature <- which(nCells_in_feature > ((percentMin / 100) *
                                                 (ncol(bina_counts))))
-    if (verbose) cat(
-        "ChromSCape::filter_scExp -", length(fixedFeature), "features pass the",
-        " threshold of", percentMin, " % of total cells 'ON', representing a ",
-        "minimum of", round((percentMin / 100) * (ncol(bina_counts))),"cells.\n"
-        )
+    if (verbose) message(
+        "ChromSCape::filter_scExp - ", length(fixedFeature)," features pass ",
+        "the threshold of ", percentMin, "% of total cells 'ON', representing ",
+        "a minimum of ", round((percentMin/100)*(ncol(bina_counts)))," cells.")
     scExp <- scExp[, sel]
     scExp <- scExp[fixedFeature,]
     SummarizedExperiment::colData(scExp) <- cbind(
@@ -1388,8 +1317,8 @@ exclude_features_scExp <-
             })
             if (length(unique(ovrlps) > 0)) scExp <- scExp[-unique(ovrlps), ]
             if (verbose) 
-                cat("ChromSCape::exclude_features_scExp - Removed",
-                    length(unique(ovrlps)), "regions from the analysis.\n")}
+                message("ChromSCape::exclude_features_scExp - Removed ",
+                    length(unique(ovrlps)), " regions from the analysis.")}
         if (by[1] == "feature_name"){
             if (has_genomic_coordinates(scExp)) 
                 warning(
@@ -1406,8 +1335,8 @@ exclude_features_scExp <-
                 scExp <- scExp[-which(rownames(scExp) %in% ovrlps), ]
             }
             if (verbose)
-                cat("ChromSCape::exclude_features_scExp - Removed",
-                    length(unique(ovrlps)), " features from the analysis.\n")
+                message("ChromSCape::exclude_features_scExp - Removed ",
+                    length(unique(ovrlps)), " features from the analysis.")
         }
         return(scExp)
     }
@@ -1594,8 +1523,8 @@ feature_annotation_scExp <- function(scExp, ref = "hg38",
             reference gene annotation.")
     if (is.null(reference_annotation) & (ref %in% c("hg38", "mm10")))
     {
-        message(paste0("ChromSCape::feature_annotation_scExp - Selecting ",
-                ref, " genes from Gencode."))
+        message("ChromSCape::feature_annotation_scExp - Selecting ",
+                ref, " genes from Gencode.")
         eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
         reference_annotation <- eval(parse(text = paste0("", ref, ".GeneTSS")))
     }
@@ -1940,7 +1869,7 @@ subsample_scExp <- function(scExp, n_cells = 500) {
         else
             annot. = Matrix::rbind2(annot., annot[cells,])
     }
-    cat("ChromSCape::subsample_scExp -")
+    message("ChromSCape::subsample_scExp - Subsampling each sample to ",n_cells)
     ord = order(colnames(counts.))
     ord2 = order(rownames(annot.))
     counts. = counts.[, ord]
