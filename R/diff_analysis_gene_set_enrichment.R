@@ -393,9 +393,9 @@ load_MSIGdb <- function(ref){
     )
     
     if (ref == "hg38")
-        GeneSetsDf = msigdbr::msigdbr("Homo sapiens")[, c(3, 1, 5)]
+        GeneSetsDf = msigdbr::msigdbr("Homo sapiens")[, c(2, 3, 5)]
     if (ref == "mm10")
-        GeneSetsDf = msigdbr::msigdbr("Mus musculus")[, c(3, 1, 5)]
+        GeneSetsDf = msigdbr::msigdbr("Mus musculus")[, c(2, 3, 5)]
     colnames(GeneSetsDf) = c("Gene.Set", "Class", "Genes")
     system.time({
         GeneSetsDf <- GeneSetsDf %>% dplyr::group_by(Gene.Set, Class) %>%
