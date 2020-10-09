@@ -3,17 +3,44 @@
 \docType{data}
 \name{scExp}
 \alias{scExp}
-\title{A randomly generated SingleCellExperiment normalized and with reduced
-dimensions (hg38)}
+\title{A SingleCellExperiment outputed by ChromSCape}
 \format{
-scExp - a SingleCellExperiment with 300 cells and 600 features
+scExp - a SingleCellExperiment with 106 cells and 5499 features
 (genomic bins) in hg38: \describe{ \item{chr}{A SingleCellExperiment} }
 }
 \usage{
-scExp
+data("scExp")
 }
 \description{
-A randomly generated SingleCellExperiment normalized and with reduced
-dimensions (hg38)
+Data from a single-cell ChIP-seq experiment against H3K4me3 active mark from
+two cell lines, Jurkat B cells and Ramos T cells from Grosselin et al., 2019.
+The count matrices, on 5kbp bins, were given to ChromSCape and the filtering
+parameter was set to 3\% of cells active in regions and subsampled down to
+150 cells per sample. After correlation filtering, the experiment is
+composed of respectively 51 and 55 cells from Jurkat & Ramos and 5499
+5kbp-genomic bins where signal is located.
+}
+\details{
+The scExp is composed of :
+\itemize{
+\item counts and normcounts assays, PCA, UMAP, and Correlation matrix in
+reducedDims(scExp)
+\item Assignation of genes to genomic bins  in rowRanges(scExp)
+\item Cluster information in colData(scExp) correlation
+\item Hierarchical clustering dengogram in metadata$hc_cor
+\item Consensus clustering raw data in metadata$consclust
+\item Consensus clustering cluster-consensus and item consensus dataframes
+in metadata$icl
+\item Differential analysis in metadata$diff
+\item Gene Set Analysis in metadata$enr
+}
+}
+\examples{
+data("scExp")
+plot_reduced_dim_scExp(scExp)
+plot_reduced_dim_scExp(scExp,color_by = "cell_cluster")
+plot_heatmap_scExp(scExp)
+plot_differential_volcano_scExp(scExp,cell_cluster = "C1")
+plot_differential_summary_scExp(scExp)
 }
 \keyword{datasets}

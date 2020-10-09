@@ -7,15 +7,16 @@
 \format{
 mm10.chromosomes - a data frame with 24 rows and 3 variables:
 \describe{
-\item{chr}{Chromosome name}
-\item{star}{Start}
-\item{end}{End}
+\item{chr}{Chromosome - character}
+\item{start}{Start of the chromosome (bp) - integer}
+\item{end}{End of the chromosome (bp) - integer}
 }
 }
 \usage{
-mm10.chromosomes
+data("mm10.chromosomes")
 }
 \description{
-Data.frame of chromosome length - mm10
+This data frame provides the length of each "canonical" chromosomes of
+Mus Musculus (Mouse) genome build mm10.
 }
 \keyword{datasets}

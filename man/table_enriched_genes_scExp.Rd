@@ -31,6 +31,6 @@ A DT::data.table of enriched gene sets.
 Creates table of enriched genes sets
 }
 \examples{
-data("scExp_cf")
+data("scExp")
 table_enriched_genes_scExp(scExp_cf)
 }

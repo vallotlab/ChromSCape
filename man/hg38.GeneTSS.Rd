@@ -7,16 +7,17 @@
 \format{
 hg38.GeneTSS - a data frame with 24 rows and 3 variables:
 \describe{
-\item{chr}{Chromosome name}
-\item{start}{TSS start}
-\item{end}{TSS end}
-\item{gene}{Gene symbol}
+\item{chr}{Chromosome - character}
+\item{start}{Start of the gene (TSS) - integer}
+\item{end}{End of the gene - integer}
+\item{gene}{Gene symbol - character}
 }
 }
 \usage{
-hg38.GeneTSS
+data("hg38.GeneTSS")
 }
 \description{
-Data.frame of gene TSS - hg38
+This dataframe was extracted from Gencode v25 and report the Transcription
+Start Site of each gene in the Homo Sapiens genome build hg38.
 }
 \keyword{datasets}
