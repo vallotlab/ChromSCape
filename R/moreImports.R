@@ -19,8 +19,5 @@
 #' @import shiny
 #' @import ggplot2
 #' @importFrom colourpicker updateColourInput colourInput
-utils::globalVariables(c("chr","ID","distanceToTSS","Gene",
-                        "Gene.Set","Class","Genes",".",
-                        "Sample","cluster","clusterConsensus",
-                        "coverageByCell"))
+
 
