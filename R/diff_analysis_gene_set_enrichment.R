@@ -369,7 +369,7 @@ gene_set_enrichment_analysis_scExp = function(
     
     annotFeat_long = as.data.frame(tidyr::separate_rows(
         as.data.frame(SingleCellExperiment::rowData(scExp)), 
-        Gene, sep = ", "))
+        .data$Gene, sep = ", "))
     enr <- combine_enrichmentTests(
         scExp@metadata$diff, enrichment_qval, qval.th, cdiff.th,
         annotFeat_long,peak_distance, refined_annotation, GeneSets,
@@ -407,8 +407,9 @@ load_MSIGdb <- function(ref, GeneSetClasses){
         GeneSetsDf = msigdbr::msigdbr("Mus musculus")[, c(2, 3, 5)]
     colnames(GeneSetsDf) = c("Gene.Set", "Class", "Genes")
     system.time({
-        GeneSetsDf <- GeneSetsDf %>% dplyr::group_by(Gene.Set, Class) %>%
-            dplyr::summarise(Genes = paste(Genes,
+        GeneSetsDf <- GeneSetsDf %>% dplyr::group_by(
+            .data$Gene.Set, .data$Class) %>%
+            dplyr::summarise("Genes" = paste(.data$Genes,
                                         collapse = ","))
     })
     corres = data.frame(
