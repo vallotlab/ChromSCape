@@ -251,6 +251,6 @@ separate_BAM_into_clusters <- function(affectation, odir, merged_bam){
                                         tagFilter=list(XB=class_barcodes))
         
         Rsamtools::filterBam(merged_bam,file.path(odir,paste0(class,".bam")),
-                  indexDestination = TRUE, overwrite=TRUE, param=filt)
+                   indexDestination = TRUE, overwrite=TRUE, param=filt)
     }
 }

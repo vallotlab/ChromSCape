@@ -490,7 +490,7 @@ plot_cluster_consensus_scExp <- function(scExp)
     cc$cluster =  factor(
         paste0("C",cc$cluster), levels = unique(paste0("C",cc$cluster)))
     p = cc %>% ggplot(aes(x=.data$cluster, y=.data$clusterConsensus,
-                          fill=.data$cluster)) +
+                           fill=.data$cluster)) +
         geom_bar(stat = "identity", position=position_dodge(width=0.9)) +
         facet_grid(.~as.factor(k), scales="free_x", space="free") +
         theme_minimal() + theme(panel.grid = element_blank(),
