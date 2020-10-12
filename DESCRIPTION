@@ -1,6 +1,6 @@
 Package: ChromSCape
 Title: Analysis of single-cell Epigenomic data in a Shiny App
-Version: 0.99.011
+Version: 0.99.012
 Authors@R: c(person(given = "Pacome",
            family = "Prompsy",
            role = c("aut", "cre"),
@@ -23,7 +23,7 @@ Suggests:
     testthat,
     knitr,
     rmarkdown,
-    BiocStyle
+    BiocStyle	
 RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE)
 Imports: 
