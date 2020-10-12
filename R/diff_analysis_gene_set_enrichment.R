@@ -131,8 +131,8 @@ warning_DA <- function(scExp, de_type, method, qval.th, cdiff.th, block){
 DA_one_vs_rest_fun <- function(affectation,nclust, counts, method, feature,
                             block){
     stopifnot(is.data.frame(affectation),is.integer(nclust),
-              is.data.frame(counts), is.character(method),
-              is.data.frame(feature))
+                is(counts,"dgCMatrix")|is.matrix(counts), is.character(method),
+                is.data.frame(feature))
     # compare each cluster to all the rest
     mygps = lapply(seq_len(nclust), function(i)
     {
@@ -181,8 +181,8 @@ DA_one_vs_rest_fun <- function(affectation,nclust, counts, method, feature,
 DA_pairwise <- function(affectation,nclust, counts,
                         method, feature, block){
     stopifnot(is.data.frame(affectation),is.integer(nclust),
-              is.data.frame(counts), is.character(method),
-              is.data.frame(feature))
+                is(counts,"dgCMatrix")|is.matrix(counts), is.character(method),
+                is.data.frame(feature))
     res = feature
     out <- run_pairwise_tests(affectation, nclust, counts,feature,method)
     count_save <- out$count_save
@@ -232,7 +232,7 @@ DA_pairwise <- function(affectation,nclust, counts,
 run_pairwise_tests <- function(affectation, nclust, counts, 
                             feature, method){
     stopifnot(is.data.frame(affectation),is.integer(nclust),
-              is.data.frame(counts), is.character(method))
+                is(counts,"dgCMatrix")|is.matrix(counts), is.character(method))
     count_save = data.frame(ID = feature$ID)
     single_results = list()
     pairs = setNames(data.frame(matrix(ncol = 2, nrow = 0)),
@@ -400,11 +400,11 @@ load_MSIGdb <- function(ref, GeneSetClasses){
             " MSigDB gene sets."
         )
     )
-    
+    columns = c("gs_name", "gs_cat", "gene_symbol")
     if (ref == "hg38")
-        GeneSetsDf = msigdbr::msigdbr("Homo sapiens")[, c(2, 3, 5)]
+        GeneSetsDf = msigdbr::msigdbr("Homo sapiens")[, columns]
     if (ref == "mm10")
-        GeneSetsDf = msigdbr::msigdbr("Mus musculus")[, c(2, 3, 5)]
+        GeneSetsDf = msigdbr::msigdbr("Mus musculus")[, columns]
     colnames(GeneSetsDf) = c("Gene.Set", "Class", "Genes")
     system.time({
         GeneSetsDf <- GeneSetsDf %>% dplyr::group_by(
@@ -498,6 +498,11 @@ combine_enrichmentTests <- function(
     diff, enrichment_qval, qval.th, cdiff.th, annotFeat_long, peak_distance,
     refined_annotation, GeneSets, GeneSetsDf, GenePool)
     {
+    stopifnot(is.list(diff), is.numeric(enrichment_qval), is.numeric(qval.th),
+              is.numeric(cdiff.th), is.data.frame(annotFeat_long),
+              is.numeric(peak_distance), is(refined_annotation,"GRanges"),
+              is.list(GeneSets),is.data.frame(GeneSetsDf),
+              is.character(GenePool))
     groups <- diff$groups
     res <- diff$res
     enr = list(Both = list(), Overexpressed = list(), Underexpressed = list())
