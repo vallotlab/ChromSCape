@@ -223,16 +223,15 @@ num_cell_before_cor_filt_scExp <- function(scExp)
             SingleCellExperiment::colData(
                 scExp))[, c("sample_id","sample_id_color")])
     colors = as.vector(as.character(dplyr::left_join(
-        table, colors, by = c(Sample = "sample_id")
+        table, colors, by = c("Sample" = "sample_id")
     )[,"sample_id_color"]))
     colors = c(col2hex(colors), "")
     
     table[, 1] = as.character(table[, 1])
-    table = table %>% 
-        dplyr::bind_rows(., dplyr::tibble(Sample = "",
-                                            `#Cells` = sum(table[,-1])))
+    table = dplyr::bind_rows(table, dplyr::tibble("Sample" = "",
+                                            "#Cells" = sum(table[,-1])))
     table %>% dplyr::mutate(
-    Sample = cell_spec(Sample, color = "white", bold = TRUE,
+    "Sample" = cell_spec("Sample", color = "white", bold = TRUE,
                         background = colors)) %>%
         kableExtra::kable(escape = FALSE, align = "c") %>%
         kableExtra::kable_styling(
@@ -278,16 +277,16 @@ num_cell_after_cor_filt_scExp <- function(scExp, scExp_cf)
         SummarizedExperiment::colData(scExp))[, c("sample_id",
                                                 "sample_id_color")])
     colors = as.vector(as.character(dplyr::left_join(
-        table, colors, by = c(Sample = "sample_id"))[,
+        table, colors, by = c("Sample" = "sample_id"))[,
     "sample_id_color"]))
     colors = c(col2hex(colors), "")
     table_both = dplyr::left_join(table, table_filtered, by = c("Sample"))
     table_both[, 1] = as.character(table_both[, 1])
-    table_both = table_both %>% dplyr::bind_rows(.,tibble(Sample = "",
-        `#Cells Before Filtering` = sum(table_both[,2]),
-            `#Cells After Filtering` = sum(table_both[, 3])))
-    table_both %>% dplyr::mutate(Sample = kableExtra::cell_spec(
-        Sample,
+    table_both = dplyr::bind_rows(table_both,tibble("Sample" = "",
+        "#Cells Before Filtering" = sum(table_both[,2]),
+            "#Cells After Filtering" = sum(table_both[, 3])))
+    table_both %>% dplyr::mutate("Sample" = kableExtra::cell_spec(
+        "Sample",
         color = "white",
         bold = TRUE,
         background = colors
@@ -366,11 +365,12 @@ consensus_clustering_scExp <- function(scExp, prefix = NULL, maxK = 10,
         prefix = ""
     }
     pca_t = Matrix::t(SingleCellExperiment::reducedDim(scExp, "PCA"))
+    
     consclust <- ConsensusClusterPlus::ConsensusClusterPlus(
-            pca_t, maxK = maxK,  reps = reps, pItem = pItem,  
-            pFeature = pFeature,  title = prefix, clusterAlg = clusterAlg,
-            distance = distance, innerLinkage = innerLinkage,
-            finalLinkage = finalLinkage, plot = plot_consclust)
+        pca_t, maxK = maxK,  reps = reps, pItem = pItem,  
+        pFeature = pFeature,  title = prefix, clusterAlg = clusterAlg,
+        distance = distance, innerLinkage = innerLinkage,
+        finalLinkage = finalLinkage, plot = plot_consclust)
     
     icl <- ConsensusClusterPlus::calcICL(
         consclust, plot = plot_icl, title = prefix)
