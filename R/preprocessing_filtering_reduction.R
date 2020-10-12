@@ -1534,27 +1534,29 @@ feature_annotation_scExp <- function(scExp, ref = "hg38",
                                                     keep.extra.columns = TRUE)
     
     feature_ranges <- SummarizedExperiment::rowRanges(scExp)[, 1]
-    suppressWarnings({ hits <-
-        GenomicRanges::distanceToNearest(feature_ranges, reference_annotation,
-                                        ignore.strand = TRUE, select = "all")})
+    hits <- GenomicRanges::distanceToNearest(feature_ranges, 
+                                                reference_annotation,
+                                                ignore.strand = TRUE,
+                                                select = "all")
     q_hits <- S4Vectors::queryHits(hits)
     s_hits <- S4Vectors::subjectHits(hits)
     annotFeat <- data.frame(
-        chr = as.character(GenomicRanges::seqnames(feature_ranges[q_hits])),
-        start = as.character(GenomicRanges::start(feature_ranges[q_hits])),
-        end = as.character(GenomicRanges::end(feature_ranges[q_hits])),
-        Gene = as.character(reference_annotation@elementMetadata$gene)[s_hits],
-        distanceToTSS = hits@elementMetadata$distance)
+        "chr" = as.character(GenomicRanges::seqnames(feature_ranges[q_hits])),
+        "start" = as.character(GenomicRanges::start(feature_ranges[q_hits])),
+        "end" = as.character(GenomicRanges::end(feature_ranges[q_hits])),
+        "Gene" = as.character(
+            reference_annotation@elementMetadata$gene)[s_hits],
+        "distanceToTSS" = hits@elementMetadata$distance)
     annotFeat <- annotFeat %>% dplyr::mutate(
-        ID = paste(chr, start, end, sep = "_")) %>%
-        dplyr::select(ID, chr, start, end, Gene, distanceToTSS)
-    
-    system.time({
-        annotFeat <- annotFeat %>% dplyr::group_by(ID, chr, start, end) %>%
-            dplyr::summarise(Gene = paste(Gene, collapse = ", "),
-                distanceToTSS = max(distanceToTSS)) %>% as.data.frame()
-    })
+        "ID" = paste(.data$chr, .data$start, .data$end, sep = "_")) %>%
+        dplyr::select("ID", "chr", "start", "end", "Gene", "distanceToTSS")
+    annotFeat <- annotFeat %>% dplyr::group_by(.data$ID, .data$chr,
+                                                .data$start, .data$end) %>% 
+        dplyr::summarise("Gene" = paste(.data$Gene, collapse = ", "),
+                            "distanceToTSS" = max(.data$distanceToTSS)) %>%
+        as.data.frame()
     annotFeat <- annotFeat[match(rownames(scExp), annotFeat$ID), ]
+    rownames(annotFeat) <- annotFeat$ID
     SummarizedExperiment::rowData(scExp) <- annotFeat
     return(scExp)
 }
@@ -1813,13 +1815,11 @@ num_cell_after_QC_filt_scExp <- function(scExp, annot)
     table_both <-
         dplyr::left_join(table, table_filtered, by = c("Sample"))
     table_both[, 1] <- as.character(table_both[, 1])
-    table_both <-
-        table_both %>% dplyr::bind_rows(
-            .,
+    table_both <-dplyr::bind_rows(table_both,
             dplyr::tibble(
-                Sample = "",
-                `#Cells Before Filtering` = sum(table_both[,2]),
-                `#Cells After Filtering` = sum(table_both[, 3])))
+                "Sample" = "",
+                "#Cells Before Filtering" = sum(table_both[,2]),
+                "#Cells After Filtering" = sum(table_both[, 3])))
     
     table_both %>% kableExtra::kable(escape = FALSE, align = "c") %>%
         kableExtra::kable_styling(c("striped",
