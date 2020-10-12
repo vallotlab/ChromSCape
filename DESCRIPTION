@@ -23,7 +23,8 @@ Suggests:
     testthat,
     knitr,
     rmarkdown,
-    BiocStyle
+    BiocStyle,
+    Rsamtools
 RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE)
 Imports: 

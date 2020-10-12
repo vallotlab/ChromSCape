@@ -28,8 +28,8 @@
 #' peak. The peaks may be present in several rows if multiple genes are close /
 #' overlap to the peaks.
 #'
-#' Note that the user must have samtools & MACS2 installed and available in the
-#' PATH. Users can open command terminal and type 'which samtools' & 'which
+#' Note that the user must have MACS2 installed and available in the
+#' PATH. Users can open command terminal and type 'which
 #' macs2' to verify the availability of these programs. Will only work on unix
 #' operating system. Check operating system with 'print(.Platform)'.
 #' 
@@ -56,6 +56,7 @@
 #' @importFrom SummarizedExperiment rowRanges
 #' @importFrom IRanges findOverlapPairs subsetByOverlaps
 #' @importFrom utils read.table
+#' @importFrom Rsamtools mergeBam indexBam
 #' 
 #' @examples 
 #' \dontrun{
@@ -83,21 +84,21 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05,
     
     if (is.null(geneTSS_annotation))
     {
-        message(paste0("ChromSCape::gene_set_enrichment_analysis_scExp -
-                    Selecting ", 
-            ref, " genes from Gencode."))
+        message("ChromSCape::gene_set_enrichment_analysis_scExp - ",
+                    "Selecting ", 
+            ref, " genes from Gencode.")
         eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
-        geneTSS_annotation = as(eval(parse(text = paste0("", ref, ".GeneTSS"
-                                                        ))),"GRanges")
+        geneTSS_annotation = as(
+            eval(parse(text = paste0("", ref, ".GeneTSS"))),"GRanges")
     } else geneTSS_annotation = as(geneTSS_annotation, "GRanges")
     if (length(inputBam) > 1)
     {
-        write(inputBam, file = file.path(odir, "bam_list.txt"))
-        system(paste0("samtools merge -@ 4 -f -h ",
-                    inputBam[1], " -b ", file.path(odir, "bam_list.txt"),
-                    " ", file.path(odir, "merged.bam")))
         merged_bam = file.path(odir, "merged.bam")
+        Rsamtools::mergeBam(inputBam, destination = merged_bam,
+                            overwrite = TRUE, indexDestination = TRUE)        
     } else merged_bam = inputBam[1]
+    if(!file.exists(paste0(merged_bam,".bai"))) 
+        Rsamtools::indexBam(merged_bam, overwrite= TRUE)
     print("Writting barcode files...")
     affectation = SingleCellExperiment::colData(scExp)
     affectation$cell_cluster = as.factor(affectation$cell_cluster)
@@ -129,35 +130,9 @@ call_macs2_merge_peaks <- function(affectation,odir,p.value,
                                 ref,peak_distance_to_merge){
     merged_peaks=list()
     for (class in levels(factor(affectation$cell_cluster))){
-        command <- paste0(
-            "samtools flagstat ",
-            file.path(odir, paste0(class, ".bam")),
-            " | grep \"properly paired\" | sed \"s/.*properly paired",
-            " (//g\" | cut -f1 -d\" \" | sed \"s/\\%//g\"")
-        print(command)
-        percent_properlyPaired = as.double(system(command,intern = TRUE))
-        if (!is.na(percent_properlyPaired) & percent_properlyPaired > 50){
-            print("Bam files provided have more than 50% of their reads properly
-                mapped, running macs2 with default parameters...")
-            macs2_options = ""
-        } else{
-            print("Bam files provided have less than 50% of their reads properly
-                mapped, flagging all reads as single end running macs2 with
-                --nomodel --extsize 300...")
-            macs2_options = " --nomodel --extsize 300 "
-            print("Transforming bam so that all mapped reads are considered
-                as single-end...")
-            system(paste0("samtools view -H ",
-                        file.path(odir, paste0(class, ".bam")), 
-                        " > ", file.path(odir, "header.sam")))
-            system(paste0("samtools view -F4 ",
-                        file.path(odir, paste0(class, ".bam")), 
-                        " | awk -v OFS=\"\t\" \"{\\$2=0; print \\$0}\" >> ",
-                        file.path(odir, "header.sam")))
-            system(paste0("samtools view -b ",
-                        file.path(odir, "header.sam"), " > ", 
-                        file.path(odir, paste0(class, ".bam"))))
-        }
+        
+        macs2_options = " --nomodel --extsize 300 "
+        
         command = paste0("macs2 callpeak ", p.value,
                     macs2_options, " --keep-dup all --broad -t ", 
                     file.path(odir, paste0(class, ".bam")),
@@ -260,33 +235,21 @@ annotation_from_merged_peaks <- function(scExp,
 #' cell_cluster columns
 #' @param odir A valid output directory path
 #' @param merged_bam A list of merged bam file paths
-#' 
+#'  
+#'  @importFrom Rsamtools filterBam ScanBamParam
 #' @return Create one BAM per cluster from one BAM per condition
 separate_BAM_into_clusters <- function(affectation, odir, merged_bam){
+    
     for (class in levels(factor(affectation$cell_cluster)))
     {
-        vec <- affectation$barcode[which(affectation$cell_cluster == 
+        message("ChromSCape:::separate_BAM_into_clusters - generating ",class,
+                " BAM file...")
+        class_barcodes <- affectation$barcode[which(affectation$cell_cluster == 
                                             as.character(class))]
-        write(as.vector(vec), 
-            file = file.path(odir, paste0(class, ".barcode_class")))
+        filt <- Rsamtools::ScanBamParam(tag=c("XB"),
+                                        tagFilter=list(XB=class_barcodes))
+        
+        Rsamtools::filterBam(merged_bam,file.path(odir,paste0(class,".bam")),
+                  indexDestination = TRUE, overwrite=TRUE, param=filt)
     }
-    write(levels(factor(affectation$cell_cluster)),
-        file = file.path(odir, "barcodes.barcode_class"))
-    
-    print("Using Samtools to extract reads from each cell...")
-    system(paste0("samtools view -H ", merged_bam, " > ",
-                file.path(odir, "header.sam")))  # keeping header
-    
-    system(paste0(
-        "for i in $(cat ",
-        file.path(odir, "barcodes.barcode_class"), "); do samtools view -h ", 
-        merged_bam, " | fgrep -w -f ", file.path(odir, "/$i.barcode_class"),
-        " > ",file.path(odir, "$i.sam"), ";done")
-    )
-    
-    system(paste0(
-        "for i in $(cat ",
-        file.path(odir, "barcodes.barcode_class"), "); do cat ", 
-        file.path(odir, "header.sam"), " ", file.path(odir, "$i.sam"),
-        " | samtools view -b - > ", file.path(odir, "$i.bam"), " ; done"))
 }

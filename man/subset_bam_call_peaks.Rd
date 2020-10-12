@@ -66,8 +66,8 @@ window_end), as well as the closests genes and their distance relative to the
 peak. The peaks may be present in several rows if multiple genes are close /
 overlap to the peaks.
 
-Note that the user must have samtools & MACS2 installed and available in the
-PATH. Users can open command terminal and type 'which samtools' & 'which
+Note that the user must have MACS2 installed and available in the
+PATH. Users can open command terminal and type 'which
 macs2' to verify the availability of these programs. Will only work on unix
 operating system. Check operating system with 'print(.Platform)'.
 }

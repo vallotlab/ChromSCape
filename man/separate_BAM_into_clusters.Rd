@@ -12,7 +12,9 @@ cell_cluster columns}
 
 \item{odir}{A valid output directory path}
 
-\item{merged_bam}{A list of merged bam file paths}
+\item{merged_bam}{A list of merged bam file paths
+
+@importFrom Rsamtools filterBam ScanBamParam}
 }
 \value{
 Create one BAM per cluster from one BAM per condition

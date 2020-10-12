@@ -1104,7 +1104,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   # 5. Peak calling [optional]
   ###############################################################
   
-  output$peak_calling_info <- renderText({"This module is optional, but recommended in order to obtain the most meaningful results for pathway enrichment analysis. Peaks will be called from the BAM files of the samples selected in your project, using MACS2 [only works on unix systems] so that counts can be assigned more specifically to genes TSS . If you have MACS2 & samtools installed but ChromSCape can’t find these softwares, try relaunching R from the terminal and start ChromSCape again."})
+  output$peak_calling_info <- renderText({"This module is optional, but recommended in order to obtain the most meaningful results for pathway enrichment analysis. Peaks will be called from the BAM files of the samples selected in your project, using MACS2 [only works on unix systems] so that counts can be assigned more specifically to genes TSS . If you have MACS2 installed but ChromSCape can’t find these softwares, try relaunching R from the terminal and start ChromSCape again."})
   
   can_run = reactiveVal({FALSE})
   
@@ -1112,24 +1112,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     platform = as.character(.Platform[1])
     if(length(grep("nix",platform,ignore.case = TRUE)) ){
       macs2=""
-      samtools=""
       try({
         macs2 = system2("which",args = "macs2",stdout = TRUE)
       })
-      try({
-        samtools = system2("which",args = "samtools",stdout = TRUE)
-      })
-      if(length(macs2)>0 & length(samtools)>0){
+      if(length(macs2)>0){
         can_run(TRUE)
-        return(paste0("<b>You are running on an ", platform, " OS.<br>Found MACS2 at ", macs2, ".<br>Found samtools at ", samtools,"</b>"))
+        return(paste0("<b>You are running on an ", platform, " OS.<br>Found MACS2 at ", macs2))
       }
-      if(length(macs2)>0 & length(samtools)==0)
-        return(paste0("<b>You are running on an ", platform, " OS.<br>Found MACS2 at ", macs2,".<br>Didn't find samtools ! Please install samtools or skip this step.</b>"))
-      if(length(macs2)==0 & length(samtools)>0)
-        return(paste0("<b>You are running on an ", platform, " OS.<br>Didn't find MACS2, please install MACS2 or skip this step.<br>Found samtools at ", samtools,"</b>"))
-      if(length(macs2)==0 & length(samtools)==0)
-        return(paste0("<b>You are running on an ", platform, " OS.<br>Didn't find MACS2, please install MACS2 or skip this step.<br>Didn't find samtools ! Please install samtools or skip this step.</b>"))
-      
+      if(length(macs2)==0)
+        return(paste0("<b>You are running on an ", platform, " OS.<br>Didn't find MACS2, please install MACS2 or skip this step."))
       } else {
       return(paste0("<b>You are running on a non unix system, peak calling is not available, you can move directly to differential analysis.</b> "))
     }
@@ -1171,7 +1162,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   observeEvent(input$do_pc, {
-    inputBams <- as.character(list_bams())
+    inputBams <- as.character(file.path(dirname(list_bams()),input$bam_selection))
+  
     if(length(inputBams)==0){
       warning("Can't find input BAM files.")
     } else{
