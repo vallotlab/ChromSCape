@@ -36,15 +36,15 @@ plot_distribution_scExp <- function(
     
     if (raw) 
         cell_cov_df = data.frame(
-            coverageByCell = Matrix::colSums(counts(scExp)))
+            "coverageByCell" = Matrix::colSums(counts(scExp)))
     else cell_cov_df = data.frame(
-        coverageByCell = Matrix::colSums(normcounts(scExp)))
+        "coverageByCell" = Matrix::colSums(normcounts(scExp)))
     
     if (log10) 
         cell_cov_df$coverageByCell = log10(
             cell_cov_df$coverageByCell + pseudo_counts)
     
-    ggplot(cell_cov_df, aes(x = coverageByCell)) + 
+    ggplot(cell_cov_df, aes(x = .data$coverageByCell)) + 
         geom_histogram(color = "black", fill = "steelblue", bins = bins) +
         labs(x = "read coverageByCell per cell") + 
         theme(panel.grid.major = element_blank(), panel.grid.minor = 
@@ -160,7 +160,6 @@ get_color_dataframe_from_input <- function(
 #' plot_reduced_dim_scExp(scExp, color_by = "sample_id")
 #' plot_reduced_dim_scExp(scExp, color_by = "total_counts")
 #' plot_reduced_dim_scExp(scExp, reduced_dim = "UMAP")
-#' plot_reduced_dim_scExp(scExp, reduced_dim = "TSNE")
 #' 
 plot_reduced_dim_scExp <- function(
     scExp, color_by = "sample_id", reduced_dim = c("PCA", "TSNE", "UMAP"),
@@ -490,7 +489,8 @@ plot_cluster_consensus_scExp <- function(scExp)
     cc$k = factor(paste0("k=",cc$k), levels=unique(paste0("k=",cc$k)))
     cc$cluster =  factor(
         paste0("C",cc$cluster), levels = unique(paste0("C",cc$cluster)))
-    p = cc %>% ggplot(aes(x=cluster, y=clusterConsensus, fill=cluster)) +
+    p = cc %>% ggplot(aes(x=.data$cluster, y=.data$clusterConsensus,
+                          fill=.data$cluster)) +
         geom_bar(stat = "identity", position=position_dodge(width=0.9)) +
         facet_grid(.~as.factor(k), scales="free_x", space="free") +
         theme_minimal() + theme(panel.grid = element_blank(),

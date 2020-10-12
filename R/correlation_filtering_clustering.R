@@ -89,7 +89,7 @@ correlation_and_hierarchical_clust_scExp <- function(
 #' dim(scExp)
 #' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
 #' scExp_cf = filter_correlated_cell_scExp(scExp_cf,
-#' corr_threshold = 99, percent_correlation = 5)
+#' corr_threshold = 99, percent_correlation = 1)
 #' dim(scExp_cf)
 filter_correlated_cell_scExp <- function(scExp, random_iter = 50,
     corr_threshold = 99, percent_correlation = 1, run_tsne =FALSE,
@@ -118,7 +118,7 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 50,
         scExp,"Cor"))[, selection_cor_filtered]
     SingleCellExperiment::reducedDim(scExp, "Cor") = tab
     if(run_tsne){
-        scExp <- run_tsne_scExp(scExp)
+        scExp <- run_tsne_scExp(scExp, verbose)
     }
     config = umap::umap.defaults
     config$metric = "cosine"
@@ -166,6 +166,7 @@ warning_filter_correlated_cell_scExp <- function(
 #' Run tsne on single cell experiment
 #'
 #' @param scExp A SingleCellExperiment Object
+#' @param verbose Print ?
 #'
 #' @return A colored kable with the number of cells per sample for display
 #'
@@ -175,7 +176,7 @@ warning_filter_correlated_cell_scExp <- function(
 #' @importFrom SingleCellExperiment reducedDim
 #'
 #
-run_tsne_scExp <- function(scExp){
+run_tsne_scExp <- function(scExp, verbose = FALSE){
     stopifnot(is(scExp,"SingleCellExperiment"))
     
     perp = choose_perplexity(SingleCellExperiment::reducedDim(scExp,"PCA"))
@@ -255,7 +256,7 @@ num_cell_before_cor_filt_scExp <- function(scExp)
 #' data("scExp")
 #' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
 #' scExp_cf = filter_correlated_cell_scExp(scExp_cf,
-#' corr_threshold = 99, percent_correlation = 5)
+#' corr_threshold = 99, percent_correlation = 1)
 #' num_cell_after_cor_filt_scExp(scExp,scExp_cf)
 #'
 num_cell_after_cor_filt_scExp <- function(scExp, scExp_cf)

@@ -4,10 +4,12 @@
 \alias{run_tsne_scExp}
 \title{Run tsne on single cell experiment}
 \usage{
-run_tsne_scExp(scExp)
+run_tsne_scExp(scExp, verbose = FALSE)
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment Object}
+
+\item{verbose}{Print ?}
 }
 \value{
 A colored kable with the number of cells per sample for display

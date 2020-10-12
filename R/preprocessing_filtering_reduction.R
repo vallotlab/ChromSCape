@@ -219,9 +219,7 @@ warning_raw_counts_to_feature_count_files <- function(
 #' @importFrom rtracklayer import
 define_feature <- function(ref,peak_file, n_bins, bin_width,
                         geneTSS, aroundTSS){
-    eval(parse(text = paste0(
-        "chr <- ChromSCape::", ref, ".chromosomes"
-    )))
+    chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
     chr <- GenomicRanges::GRanges(chr)
     if (!is.null(peak_file)) {
         message('ChromSCape::raw_counts_to_feature_count_files - ',
@@ -249,8 +247,8 @@ define_feature <- function(ref,peak_file, n_bins, bin_width,
         }
     } else if (geneTSS == TRUE) {
         # Retrieve gene TSS from ref and create GRanges
-        eval(parse(text = paste0(
-            "geneTSS_df <- ChromSCape::", ref, ".GeneTSS"
+        geneTSS_df <- eval(parse(text = paste0(
+            "ChromSCape::", ref, ".GeneTSS"
         )))
         geneTSS_df$start = geneTSS_df$start - aroundTSS
         geneTSS_df$end = geneTSS_df$end + aroundTSS
@@ -394,9 +392,7 @@ index_peaks_barcodes_to_matrix_indexes = function(
         read.table(peak_file, sep = "\t", quote = "")[, seq_len(3)],
         c("chr", "start", "end")
     ))
-    eval(parse(text = paste0(
-        "chr <- ChromSCape::", ref, ".chromosomes"
-    )))
+    chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
     
     regions = regions[which(as.character(regions@seqnames) %in% chr$chr), ]
     feature_indexes = setNames(
@@ -497,7 +493,7 @@ peaks_to_bins <- function(mat, bin_width = 50000, n_bins = NULL,
     if (is.matrix(mat)) mat = as(mat, "dgCMatrix")
     if (is.null(n_bins) & is.null(bin_width)) 
         stop("One of bin_width or n_bins must be set")
-    eval(parse(text = paste0("chr <- ChromSCape::", ref, ".chromosomes")))
+    chr <- eval(parse(text = paste0(" ChromSCape::", ref, ".chromosomes")))
     chr <- GenomicRanges::GRanges(chr)
     if (!is.null(n_bins)) {
         bin_ranges <- unlist(GenomicRanges::tileGenome(
@@ -639,7 +635,7 @@ create_scDataset_raw <- function(
 #'
 generate_feature_names <- function(featureType, ref,
                                 features){
-    eval(parse(text = paste0("chr <- ChromSCape::", ref, ".chromosomes")))
+    chr <- eval(parse(text = paste0(" ChromSCape::", ref, ".chromosomes")))
     chr <- GenomicRanges::GRanges(chr)
     
     if (featureType[1] == "window"){
@@ -679,7 +675,7 @@ generate_feature_names <- function(featureType, ref,
                                 sep = "_")
     }
     if (featureType[1] == "gene"){
-        eval(parse(text = paste0("chr <- ChromSCape::", ref, ".GeneTSS")))
+        chr <- eval(parse(text = paste0(" ChromSCape::", ref, ".GeneTSS")))
         feature_names <- as.character(sample(
             chr$gene, features, replace = FALSE))
     }

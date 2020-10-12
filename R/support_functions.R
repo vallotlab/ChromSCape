@@ -355,7 +355,7 @@ imageCol <- function(
 #' @export
 #' @examples
 #' data("scExp")
-#' annotToCol2(SingleCellExperiment::colData(scExp))
+#' annotToCol2(SingleCellExperiment::colData(scExp), plotLegend = FALSE)
 #' 
 annotToCol2 <- function(
     annotS = NULL, annotT = NULL, missing = c("", NA), anotype = NULL, 

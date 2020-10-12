@@ -37,8 +37,8 @@
 #' @importFrom rlist list.append
 #'
 #' @examples
-#'  data("scExp")
-#' scExp_cf = differential_analysis_scExp(scExp_cf)
+#' data("scExp")
+#' scExp_cf = differential_analysis_scExp(scExp)
 #' 
 differential_analysis_scExp = function(
     scExp, de_type = "one_vs_rest", method = "wilcox", qval.th = 0.01, 
@@ -325,7 +325,7 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #' data("scExp")
 #' 
 #' #Usually recommanding qval.th = 0.01 & cdiff.th = 1 or 2
-#' \dontrun{scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf,
+#' \dontrun{scExp_cf = gene_set_enrichment_analysis_scExp(scExp,
 #'  qval.th = 0.4, cdiff.th = 0.3)}
 #' 
 gene_set_enrichment_analysis_scExp = function(
@@ -462,8 +462,8 @@ results_enrichmentTest <- function(
                             enrich.test, 
                             check.names = FALSE)
     
-    enrich.test = merge(subset(GeneSetsDf, select = -Genes), enrich.test, 
-                        by.x = "Gene.Set", by.y = "Gene_set_name",
+    enrich.test = merge(GeneSetsDf[,c("Gene.Set","Class")],
+                        enrich.test, by.x = "Gene.Set", by.y = "Gene_set_name",
                         all.y = TRUE, sort = FALSE)  ## Get class of gene set
     
     enrich.test = enrich.test[order(enrich.test$`p-value`), ]
@@ -500,9 +500,8 @@ combine_enrichmentTests <- function(
     {
     stopifnot(is.list(diff), is.numeric(enrichment_qval), is.numeric(qval.th),
               is.numeric(cdiff.th), is.data.frame(annotFeat_long),
-              is.numeric(peak_distance), is(refined_annotation,"GRanges"),
-              is.list(GeneSets),is.data.frame(GeneSetsDf),
-              is.character(GenePool))
+              is.numeric(peak_distance), is.list(GeneSets),
+              is.data.frame(GeneSetsDf), is.character(GenePool))
     groups <- diff$groups
     res <- diff$res
     enr = list(Both = list(), Overexpressed = list(), Underexpressed = list())
@@ -599,7 +598,7 @@ filter_genes_with_refined_peak_annotation <- function(
 #' 
 #' @examples
 #' data("scExp")
-#' table_enriched_genes_scExp(scExp_cf)
+#' table_enriched_genes_scExp(scExp)
 table_enriched_genes_scExp <- function(
     scExp, set = "Both", cell_cluster = "C1", 
     enr_class_sel = c(
