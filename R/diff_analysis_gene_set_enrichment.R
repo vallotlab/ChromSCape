@@ -499,9 +499,9 @@ combine_enrichmentTests <- function(
     refined_annotation, GeneSets, GeneSetsDf, GenePool)
     {
     stopifnot(is.list(diff), is.numeric(enrichment_qval), is.numeric(qval.th),
-               is.numeric(cdiff.th), is.data.frame(annotFeat_long),
-               is.numeric(peak_distance), is.list(GeneSets),
-               is.data.frame(GeneSetsDf), is.character(GenePool))
+                is.numeric(cdiff.th), is.data.frame(annotFeat_long),
+                is.numeric(peak_distance), is.list(GeneSets),
+                is.data.frame(GeneSetsDf), is.character(GenePool))
     groups <- diff$groups
     res <- diff$res
     enr = list(Both = list(), Overexpressed = list(), Underexpressed = list())
