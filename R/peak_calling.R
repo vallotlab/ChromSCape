@@ -174,8 +174,8 @@ merge_MACS2_peaks <- function(odir,class,peak_distance_to_merge,ref){
     
     ref_chromosomes = GenomicRanges::GRanges(
         eval(parse(text = paste0(ref, ".chromosomes"))))
-    peaks = suppressWarnings(IRanges::subsetByOverlaps(peaks, ref_chromosomes, 
-                                                    ignore.strand = TRUE))
+    peaks = IRanges::subsetByOverlaps(peaks, ref_chromosomes, 
+                                                    ignore.strand = TRUE)
     return(peaks)
 }
 
