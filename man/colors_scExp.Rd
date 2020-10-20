@@ -37,5 +37,5 @@ color_df = data.frame(sample_id=unique(scExp$sample_id),
  sample_id_color=c("red","blue","green","yellow"))
 scExp = colors_scExp(scExp,annotCol="sample_id",
 color_by="sample_id",color_df=color_df)
-num_cell_before_cor_filt_scExp(scExp)
+
 }

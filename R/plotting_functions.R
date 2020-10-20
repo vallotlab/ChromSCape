@@ -77,7 +77,7 @@ plot_distribution_scExp <- function(
 #'  sample_id_color=c("red","blue","green","yellow"))
 #' scExp = colors_scExp(scExp,annotCol="sample_id",
 #' color_by="sample_id",color_df=color_df)
-#' num_cell_before_cor_filt_scExp(scExp)
+#' 
 colors_scExp <- function(
     scExp, annotCol = "sample_id", color_by = "sample_id", color_df = NULL)
 {
