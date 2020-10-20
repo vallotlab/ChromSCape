@@ -255,8 +255,7 @@ warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
 #'
 #' @examples
 #' data("scExp")
-#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-#' plot_heatmap_scExp(scExp_cf, color_by = "sample_id")
+#' plot_heatmap_scExp(scExp)
 #' 
 plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
     grDevices::colorRampPalette(c("royalblue", "white", "indianred1")))(256),
@@ -311,10 +310,7 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
 #'
 #' @examples
 #' data("scExp")
-#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
-#' scExp_cf = differential_analysis_scExp(scExp_cf)
-#' plot_differential_summary_scExp(scExp_cf)
+#' plot_differential_summary_scExp(scExp)
 plot_differential_summary_scExp <- function(scExp_cf)
 {
     
@@ -345,10 +341,7 @@ plot_differential_summary_scExp <- function(scExp_cf)
 #' @importFrom graphics hist barplot axis plot abline
 #' @examples
 #' data("scExp")
-#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
-#' scExp_cf = differential_analysis_scExp(scExp_cf)
-#' plot_differential_H1_scExp(scExp_cf)
+#' plot_differential_H1_scExp(scExp)
 plot_differential_H1_scExp <- function(scExp_cf, cell_cluster = "C1")
 {
     
@@ -383,10 +376,7 @@ plot_differential_H1_scExp <- function(scExp_cf, cell_cluster = "C1")
 #'
 #' @examples
 #' data("scExp")
-#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-#' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
-#' scExp_cf = differential_analysis_scExp(scExp_cf)
-#' plot_differential_volcano_scExp(scExp_cf,"C1")
+#' plot_differential_volcano_scExp(scExp,"C1")
 plot_differential_volcano_scExp <- function(
     scExp_cf, cell_cluster = "C1", cdiff.th = 1, qval.th = 0.01)
     {
@@ -470,9 +460,7 @@ col2hex <- function(cname)
 #'
 #' @examples
 #' data("scExp")
-#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-#' scExp_cf = consensus_clustering_scExp(scExp_cf)
-#' plot_cluster_consensus_scExp(scExp_cf)
+#' plot_cluster_consensus_scExp(scExp)
 plot_cluster_consensus_scExp <- function(scExp)
 {
     stopifnot(is(scExp,"SingleCellExperiment"))

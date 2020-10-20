@@ -598,7 +598,8 @@ filter_genes_with_refined_peak_annotation <- function(
 #' 
 #' @examples
 #' data("scExp")
-#' table_enriched_genes_scExp(scExp)
+#' \dontrun{table_enriched_genes_scExp(scExp)}
+#' 
 table_enriched_genes_scExp <- function(
     scExp, set = "Both", cell_cluster = "C1", 
     enr_class_sel = c(

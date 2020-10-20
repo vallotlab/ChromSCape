@@ -1758,7 +1758,7 @@ pca_irlba_for_sparseMatrix <- function(x, n_comp)
 #' 
 #' @examples 
 #' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
-#' num_cell_scExp(SingleCellExperiment::colData(scExp))
+#' \dontrun{num_cell_scExp(SingleCellExperiment::colData(scExp))}
 num_cell_scExp <- function(annot)
 {
     stopifnot(!is.null(annot))
@@ -1791,8 +1791,8 @@ num_cell_scExp <- function(annot)
 #' @examples 
 #' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 #' scExp_filtered = filter_scExp(scExp)
-#' num_cell_after_QC_filt_scExp(
-#' scExp_filtered,SingleCellExperiment::colData(scExp))
+#' \dontrun{ num_cell_after_QC_filt_scExp(
+#' scExp_filtered,SingleCellExperiment::colData(scExp))}
 #' 
 num_cell_after_QC_filt_scExp <- function(scExp, annot)
 {
@@ -1842,7 +1842,7 @@ num_cell_after_QC_filt_scExp <- function(scExp, annot)
 #' @examples 
 #' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 #' scExp_sub = subsample_scExp(scExp,50)
-#' num_cell_scExp(scExp_sub)
+#' \dontrun{num_cell_scExp(scExp_sub)}
 #' 
 subsample_scExp <- function(scExp, n_cells = 500) {
     stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(n_cells))

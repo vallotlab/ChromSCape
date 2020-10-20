@@ -87,8 +87,7 @@ correlation_and_hierarchical_clust_scExp <- function(
 #' @examples
 #' data("scExp")
 #' dim(scExp)
-#' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-#' scExp_cf = filter_correlated_cell_scExp(scExp_cf,
+#' scExp_cf = filter_correlated_cell_scExp(scExp,
 #' corr_threshold = 99, percent_correlation = 1)
 #' dim(scExp_cf)
 filter_correlated_cell_scExp <- function(scExp, random_iter = 50,
@@ -206,7 +205,7 @@ run_tsne_scExp <- function(scExp, verbose = FALSE){
 #'
 #' @examples
 #' data("scExp")
-#' num_cell_before_cor_filt_scExp(scExp)
+#' \dontrun{num_cell_before_cor_filt_scExp(scExp)}
 #'
 num_cell_before_cor_filt_scExp <- function(scExp)
 {
@@ -257,7 +256,7 @@ num_cell_before_cor_filt_scExp <- function(scExp)
 #' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
 #' scExp_cf = filter_correlated_cell_scExp(scExp_cf,
 #' corr_threshold = 99, percent_correlation = 1)
-#' num_cell_after_cor_filt_scExp(scExp,scExp_cf)
+#' \dontrun{num_cell_after_cor_filt_scExp(scExp,scExp_cf)}
 #'
 num_cell_after_cor_filt_scExp <- function(scExp, scExp_cf)
 {
@@ -415,11 +414,11 @@ consensus_clustering_scExp <- function(scExp, prefix = NULL, maxK = 10,
 #' data("scExp")
 #' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
 #' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=3,consensus=FALSE)
-#' num_cell_in_cluster_scExp(scExp_cf)
+#' table(scExp_cf$cell_cluster)
 #'
 #' scExp_cf = consensus_clustering_scExp(scExp)
 #' scExp_cf_consensus = choose_cluster_scExp(scExp_cf,nclust=3,consensus=TRUE)
-#' num_cell_in_cluster_scExp(scExp_cf_consensus)
+#' table(scExp_cf_consensus$cell_cluster)
 #' 
 choose_cluster_scExp <- function(scExp, nclust = 3, consensus = TRUE, 
                                 hc_linkage = "ward.D")
@@ -472,7 +471,7 @@ choose_cluster_scExp <- function(scExp, nclust = 3, consensus = TRUE,
 #' data("scExp")
 #' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
 #' scExp_cf = choose_cluster_scExp(scExp_cf,nclust=3,consensus=FALSE)
-#' num_cell_in_cluster_scExp(scExp_cf)
+#' \dontrun{num_cell_in_cluster_scExp(scExp_cf)}
 #'
 num_cell_in_cluster_scExp <- function(scExp){
     stopifnot(is(scExp, "SingleCellExperiment"))
