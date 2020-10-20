@@ -2,35 +2,37 @@
 
 ## What is ChromSCape ?
 
-**ChromSCape** - Single-Cell Chromatin Landscape profiling - is a ready-to-launch user-friendly **Shiny App** for analysis of single-cell epigenomic datasets (scChIP-seq, scATAC-seq...). It takes as input single-cell count matrices and let the user filter & cluster cells, run differential analysis & gene set enrichment analysis between epigenomic subpopulations, in an unsupervised manner.  
-Various existing technologies allow to produce single-cell epigenomic datasets : scChIP-seq, scATAC-seq, scCUT&TAG, scChIL-seq, scChIC-seq ...
+**ChromSCape** - Single-Cell Chromatin Landscape profiling - is a user-friendly **Bioconductor** Shiny application for the analysis of single-cell epigenomic datasets (scChIP-seq, scATAC-seq...). It takes as input single-cell epigenomic data of various form (count matrices, BED files...) and let the do basic QC, preprocessing, clustering, run differential analysis & gene set enrichment analysis between epigenomic subpopulations, in an unsupervised manner.  
 
-## Demo 
-
-Checkout the application look & feel at : [Demo](https://vallotlab.shinyapps.io/ChromSCape/). 
-On this demo application, you can follow analysis of Jurkat & Ramos scChIP H3K4me3 cells.
-
-## Launch the App 
+## Launching ChromSCape 
 
 **ChromSCape** requires **R version 4.02**.
-To install **ChromSCape**, open **R** or **Rstudio** and copy the following commands : 
+To install **ChromSCape**, open **R** or **Rstudio** and run the following commands : 
 
 ```
-if (!requireNamespace("devtools", quietly = TRUE)){
-  install.packages("devtools")
-}
-devtools::install_github("vallotlab/ChromSCape")
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+# The following initializes usage of Bioc devel
+BiocManager::install(version='devel')
+
+BiocManager::install("ChromSCape")
 ```
 
 Once the installation was sucessful, launch **ChromSCape** using the following command :
 
 ```
 library(ChromSCape)
-ChromSCape::launchApp()
+launchApp()
 ```
 
 It is recommended to use Chrome browser for optimal display of graphics & table.
 If no browser opens, copy the url after 'Listening on ...' and paste in your browser.
+
+## Demo 
+
+Checkout the application look & feel at : [Demo](https://vallotlab.shinyapps.io/ChromSCape/). 
+On this demo application, you can follow analysis of Jurkat & Ramos scChIP H3K4me3 cells.
 
 ## User guide
 
@@ -77,10 +79,9 @@ bins is refined and genes TSS not falling closer to 1000bp of any peaks are remo
 from annotation. This exclude any 'false' association of large genomic bins/regions to genes.  
 This step requires **BAM files** of each sample (one BAM file must contains reads of all
  cells of a given sample) as input. 
-The user should be on a Unix system (Mac, Linux) and have installed samtools & MACS2:
+The user should be on a Unix system (Mac, Linux) and have installed MACS2:
 
 ```
-  samtools 1.9 (Using htslib 1.9) (http://www.htslib.org/doc/samtools.html)
   macs2 2.1.2 (https://github.com/taoliu/MACS)
 ```
 The application will automatically check if these tools are available and will give
@@ -88,16 +89,8 @@ you a warning if they are not installed/available.
 
 ## Note for Windows users
 
-Windows user are not able to run the peak calling step, as both samtools and macs2 are not yet available on windows.   
-
-Also, if starting from a fresh installation of R3.6.3 on windows, you might encounter the following error   
-```
-WARNING: Rtools is required to build R packages, but is not currently installed.
-Please download and install Rtools 3.5 from https://cran.r-project.org/bin/windows/Rtools/
-```
-
-Windows R version needs Rtools external software to install packages. Download Rtools 3.5 from https://cran.r-project.org/bin/windows/Rtools/history.html
-and install it.  
+Windows user are not able to run the peak calling step, as both and macs2 are not yet available on windows.   
+Therefore, if users want to run peak calling, they can use the docker version.
 
 ## Docker
 
@@ -129,7 +122,7 @@ sudo docker run --rm -p 4747:4747 -v ~/ChromSCape_analyses_docker:/root/output/ 
 ```
   
   
-MACS2 and Samtools are installed on the Docker image so this is a way to run the 
+MACS2 is installed on the Docker image so this is a way to run the 
 peak calling on Windows.
   
 # Authors
