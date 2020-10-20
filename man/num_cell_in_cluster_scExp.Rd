@@ -19,6 +19,6 @@ Number of cells in each cluster
 data("scExp")
 scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
 scExp_cf = choose_cluster_scExp(scExp_cf,nclust=3,consensus=FALSE)
-num_cell_in_cluster_scExp(scExp_cf)
+\dontrun{num_cell_in_cluster_scExp(scExp_cf)}
 
 }

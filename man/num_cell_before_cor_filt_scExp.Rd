@@ -17,6 +17,6 @@ Table of number of cells before correlation filtering
 }
 \examples{
 data("scExp")
-num_cell_before_cor_filt_scExp(scExp)
+\dontrun{num_cell_before_cor_filt_scExp(scExp)}
 
 }

@@ -23,6 +23,6 @@ subsampled.
 \examples{
 scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 scExp_sub = subsample_scExp(scExp,50)
-num_cell_scExp(scExp_sub)
+\dontrun{num_cell_scExp(scExp_sub)}
 
 }

@@ -17,5 +17,5 @@ Table of cells
 }
 \examples{
 scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
-num_cell_scExp(SingleCellExperiment::colData(scExp))
+\dontrun{num_cell_scExp(SingleCellExperiment::colData(scExp))}
 }

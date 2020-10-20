@@ -17,7 +17,5 @@ Plot cluster consensus score for each k as a bargraph.
 }
 \examples{
 data("scExp")
-scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-scExp_cf = consensus_clustering_scExp(scExp_cf)
-plot_cluster_consensus_scExp(scExp_cf)
+plot_cluster_consensus_scExp(scExp)
 }

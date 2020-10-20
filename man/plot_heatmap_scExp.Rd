@@ -30,7 +30,6 @@ Plot cell correlation heatmap with annotations
 }
 \examples{
 data("scExp")
-scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-plot_heatmap_scExp(scExp_cf, color_by = "sample_id")
+plot_heatmap_scExp(scExp)
 
 }

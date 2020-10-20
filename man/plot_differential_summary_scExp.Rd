@@ -17,8 +17,5 @@ Differential summary barplot
 }
 \examples{
 data("scExp")
-scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
-scExp_cf = choose_cluster_scExp(scExp_cf,nclust=2,consensus=FALSE)
-scExp_cf = differential_analysis_scExp(scExp_cf)
-plot_differential_summary_scExp(scExp_cf)
+plot_differential_summary_scExp(scExp)
 }

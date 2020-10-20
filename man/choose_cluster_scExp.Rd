@@ -37,10 +37,10 @@ ConsensusClusterPlus.
 data("scExp")
 scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
 scExp_cf = choose_cluster_scExp(scExp_cf,nclust=3,consensus=FALSE)
-num_cell_in_cluster_scExp(scExp_cf)
+table(scExp_cf$cell_cluster)
 
 scExp_cf = consensus_clustering_scExp(scExp)
 scExp_cf_consensus = choose_cluster_scExp(scExp_cf,nclust=3,consensus=TRUE)
-num_cell_in_cluster_scExp(scExp_cf_consensus)
+table(scExp_cf_consensus$cell_cluster)
 
 }
