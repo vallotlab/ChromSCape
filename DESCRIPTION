@@ -1,6 +1,6 @@
 Package: ChromSCape
-Title: Analysis of single-cell Epigenomic data in a Shiny App
-Version: 0.99.014
+Title: Analysis of single-cell epigenomics datasets with a Shiny App
+Version: 0.99.015
 Authors@R: c(person(given = "Pacome",
            family = "Prompsy",
            role = c("aut", "cre"),
@@ -11,7 +11,7 @@ Authors@R: c(person(given = "Pacome",
            role = c("aut"),
            email = "celine.vallot@curie.fr",
            comment = c(ORCID = "0000-0003-1601-2359")))
-Description: ChromSCape - single-cell chromatin landscape profiling - is a ready-to-launch user-friendly Shiny application for the analysis of single-cell epigenomic datasets (scChIP-seq, scATAC-seq...) from raw data to differential analysis & gene set enrichment analysis. It is highly interactive, let user save their analysis and covers the whole single-cell analysis : QC, preprocessing, filtering, dimensionality reduction, vizualisation, clustering, differential analysis, gene set analysis... 
+Description: ChromSCape - Chromatin landscape profiling for Single Cells - is a ready-to-launch user-friendly Shiny Application for the analysis of single-cell epigenomics datasets (scChIP-seq, scATAC-seq, scCUT&Tag, ...) from aligned data to differential analysis & gene set enrichment analysis. It is highly interactive, enables users to save their analysis and covers a wide range of analytical steps: QC, preprocessing, filtering, batch correction, dimensionality reduction, vizualisation, clustering, differential analysis and gene set analysis. 
 License: GPL-3
 biocViews: Software, SingleCell, ChIPSeq, ATACSeq, MethylSeq, Classification, Clustering, Epigenetics, PrincipalComponent, SingleCell, ATACSeq, ChIPSeq, Annotation, BatchEffect, MultipleComparison, Normalization, Pathways, Preprocessing, QualityControl, ReportWriting, Visualization, GeneSetEnrichment, DifferentialPeakCalling
 VignetteBuilder: knitr
@@ -23,7 +23,7 @@ Suggests:
     testthat,
     knitr,
     rmarkdown,
-    BiocStyle	
+    BiocStyle	 
 RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE)
 Imports: 
