@@ -23,16 +23,16 @@
 #' plot_distribution_scExp(scExp)
 plot_distribution_scExp <- function(
     scExp, raw = TRUE, log10 = FALSE, pseudo_counts = 1, bins = 150)
-    {
+{
     
     stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(pseudo_counts))
     if (!raw %in% c(TRUE, FALSE) | !log10 %in% c(TRUE, FALSE)) 
         stop(paste0("ChromSCape::plot_distribution_scExp - raw and log10 must ",
-        "be true or false."))
+                    "be true or false."))
     if (raw == FALSE && !("normcounts" %in%
-                        SummarizedExperiment::assayNames(scExp))) 
+                          SummarizedExperiment::assayNames(scExp))) 
         stop(paste0("ChromSCape::plot_distribution_scExp - If raw is false, ",
-        "normcounts must not be empty - run normalize_scExp first."))
+                    "normcounts must not be empty - run normalize_scExp first."))
     
     if (raw) 
         cell_cov_df = data.frame(
@@ -48,9 +48,9 @@ plot_distribution_scExp <- function(
         geom_histogram(color = "black", fill = "steelblue", bins = bins) +
         labs(x = "read coverageByCell per cell") + 
         theme(panel.grid.major = element_blank(), panel.grid.minor = 
-                element_blank(), panel.background = element_blank(),
-            axis.line = element_line(colour = "black"), 
-        panel.border = element_rect(colour = "black", fill = NA))
+                  element_blank(), panel.background = element_blank(),
+              axis.line = element_line(colour = "black"), 
+              panel.border = element_rect(colour = "black", fill = NA))
 }
 
 #' Adding colors to cells & features
@@ -82,26 +82,26 @@ colors_scExp <- function(
     scExp, annotCol = "sample_id", color_by = "sample_id", color_df = NULL)
 {
     stopifnot(is(scExp, "SingleCellExperiment"),
-            is.character(annotCol), is.character(color_by))
+              is.character(annotCol), is.character(color_by))
     annot = as.data.frame(SingleCellExperiment::colData(scExp))
     anocol <- annotToCol2(annotS = annot[, annotCol, drop = FALSE],
-                        annotT = annot, 
-        plotLegend = FALSE, categCol = NULL)
+                          annotT = annot, 
+                          plotLegend = FALSE, categCol = NULL)
     SummarizedExperiment::colData(
         scExp)[, paste0(annotCol, "_color")] = as.data.frame(anocol, 
-        stringsAsFactors = FALSE)[, annotCol]  # factor or not ?
+                                                             stringsAsFactors = FALSE)[, annotCol]  # factor or not ?
     
     if (!is.null(color_df))
     {
         # add custom colors
         if (!color_by %in% colnames(color_df)) 
             stop(paste0("ChromSCape::colors_scExp - color_by must be present ",
-            "in colnames of color_df is not null."))
+                        "in colnames of color_df is not null."))
         
         SummarizedExperiment::colData(scExp)[, paste0(annotCol, "_color")] = 
             color_df[match(SingleCellExperiment::colData(scExp)[, color_by],
-                        color_df[, color_by]), paste0(color_by, "_color"),
-                    drop = FALSE]
+                           color_df[, color_by]), paste0(color_by, "_color"),
+                     drop = FALSE]
     }
     return(scExp)
 }
@@ -121,14 +121,14 @@ colors_scExp <- function(
 get_color_dataframe_from_input <- function(
     input, levels_selected, color_by = c("sample_id", "total_counts"),
     input_id_prefix = "color_")
-    {
+{
     stopifnot(!is.null(input), is.character(levels_selected),
-            is.character(color_by))
+              is.character(color_by))
     
     color_list <- paste0(
         "list(", paste0(levels_selected, " = input$", input_id_prefix, 
                         levels_selected, collapse = ", "), ")")
-
+    
     color_list <- eval(parse(text = color_list))
     # Transform into dataframe with right column names
     color_df = as.matrix(color_list) %>% as.data.frame(
@@ -147,7 +147,10 @@ get_color_dataframe_from_input <- function(
 #' @param reduced_dim Reduced Dimension used for plotting
 #' @param select_x Which variable to select for x axis
 #' @param select_y Which variable to select for y axis
-#'
+#' @param downsample Number of cells to downsample
+#' @param transparency Alpha parameter, between 0 and 1
+#' @param seed Numeric random seed
+#' 
 #' @return A ggplot geom_point plot of reduced dimension 2D reprensentation 
 #' @export
 #'
@@ -163,16 +166,21 @@ get_color_dataframe_from_input <- function(
 #' 
 plot_reduced_dim_scExp <- function(
     scExp, color_by = "sample_id", reduced_dim = c("PCA", "TSNE", "UMAP"),
-    select_x = "Component_1", select_y = "Component_2")
-    {
+    select_x = "Component_1", select_y = "Component_2", downsample = 5000, 
+    transparency = 0.6,  size = 1, seed = 47)
+{
+    set.seed(seed)
     warning_plot_reduced_dim_scExp(scExp, color_by , reduced_dim,
-                                select_x, select_y)
+                                   select_x, select_y, downsample, transparency,
+                                   seed)
+    if(ncol(scExp) > downsample) scExp = scExp[,sample(ncol(scExp),
+                                                       downsample,replace = F)]
     plot_df = as.data.frame(
         cbind(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]), 
-            SingleCellExperiment::colData(scExp)))
+              SingleCellExperiment::colData(scExp)))
     
     p <- ggplot(plot_df, aes_string(x = select_x, y = select_y)) + 
-        geom_point(alpha = 0.6, aes(
+        geom_point(alpha = transparency, size = size, aes(
             color = SingleCellExperiment::colData(scExp)[, color_by])) +
         labs(color = color_by) + 
         theme(
@@ -181,13 +189,13 @@ plot_reduced_dim_scExp <- function(
             panel.background = element_blank(),
             axis.line = element_line(colour = "black"),
             panel.border = element_rect(colour = "black", fill = NA))
-
+    
     if (color_by == "total_counts")
     {
         p <- p + scale_color_gradientn(colours = matlab.like(100))
     } else
     {
-
+        
         cols = unique(as.character(
             SingleCellExperiment::colData(scExp)[,paste0(color_by, "_color")]))
         names(cols) = unique(as.character(
@@ -204,14 +212,19 @@ plot_reduced_dim_scExp <- function(
 #' @param reduced_dim Reduced Dimension used for plotting
 #' @param select_x Which variable to select for x axis
 #' @param select_y Which variable to select for y axis
+#' @param downsample Number of cells to downsample
+#' @param transparency Alpha parameter, between 0 and 1
+#' @param seed Numeric random seed
 #'
 #' @return Warning or errors if the inputs are not correct
 #' 
 warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
-                                        select_x, select_y){
+                                           select_x, select_y, downsample,
+                                           transparency, seed){
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(color_by),
-            is.character(reduced_dim), is.character(select_x),
-            is.character(select_y))
+              is.character(reduced_dim), is.character(select_x),
+              is.character(select_y), is.numeric(downsample),
+              is.numeric(transparency), is.numeric(seed))
     if (!reduced_dim[1] %in% SingleCellExperiment::reducedDimNames(scExp)) 
         stop(paste0("ChromSCape::plot_reduced_dim_scExp - ", reduced_dim[1],
                     " is not present in object, please run normalize_scExp ",
@@ -259,27 +272,30 @@ warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
 #' 
 plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
     grDevices::colorRampPalette(c("royalblue", "white", "indianred1")))(256),
-    color_by = NULL)
-    {
+    color_by = NULL, downsample = 5000, seed = 47)
+{
     
     stopifnot(is(scExp, "SingleCellExperiment"))
     if (!"Cor" %in% SingleCellExperiment::reducedDimNames(scExp)) 
         stop(paste0("ChromSCape::plot_heatmap_scExp - No correlation, run ",
-        "correlation_and_hierarchical_clust_scExp before filtering."))
+                    "correlation_and_hierarchical_clust_scExp before filtering."))
     
     if (!name_hc %in% names(scExp@metadata)) 
         stop(paste0("ChromSCape::plot_heatmap_scExp - No dendrogram, run ",
-        "correlation_and_hierarchical_clust_scExp before filtering."))
+                    "correlation_and_hierarchical_clust_scExp before filtering."))
     
     if (length(scExp@metadata[[name_hc]]$order) != ncol(scExp)) 
         stop(paste0("ChromSCape::plot_heatmap_scExp - Dendrogram has different",
-        " number of cells than dataset."))
-
+                    " number of cells than dataset."))
+    set.seed(seed)
+    if(ncol(scExp) > downsample) scExp = scExp[,sample(ncol(scExp),
+                                                       downsample,replace = F)]
+    
     anocol = as.matrix(
         SingleCellExperiment::colData(
             scExp)[, grep("_color",
-                        colnames(SingleCellExperiment::colData(scExp))), 
-                drop = FALSE])
+                          colnames(SingleCellExperiment::colData(scExp))), 
+                   drop = FALSE])
     colnames(anocol) = gsub("_color","",colnames(anocol))
     
     if(!is.null(color_by)) {
@@ -291,12 +307,12 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
         hclustAnnotHeatmapPlot(
             x = SingleCellExperiment::reducedDim(scExp, "Cor")[
                 scExp@metadata[[name_hc]]$order, 
-        scExp@metadata[[name_hc]]$order], hc = scExp@metadata[[name_hc]],
-        hmColors = corColors,
-        anocol = anocol[scExp@metadata[[name_hc]]$order, ,drop=FALSE],
-        xpos = c(0.15, 0.9, 0.164, 0.885),
-        ypos = c(0.1, 0.5, 0.5, 0.6, 0.62, 0.95), dendro.cex = 0.04, 
-        xlab.cex = 0.8, hmRowNames = FALSE)
+                scExp@metadata[[name_hc]]$order], hc = scExp@metadata[[name_hc]],
+            hmColors = corColors,
+            anocol = anocol[scExp@metadata[[name_hc]]$order, ,drop=FALSE],
+            xpos = c(0.15, 0.9, 0.164, 0.885),
+            ypos = c(0.1, 0.5, 0.5, 0.6, 0.62, 0.95), dendro.cex = 0.04, 
+            xlab.cex = 0.8, hmRowNames = FALSE)
     )
 }
 
@@ -317,13 +333,13 @@ plot_differential_summary_scExp <- function(scExp_cf)
     stopifnot(is(scExp_cf, "SingleCellExperiment"))
     if (is.null(scExp_cf@metadata$diff)) 
         stop(paste0("ChromSCape::differential_barplot_scExp - ",
-        "No DA, please run differential_analysis_scExp first."))
+                    "No DA, please run differential_analysis_scExp first."))
     
     summary = scExp_cf@metadata$diff$summary
     myylim <- range(c(summary["over", ], -summary["under", ]))
     barplot(summary["over", ], col = "red", las = 1, ylim = myylim,
             main = "Number of differentially enriched regions", 
-        ylab = "Number of regions", axes = FALSE)
+            ylab = "Number of regions", axes = FALSE)
     barplot(-summary["under", ], col = "forestgreen", ylim = myylim,
             add = TRUE, axes = FALSE, names.arg = "")
     z <- axis(2, pos = -10)
@@ -348,20 +364,20 @@ plot_differential_H1_scExp <- function(scExp_cf, cell_cluster = "C1")
     stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(cell_cluster))
     if (is.null(scExp_cf@metadata$diff)) 
         stop(paste0("ChromSCape::differential_H1_plot_scExp - No DA, please ",
-        "run differential_analysis_scExp first."))
+                    "run differential_analysis_scExp first."))
     
     if (!cell_cluster %in% scExp_cf@metadata$diff$groups) 
         stop(paste0("ChromSCape::differential_H1_plot_scExp - Chromatin group ",
-        "specified doesn't correspond to differential analysis, please rerun ",
-        "run_differential_analysis_scExp first with correct parameters."))
+                    "specified doesn't correspond to differential analysis, please rerun ",
+                    "run_differential_analysis_scExp first with correct parameters."))
     
     res = scExp_cf@metadata$diff$res
     
     tmp <- H1proportion(res[, paste("pval", cell_cluster, sep = ".")])
     hist(res[, paste("pval", cell_cluster, sep = ".")],
-        breaks = seq(0, 1, by = 0.05), xlab = "P-value", ylab = "Frequency",
-        main = paste(cell_cluster, "vs the rest", "\n", "H1 proportion:",
-                    round(tmp, 3)))
+         breaks = seq(0, 1, by = 0.05), xlab = "P-value", ylab = "Frequency",
+         main = paste(cell_cluster, "vs the rest", "\n", "H1 proportion:",
+                      round(tmp, 3)))
 }
 
 #' Volcano plot of differential features
@@ -379,19 +395,19 @@ plot_differential_H1_scExp <- function(scExp_cf, cell_cluster = "C1")
 #' plot_differential_volcano_scExp(scExp,"C1")
 plot_differential_volcano_scExp <- function(
     scExp_cf, cell_cluster = "C1", cdiff.th = 1, qval.th = 0.01)
-    {
+{
     
     stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(cell_cluster), 
-        is.numeric(qval.th), is.numeric(cdiff.th))
+              is.numeric(qval.th), is.numeric(cdiff.th))
     
     if (is.null(scExp_cf@metadata$diff)) 
         stop(paste0("ChromSCape::differential_volcano_plot_scExp - No DA, ",
-        "please run differential_analysis_scExp first."))
+                    "please run differential_analysis_scExp first."))
     
     if (!cell_cluster %in% scExp_cf@metadata$diff$groups) 
         stop(paste0("ChromSCape::differential_volcano_plot_scExp - Chromatin ",
-        "group specified doesn't correspond to differential analysis, please ",
-        "rerun differential_analysis_scExp first with correct parameters."))
+                    "group specified doesn't correspond to differential analysis, please ",
+                    "rerun differential_analysis_scExp first with correct parameters."))
     
     res = scExp_cf@metadata$diff$res
     summary = scExp_cf@metadata$diff$summary
@@ -399,18 +415,18 @@ plot_differential_volcano_scExp <- function(
     mycol <- rep("black", nrow(res))
     mycol[which(res[, paste("qval", cell_cluster, sep = ".")]
                 <= qval.th & res[, 
-        paste("cdiff", cell_cluster, sep = ".")] > cdiff.th)] <- "red"
+                                 paste("cdiff", cell_cluster, sep = ".")] > cdiff.th)] <- "red"
     mycol[which(res[, paste("qval", cell_cluster, sep = ".")]
                 <= qval.th & res[, 
-        paste("cdiff", cell_cluster, sep = ".")] < -cdiff.th)] <- "forestgreen"
+                                 paste("cdiff", cell_cluster, sep = ".")] < -cdiff.th)] <- "forestgreen"
     
     plot(res[, paste("cdiff", cell_cluster, sep = ".")],
-        -log10(res[, paste("qval", cell_cluster, sep = ".")]), col = mycol,
-        cex = 0.7, pch = 16, xlab = "count difference", 
-        ylab = "-log10(adjusted p-value)", las = 1,
-        main = paste(cell_cluster, "vs the rest", "\n",
-                    summary["over", cell_cluster],
-                    "enriched,", summary["under", cell_cluster], "depleted"))
+         -log10(res[, paste("qval", cell_cluster, sep = ".")]), col = mycol,
+         cex = 0.7, pch = 16, xlab = "count difference", 
+         ylab = "-log10(adjusted p-value)", las = 1,
+         main = paste(cell_cluster, "vs the rest", "\n",
+                      summary["over", cell_cluster],
+                      "enriched,", summary["under", cell_cluster], "depleted"))
     abline(v = cdiff.th, lty = 2)
     abline(h = -log10(qval.th), lty = 2)
     abline(v = -cdiff.th, lty = 2)
@@ -478,11 +494,11 @@ plot_cluster_consensus_scExp <- function(scExp)
     cc$cluster =  factor(
         paste0("C",cc$cluster), levels = unique(paste0("C",cc$cluster)))
     p = cc %>% ggplot(aes(x=.data$cluster, y=.data$clusterConsensus,
-                            fill=.data$cluster)) +
+                          fill=.data$cluster)) +
         geom_bar(stat = "identity", position=position_dodge(width=0.9)) +
         facet_grid(.~as.factor(k), scales="free_x", space="free") +
         theme_minimal() + theme(panel.grid = element_blank(),
                                 axis.text.x = element_blank()) +
         scale_fill_manual(values=unique(colors)) + ylab("Consensus Score")
-return(p)
+    return(p)
 }
