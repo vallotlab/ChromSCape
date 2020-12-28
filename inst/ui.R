@@ -264,7 +264,10 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                              status="success", solidHeader=TRUE, align="left",
                                                              column(width=4,
                                                                     actionButton(inputId = "do_annotated_heatmap_plot", label = "Plot Clustered Heatmap"), br()),
-                                                             column(width=12, uiOutput("annotated_heatmap_UI"))
+                                                             column(width=12, uiOutput("annotated_heatmap_UI")),
+                                                             column(width=4,
+                                                                    actionButton(inputId = "do_intra_corr_plot", label = "Plot IntraCorrelation Scores"), br()),
+                                                             column(width=12, uiOutput("intra_corr_UI"))
                                          )
                                   )
                                 )

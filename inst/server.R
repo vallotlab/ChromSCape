@@ -924,6 +924,18 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                }
   )
   
+  observeEvent(input$do_intra_corr_plot,
+               {
+                 if(input$nclust != ""){
+                   output$intra_corr_UI <- renderUI({
+                     
+                     output$intra_corr_plot = renderPlot(plot_intra_correlation_scExp(isolate(scExp_cf())))
+                     plotOutput("intra_corr_plot",width = 500,height = 500) %>%
+                       shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+                   })
+                 }
+               }
+  )
 #   
 # output$cons_clust_anno_plot <- renderPlot({
 #   if(! is.null(scExp_cf())){
@@ -972,6 +984,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
 
+  
     
   output$hcor_kable <- function(){
     req(scExp_cf())
