@@ -324,6 +324,44 @@ num_cell_before_cor_filt_scExp <- function(scExp)
         kableExtra::group_rows("Total cell count", dim(table)[1], dim(table)[1])
 }
 
+
+#' Calculate intra correlation between cluster or samples
+#'
+#' @param scExp_cf 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+intra_correlation_scExp <- function(scExp_cf, by = c("sample_id",
+                                                     "cell_cluster")[1]){
+    stopifnot(is(scExp_cf, "SingleCellExperiment"), by %in% c("sample_id",
+                                                              "cell_cluster"))
+    if (is.null(SingleCellExperiment::reducedDim(scExp, "Cor")))
+        stop("ChromSCape::intra_correlation_scExp - 
+                No correlation, run correlation_and_hierarchical_clust_scExp")
+    if (is.null(SingleCellExperiment::reducedDim(scExp, "PCA")))
+        stop("ChromSCape::intra_correlation_scExp - No PCA, 
+                run reduced_dim before filtering.")
+    
+    # By sample
+    annot = SingleCellExperiment::colData(scExp_cf)
+    
+    pca_t = SingleCellExperiment::reducedDim(scExp_cf,"PCA")
+    cor_mat = reducedDim(scExp_cf,"Cor")
+    
+    intra_corr=data.frame()
+    for(i in unique(annot[,by])){
+        cells = as.character(annot$cell_id[which(annot[,by]==i)])
+        tmp = cor_mat[cells,cells]
+        tab = data.frame(tmp = rep(i,ncol(tmp)), "intra_corr" = colMeans(tmp))
+        colnames(tab)[1] = by
+        intra_corr=rbind(intra_corr,tab)
+    }
+    
+    return(intra_corr)
+}
+
 #' Number of cells before & after correlation filtering
 #'
 #' @param scExp SingleCellExperiment object before correlation filtering.

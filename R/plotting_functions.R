@@ -317,6 +317,52 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
 }
 
 
+#' Violin plot of intra-correlation distribution
+#'
+#' @param scExp_cf A SingleCellExperiment
+#' @param by Color by sample_id or cell_cluster
+#' @param jitter_by Add jitter points of another layer
+#'  (cell_cluster or sample_id)
+#' @param downsample Downsample for plotting
+#' @param seed Random seed
+#'
+#' @return A violin plot of intra-correlation
+#' @export
+#'
+#' @examples plot_intra_correlation_scExp(scExp)
+plot_intra_correlation_scExp <- function(
+    scExp_cf, by = c("sample_id", "cell_cluster")[1], jitter_by = NULL,
+    downsample = 5000, seed = 47){
+    
+    set.seed(seed)
+    if(ncol(scExp_cf) > downsample) scExp_cf = scExp_cf[,sample(ncol(scExp_cf),
+                                                       downsample,replace = F)]
+    
+    samp = intra_correlation_scExp(scExp_cf, by)
+    annot = SingleCellExperiment::colData(scExp_cf)
+    p <- ggplot(samp,aes(x=.data[[by]], y=.data$intra_corr,
+                    fill=.data[[by]])) + 
+        geom_violin(alpha=0.8) + theme_classic() +
+        stat_summary(fun=median, geom="point", size=2, color="black") +
+        theme(axis.text.x = element_text(angle=90))
+    
+    cols = unique(as.character(annot[,paste0(by,"_color")][
+        match(rownames(samp),annot$cell_id)]))
+    names(cols) = unique(as.character(annot[,by][match(
+        rownames(samp),annot$cell_id)]))
+    p <- p + scale_fill_manual(values = cols)
+    
+    if(!is.null(jitter_by)){
+        p <- p + geom_jitter(
+            color = annot[,paste0(jitter_by,"_color")][
+                match(rownames(samp),annot$cell_id)],alpha = 0.45) +
+            scale_color_manual(
+                values = annot[,paste0(jitter_by,"_color")][
+                    match(rownames(samp),annot$cell_id)])
+    }
+    return(p)
+}
+
 #' Differential summary barplot
 #'
 #' @param scExp_cf A SingleCellExperiment object
