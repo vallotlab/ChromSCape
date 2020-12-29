@@ -672,6 +672,19 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   selected_filtered_dataset <- reactive({input$selected_reduced_dataset})
   
+  annotCol_cf <- reactive({
+    req(scExp_cf())
+    cols = c("sample_id")
+    if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
+      cols = c(cols,"cell_cluster")
+      } 
+    if("batch_name" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
+      cols = c(cols,"batch_name")
+      } 
+    cols = c(cols, "total_counts")
+    cols
+  })
+  
   observeEvent(input$tabs, 
                {
                if(input$tabs == "cons_clustering"){
@@ -924,18 +937,28 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                }
   )
   
-  observeEvent(input$do_intra_corr_plot,
-               {
-                 if(input$nclust != ""){
-                   output$intra_corr_UI <- renderUI({
-                     
-                     output$intra_corr_plot = renderPlot(plot_intra_correlation_scExp(isolate(scExp_cf())))
-                     plotOutput("intra_corr_plot",width = 500,height = 500) %>%
-                       shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
-                   })
-                 }
-               }
-  )
+  output$violin_color <- renderUI({
+    req(annotCol_cf())
+    selectInput("violin_color","Color by", choices=annotCol_cf()[-which(annotCol_cf() == "total_counts")])
+  })
+  
+  output$jitter_color <- renderUI({
+    req(annotCol_cf(), input$add_jitter)
+    if(input$add_jitter) selectInput("jitter_color","Color cells", choices=annotCol_cf())
+  })
+  
+  output$intra_corr_UI <- renderUI({
+    req(annotCol_cf(), input$violin_color)
+   
+    if(input$add_jitter) jitter_col = input$jitter_color else jitter_col = NULL
+     
+   output$intra_corr_plot = renderPlotly(
+     plot_intra_correlation_scExp(scExp_cf(), by = input$violin_color,
+                                  jitter_by = jitter_col, seed = 47))
+    plotly::plotlyOutput("intra_corr_plot",width = 500,height = 500) %>%
+      shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+    
+    })
 #   
 # output$cons_clust_anno_plot <- renderPlot({
 #   if(! is.null(scExp_cf())){

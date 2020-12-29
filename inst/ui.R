@@ -261,13 +261,19 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                          uiOutput("tsne_box_cf"),
                                          uiOutput("color_box_cf"),
                                          shinydashboard::box(title="Correlation heatmap with cluster annotation", width=NULL,
-                                                             status="success", solidHeader=TRUE, align="left",
+                                                             status="success", solidHeader=TRUE, align="left", 
                                                              column(width=4,
                                                                     actionButton(inputId = "do_annotated_heatmap_plot", label = "Plot Clustered Heatmap"), br()),
-                                                             column(width=12, uiOutput("annotated_heatmap_UI")),
-                                                             column(width=4,
-                                                                    actionButton(inputId = "do_intra_corr_plot", label = "Plot IntraCorrelation Scores"), br()),
-                                                             column(width=12, uiOutput("intra_corr_UI"))
+                                                             column(width=12, uiOutput("annotated_heatmap_UI"))
+                                         ),
+                                         shinydashboard::box(title=tagList(shiny::icon("fas fa-filter"), "Intra / Inter correlation"), width=NULL,
+                                                             status="success", solidHeader=TRUE, align="left",
+                                                             collapsible = TRUE, collapsed = TRUE,
+                                                             column(width=4,uiOutput("violin_color")),
+                                                             column(width=4,checkboxInput("add_jitter", shiny::HTML("<b>Add single-cells</b>"), value= FALSE)),
+                                                             column(width=4,uiOutput("jitter_color")),
+                                                             column(width=12, 
+                                                                    uiOutput("intra_corr_UI"))
                                          )
                                   )
                                 )

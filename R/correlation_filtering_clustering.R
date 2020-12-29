@@ -335,8 +335,7 @@ num_cell_before_cor_filt_scExp <- function(scExp)
 #' @examples
 intra_correlation_scExp <- function(scExp_cf, by = c("sample_id",
                                                      "cell_cluster")[1]){
-    stopifnot(is(scExp_cf, "SingleCellExperiment"), by %in% c("sample_id",
-                                                              "cell_cluster"))
+    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(by))
     if (is.null(SingleCellExperiment::reducedDim(scExp, "Cor")))
         stop("ChromSCape::intra_correlation_scExp - 
                 No correlation, run correlation_and_hierarchical_clust_scExp")

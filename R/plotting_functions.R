@@ -340,11 +340,15 @@ plot_intra_correlation_scExp <- function(
     
     samp = intra_correlation_scExp(scExp_cf, by)
     annot = SingleCellExperiment::colData(scExp_cf)
-    p <- ggplot(samp,aes(x=.data[[by]], y=.data$intra_corr,
-                    fill=.data[[by]])) + 
-        geom_violin(alpha=0.8) + theme_classic() +
-        stat_summary(fun=median, geom="point", size=2, color="black") +
-        theme(axis.text.x = element_text(angle=90))
+    if(!is.null(jitter_by)){
+        if(jitter_by != by) samp[,jitter_by] = 
+                annot[,jitter_by][match(rownames(samp),annot$cell_id)]
+    }
+    p <- ggplot(samp) + geom_violin(aes(x=.data[[by]], y=.data$intra_corr,
+                                        fill=.data[[by]]), alpha=0.8) +
+        theme_classic() +
+        theme(axis.text.x = element_text(angle=90)) + 
+        ylab(paste0("Intra-",by," correlation")) + xlab("")
     
     cols = unique(as.character(annot[,paste0(by,"_color")][
         match(rownames(samp),annot$cell_id)]))
@@ -353,12 +357,14 @@ plot_intra_correlation_scExp <- function(
     p <- p + scale_fill_manual(values = cols)
     
     if(!is.null(jitter_by)){
+        
         p <- p + geom_jitter(
-            color = annot[,paste0(jitter_by,"_color")][
-                match(rownames(samp),annot$cell_id)],alpha = 0.45) +
+            aes(x=.data[[by]], y=.data$intra_corr,
+                color = forcats::fct_inorder(.data[[jitter_by]])),
+            alpha = 0.45) +
             scale_color_manual(
-                values = annot[,paste0(jitter_by,"_color")][
-                    match(rownames(samp),annot$cell_id)])
+                values = unique(annot[,paste0(jitter_by,"_color")][
+                    match(rownames(samp),annot$cell_id)]))
     }
     return(p)
 }
