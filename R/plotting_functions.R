@@ -272,7 +272,7 @@ warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
 #' 
 plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
     grDevices::colorRampPalette(c("royalblue", "white", "indianred1")))(256),
-    color_by = NULL, downsample = 5000, seed = 47)
+    color_by = NULL, downsample = 1000, seed = 47, hc_linkage = "ward.D")
 {
     
     stopifnot(is(scExp, "SingleCellExperiment"))
@@ -288,8 +288,16 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
         stop(paste0("ChromSCape::plot_heatmap_scExp - Dendrogram has different",
                     " number of cells than dataset."))
     set.seed(seed)
-    if(ncol(scExp) > downsample) scExp = scExp[,sample(ncol(scExp),
-                                                       downsample,replace = F)]
+    if(ncol(scExp) > downsample) {
+        samp = sample(ncol(scExp),downsample,replace = F)
+        scExp = scExp[,samp]
+        SingleCellExperiment::reducedDim(scExp, "Cor") = 
+            SingleCellExperiment::reducedDim(scExp, "Cor")[,samp]
+        cor_mat = SingleCellExperiment::reducedDim(scExp, "Cor")
+        hc_cor = stats::hclust(stats::as.dist(1 - cor_mat), method = hc_linkage)
+        hc_cor$labels = rep("",length(hc_cor$labels))
+        scExp@metadata[[name_hc]] = hc_cor
+    }
     
     anocol = as.matrix(
         SingleCellExperiment::colData(
