@@ -269,11 +269,18 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                          shinydashboard::box(title=tagList(shiny::icon("fas fa-filter"), "Intra / Inter correlation"), width=NULL,
                                                              status="success", solidHeader=TRUE, align="left",
                                                              collapsible = TRUE, collapsed = TRUE,
-                                                             column(width=4,uiOutput("violin_color")),
-                                                             column(width=4,checkboxInput("add_jitter", shiny::HTML("<b>Add single-cells</b>"), value= FALSE)),
-                                                             column(width=4,uiOutput("jitter_color")),
-                                                             column(width=12, 
-                                                                    uiOutput("intra_corr_UI"))
+                                                             column(12, align="left",
+                                                                    column(width=4,uiOutput("violin_color")),
+                                                                    column(width=4,checkboxInput("add_jitter", shiny::HTML("<b>Add single-cells</b>"), value= FALSE)),
+                                                                    column(width=4,uiOutput("jitter_color")),  br(),br(),br(),br(),br(),
+                                                                    mainPanel(tabsetPanel(id='inter_intra_cor',
+                                                                                          
+                                                                                          tabPanel("Intracorrelation", column(width=12, uiOutput("intra_corr_UI"))),
+                                                                                          tabPanel("Intercorrelation", column(width=12, column(10, uiOutput("reference_group")),
+                                                                                                                              br(), br(), br(), br(), br(),
+                                                                                                                              uiOutput("inter_corr_UI")))
+                                                                                          ))),
+                                                             
                                          )
                                   )
                                 )

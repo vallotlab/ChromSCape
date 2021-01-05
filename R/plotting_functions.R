@@ -357,14 +357,87 @@ plot_intra_correlation_scExp <- function(
     p <- p + scale_fill_manual(values = cols)
     
     if(!is.null(jitter_by)){
-        
-        p <- p + geom_jitter(
-            aes(x=.data[[by]], y=.data$intra_corr,
-                color = forcats::fct_inorder(.data[[jitter_by]])),
-            alpha = 0.45) +
-            scale_color_manual(
-                values = unique(annot[,paste0(jitter_by,"_color")][
-                    match(rownames(samp),annot$cell_id)]))
+        if(jitter_by == "total_counts"){
+            p <- p + geom_jitter(
+                aes(x=.data[[by]], y=.data$intra_corr,
+                    color = .data[[jitter_by]]),
+                alpha = 0.45) +
+                scale_color_gradientn(colours = matlab.like(100))
+            
+        } else{
+            p <- p + geom_jitter(
+                aes(x=.data[[by]], y=.data$intra_corr,
+                    color = forcats::fct_inorder(.data[[jitter_by]])),
+                alpha = 0.45) +
+                scale_color_manual(
+                    values = unique(annot[,paste0(jitter_by,"_color")][
+                        match(rownames(samp),annot$cell_id)]))
+        }
+    }
+    return(p)
+}
+
+#' Violin plot of inter-correlation distribution between one or multiple groups
+#' and one reference group
+#'
+#' @param scExp_cf A SingleCellExperiment
+#' @param by Color by sample_id or cell_cluster
+#' @param jitter_by Add jitter points of another layer
+#'  (cell_cluster or sample_id)
+#' @param downsample Downsample for plotting
+#' @param seed Random seed
+#'
+#' @return A violin plot of inter-correlation
+#' @export
+#'
+#' @examples plot_intra_correlation_scExp(scExp)
+plot_inter_correlation_scExp <- function(
+    scExp_cf, by = c("sample_id", "cell_cluster")[1], jitter_by = NULL,
+    reference_group = unique(scExp_cf[[by]])[1],
+    other_groups = unique(scExp_cf[[by]]),
+    downsample = 5000, seed = 47){
+    
+    set.seed(seed)
+    if(ncol(scExp_cf) > downsample) scExp_cf =
+            scExp_cf[,sample(ncol(scExp_cf),downsample,replace = F)]
+    
+    samp = inter_correlation_scExp(scExp_cf, by, reference_group, other_groups)
+    annot = SingleCellExperiment::colData(scExp_cf)
+    if(!is.null(jitter_by)){
+        samp[,jitter_by] = 
+                annot[,jitter_by][match(rownames(samp),annot$cell_id)]
+    }
+    p <- ggplot(samp) + geom_violin(aes(
+        x=.data[[paste0(by,"_i")]], y=.data[["inter_corr"]],
+                    fill=.data[[paste0(by,"_i")]]), alpha=0.8) +
+        theme_classic() +
+        theme(axis.text.x = element_text(angle=90)) + 
+        ylab(paste0("Inter-",by," correlation")) + xlab("")
+    
+    cols = unique(as.character(annot[,paste0(by,"_color")][
+        match(rownames(samp),annot$cell_id)]))
+    names(cols) = unique(as.character(annot[,by][match(
+        rownames(samp),annot$cell_id)]))
+    
+    p <- p + scale_fill_manual(values = cols)
+    
+    if(!is.null(jitter_by)){
+        if(jitter_by == "total_counts"){
+            p <- p + geom_jitter(
+                aes(x=.data[[paste0(by,"_i")]], y=.data$inter_corr,
+                    color = .data[[jitter_by]]),
+                alpha = 0.45) +
+                scale_color_gradientn(colours = matlab.like(100))
+        } else{
+            p <- p + geom_jitter(
+                aes(x=.data[[paste0(by,"_i")]], y=.data$inter_corr,
+                    color = forcats::fct_inorder(
+                        .data[[jitter_by]])),
+                alpha = 0.45) +
+                scale_color_manual(
+                    values = unique(annot[,paste0(jitter_by,"_color")][
+                        match(rownames(samp),annot$cell_id)]))
+        }
     }
     return(p)
 }

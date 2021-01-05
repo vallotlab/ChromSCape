@@ -327,9 +327,11 @@ num_cell_before_cor_filt_scExp <- function(scExp)
 
 #' Calculate intra correlation between cluster or samples
 #'
-#' @param scExp_cf 
+#' @param scExp_cf A SingleCellExperiment
+#' @param by On which feature to calculate correlation ("sample_id" or 
+#' "cell_cluster")
 #'
-#' @return
+#' @return A data.frame of cell average intra-correlation
 #' @export
 #'
 #' @examples
@@ -359,6 +361,73 @@ intra_correlation_scExp <- function(scExp_cf, by = c("sample_id",
     }
     
     return(intra_corr)
+}
+
+#' Calculate inter correlation between cluster or samples
+#'
+#' @param scExp_cf A SingleCellExperiment
+#' @param by On which feature to calculate correlation ("sample_id" or 
+#' "cell_cluster")
+#' @param reference_group Reference group to calculate correlation with. 
+#' Must be in accordance with "by".
+#' @param other_groups Groups on which to calculate correlation (can contain
+#' multiple groups, and also reference_group). Must be in accordance with "by".
+#'
+#' @return A data.frame of average inter-correlation of cells in other_groups
+#' with cells in reference_group
+#' @export
+#'
+#' @examples
+inter_correlation_scExp <- function(
+    scExp_cf, by = c("sample_id","cell_cluster")[1],
+    reference_group = unique(scExp_cf[[by]])[1],
+    other_groups = unique(scExp_cf[[by]])){
+    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(by))
+    if (is.null(SingleCellExperiment::reducedDim(scExp, "Cor")))
+        stop("ChromSCape::inter_correlation_scExp - 
+                No correlation, run correlation_and_hierarchical_clust_scExp")
+    if (is.null(SingleCellExperiment::reducedDim(scExp, "PCA")))
+        stop("ChromSCape::inter_correlation_scExp - No PCA, 
+                run reduced_dim before filtering.")
+    
+    if (! (reference_group %in% unique(scExp_cf[[by]])) )
+        stop("ChromSCape::inter_correlation_scExp - Wrong reference_group.")
+    if (any(!(other_groups %in% unique(scExp_cf[[by]]))))
+        stop("ChromSCape::inter_correlation_scExp - Wrong reference_group.")
+    
+    # Select groups :
+    sel = (scExp_cf[[by]] %in% c(reference_group, other_groups))
+    scExp_cf = scExp_cf[,sel]
+    
+    # By sample
+    annot = SingleCellExperiment::colData(scExp_cf)
+    pca_t = SingleCellExperiment::reducedDim(scExp_cf,"PCA")
+    cor_mat = reducedDim(scExp_cf,"Cor")
+    
+    inter_corr = data.frame()
+    for(i in unique(annot[,by])){
+        cells_i = as.character(annot$cell_id[which(annot[,by]==i)])
+        for(j in unique(annot[,by])){
+            cells_j = as.character(annot$cell_id[which(annot[,by]==j)])
+            tmp = cor_mat[cells_i,cells_j]
+            tab = data.frame("cells_i" = cells_i,
+                             "by_i" = rep(i,nrow(tmp)),
+                             "by_j" = rep(j,nrow(tmp)),
+                             "inter_corr" = rowMeans(tmp))
+            inter_corr=rbind(inter_corr,tab)
+            
+        }
+    }
+    colnames(inter_corr)[2:3] = c(paste0(by,"_i"), paste0(by,"_j"))
+
+    inter_corr = inter_corr[which(
+        inter_corr[,paste0(by,"_i")] %in% other_groups & 
+            inter_corr[,paste0(by,"_j")] %in% reference_group),]
+    rownames(inter_corr) = inter_corr$cells_i
+    inter_corr$association = forcats::fct_inorder(
+        paste0(inter_corr[,paste0(by,"_i")],"_",inter_corr[,paste0(by,"_j")]))
+    
+    return(inter_corr)
 }
 
 #' Number of cells before & after correlation filtering

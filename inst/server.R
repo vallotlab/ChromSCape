@@ -335,8 +335,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Diff_Analysis_Gene_Sets"))
         write.table(input$annotation, file.path(init$data_folder, 'ChromSCape_analyses', input$new_analysis_name, 'annotation.txt'), row.names = FALSE, col.names = FALSE, quote = FALSE)
         
-        save(datamatrix, annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "scChIP_raw.RData"))
-
+        qs::qsave(datamatrix, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "datamatrix.qs"))
+        qs::qsave(annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "annot_raw.qs"))
+        
         init$available_analyses <- list.dirs(path = file.path(init$data_folder, "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE)
 
         updateSelectInput(session = session, inputId = "selected_analysis",
@@ -646,9 +647,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     scExp. = colors_scExp(scExp(),annotCol = input$color_by,color_by = input$color_by, color_df = color_df)
     scExp(scExp.)
     
-    save("scExp", file = file.path(init$data_folder, "ChromSCape_analyses",
+    qs:qsave(scExp, file = file.path(init$data_folder, "ChromSCape_analyses",
                                    analysis_name(), "Filtering_Normalize_Reduce",
-                                   paste0(input$selected_reduced_dataset,".RData")))
+                                   paste0(input$selected_reduced_dataset,".qs")))
+    
     rm(scExp.)
     rm(color_df)
     gc()
@@ -927,7 +929,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(input$do_annotated_heatmap_plot,
                {
                  if(input$nclust != ""){
-                   output$annotated_heatmap_UI <- renderUI({
+                   output$annotated_heatmap_UI <- renFderUI({
                      
                      output$annotated_heatmap_plot = renderPlot(plot_heatmap_scExp(isolate(scExp_cf())))
                      plotOutput("annotated_heatmap_plot",width = 500,height = 500) %>%
@@ -959,6 +961,29 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
     
     })
+  
+  output$reference_group <- renderUI({
+    req(annotCol_cf(), scExp_cf(), input$violin_color)
+    selectInput("reference_group","Correlate with",
+                choices = unique(scExp_cf()[[input$violin_color]]) )
+  })
+  
+
+  output$inter_corr_UI <- renderUI({
+    req(annotCol_cf(), input$violin_color)
+    
+    if(input$add_jitter) jitter_col = input$jitter_color else jitter_col = NULL
+    output$inter_corr_plot = renderPlotly(
+      plot_inter_correlation_scExp(scExp_cf(), by = input$violin_color,
+                                   jitter_by = jitter_col,
+                                   reference_group = input$reference_group,
+                                   seed = 47))
+    
+    plotly::plotlyOutput("inter_corr_plot",width = 500,height = 500) %>%
+      shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+    
+  })
+  
 #   
 # output$cons_clust_anno_plot <- renderPlot({
 #   if(! is.null(scExp_cf())){
