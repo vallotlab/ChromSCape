@@ -50,10 +50,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                          available_analyses = list.dirs(path = file.path(getwd(), "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE),
                          available_reduced_datasets = NULL)
   reduced_datasets <- reactive({
-    if (is.null(init$available_reduced_datasets)) c() else gsub('.{6}$', '', basename(init$available_reduced_datasets)) })
+    if (is.null(init$available_reduced_datasets)) c() else gsub('.{3}$', '', basename(init$available_reduced_datasets)) })
   
   observeEvent({analysis_name()},{
     init$available_reduced_datasets = get.available.reduced.datasets(analysis_name())
+    print("observeEvent({analysis_name()}")
+    print(init$available_reduced_datasets)
   })
   annotCol <- reactive({
     if("batch_name" %in% colnames(SummarizedExperiment::colData(scExp()))){
@@ -70,12 +72,17 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   get.available.reduced.datasets <- function(selected_analysis){
+    print("get.available.reduced.datasets")
+    print(list.files(path = file.path(init$data_folder, "ChromSCape_analyses", selected_analysis,"Filtering_Normalize_Reduce"), full.names = FALSE, recursive = TRUE,
+                     pattern="[[:print:]]+_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+_(uncorrected|batchCorrected).qs"))
     list.files(path = file.path(init$data_folder, "ChromSCape_analyses", selected_analysis,"Filtering_Normalize_Reduce"), full.names = FALSE, recursive = TRUE,
-               pattern="[[:print:]]+_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+_(uncorrected|batchCorrected).RData")
+               pattern="[[:print:]]+_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+_(uncorrected|batchCorrected).qs")
+    
   }
   
   get.available.filtered.datasets <- function(name, preproc){
-    list.files(path = file.path(init$data_folder, "ChromSCape_analyses", name, "correlation_clustering"), full.names = FALSE, recursive = FALSE, pattern = paste0(preproc, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?.RData"))
+    list.files(path = file.path(init$data_folder, "ChromSCape_analyses", name, "correlation_clustering"),
+               full.names = FALSE, recursive = FALSE, pattern = paste0(preproc, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?.qs"))
   }
   
   able_disable_tab <- function(variables_to_check, tab_id) {
@@ -140,6 +147,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
            
            init$available_analyses <- list.dirs(path = file.path(init$data_folder, "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE)
            init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
+           print("observeEvent({ input$path_cookie}")
+           print(init$available_reduced_datasets)
          }
        }
       })
@@ -159,7 +168,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         path = file.path(init$data_folder, "ChromSCape_analyses"),
         full.names = FALSE, recursive = FALSE)
       init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
-
+      print("observeEvent({ input$data_folder}")
+      print(init$available_reduced_datasets)
       if(.Platform$OS.type != "windows"){
         js$save_cookie(init$data_folder)
       }
@@ -355,11 +365,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$selected_analysis, {  # load precompiled dataset and update coverage plot
     if(!is.null(input$selected_analysis) & input$selected_analysis != ""){
-      myData = new.env()
-      load(file.path(init$data_folder,"ChromSCape_analyses", input$selected_analysis, "scChIP_raw.RData"), envir = myData)
-      init$datamatrix <- myData$datamatrix
-      init$annot_raw <- myData$annot_raw
-      
+      init$datamatrix <- qs::qread(file.path(init$data_folder,"ChromSCape_analyses", input$selected_analysis, "datamatrix.qs"))
+      init$annot_raw <-  qs::qread(file.path(init$data_folder,"ChromSCape_analyses", input$selected_analysis, "annot_raw.qs"))
     }
   })
   
@@ -464,6 +471,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                 reactive({batch_sels}), reactive({input$run_tsne}), reactive({subsample_n}))
     
     init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
+    print("observeEvent({ input$filter_normalize_reduce}")
+    print(init$available_reduced_datasets)
     updateActionButton(session, "filter_normalize_reduce", label="Processed and saved successfully", icon = icon("check-circle"))
     
   })
@@ -487,13 +496,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     
     
     t1 = system.time({
-    myData = new.env()
-    load(filename_sel, envir = myData)
-    if(is.reactive(myData$scExp)) {
-      myData$scExp = isolate(myData$scExp())
+    scExp. = qs::qread(filename_sel)
+    if(is.reactive(scExp.)) {
+      print("Is reactive scExp.")
+      scExp. = isolate(scExp.())
     }
-    scExp(myData$scExp) # retrieve filtered scExp
-    rm(myData)
+    print("scExp.")
+    print(scExp.)
+    scExp(scExp.) # retrieve filtered scExp
+    rm(scExp.)
     gc()
     })
     cat("Loaded reduced data in ",t1[3]," secs\n")
@@ -647,7 +658,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     scExp. = colors_scExp(scExp(),annotCol = input$color_by,color_by = input$color_by, color_df = color_df)
     scExp(scExp.)
     
-    qs:qsave(scExp, file = file.path(init$data_folder, "ChromSCape_analyses",
+    qs::qsave(scExp, file = file.path(init$data_folder, "ChromSCape_analyses",
                                    analysis_name(), "Filtering_Normalize_Reduce",
                                    paste0(input$selected_reduced_dataset,".qs")))
     
@@ -692,12 +703,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                if(input$tabs == "cons_clustering"){
                  file = file.path(init$data_folder, "ChromSCape_analyses",
                                   analysis_name(), "correlation_clustering",
-                                  paste0(selected_filtered_dataset(),".RData"))
+                                  paste0(selected_filtered_dataset(),".qs"))
                  if(file.exists(file)){
-                   myData = new.env()
-                   load(file, envir = myData)
-                   scExp_cf(myData$data$scExp_cf)
-                   rm(myData)
+                   data = qs::qread(file)
+                   scExp_cf(data$scExp_cf)
+                   rm(data)
                    gc()
 
                  } else {
@@ -739,10 +749,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                    gc()
                    file = file.path(init$data_folder, "ChromSCape_analyses",
                                     analysis_name(), "correlation_clustering",
-                                    paste0(selected_filtered_dataset(),".RData"))
+                                    paste0(selected_filtered_dataset(),".qs"))
                    if(!file.exists(file)){
                      data = list("scExp_cf" = scExp_cf())
-                     save(data,file=file )
+                     qs::qsave(data,file=file )
                      rm(data)
                      gc()
 
@@ -813,8 +823,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       gc()
       incProgress(amount=0.2, detail=paste("Saving"))
       data = list("scExp_cf" = scExp_cf())
-      save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
-                                              paste0(input$selected_reduced_dataset,  ".RData")))
+      qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
+                                              paste0(input$selected_reduced_dataset, ".qs")))
       incProgress(amount=0.2, detail=paste("Finished"))
       rm(data)
       gc()
@@ -890,8 +900,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                           prefix = plotting_directory()))
       gc()
       data = list("scExp_cf" = scExp_cf())
-      save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
-                                  paste0(input$selected_reduced_dataset, ".RData")))
+      qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
+                                  paste0(input$selected_reduced_dataset, ".qs")))
       rm(data)
       gc()
       clust$clust_pdf <- NULL  # needed in order to update the pdf output
@@ -929,7 +939,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(input$do_annotated_heatmap_plot,
                {
                  if(input$nclust != ""){
-                   output$annotated_heatmap_UI <- renFderUI({
+                   output$annotated_heatmap_UI <- renderUI({
                      
                      output$annotated_heatmap_plot = renderPlot(plot_heatmap_scExp(isolate(scExp_cf())))
                      plotOutput("annotated_heatmap_plot",width = 500,height = 500) %>%
@@ -1248,8 +1258,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         if(sum(checkBams)==0){
           scExp_cf(subset_bam_call_peaks(scExp_cf(), odir, inputBams, as.numeric(input$pc_stat_value), annotation_id(), input$peak_distance_to_merge))
           data = list("scExp_cf" = scExp_cf())
-          save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
-                                      paste0(input$selected_reduced_dataset, ".RData")))
+          qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
+                                      paste0(input$selected_reduced_dataset, ".qs")))
           pc$new <- Sys.time()
           updateActionButton(session, "do_pc", label="Finished successfully", icon = icon("check-circle"))
         }
@@ -1360,13 +1370,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$cdiff.th)){
         filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                               paste0(selected_filtered_dataset(), "_", input$nclust,
-                                     "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData"))
+                                     "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".qs"))
         
         if(file.exists(filename)){
-          myData = new.env()
-          load(filename, envir = myData)
-          scExp_cf(myData$data$scExp_cf)
-          rm(myData)
+          data = qs::qread(filename)
+          scExp_cf(data$scExp_cf)
+          rm(data)
           gc()
         } else {
           NULL
@@ -1389,9 +1398,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       gc()
       incProgress(amount = 0.6, detail = paste("Finishing DA..."))
       data = list("scExp_cf" = scExp_cf())
-      save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
+      qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                                   paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
-                                         "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData")))
+                                         "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".qs")))
       rm(data)
       gc()
       incProgress(amount = 0.2, detail = paste("Saving DA"))
@@ -1593,9 +1602,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       gc()
       incProgress(amount = 0.6, detail = paste("Finishing Pathway Enrichment Analysis..."))
       data = list("scExp_cf" = scExp_cf() )
-      save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
+      qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                                   paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
-                                         "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData")))
+                                         "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".qs")))
       rm(data)
       gc()
       incProgress(amount = 0.6, detail = paste("Saving Pathway Enrichment Analysis"))
@@ -1736,6 +1745,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       unlink(file.path(init$data_folder, "ChromSCape_analyses", input$selected_delete_analysis), recursive=TRUE)
       init$available_analyses <- list.dirs(path=file.path(init$data_folder, "ChromSCape_analyses"), full.names=FALSE, recursive=FALSE)
       init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
+      print("observeEvent({ input$delete_analysis}")
+      print(init$available_reduced_datasets)
       incProgress(amount=0.5, detail=paste("... finished"))
     })
     showNotification("Data set successfully deleted.", duration=5, closeButton=TRUE, type="warning")
@@ -1747,9 +1758,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     
     if(!is.null(scExp()) & !is.null(input$selected_reduced_dataset)){
       scExp = isolate(scExp())
-      save(scExp, file = file.path(init$data_folder, "ChromSCape_analyses",
+      qs::qsave(scExp, file = file.path(init$data_folder, "ChromSCape_analyses",
                                    analysis_name(), "Filtering_Normalize_Reduce",
-                                   paste0(input$selected_reduced_dataset,".RData")))
+                                   paste0(input$selected_reduced_dataset,".qs")))
       
     }
     if(!is.null(scExp_cf()) & !is.null(selected_filtered_dataset())){
@@ -1763,14 +1774,14 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                            selected_filtered_dataset(), "_",
                            length(unique(scExp_cf()$cell_cluster)),
                            "_", input$qval.th, "_", input$cdiff.th, "_",
-                           input$de_type, ".RData"))
+                           input$de_type, ".qs"))
         } else{
           dir = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
                           "correlation_clustering",
                          paste0(selected_filtered_dataset(), 
-                                 ".RData"))
+                                 ".qs"))
         }
-        save(scExp, file = dir)
+        qs::qsave(scExp, file = dir)
       } 
       
     }
