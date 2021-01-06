@@ -114,7 +114,7 @@ fast_heatmap <- function(scExp_cf, n_cell_per_metacell = 15, cluster = NULL,
         ceiling(ncol(scExp_cf)/n_cell_per_metacell))
     scExp_cf. = create_scExp(raw$mat,raw$annot)
     scExp_cf.$cell_id = out$hc_cor$labels
-    reducedDim(scExp_cf.,"Cor") = out$cor_mat
+    SingleCellExperiment::reducedDim(scExp_cf.,"Cor") = out$cor_mat
     scExp_cf.@metadata$hc_cor = out$hc_cor
     
     if(!is.null(cluster)){
