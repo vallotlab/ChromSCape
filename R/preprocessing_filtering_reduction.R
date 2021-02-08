@@ -727,6 +727,7 @@ generate_count_matrix <- function(cells, features, sparse,
     return(mat)
 }
 
+
 #' Read single-cell matrix(ces) into scExp
 #'
 #' Combine one or multiple matrices together to create a sparse matrix and cell
@@ -757,17 +758,17 @@ generate_count_matrix <- function(cells, features, sparse,
 import_scExp <- function(file_names,
                         path_to_matrix = NULL) {
     stopifnot(is.character(file_names))
-    if (length(grep("(.tsv$)|(.txt$)|(.csv$)", file_names)) 
+    if (length(grep("(.tsv$)|(.txt$)|(.csv$)|(.gz$)", file_names)) 
         < length(file_names))
         stop(paste0("ChromSCape::import_scExp - Matrix files must be in",
-                    " .txt or .tsv format."))
+                    " .txt, .csv or .tsv format."))
     if (is.null(path_to_matrix)) path_to_matrix = file_names
     if (FALSE %in% as.logical(lapply(path_to_matrix, file.exists))) 
         stop("ChromSCape::import_scExp - can't find one of the matrix files.")
-    
     datamatrix = annot_raw = NULL
     for (i in seq_along(file_names)) {
-        sample_name <- gsub('.{4}$', '', basename(file_names[i]))
+        sample_name <- gsub('(.tsv$)|(.txt$)|(.csv$)', "", gsub('(.gz$)', '',
+                                               basename(file_names[i])))
         separator <- separator_count_mat(path_to_matrix[i])
         format_test = read.table(path_to_matrix[i], header = TRUE,
                                 sep = separator, nrows = 5)

@@ -180,7 +180,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$input_data_ui <- renderUI({
     if(input$data_choice_box== "count_mat"){
       column(12, br(),fileInput("datafile_matrix", "Upload all data matrices (.txt, .tsv or .csv) :",
-                multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv", ".csv")),
+                multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv", ".csv", ".gz")),
              checkboxInput("is_combined_mat", "Single Multi-sample count matrix ?",value = FALSE),
              uiOutput("nb_samples_mat")
              )
