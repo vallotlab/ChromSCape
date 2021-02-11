@@ -26,9 +26,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                         pca = FALSE,
                                         affectation = FALSE,
                                         diff_my_res = FALSE)) #list of all required items to unlock a tab
-  # for(tab in tab_vector){
-  #   js$disableTab(tab) #Disabling all tabs but the first one
-  # }
+  for(tab in tab_vector){
+    js$disableTab(tab) #Disabling all tabs but the first one
+  }
 
   
   observeEvent(input$startHelp,{
