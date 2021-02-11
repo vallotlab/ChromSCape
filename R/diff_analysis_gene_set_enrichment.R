@@ -42,9 +42,10 @@
 #' 
 differential_analysis_scExp = function(
     scExp, de_type = "one_vs_rest", method = "wilcox", qval.th = 0.01, 
-    cdiff.th = 1, block = NULL)
+    cdiff.th = 1, block = NULL, group = NULL, ref = NULL)
 {
-    warning_DA(scExp, de_type, method, qval.th, cdiff.th, block)
+    warning_DA(scExp, de_type, method, qval.th, cdiff.th, block,
+               group, ref)
     
     if (isFALSE(block)) block = NULL
     nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
@@ -58,8 +59,11 @@ differential_analysis_scExp = function(
     if (de_type == "one_vs_rest"){
         out <- DA_one_vs_rest_fun(affectation, nclust, counts,
                                 method, feature, block)
-    } else {
+    } else if(de_type == "pairwise"){
         out <- DA_pairwise(affectation,nclust, counts, method, feature, block)
+    } else if(de_type == "custom"){
+        out <- DA_custom(affectation, counts, method, feature, block,
+                         ref, group)
     }
     res <- out$res
     groups <- out$groups
@@ -96,24 +100,35 @@ differential_analysis_scExp = function(
 #' @param cdiff.th Fold change threshold. (1)
 #' @param method Wilcoxon or edgerGLM
 #' @param block Use batches as blocking factors ?
+#' @param group If de_type is custom, the group to compare (data.frame), must
+#' be a one-column data.frame with cell_clusters or sample_id as character in 
+#' rows
+#' @param ref If de_type is custom, the reference to compare (data.frame), must
+#' be a one-column data.frame with cell_clusters or sample_id as character in 
+#' rows
 #'
 #' @return Warnings or Errors if the input are not correct
-warning_DA <- function(scExp, de_type, method, qval.th, cdiff.th, block){
+warning_DA <- function(scExp, de_type, method, qval.th, cdiff.th, block,
+                       group, ref){
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(de_type),
             is.numeric(qval.th), is.numeric(cdiff.th))
-    if (!de_type %in% c("one_vs_rest", "pairwise")) 
-        stop("ChromSCape::run_differential_analysis_scExp - de_type",
-                    "must be 'one_vs_rest' or 'pairwise'.")
+    if (!de_type %in% c("one_vs_rest", "pairwise", "custom")) 
+        stop("ChromSCape::run_differential_analysis_scExp - de_type ",
+                    "must be 'one_vs_rest', 'pairwise' 'custom'.")
     if (!method %in% c("wilcox", "neg.binomial")) 
         stop("ChromSCape::run_differential_analysis_scExp - method must",
                     "be 'wilcox' or 'neg.binomial'.")
-    if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))) 
+    if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))
+        & de_type != "custom") 
         stop("ChromSCape::run_differential_analysis_scExp - scExp ",
                     "object must have selected number of clusters.")
     if (FALSE %in% (c("chr", "start", "end") %in% 
                     colnames(SingleCellExperiment::rowData(scExp)))) 
         stop("ChromSCape::run_differential_analysis_scExp - Please run ",
                     "feature_annotation_scExp first.")
+    if(de_type == "custom"){
+        stopifnot(is.data.frame(group), is.data.frame(ref))
+    }
 }
 
 #' Differential Analysis in 'One vs Rest' mode
@@ -217,6 +232,56 @@ DA_pairwise <- function(affectation,nclust, counts,
     return(out)
 }
 
+#' Differential Analysis in 'One vs Rest' mode
+#'
+#' @param affectation An annotation data.frame with cell_id and cell_cluster
+#'   columns
+#' @param nclust Number of clusters
+#' @param counts Count matrix
+#' @param method DA method : Wilcoxon or EdgeR
+#' @param feature Feature tables
+#' @param block Blocking feature
+#'
+#' @return A list of results, groups compared and references
+#'   
+DA_custom <- function(affectation, counts, method, feature,
+                               block, ref, group){
+    stopifnot(is.data.frame(affectation),is.integer(nclust),
+              is(counts,"dgCMatrix")|is.matrix(counts), is.character(method),
+              is.data.frame(feature), is.data.frame(ref), is.data.frame(group))
+    # compare each cluster to all the rest
+    groups = colnames(group)
+    mygps = unique(c(affectation[which(affectation$cell_cluster %in% group[,1]
+                        | affectation$sample_id %in% group[,1]), "cell_id"]))
+    mygps = list( "a" = mygps)
+    names(mygps) = groups
+    refs = colnames(ref)
+    myrefs = unique(c(affectation[which(affectation$cell_cluster %in% ref[,1]
+                        | affectation$sample_id %in% ref[,1]), "cell_id"]))
+    myrefs = list("a" = myrefs)
+    names(myrefs) = refs
+    print("inside DA_custom")
+    print(ref)
+    print(refs)
+    print(group)
+    print(groups)
+    if(method == "wilcox"){ res = CompareWilcox(
+        dataMat = counts, annot = affectation, ref_group = myrefs, 
+        groups = mygps, featureTab = feature, block = block)
+    } else {
+        res = CompareedgeRGLM( dataMat = counts, 
+                               annot = affectation, ref_group = myrefs,
+                               groups = mygps, featureTab = feature)
+        colnames(res)[
+            grep("logCPM",colnames(res))] = gsub(
+                "logCPM","Count",colnames(res)[grep("logCPM",colnames(res))])
+        colnames(res)[grep("log2FC",colnames(res))] = gsub(
+            "log2FC","cdiff",colnames(res)[grep("log2FC",colnames(res))])
+        
+    }
+    out <- list("res" = res, "refs" = refs, "groups" = groups)
+    return(out)
+}
 
 #' Run pairwise tests
 #'

@@ -26,9 +26,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                         pca = FALSE,
                                         affectation = FALSE,
                                         diff_my_res = FALSE)) #list of all required items to unlock a tab
-  for(tab in tab_vector){
-    js$disableTab(tab) #Disabling all tabs but the first one
-  }
+  # for(tab in tab_vector){
+  #   js$disableTab(tab) #Disabling all tabs but the first one
+  # }
 
   
   observeEvent(input$startHelp,{
@@ -48,7 +48,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   #Global Functions
   init <- reactiveValues(data_folder =  getwd(), datamatrix = data.frame(), annot_raw = data.frame(),
                          available_analyses = list.dirs(path = file.path(getwd(), "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE),
-                         available_reduced_datasets = NULL)
+                         available_reduced_datasets = NULL, available_DA_GSA_datasets = NULL)
   reduced_datasets <- reactive({
     if (is.null(init$available_reduced_datasets)) c() else gsub('.{3}$', '', basename(init$available_reduced_datasets)) })
   
@@ -78,11 +78,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     list.files(path = file.path(init$data_folder, "ChromSCape_analyses", selected_analysis,"Filtering_Normalize_Reduce"), full.names = FALSE, recursive = TRUE,
                pattern="[[:print:]]+_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+_(uncorrected|batchCorrected).qs")
     
-  }
-  
-  get.available.filtered.datasets <- function(name, preproc){
-    list.files(path = file.path(init$data_folder, "ChromSCape_analyses", name, "correlation_clustering"),
-               full.names = FALSE, recursive = FALSE, pattern = paste0(preproc, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?.qs"))
   }
   
   able_disable_tab <- function(variables_to_check, tab_id) {
@@ -1328,6 +1323,43 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   # 6. Differential analysis
   ###############################################################
   
+  get.available.DA_GSEA.datasets <- function(name, preproc){
+    list.files(path = file.path(init$data_folder, "ChromSCape_analyses", name, "Diff_Analysis_Gene_Sets"),
+               full.names = FALSE, recursive = FALSE, pattern = paste0(preproc, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+_"))
+  }
+  
+  observeEvent(c(input$qval.th, input$tabs, input$cdiff.th, input$de_type, selected_filtered_dataset()), priority = 10,{
+    if(input$tabs == "diff_analysis"){
+    init$available_DA_GSA_datasets = get.available.DA_GSEA.datasets(analysis_name(), input$selected_reduced_dataset)
+    }
+  })
+  
+  DA_GSA_datasets <- reactive({
+  if (is.null(init$available_DA_GSA_datasets)) c() else gsub('.{3}$', '', basename(init$available_DA_GSA_datasets)) })
+  
+  output$selected_DA_GSA_dataset <- renderUI({ 
+    selectInput("selected_DA_GSA_dataset", "Select set with Differential Analysis:",
+                choices = DA_GSA_datasets()) 
+  })
+  
+  observeEvent(input$selected_DA_GSA_dataset, { # load reduced data set to work with on next pages
+    req(input$selected_DA_GSA_dataset)
+  
+    file_index <- match(c(input$selected_DA_GSA_dataset), DA_GSA_datasets())
+    filename_sel <- file.path(init$data_folder, "ChromSCape_analyses", 
+                              analysis_name(),"Diff_Analysis_Gene_Sets",
+                              init$available_DA_GSA_datasets[file_index])
+    t1 = system.time({
+      scExp_cf. = qs::qread(filename_sel)
+      if(is.reactive(scExp_cf.)) {
+        scExp_cf. = isolate(scExp_cf.())
+      }
+      scExp_cf(scExp_cf.$scExp_cf) # retrieve filtered scExp
+      rm(scExp_cf.)
+    })
+    cat("Loaded reduced data in ",t1[3]," secs\n")
+  })
+
   output$diff_analysis_info <- renderText({"Differential analysis is performed using
     the cluster assignment obtained with the Cluster Cells module. To change the
     partition of the datasets - number of k clusters - go back to this module and
@@ -1335,7 +1367,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     User can choose either a non-parametric test (Wilcoxon) or a parametric test
     (here edgeR GLM) depending on the observed distribution of the reads."})
   output$selected_k <- renderUI({
-    HTML(paste0("<h3><b>Number of clusters selected  = ", dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster),"</b></h3>"))
+    req(scExp_cf())
+    HTML(paste0("<h3><b>Number of clusters selected  = ", 
+                                         dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster),"</b></h3>"))
   })
   # output$only_contrib_cell_ui <- renderUI({
   #   if("icl" %in% names(scExp_cf()@metadata) && !is.null(scExp_cf()@metadata$icl)){
@@ -1368,9 +1402,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(c(input$qval.th, input$tabs, input$cdiff.th, input$de_type, selected_filtered_dataset()), priority = 10,{
     if(input$tabs == "diff_analysis"){
       if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$cdiff.th)){
+        DA_GSA_suffix = input$de_type
+        if(input$de_type == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
+                                                             gsub("[^[:alnum:]|_]","",input$name_ref))
         filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                               paste0(selected_filtered_dataset(), "_", input$nclust,
-                                     "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".qs"))
+                                     "_", input$qval.th, "_", input$cdiff.th, "_", DA_GSA_suffix, ".qs"))
         
         if(file.exists(filename)){
           data = qs::qread(filename)
@@ -1386,79 +1423,110 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$custom_da_ref <- renderUI({
     req(input$de_type)
     if(input$de_type == "custom"){
-      shiny::radioButtons("ref_type","Reference type", choiceNames = c("sample_id","cell_cluster"))
+      shiny::radioButtons("ref_type","Reference type", choices = c("sample_id","cell_cluster"))
     }
   })
-  output$custom_da_sample <- renderUI({
+  output$custom_da_group <- renderUI({
     req(input$de_type)
     if(input$de_type == "custom"){
-      shiny::radioButtons("sample_type","Sample type", choices= c("sample_id","cell_cluster"))
+      shiny::radioButtons("group_type","Group type", choices= c("sample_id","cell_cluster"))
     }
   })
   
   output$ref_choice <- renderUI({
-    req(annotCol_cf(), input$ref_type)
-    if(input$ref_type == "sample_id"){
-      choices = unique(scExp_cf()$sample_id)
-      selectInput("ref_choice","Reference sample(s)", choices= choices, 
-                  multiple = TRUE)
-    } else if(input$ref_type == "cell_cluster"){
-      choices = unique(scExp_cf()$cell_cluster)
-      selectInput("ref_choice","Reference cluster(s)", choices=choices,
-                  multiple = TRUE)
-    } else{NULL}
-  })
-  output$sample_choice <- renderUI({
-    req(annotCol_cf(), input$sample_type)
-    if(input$sample_type == "sample_id"){
-      choices = unique(scExp_cf()$sample_id)
-      selectInput("sample_choice","Sample sample(s)", choices= choices, 
-                  multiple = TRUE)
-    } else if(input$sample_type == "cell_cluster"){
-      choices = unique(scExp_cf()$cell_cluster)
-      selectInput("sample_choice","Sample cluster(s)", choices=choices,
-                  multiple = TRUE)
-    } else{ NULL}
+    req(scExp_cf(), input$ref_type, input$de_type)
+    if(input$de_type == "custom"){
+      if(input$ref_type == "sample_id"){
+        choices = unique(scExp_cf()$sample_id)
+        selectInput("ref_choice","Reference sample(s)", choices= choices, 
+                    multiple = TRUE)
+      } else if(input$ref_type == "cell_cluster"){
+        choices = unique(scExp_cf()$cell_cluster)
+        selectInput("ref_choice","Reference cluster(s)", choices=choices,
+                    multiple = TRUE)
+      } else{NULL}
+    }
   })
   
-  # output$intra_corr_UI <- renderUI({
-  #   req(annotCol_cf(), input$violin_color)
-  #   
-  #   if(input$add_jitter) jitter_col = input$jitter_color else jitter_col = NULL
-  #   
-  #   output$intra_corr_plot = renderPlotly(
-  #     plot_intra_correlation_scExp(scExp_cf(), by = input$violin_color,
-  #                                  jitter_by = jitter_col, seed = 47))
-  #   plotly::plotlyOutput("intra_corr_plot",width = 500,height = 500) %>%
-  #     shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
-  #   
-  # })
-  # 
-  # output$reference_group <- renderUI({
-  #   req(annotCol_cf(), scExp_cf(), input$violin_color)
-  #   selectInput("reference_group","Correlate with",
-  #               choices = unique(scExp_cf()[[input$violin_color]]) )
-  # })
+  output$group_choice <- renderUI({
+    req(scExp_cf(), input$group_type,input$de_type)
+    if(input$de_type == "custom"){
+      if(input$group_type == "sample_id"){
+        choices = unique(scExp_cf()$sample_id)
+        selectInput("group_choice","Group sample(s)", choices= choices, 
+                    multiple = TRUE)
+      } else if(input$group_type == "cell_cluster"){
+        choices = unique(scExp_cf()$cell_cluster)
+        selectInput("group_choice","Group cluster(s)", choices=choices,
+                    multiple = TRUE)
+      } else{ NULL}
+    }
+  })
   
-  observeEvent(input$do_wilcox, {  # perform differential analysis based on wilcoxon test
+  output$text_vs <- renderUI({
+    req(input$de_type)
+    if(input$de_type == "custom") h3(" VS ")
+  })
+  
+  output$name_group <- renderUI({
+    req(input$de_type)
+    if(input$de_type == "custom") textInput("name_group", label = "Name Group:", value = "group")
+  })
+  
+  output$name_ref <- renderUI({
+    req(input$de_type)
+    if(input$de_type == "custom") textInput("name_ref", label = "Name Reference:", value = "ref")
+  })
+  
+  observeEvent(input$run_DA, {  # perform differential analysis based on wilcoxon test
+    if(input$de_type == "custom"){
+      if(all.equal(input$group_choice, input$ref_choice)){
+        showNotification(paste0("Warning : Please select different group and references."),
+                         duration = 7, closeButton = TRUE, type="warning")
+        return(0)
+      }
+  }
     withProgress(message='Performing differential analysis...', value = 0, {
       incProgress(amount = 0.2, detail = paste("Initializing DA"))
       if(batchUsed()) block = TRUE else block = FALSE
       gc()
+      group = ""
+      ref = ""
+      if(input$de_type == "custom"){
+        group = data.frame(input$group_choice)
+        ref = data.frame(input$ref_choice)
+        colnames(group) = gsub("[^[:alnum:]|_]","",input$name_group)
+        colnames(ref) = gsub("[^[:alnum:]|_]","",input$name_ref)
+      }
+
       scExp_cf(differential_analysis_scExp(scExp = scExp_cf(),
                                            method= input$da_method,
                                            de_type = input$de_type,
                                            cdiff.th = input$cdiff.th,
                                            qval.th = input$qval.th,
-                                           block = block)) 
+                                           block = block,
+                                           group = group,
+                                           ref = ref)) 
       gc()
       incProgress(amount = 0.6, detail = paste("Finishing DA..."))
       data = list("scExp_cf" = scExp_cf())
+      DA_GSA_suffix = input$de_type
+      if(input$de_type == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
+                                                           gsub("[^[:alnum:]|_]","",input$name_ref))
+      
+      suffix = paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
+             "_", input$qval.th, "_", input$cdiff.th, "_", DA_GSA_suffix, ".qs")
+      
       qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
-                                  paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
-                                         "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".qs")))
+                                       suffix))
       rm(data)
       gc()
+      init$available_DA_GSA_datasets = get.available.DA_GSEA.datasets(analysis_name(), input$selected_reduced_dataset)
+
+      updateSelectInput(session = session, inputId = "selected_DA_GSA_dataset",
+                        label =  "Select set with Differential Analysis:",
+                        choices = DA_GSA_datasets(),
+                        selected =  gsub(".qs$","",suffix))
       incProgress(amount = 0.2, detail = paste("Saving DA"))
     })
   })
@@ -1501,9 +1569,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     })
   
   output$da_table <- DT::renderDataTable({
-    req(input$gpsamp)
+    req(input$gpsamp, scExp_cf())
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
+        if(input$gpsamp %in% scExp_cf()@metadata$diff$groups){
         diff = scExp_cf()@metadata$diff$res[,-grep("Rank|pval|ID",colnames(scExp_cf()@metadata$diff$res))]
         if(!is.null(SummarizedExperiment::rowRanges(scExp_cf())$Gene)){
           diff = cbind(SummarizedExperiment::rowRanges(scExp_cf())$distanceToTSS, diff)
@@ -1523,6 +1592,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                       rownames = FALSE, autoHideNavigation = TRUE,
                       )
       }
+      }
     }
   })
   
@@ -1539,7 +1609,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
         shinydashboard::box(title="Detailed differential analysis per cluster", width = NULL, status="success", solidHeader = TRUE,
-            column(4, align="left", selectInput("gpsamp", "Select cluster:", choices = scExp_cf()@metadata$diff$groups)),
+            column(4, align="left", selectInput("gpsamp", "Select group:", choices = scExp_cf()@metadata$diff$groups)),
             column(4, align="left", downloadButton("download_da_table", "Download table")),
             column(12, align="left", div(style = 'overflow-x: scroll', DT::dataTableOutput('da_table')), br()),
             column(12, align="left", plotOutput("h1_prop", height = 300, width = 500),
@@ -1551,10 +1621,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   output$h1_prop <- renderPlot({
+    req(scExp_cf())
     if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$diff)){
-        plot_differential_H1_scExp(scExp_cf(), input$gpsamp)
-      }  
+      if(input$gpsamp %in% scExp_cf()@metadata$diff$groups){
+        if(!is.null(scExp_cf()@metadata$diff)){
+          plot_differential_H1_scExp(scExp_cf(), input$gpsamp)
+        }  
+      }
     }
   })
   
@@ -1569,10 +1642,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   output$da_volcano <- renderPlot({
+    req(scExp_cf())
     if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$diff)){
-        plot_differential_volcano_scExp(scExp_cf(),cell_cluster = input$gpsamp,
-                                        cdiff.th = input$cdiff.th, qval.th = input$qval.th)
+      if(input$gpsamp %in% scExp_cf()@metadata$diff$groups){
+        if(!is.null(scExp_cf()@metadata$diff)){
+          plot_differential_volcano_scExp(scExp_cf(),cell_cluster = input$gpsamp,
+                                          cdiff.th = input$cdiff.th, qval.th = input$qval.th)
+        }
       }
     }
   })
@@ -1666,9 +1742,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       gc()
       incProgress(amount = 0.6, detail = paste("Finishing Pathway Enrichment Analysis..."))
       data = list("scExp_cf" = scExp_cf() )
+      DA_GSA_suffix = input$de_type
+      if(input$de_type == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
+                                                           gsub("[^[:alnum:]|_]","",input$name_ref))
       qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                                   paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
-                                         "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".qs")))
+                                         "_", input$qval.th, "_", input$cdiff.th, "_", DA_GSA_suffix, ".qs")))
       rm(data)
       gc()
       incProgress(amount = 0.6, detail = paste("Saving Pathway Enrichment Analysis"))
