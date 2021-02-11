@@ -666,24 +666,23 @@ choose_cluster_scExp <- function(scExp, nclust = 3, consensus = TRUE,
 #'
 num_cell_in_cluster_scExp <- function(scExp){
     stopifnot(is(scExp, "SingleCellExperiment"))
-    table_raw <- as.data.frame.matrix(table(as.data.frame(
+    table_raw <- as.data.frame.matrix(t(table(as.data.frame(
         SingleCellExperiment::colData(scExp))[, c("cell_cluster", "sample_id")
-                                            ]))
+                                            ])))
     ord =  as.character(unique(SingleCellExperiment::colData(
         scExp)[, "sample_id"]))
-    table_raw = table_raw[, match(ord, colnames(table_raw)), drop = FALSE]
+    table_raw = table_raw[match(ord, rownames(table_raw)), , drop = FALSE]
     chi <- suppressWarnings(
         stats::chisq.test(x = as.matrix(table_raw), correct = FALSE))
     chi_pvalues = c()
-    for (i in seq_len((dim(as.matrix(table_raw))[1]))){
-        contingency_tab = rbind(table_raw[i,], colSums(table_raw))
+    for (i in seq_len((dim(as.matrix(table_raw))[2]))){
+        contingency_tab = rbind(table_raw[,i], colSums(table_raw))
         chi <- suppressWarnings(stats::chisq.test(
             x = contingency_tab, correct = FALSE))
-        chi_pvalues[i] = chi$p.value
-    }
+        chi_pvalues[i] = chi$p.value}
     tab <- table_raw
     if (length(unique(SingleCellExperiment::colData(scExp)$sample_id)) == 1)
-        chi_pvalues = rep(1, dim(as.matrix(table_raw))[1])
+        chi_pvalues = rep(1, dim(as.matrix(table_raw))[2])
     chi_pvalues = round(chi_pvalues, 5)
     chi_pvalues[which(chi_pvalues == 0)] <- "<0.00001"
     chi_pvalues = c(chi_pvalues, "")
@@ -691,26 +690,27 @@ num_cell_in_cluster_scExp <- function(scExp){
         unique(SingleCellExperiment::colData(scExp)[, "cell_cluster_color"]))
     colors_sample_id = col2hex(
         unique(SingleCellExperiment::colData(scExp)[, "sample_id_color"]))
-    tab <- rbind(tab, colSums(table_raw))
-    tab <- cbind(tab, `#Cells` = c(Matrix::rowSums(table_raw),
-                                sum(Matrix::rowSums(table_raw))))
-    tab <- cbind(tab, `p-value` = chi_pvalues)
+    tab <- cbind(tab, rowSums(table_raw))
+    tab <- rbind(tab, `#Cells` = c(Matrix::colSums(table_raw),
+                                sum(Matrix::colSums(table_raw))))
+    tab <- rbind(tab, `p-value` = chi_pvalues)
     tab <- as.data.frame(
-        cbind(Cluster = c(rownames(tab)[seq_along(rownames(tab))-1], ""), tab))
-    tab$Cluster = as.character(tab$Cluster)
-    rownames(tab) <- NULL
-    tab = rbind(rep("", nrow(tab)), tab[(seq_len(nrow(tab))),])
+        rbind(Cluster = c(colnames(tab)[seq_along(colnames(tab))-1], ""), tab))
+    tab["Cluster",] = as.character(tab["Cluster",])
+    tab = cbind(rep("", nrow(tab)), tab[,(seq_len(ncol(tab)))])
     samples = kableExtra::cell_spec(
-        colnames(tab)[2:(length(colors_sample_id) + 1)], color = "white",
-        bold = TRUE, background = colors_sample_id)
-    tab[1, 2:(length(colors_sample_id) + 1)] = samples
-    colnames(tab)[2:(length(colors_sample_id) + 1)] = rep(
-        "", length(colors_sample_id))
-    tab[2:(
-        length(colors_chromatin_group) + 1), "Cluster"] = kableExtra::cell_spec(
-            tab[2:(length(colors_chromatin_group) +1), "Cluster"],
-            color = "white", bold = TRUE, background = colors_chromatin_group)
-    tab %>% kableExtra::kable(escape = FALSE, align = "c") %>%
+        rownames(tab)[2:(length(colors_sample_id) + 3)], color = "white",
+        bold = TRUE, background = c(colors_sample_id,"black","black"))
+    tab[2:(length(colors_sample_id) + 3), 1] = samples
+    colnames(tab) <- NULL
+    tab["Cluster",length(colors_chromatin_group) + 2] = "#Cells"
+    tab["Cluster",2:(
+        length(colors_chromatin_group) + 2)] = kableExtra::cell_spec(
+            tab["Cluster", 2:(length(colors_chromatin_group) +2)],
+            color = "white", bold = TRUE, background = c(
+                colors_chromatin_group,"black"))
+    rownames(tab) = NULL
+    tab %>% kableExtra::kable(escape = FALSE, align = "c") %>% 
         kableExtra::kable_styling(c("striped","condensed"),
-                                full_width = FALSE) %>%
-        kableExtra::group_rows("Total", dim(tab)[1],dim(tab)[1])}
+                                full_width = FALSE) %>% kableExtra::scroll_box()
+    }

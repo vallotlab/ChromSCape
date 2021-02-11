@@ -1383,6 +1383,62 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       }
     }
     })
+  output$custom_da_ref <- renderUI({
+    req(input$de_type)
+    if(input$de_type == "custom"){
+      shiny::radioButtons("ref_type","Reference type", choiceNames = c("sample_id","cell_cluster"))
+    }
+  })
+  output$custom_da_sample <- renderUI({
+    req(input$de_type)
+    if(input$de_type == "custom"){
+      shiny::radioButtons("sample_type","Sample type", choices= c("sample_id","cell_cluster"))
+    }
+  })
+  
+  output$ref_choice <- renderUI({
+    req(annotCol_cf(), input$ref_type)
+    if(input$ref_type == "sample_id"){
+      choices = unique(scExp_cf()$sample_id)
+      selectInput("ref_choice","Reference sample(s)", choices= choices, 
+                  multiple = TRUE)
+    } else if(input$ref_type == "cell_cluster"){
+      choices = unique(scExp_cf()$cell_cluster)
+      selectInput("ref_choice","Reference cluster(s)", choices=choices,
+                  multiple = TRUE)
+    } else{NULL}
+  })
+  output$sample_choice <- renderUI({
+    req(annotCol_cf(), input$sample_type)
+    if(input$sample_type == "sample_id"){
+      choices = unique(scExp_cf()$sample_id)
+      selectInput("sample_choice","Sample sample(s)", choices= choices, 
+                  multiple = TRUE)
+    } else if(input$sample_type == "cell_cluster"){
+      choices = unique(scExp_cf()$cell_cluster)
+      selectInput("sample_choice","Sample cluster(s)", choices=choices,
+                  multiple = TRUE)
+    } else{ NULL}
+  })
+  
+  # output$intra_corr_UI <- renderUI({
+  #   req(annotCol_cf(), input$violin_color)
+  #   
+  #   if(input$add_jitter) jitter_col = input$jitter_color else jitter_col = NULL
+  #   
+  #   output$intra_corr_plot = renderPlotly(
+  #     plot_intra_correlation_scExp(scExp_cf(), by = input$violin_color,
+  #                                  jitter_by = jitter_col, seed = 47))
+  #   plotly::plotlyOutput("intra_corr_plot",width = 500,height = 500) %>%
+  #     shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+  #   
+  # })
+  # 
+  # output$reference_group <- renderUI({
+  #   req(annotCol_cf(), scExp_cf(), input$violin_color)
+  #   selectInput("reference_group","Correlate with",
+  #               choices = unique(scExp_cf()[[input$violin_color]]) )
+  # })
   
   observeEvent(input$do_wilcox, {  # perform differential analysis based on wilcoxon test
     withProgress(message='Performing differential analysis...', value = 0, {
@@ -1448,16 +1504,24 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     req(input$gpsamp)
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
-        table <- scExp_cf()@metadata$diff$res[, -c(1)]
-        rownames(table) <- NULL
-        for(i in seq(from = 0, to=(dim(table)[2]-8)/5, by = 1)){
-          table[, (5*i+5)] <- round(table[, (5*i+5)], 3) #counts
-          table[, (5*i+6)] <- round(table[, (5*i+6)], 3) #cdiff
+        diff = scExp_cf()@metadata$diff$res[,-grep("Rank|pval|ID",colnames(scExp_cf()@metadata$diff$res))]
+        if(!is.null(SummarizedExperiment::rowRanges(scExp_cf())$Gene)){
+          diff = cbind(SummarizedExperiment::rowRanges(scExp_cf())$distanceToTSS, diff)
+          diff = cbind(SummarizedExperiment::rowRanges(scExp_cf())$Gene, diff)
+          colnames(diff)[1:2] = c("Gene","distanceToTSS")
         }
+        rownames(diff) <- NULL
+        # for(i in seq(from = 0, to=(dim(diff)[2]-8)/5, by = 1)){
+        #   diff[, (5*i+5)] <- round(diff[, (5*i+5)], 3) #counts
+        #   diff[, (5*i+6)] <- round(diff[, (5*i+6)], 3) #cdiff
+        # }
         
-        table = table[,c("chr","start","end",colnames(table)[grep(input$gpsamp,colnames(table))] )]
-        table <- table[order(table[,paste0("cdiff.",input$gpsamp)]),]
-        DT::datatable(table, options = list(dom='tpi'))
+        diff = diff[,c("Gene","distanceToTSS", "chr","start","end",
+                       colnames(diff)[grep(input$gpsamp,colnames(diff))] )]
+        diff <- diff[order(diff[,paste0("cdiff.",input$gpsamp)]),]
+        DT::datatable(diff, options = list(dom='tpi'), class = "display",
+                      rownames = FALSE, autoHideNavigation = TRUE,
+                      )
       }
     }
   })

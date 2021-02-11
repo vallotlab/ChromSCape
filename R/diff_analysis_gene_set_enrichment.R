@@ -1,4 +1,4 @@
-## Authors : Pacôme Prompsy, Celine Vallot
+    ## Authors : Pacôme Prompsy, Celine Vallot
 ## Title : Wrappers & functions to run differential
 ## analysis on clusters of single-cell based on epigenomic profiling and Gene
 ## Set Enrichment Analysis on the genes associated with differentially enriched
