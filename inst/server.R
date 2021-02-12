@@ -1479,12 +1479,17 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   observeEvent(input$run_DA, {  # perform differential analysis based on wilcoxon test
+  print("RUN DA")
+  print(input$group_choice)
+  print(input$ref_choice)
     if(input$de_type == "custom"){
-      if(all.equal(input$group_choice, input$ref_choice)){
-        showNotification(paste0("Warning : Please select different group and references."),
-                         duration = 7, closeButton = TRUE, type="warning")
-        return(0)
-      }
+      
+        if(TRUE %in% all.equal(input$group_choice, input$ref_choice)){
+          showNotification(paste0("Warning : Please select different group and references."),
+                           duration = 7, closeButton = TRUE, type="warning")
+          return(0)
+        }
+      
   }
     withProgress(message='Performing differential analysis...', value = 0, {
       incProgress(amount = 0.2, detail = paste("Initializing DA"))

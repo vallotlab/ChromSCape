@@ -246,7 +246,7 @@ DA_pairwise <- function(affectation,nclust, counts,
 #'   
 DA_custom <- function(affectation, counts, method, feature,
                                block, ref, group){
-    stopifnot(is.data.frame(affectation),is.integer(nclust),
+    stopifnot(is.data.frame(affectation),
               is(counts,"dgCMatrix")|is.matrix(counts), is.character(method),
               is.data.frame(feature), is.data.frame(ref), is.data.frame(group))
     # compare each cluster to all the rest
