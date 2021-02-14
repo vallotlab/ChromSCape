@@ -666,13 +666,13 @@ filter_genes_with_refined_peak_annotation <- function(
 #' \dontrun{table_enriched_genes_scExp(scExp)}
 #' 
 table_enriched_genes_scExp <- function(
-    scExp, set = "Both", cell_cluster = "C1", 
+    scExp, set = "Both", group = "C1", 
     enr_class_sel = c(
         "c1_positional", "c2_curated", "c3_motif", "c4_computational", "c5_GO",
         "c6_oncogenic", "c7_immunologic", "hallmark"))
 {
     stopifnot(is(scExp, "SingleCellExperiment"),
-            is.character(set), is.character(cell_cluster), 
+            is.character(set), is.character(group), 
             is.character(enr_class_sel))
     if (is.null(scExp@metadata$enr)) 
         stop("ChromSCape::table_enriched_genes_scExp - No GSEA, please ",
@@ -682,11 +682,11 @@ table_enriched_genes_scExp <- function(
         stop("ChromSCape::table_enriched_genes_scExp - set variable",
         "must be 'Both', 'Overexpressed' or 'Underexpressed'.")
     
-    if (!cell_cluster %in% scExp@metadata$diff$groups) 
-        stop("ChromSCape::table_enriched_genes_scExp - No GSEA, please",
-        "run gene_set_enrichment_analysis_scExp first.")
+    if (!group %in% scExp@metadata$diff$groups) 
+        stop("ChromSCape::table_enriched_genes_scExp - Group is not in ",
+        "differential analysis")
     
-    table <- scExp@metadata$enr[[set]][[match(cell_cluster,
+    table <- scExp@metadata$enr[[set]][[match(group,
                                             scExp@metadata$diff$groups)]]
     table <- table[which(table[, "Class"] %in% enr_class_sel), ]
     if (is.null(table))

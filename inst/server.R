@@ -65,11 +65,24 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     })
   output$feature_color <- renderUI({selectInput("color_by", "Color by", choices=annotCol())})
   
-  observeEvent(analysis_name(), { # application header (tells you which data set is selected)
+  observeEvent({
+    analysis_name()
+    input$selected_DA_GSA_dataset
+    input$selected_reduced_dataset
+    }, { # application header (tells you which data set is selected)
     req(analysis_name())
-    header <- paste0('<b>Analysis : ', analysis_name(), ' </b>')
-    shinyjs::html("pageHeader", header)
+      header <- paste0('<b>Analysis : ', analysis_name(), ' </b>')
+      if(!is.null(input$selected_DA_GSA_dataset)){
+        if(input$tabs %in% c("diff_analysis","enrich_analysis")){
+          pattern = paste0(input$selected_reduced_dataset, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+_")
+          
+          suffix = gsub(pattern,"", input$selected_DA_GSA_dataset)
+          header <- paste0('<b>Analysis : ', analysis_name(), ' - ', suffix, ' </b>')
+        }
+      } 
+      shinyjs::html("pageHeader", header) 
   })
+  
   
   get.available.reduced.datasets <- function(selected_analysis){
     print("get.available.reduced.datasets")
@@ -1760,10 +1773,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     })
   })
   
-  output$enr_clust_sel <- renderUI({ 
+  output$GSA_group_sel <- renderUI({ 
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
-      selectInput("enr_clust_sel", "Select cluster:", choices = scExp_cf()@metadata$diff$groups) 
+      selectInput("GSA_group_sel", "Select group:", choices = scExp_cf()@metadata$diff$groups) 
       }
     }
     })
@@ -1779,8 +1792,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$all_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$enr) && !is.null(input$enr_clust_sel) && !is.null(input$enr_class_sel)){
-        table_enriched_genes_scExp(scExp_cf(),set = "Both", cell_cluster = input$enr_clust_sel, input$enr_class_sel)
+      if(!is.null(scExp_cf()@metadata$enr) && !is.null(input$GSA_group_sel) && !is.null(input$enr_class_sel)){
+        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups)
+          table_enriched_genes_scExp(scExp_cf(),set = "Both", group = input$GSA_group_sel, input$enr_class_sel)
       }
     }
   })
@@ -1788,7 +1802,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$over_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
-        table_enriched_genes_scExp(scExp_cf(), set = "Overexpressed", cell_cluster = input$enr_clust_sel, input$enr_class_sel)
+        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups)
+          table_enriched_genes_scExp(scExp_cf(), set = "Overexpressed", group = input$GSA_group_sel, input$enr_class_sel)
       }
     }
   })
@@ -1796,7 +1811,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$under_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
-        table_enriched_genes_scExp(scExp_cf(), set = "Underexpressed", cell_cluster = input$enr_clust_sel, input$enr_class_sel)
+        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups) 
+          table_enriched_genes_scExp(scExp_cf(), set = "Underexpressed", group = input$GSA_group_sel, input$enr_class_sel)
       }
     }
   })
