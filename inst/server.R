@@ -373,26 +373,76 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$selected_analysis, {  # load precompiled dataset and update coverage plot
     if(!is.null(input$selected_analysis) & input$selected_analysis != ""){
-      init$datamatrix <- qs::qread(file.path(init$data_folder,"ChromSCape_analyses", input$selected_analysis, "datamatrix.qs"))
-      init$annot_raw <-  qs::qread(file.path(init$data_folder,"ChromSCape_analyses", input$selected_analysis, "annot_raw.qs"))
+      init$datamatrix <- qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "datamatrix.qs"))
+      init$annot_raw <-  qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "annot_raw.qs"))
     }
   })
   
-  # observeEvent(input$selected_analysis,{
-  #   req(input$selected_analysis)
-  #   
-  #   if(!is.null(input$selected_reduced_dataset)){
-  #     delay(1500, {
-  #       if(gsub(pattern ="_\\d*_\\d*_\\d*_\\w*","",input$selected_reduced_dataset) != input$selected_analysis){
-  #         
-  #         showNotification(paste0("Warning : Selected Analysis '",input$selected_analysis,
-  #                                 "' is different from selected reduced dataset '", input$selected_reduced_dataset,"'"),
-  #                          duration = 5, closeButton = TRUE, type="warning")
-  #       }
-  #     })
-  #   }
-  # })
+  output$rename_file_box <- renderUI({
+    shinydashboard::box(title = tagList("Rename Samples", shiny::icon("signature")),
+                        width = NULL, status = "success", solidHeader = TRUE, 
+                        collapsible = TRUE, collapsed = TRUE,
+                        column(8, htmlOutput("rename_file_UI")),
+                        br(),
+                        column(6, actionButton("save_rename", "Rename", icon = icon("save")))
+                        )
+  })
   
+  output$rename_file_UI <- renderUI({
+    req(analysis_name())
+    print("Inside rename_file_UI")
+    if(nrow(init$datamatrix) > 0 & nrow(init$annot_raw) > 0 ){
+      sample_names = unique(init$annot_raw$sample_id)
+      print(sample_names)
+      lapply(sample_names, function(i) {
+        shiny::textInput(inputId = paste0("sample_", i),
+                         placeholder = i,
+                         label = i,
+                         value = i
+        )
+      })
+    }
+  })
+  
+  observeEvent(input$save_rename, {  
+    req(analysis_name(), init$data_folder, init$datamatrix, init$annot_raw)
+    
+    if(nrow(init$datamatrix) > 0 & nrow(init$annot_raw) > 0 ){
+      annot_raw = init$annot_raw
+      datamatrix = init$datamatrix
+      sample_names = unique(annot_raw$sample_id)
+      for(i in sample_names) {
+        expr <- paste0("re_name = input$sample_", i)
+        eval(parse(text = expr))
+
+        if(re_name != i){
+          cell_idxs = which( annot_raw$sample_id == i)
+          annot_raw[cell_idxs, "sample_id"] = re_name
+          annot_raw[cell_idxs, "cell_id"] = gsub(i,"",annot_raw[cell_idxs, "cell_id"])
+          annot_raw[cell_idxs, "cell_id"] = paste0(re_name,annot_raw[cell_idxs, "cell_id"])
+          rownames(annot_raw) = annot_raw$cell_id
+
+          colnames(datamatrix)[cell_idxs] = annot_raw$cell_id[cell_idxs]
+        }
+      }
+     
+      init$annot_raw <- annot_raw
+      init$datamatrix <- datamatrix
+
+      qs::qsave(datamatrix, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "datamatrix.qs"))
+      qs::qsave(annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "annot_raw.qs"))
+      
+      if(length(list.files(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering"), pattern = ".qs"))>0){
+        showNotification(paste0("Please re-run analysis from filtering in order to rename downstream analysis."),
+                         duration = 15, closeButton = TRUE, type="warning")
+        
+      }
+      
+      print("Renaming file done !")
+      
+    }
+  })
+
   observeEvent(input$new_analysis_name, {  # reset label on actionButtion when new dataset is added
     updateActionButton(session, "create_analysis", label="Create Analysis", icon = character(0))
   })
@@ -431,7 +481,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     quantile of cell read counts to keep and batch correction type."})
   
   output$exclude_file <- renderUI({ if(input$exclude_regions){
-    fileInput("exclude_file", ".bed file containing the regions to exclude from data set:", multiple = FALSE, accept = c(".bed",".txt"))
+    fileInput("exclude_file", ".bed / .bed.gz / .txt file containing the feature to exclude from data set:", multiple = FALSE, accept = c(".bed",".txt", ".bed.gz"))
   }})
   output$num_batches <- renderUI({ if(input$do_batch_corr){
     selectInput("num_batches","Select number of batches (each can have one or multiple samples):", choices=c(2:10))
@@ -458,29 +508,29 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     subsample_n <- if(input$do_subsample){input$subsample_n}
     
     annotationId <- annotation_id_norm()
-    exclude_regions <- if(input$exclude_regions) {
+    print(input$exclude_file)
+    if(input$exclude_regions) {
       if(!is.null(input$exclude_file) && file.exists(as.character(input$exclude_file$datapath))){
-      setNames(read.table(
-      input$exclude_file$datapath, header = FALSE, stringsAsFactors = FALSE),
-      c("chr", "start", "stop"))
+        tmp_file = tempfile(fileext = ".bed.gz")
+        file.copy(input$exclude_file$datapath, tmp_file, overwrite = T)
+        exclude_regions <- rtracklayer::import(tmp_file)
       } else {
         warning("The BED file you specified doesn't exist. No specific features will be
                 removed during filtering.")
-        NULL
+        exclude_regions <- NULL
       }
     }
     else {
-      NULL
+      exclude_regions <- NULL
     }
-  
+
     callModule(Module_preprocessing_filtering_and_reduction, "Module_preprocessing_filtering_and_reduction", reactive({input$selected_analysis}), reactive({input$min_coverage_cell}),
                reactive({input$min_cells_window}), reactive({input$quant_removal}), reactive({init$datamatrix}), reactive({init$annot_raw}),
                reactive({init$data_folder}),reactive({annotationId}), reactive({exclude_regions}) ,reactive({input$do_batch_corr}),
                 reactive({batch_sels}), reactive({input$run_tsne}), reactive({subsample_n}))
     
     init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
-    print("observeEvent({ input$filter_normalize_reduce}")
-    print(init$available_reduced_datasets)
+
     updateActionButton(session, "filter_normalize_reduce", label="Processed and saved successfully", icon = icon("check-circle"))
     
   })
@@ -520,11 +570,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
 
   cell_cov_df <- reactive ({
+    req(init$datamatrix)
     df = data.frame(coverage = sort(unname(Matrix::colSums(init$datamatrix)))) 
     df
     })  # used for plotting cell coverage on first page
   
   quantile_threshold =  reactive({
+    req(init$datamatrix)
     index = round(ncol(init$datamatrix) * as.numeric(input$quant_removal) * 0.01)
     q = cell_cov_df()$coverage[index]
     q

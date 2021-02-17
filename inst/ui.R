@@ -101,7 +101,8 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                          )
                                     ),
                                     column(width=6, align="right",
-                                           actionButton("startHelp","Help", icon = icon("question-circle"))),
+                                           actionButton("startHelp","Help", icon = icon("question-circle")), br(), br()),
+                                    column(width = 6, uiOutput("rename_file_box")),
                                 )
                         ),
                         

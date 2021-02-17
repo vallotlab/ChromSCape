@@ -1264,7 +1264,8 @@ get_genomic_coordinates <- function(scExp)
 #' Remove specific features (CNA, repeats)
 #'
 #' @param scExp A SingleCellExperiment object.
-#' @param features_to_exclude A data.frame containing features to exclude.
+#' @param features_to_exclude A GenomicRanges object or data.frame containing
+#' genomic regions or features to exclude.
 #' @param by Type of features. Either 'region' or 'feature_name'. If 'region',
 #'  will look for genomic coordinates in columns 1-3 (chr,start,stop).
 #' If 'feature_name', will look for a genes in first column. ('region')
@@ -1290,8 +1291,11 @@ get_genomic_coordinates <- function(scExp)
 #' 
 exclude_features_scExp <-
     function(scExp, features_to_exclude, by = "region", verbose = TRUE){
-        stopifnot(is(scExp, "SingleCellExperiment"),
-                is.data.frame(features_to_exclude), is.character(by[1]))
+        stopifnot(is(scExp, "SingleCellExperiment"), is.character(by[1]))
+        if(!is(features_to_exclude,"GenomicRanges") & 
+           !is(features_to_exclude,"data.frame")) stop(
+           "ChromSCape::exclude_features_scExp - features_to_exclude must be
+           either GenomicRanges or data.frame containg feature names.")
         if (!by[1] %in% c("region", "feature_name")) 
             stop("ChromSCape::exclude_features_scExp - by must be either
             'region' or 'feature_name'")
@@ -1301,16 +1305,10 @@ exclude_features_scExp <-
                 stop(paste0("ChromSCape::exclude_features_scExp -",
                     "Feature names are not genomic coordinates"))
             regions <- SummarizedExperiment::rowRanges(scExp)
-            colnames(features_to_exclude)[seq_len(3)] <-
-                c("chr", "start", "stop")
-            excl_gr <-
-                GenomicRanges::makeGRangesFromDataFrame(
-                    features_to_exclude, ignore.strand = TRUE,
-                    seqnames.field = c("chr"), start.field = c("start"),
-                    end.field = c("stop"))
+            
             suppressWarnings({
                 ovrlps <- as.data.frame(
-                    GenomicRanges::findOverlaps(regions, excl_gr))[,1]
+                    GenomicRanges::findOverlaps(regions, features_to_exclude))[,1]
             })
             if (length(unique(ovrlps) > 0)) scExp <- scExp[-unique(ovrlps), ]
             if (verbose) 
