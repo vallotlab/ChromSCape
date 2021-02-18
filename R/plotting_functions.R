@@ -450,47 +450,48 @@ plot_inter_correlation_scExp <- function(
     return(p)
 }
 
-#' Violin plot of inter-correlation distribution between one or multiple groups
-#' and one reference group
+#' Coverage plot using Sushi
 #'
-#' @param scExp_cf A SingleCellExperiment
-#' @param by Color by sample_id or cell_cluster
+#' @param coverages A list containing sample coverage as GenomicRanges
+#' @param chrom Chromosome
+#' @param start Start
+#' @param end End
+#' @param ref Genomic Reference
 #'
-#' @return A violin plot of inter-correlation
-#' @importFrom Sushi 
+#' @return A coverage plot annotated with genes
+#' 
+#' @importFrom Sushi plotBedgraph plotGenes
+#' @importFrom S4Vectors subjectHits 
+#' @importFrom GenomicRanges GRanges findOverlaps 
 #' @export
 #'
 #' @examples plot_intra_correlation_scExp(scExp)
-plot_coverage_BigWig <- function(coverages, ref = "hg38"){
-    
-    coverages = sapply(BigWig_filenames, rtracklayer::import)
+#' 
+plot_coverage_BigWig <- function(
+    coverages, chrom, start, end, ref = "hg38"){
     
     eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
     genebed = eval(parse(text = paste0("", ref, ".GeneTSS")))
-    
-    regions = c("Cdkn1a","chr17",28775432,28889328)
-    
+    genebed$strand2 = genebed$strand
+    genebed$strand = "."
+    colnames(genebed)[5:6] = c("score", "strand")
+
     #Select region of interest
-    region=regions[1]
-    chrom=regions[2]
-    chromstart=as.numeric(regions[3])
-    chromend=as.numeric(regions[4])
+    roi = GenomicRanges::GRanges(
+        chrom, ranges = IRanges::IRanges(start, end))
     
-    roi = GenomicRanges::GRanges(chrom, 
-                                 ranges = IRanges::IRanges(chromstart,
-                                                           chromend),
-                                 Gene=region)
-    
-    gl.sub <- genebed[ which(genebed[,"chrom"] == chrom ),]
+    gl.sub <- genebed[ which(genebed[,"chr"] == chrom ),]
     
     for(i in seq_along(coverages)){
-        coverages[[i]] = coverages[[i]][subjectHits(findOverlaps(
-            roi,coverages[[i]])),]
+        coverages[[i]] = coverages[[i]][S4Vectors::subjectHits(
+            GenomicRanges::findOverlaps(roi,coverages[[i]])),]
     }
-    max = round(max(sapply(coverages, function(tab) max(tab$score))),3)
-    min = round(max(sapply(coverages, function(tab) min(tab$score))),3)
-    
     if(sum(sapply(coverages, length)) >0){
+        
+        max = round(max(sapply(coverages, function(tab) max(tab$score))),3)
+        min = round(max(sapply(coverages, function(tab) min(tab$score))),3)
+    
+    
         n = length(coverages)
         layout.matrix <- matrix(
             c(sort(rep(seq_len(n),3)), n+1,n+1,n+2), ncol = 1)
@@ -503,22 +504,22 @@ plot_coverage_BigWig <- function(coverages, ref = "hg38"){
         for(i in seq_along(coverages)){
             print(
                 Sushi::plotBedgraph(as.data.frame(coverages[[i]])[,c(1,2,3,6)],
-                                chrom, chromstart,chromend,
+                                chrom, start, end,
                                 range = c(min, max),
                                 addscale = TRUE,
-                                ylab="H3K27me3_H3K4me3 vs H3K27me3",
+                                ylab="",
                                 color="#afafafff",cex.lab=1,cex.main=2.1)
             )
         }
         par(mar = c(1, 6, 1, 1),xpd=NA)
         
-        plotGenes(gl.sub, chrom, chromstart, chromend,
-                  bentline=F,plotgenetype = "arrow",
-                  labeltext = T,labelat = "start",fontsize=1,
-                  labeloffset = 0.4,bheight=0.07)
+        Sushi::plotGenes(gl.sub, chrom, start, end,
+                  bentline=F, plotgenetype = "arrow",
+                  labeltext = T, labelat = "start", fontsize=1,
+                  labeloffset = 0.4, bheight=0.07)
         
         par(mar = c(1, 6, 1, 1))
-        labelgenome(chrom,chromstart,chromend,n=4,scale="Mb",cex.axis=1.5)
+        Sushi::labelgenome(chrom, start, end, n=4, scale="Mb", cex.axis=1.5)
         
     }
 }
