@@ -461,16 +461,12 @@ plot_inter_correlation_scExp <- function(
 #' @export
 #'
 #' @examples plot_intra_correlation_scExp(scExp)
-plot_coverage_BigWig <- function(
-    BigWig_filenames){
+plot_coverage_BigWig <- function(coverages, ref = "hg38"){
     
     coverages = sapply(BigWig_filenames, rtracklayer::import)
     
-    subGenebed <-  GencodeByGene[GencodeByGene$Gene_biotype %in% c("protein_coding"),]
-    genebed <- data.frame(chrom=subGenebed$Chr,start=subGenebed$Start,stop=subGenebed$End,gene=subGenebed$Gene_name,score=".",strand=subGenebed$Strand)
-    genebed$chrom = as.character(genebed$chrom)
-    genebed$gene = as.character(genebed$gene)
-
+    eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
+    genebed = eval(parse(text = paste0("", ref, ".GeneTSS")))
     
     regions = c("Cdkn1a","chr17",28775432,28889328)
     

@@ -89,8 +89,17 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05,
                     "Selecting ", 
             ref, " genes from Gencode.")
         eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
-        geneTSS_annotation = as(
-            eval(parse(text = paste0("", ref, ".GeneTSS"))),"GRanges")
+        geneTSS_annotation = 
+            eval(parse(text = paste0("", ref, ".GeneTSS")))
+        start = geneTSS_annotation$start
+        geneTSS_annotation$start = ifelse(geneTSS_annotation$strand == "+",
+                                          geneTSS_annotation$start,
+                                          geneTSS_annotation$end)
+        geneTSS_annotation$end = ifelse(geneTSS_annotation$strand == "+",
+                                        start +1,
+                                        geneTSS_annotation$end +1)
+        geneTSS_annotation$strand = NULL
+        geneTSS_annotation = as(,"GRanges")
     } else geneTSS_annotation = as(geneTSS_annotation, "GRanges")
     if (length(inputBam) > 1)
     {

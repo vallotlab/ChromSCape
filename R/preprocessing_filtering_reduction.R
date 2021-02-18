@@ -250,8 +250,14 @@ define_feature <- function(ref,peak_file, n_bins, bin_width,
         geneTSS_df <- eval(parse(text = paste0(
             "ChromSCape::", ref, ".GeneTSS"
         )))
-        geneTSS_df$start = geneTSS_df$start - aroundTSS
-        geneTSS_df$end = geneTSS_df$end + aroundTSS
+        start = geneTSS_df$start
+        geneTSS_df$start = ifelse(geneTSS_df$strand == "+",
+                                  geneTSS_df$start - aroundTSS,
+                                  geneTSS_df$end - aroundTSS)
+        geneTSS_df$end = ifelse(geneTSS_df$strand == "+",
+                                start + aroundTSS,
+                                geneTSS_df$end + aroundTSS)
+        geneTSS_df$strand = NULL
         which = GenomicRanges::GRanges(geneTSS_df)
     }
     return(which)
@@ -1522,6 +1528,14 @@ feature_annotation_scExp <- function(scExp, ref = "hg38",
                 ref, " genes from Gencode.")
         eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
         reference_annotation <- eval(parse(text = paste0("", ref, ".GeneTSS")))
+        start = reference_annotation$start
+        reference_annotation$start = ifelse(reference_annotation$strand == "+",
+                                            reference_annotation$start,
+                                            reference_annotation$end)
+        reference_annotation$end = ifelse(reference_annotation$strand == "+",
+                                start + 1,
+                                reference_annotation$end + 1)
+        reference_annotation$strand = NULL
     }
     if (is.data.frame(reference_annotation)) 
         reference_annotation <-
