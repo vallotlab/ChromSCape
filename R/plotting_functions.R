@@ -450,6 +450,84 @@ plot_inter_correlation_scExp <- function(
     return(p)
 }
 
+#' Violin plot of inter-correlation distribution between one or multiple groups
+#' and one reference group
+#'
+#' @param scExp_cf A SingleCellExperiment
+#' @param by Color by sample_id or cell_cluster
+#'
+#' @return A violin plot of inter-correlation
+#' @importFrom Sushi 
+#' @export
+#'
+#' @examples plot_intra_correlation_scExp(scExp)
+plot_coverage_BigWig <- function(
+    BigWig_filenames){
+    
+    coverages = sapply(BigWig_filenames, rtracklayer::import)
+    
+    subGenebed <-  GencodeByGene[GencodeByGene$Gene_biotype %in% c("protein_coding"),]
+    genebed <- data.frame(chrom=subGenebed$Chr,start=subGenebed$Start,stop=subGenebed$End,gene=subGenebed$Gene_name,score=".",strand=subGenebed$Strand)
+    genebed$chrom = as.character(genebed$chrom)
+    genebed$gene = as.character(genebed$gene)
+
+    
+    regions = c("Cdkn1a","chr17",28775432,28889328)
+    
+    #Select region of interest
+    region=regions[1]
+    chrom=regions[2]
+    chromstart=as.numeric(regions[3])
+    chromend=as.numeric(regions[4])
+    
+    roi = GenomicRanges::GRanges(chrom, 
+                                 ranges = IRanges::IRanges(chromstart,
+                                                           chromend),
+                                 Gene=region)
+    
+    gl.sub <- genebed[ which(genebed[,"chrom"] == chrom ),]
+    
+    for(i in seq_along(coverages)){
+        coverages[[i]] = coverages[[i]][subjectHits(findOverlaps(
+            roi,coverages[[i]])),]
+    }
+    max = round(max(sapply(coverages, function(tab) max(tab$score))),3)
+    min = round(max(sapply(coverages, function(tab) min(tab$score))),3)
+    
+    if(sum(sapply(coverages, length)) >0){
+        n = length(coverages)
+        layout.matrix <- matrix(
+            c(sort(rep(seq_len(n),3)), n+1,n+1,n+2), ncol = 1)
+        graphics::layout(mat = layout.matrix,
+                         heights = c(1), # Heights of the two rows
+                         widths = c(1)) # Widths of the two columns
+        
+        par(cex=0.5)
+        par(mar = c(0.75, 6, 0, 1), oma = c(1, 1, 1, 1))
+        for(i in seq_along(coverages)){
+            print(
+                Sushi::plotBedgraph(as.data.frame(coverages[[i]])[,c(1,2,3,6)],
+                                chrom, chromstart,chromend,
+                                range = c(min, max),
+                                addscale = TRUE,
+                                ylab="H3K27me3_H3K4me3 vs H3K27me3",
+                                color="#afafafff",cex.lab=1,cex.main=2.1)
+            )
+        }
+        par(mar = c(1, 6, 1, 1),xpd=NA)
+        
+        plotGenes(gl.sub, chrom, chromstart, chromend,
+                  bentline=F,plotgenetype = "arrow",
+                  labeltext = T,labelat = "start",fontsize=1,
+                  labeloffset = 0.4,bheight=0.07)
+        
+        par(mar = c(1, 6, 1, 1))
+        labelgenome(chrom,chromstart,chromend,n=4,scale="Mb",cex.axis=1.5)
+        
+    }
+}
+
+
 #' Differential summary barplot
 #'
 #' @param scExp_cf A SingleCellExperiment object

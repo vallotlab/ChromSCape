@@ -254,3 +254,150 @@ separate_BAM_into_clusters <- function(affectation, odir, merged_bam){
                     indexDestination = TRUE, overwrite=TRUE, param=filt)
     }
 }
+
+
+#' Smooth a vector of values with nb_bins left and righ values
+#'
+#' @param bin_score A numeric vector of values to be smoothed
+#' @param nb_bins Number of values to take left and right
+#'  
+#'  @importFrom BiocParallel bpvec
+#' @return A smooth vector of the same size 
+#' 
+smoothBin <- function(bin_score, nb_bins = 10){
+    bin_original = bin_score
+    fun <-function(v){
+        v_or = v
+        start = nb_bins + 1
+        end = length(v) - nb_bins -1
+        for(i in start:end){
+            v[i] = mean(v_or[(i-nb_bins):(i+nb_bins)])
+        }
+        return(v)
+    }
+    bin_score = unlist(BiocParallel::bpvec(bin_score, fun))
+    return(bin_score)
+}
+
+#' bamToBigWig : reads in BAM file and write out BigWig coverage file, 
+#' normalized and smoothed
+#'
+#' @param BAM_filename Path to the BAM file (with index)
+#' @param BigWig_filename Path to write the output BigWig file
+#' @param bin_width Bin size for coverage
+#' @param n_smoothBin Number of bins for smoothing values
+#' @param ref Reference genome.
+#' @param read_size Length of the reads.
+#'
+#' @importFrom Rsamtools ScanBamParam
+#' @return Writes a BigWig file as output
+#' 
+bamToBigWig <- function(BAM_filename, BigWig_filename,
+                        bin_width = 150, n_smoothBin = 5, ref = "hg38",
+                        read_size = 101){
+    canonical_chr <- eval(parse(text = paste0("ChromSCape::",
+                                              ref, ".chromosomes")))
+    canonical_chr$start = 1
+    canonical_chr <- as(canonical_chr, "GRanges")
+    
+    bins <- unlist(GenomicRanges::tileGenome(
+        setNames(
+            GenomicRanges::width(canonical_chr),
+            GenomicRanges::seqnames(canonical_chr)
+        ),
+        tilewidth = bin_width
+    ))
+    gc()
+    
+    bins <- count_coverage(BAM_filename, bins, canonical_chr, n_smoothBin, ref,
+                           read_size)
+    ## export as bigWig
+    export.bw(bins, BigWig_filename)
+}
+
+
+#' bamToBigWig : reads in BED file and write out BigWig coverage file, 
+#' normalized and smoothed
+#'
+#' @param BED_filename Path to the BED file 
+#' @param BigWig_filename Path to write the output BigWig file
+#' @param bin_width Bin size for coverage
+#' @param n_smoothBin Number of bins for smoothing values
+#' @param ref Reference genome.
+#' @param read_size Length of the reads.
+#'
+#' @importFrom Rsamtools ScanBamParam
+#' @return Writes a BigWig file as output
+#' 
+bedToBigWig <- function(BED_filename, BigWig_filename,
+                        bin_width = 150, n_smoothBin = 5, ref = "hg38",
+                        read_size = 101){
+    canonical_chr <- eval(parse(text = paste0("ChromSCape::",
+                                              ref, ".chromosomes")))
+    canonical_chr$start = 1
+    canonical_chr <- as(canonical_chr, "GRanges")
+    
+    bins <- unlist(GenomicRanges::tileGenome(
+        setNames(
+            GenomicRanges::width(canonical_chr),
+            GenomicRanges::seqnames(canonical_chr)
+        ),
+        tilewidth = bin_width
+    ))
+    gc()
+    
+    bins <- count_coverage(BED_filename, bins, canonical_chr, n_smoothBin, ref,
+                           read_size)
+    ## export as bigWig
+    export.bw(bins, BigWig_filename)
+}
+#' Create a smoothed and normalized coverage track from a BAM file and
+#' given a bin GenomicRanges object (same as deepTools bamCoverage)
+#'
+#' Normalization is CPM, smoothing is done by averaging on n_smoothBin regions
+#' left and right of any given region.
+#' 
+#' @param BAM_filenalme Path towards the BAM to create coverage from
+#' @param bins A GenomicRanges object of binned genome
+#' @param canonical_chr GenomicRanges of the chromosomes to read the BAM file.
+#' @param n_smoothBin Number of bins left and right to smooth the signal.
+#' @param ref Genomic reference
+#' @param read_size Length of the reads
+#'   
+#' @importFrom Rsamtools ScanBamParam scanBam scanBamWhat
+#' @importFrom GenomicRanges tileGenome width seqnames seqlengths findOverlaps
+#' GRanges
+#' @importFrom IRanges IRanges
+#' 
+#' 
+#'  
+#' @return A binned GenomicRanges that can be readily exported into bigwig file.
+#'
+count_coverage <-function(BAM_filename, bins, canonical_chr,
+                          n_smoothBin = 5, ref = "hg38", read_size = 101)
+    {
+    
+    param = Rsamtools::ScanBamParam(which = canonical_chr,
+                                    what = Rsamtools::scanBamWhat()[c(3,5)])
+    gr <- Rsamtools::scanBam(file = BAM_filename, param = param)
+    
+    chr = unlist(lapply(1:length(canonical_chr), function(i){gr[[i]]$rname}))
+    start = unlist(lapply(1:length(canonical_chr), function(i){gr[[i]]$pos}))
+    end = start + 101
+    gr = GenomicRanges::GRanges(seqnames = chr,
+                                ranges = IRanges::IRanges("start" = start,
+                                              "end" = end))
+    hits <- GenomicRanges::findOverlaps(
+        bins, gr, minoverlap = 1, ignore.strand = TRUE)
+    hits = as.matrix(hits)
+    hits_agg = table(hits[,1])
+    bins$score = 0
+    bins$score[as.numeric(names(hits_agg))] = hits_agg
+    rm(hits_agg)
+    gc()
+    bins$score = 10^6* bins$score / length(gr)
+    bins$score = smoothBin(bins$score, n_smoothBin)
+    bins = bins[-which(bins$score==0)]
+    gc()
+    return(bins)
+}
