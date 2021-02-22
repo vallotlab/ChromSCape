@@ -676,7 +676,7 @@ num_cell_in_cluster_scExp <- function(scExp){
         stats::chisq.test(x = as.matrix(table_raw), correct = FALSE))
     chi_pvalues = c()
     for (i in seq_len((dim(as.matrix(table_raw))[2]))){
-        contingency_tab = rbind(table_raw[,i], colSums(table_raw))
+        contingency_tab = rbind(table_raw[i,], colSums(table_raw))
         chi <- suppressWarnings(stats::chisq.test(
             x = contingency_tab, correct = FALSE))
         chi_pvalues[i] = chi$p.value}
