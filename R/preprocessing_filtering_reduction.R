@@ -1001,7 +1001,6 @@ combine_datamatrix <- function(datamatrix, datamatrix_single,
 #' @importFrom SingleCellExperiment SingleCellExperiment counts colData
 #' @importFrom SummarizedExperiment rowRanges colData
 #' @importFrom Matrix rowSums colSums
-#' @importFrom scater perCellQCMetrics
 #'
 #' @examples
 #' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
@@ -1049,11 +1048,11 @@ create_scExp <- function(
         SummarizedExperiment::rowRanges(scExp) <- get_genomic_coordinates(scExp)
         rownames(scExp) <- rows
     }
-    SummarizedExperiment::colData(scExp) <- cbind(
-        SummarizedExperiment::colData(scExp), scater::perCellQCMetrics(scExp))
-    colnames(SummarizedExperiment::colData(scExp))[
-        which(colnames(SummarizedExperiment::colData(
-            scExp)) == "sum")] = "total_counts"
+    SummarizedExperiment::colData(scExp)$total_counts = 
+        colSums(SingleCellExperiment::counts(scExp))
+    SummarizedExperiment::colData(scExp)$detected = 
+        apply(SingleCellExperiment::counts(scExp), 2,
+              function(i) length(which(i>0)))
     return(scExp)
 }
 
@@ -1138,7 +1137,6 @@ remove_chr_M_fun <- function(scExp, verbose){
 #'
 #' @importFrom SingleCellExperiment SingleCellExperiment counts colData
 #' @importFrom Matrix colSums rowSums
-#' @importFrom scater addPerCellQC
 filter_scExp =  function (
     scExp, min_cov_cell = 1600, quant_removal = 95, percentMin = 1,
     bin_min_count = 2, verbose = TRUE){
@@ -1178,12 +1176,11 @@ filter_scExp =  function (
         "a minimum of ", round((percentMin/100)*(ncol(bina_counts)))," cells.")
     scExp <- scExp[, sel]
     scExp <- scExp[fixedFeature,]
-    SummarizedExperiment::colData(scExp) <- cbind(
-        SummarizedExperiment::colData(scExp)
-        [,seq_len(4)],scater::perCellQCMetrics(scExp))
-    colnames(SummarizedExperiment::colData(
-        scExp))[which(colnames(
-            SummarizedExperiment::colData(scExp)) == "sum")] = "total_counts"
+    SummarizedExperiment::colData(scExp)$total_counts = 
+        colSums(SingleCellExperiment::counts(scExp))
+    SummarizedExperiment::colData(scExp)$detected = 
+        apply(SingleCellExperiment::counts(scExp), 2,
+              function(i) length(which(i>0)))
     return(scExp)
 }
 
