@@ -162,6 +162,9 @@ raw_counts_to_feature_count_files <- function(
             rows = gsub(":|-", "_", as.character(which)),
             cols = name_cells
         ))
+    chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
+    regions_to_remove = which(!as.character(regions@seqnames) %in% chr$chr)
+    if(length(regions_to_remove) > 0) mat = mat[-regions_to_remove,]
     return(mat)
 }
 
@@ -400,7 +403,6 @@ index_peaks_barcodes_to_matrix_indexes = function(
     ))
     chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
     
-    regions = regions[which(as.character(regions@seqnames) %in% chr$chr), ]
     feature_indexes = setNames(
         read.table(index_file, sep = "", quote = "")[, seq_len(3)],
         c("feature_index", "barcode_index", "counts")
