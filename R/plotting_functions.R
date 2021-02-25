@@ -570,6 +570,7 @@ plot_inter_correlation_scExp <- function(
 #'
 #' @param coverages A list containing sample coverage as GenomicRanges
 #' @param label_color_list List of colors, list names are labels
+#' @param peaks A GRanges object containing peaks location to plot (optional)
 #' @param chrom Chromosome
 #' @param start Start
 #' @param end End
@@ -585,7 +586,8 @@ plot_inter_correlation_scExp <- function(
 #' @examples plot_intra_correlation_scExp(scExp)
 #' 
 plot_coverage_BigWig <- function(
-    coverages, label_color_list, chrom, start, end, ref = "hg38"){
+    coverages, label_color_list, peaks = NULL,
+    chrom, start, end, ref = "hg38"){
     
     eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
     genebed = eval(parse(text = paste0("", ref, ".GeneTSS")))
@@ -598,7 +600,7 @@ plot_coverage_BigWig <- function(
         chrom, ranges = IRanges::IRanges(start, end))
 
     gl.sub <- genebed[which(genebed[,"chr"] == chrom),]
-    
+
     for(i in seq_along(coverages)){
         coverages[[i]] = coverages[[i]][S4Vectors::subjectHits(
             GenomicRanges::findOverlaps(roi,coverages[[i]])),]
@@ -609,10 +611,19 @@ plot_coverage_BigWig <- function(
         max = round(max(sapply(coverages, function(tab) max(tab$score))),3)
         min = round(max(sapply(coverages, function(tab) min(tab$score))),3)
     
-    
         n = length(coverages)
-        layout.matrix <- matrix(
-            c(sort(rep(seq_len(n),3)), n+1,n+1,n+2), ncol = 1)
+        
+        if(!is.null(peaks)){
+            peaks_roi = peaks[S4Vectors::subjectHits(
+                GenomicRanges::findOverlaps(roi,peaks)),]
+            peaks_roi = as.data.frame(peaks_roi)
+            layout.matrix <- matrix(
+                c(sort(rep(seq_len(n),3)), n+1,n+1,n+2,n+2,n+3), ncol = 1)
+        } else{
+            layout.matrix <- matrix(
+                c(sort(rep(seq_len(n),3)), n+1,n+1,n+2), ncol = 1)
+        }
+
         graphics::layout(mat = layout.matrix,
                          heights = c(1), # Heights of the two rows
                          widths = c(1)) # Widths of the two columns
@@ -631,7 +642,9 @@ plot_coverage_BigWig <- function(
             )
         }
         par(mar = c(1, 6, 1, 1),xpd=NA)
-        
+        Sushi::plotBed(peaks_roi, chrom, start, end,row = "supplied",
+                       rowlabels = "Peaks",
+                       rowlabelcex = 2, rownumber = 1)
         Sushi::plotGenes(gl.sub, chrom, start, end,
                   bentline=F, plotgenetype = "arrow",
                   labeltext = T, labelat = "start", fontsize=1,

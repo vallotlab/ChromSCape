@@ -127,7 +127,8 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
     merged_peaks <- call_macs2_merge_peaks(affectation, odir, p.value, 
                                            format, ref, peak_distance_to_merge)
     scExp@metadata$refined_annotation <- 
-        annotation_from_merged_peaks(scExp, merged_peaks, geneTSS_annotation)
+        annotation_from_merged_peaks(scExp, odir,
+                                     merged_peaks, geneTSS_annotation)
     print("Finished creating BAM and annot")
     cat("Running coverage ? ", run_coverage)
     if(run_coverage){
@@ -153,6 +154,7 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
 #'
 concatenate_scBed_into_clusters <- function(affectation, files, odir,
                                             ref){
+    unlink(file.path(odir, "*.bed"))
     # canonical_chr <- eval(parse(text = paste0("ChromSCape::",
     #                                           ref, ".chromosomes")))
     # canonical_chr$start = 1
@@ -216,7 +218,7 @@ call_macs2_merge_peaks <- function(affectation, odir, p.value, format = "BAM",
         system(command)
         merged_peaks[[class]] <-
             merge_MACS2_peaks(odir, class, peak_distance_to_merge, ref)
-        }
+    }
     unlink(file.path(odir, "*.xls"))
     unlink(file.path(odir, "*.gappedPeak"))
     unlink(file.path(odir, "*_model.r"))
@@ -258,6 +260,7 @@ merge_MACS2_peaks <- function(odir,class,peak_distance_to_merge,ref){
 #' Find nearest peaks of each gene and return refined annotation
 #'
 #' @param scExp A SingleCellExperiment object 
+#' @param odir An output directory where to write the mergedpeaks BED file
 #' @param merged_peaks A list of GRanges object containing the merged peaks
 #' @param geneTSS_annotation A GRanges object with reference genes
 #'
@@ -267,7 +270,8 @@ merge_MACS2_peaks <- function(odir,class,peak_distance_to_merge,ref){
 #' pintersect
 #' @importFrom S4Vectors mcols queryHits subjectHits
 #' @importFrom IRanges findOverlapPairs
-annotation_from_merged_peaks <- function(scExp,
+#' @importFrom rtracklayer export.bed
+annotation_from_merged_peaks <- function(scExp, odir,
                                         merged_peaks,
                                         geneTSS_annotation){
     segmentation = SummarizedExperiment::rowRanges(scExp)
@@ -283,7 +287,7 @@ annotation_from_merged_peaks <- function(scExp,
             GenomicRanges::union(merged_peak, merged_peaks[[i]], 
                                 ignore.strand = TRUE))
     }
-    
+    rtracklayer::export.bed(merged_peak, file.path(odir, "merged_peaks.bed"))
     pairs <- IRanges::findOverlapPairs(
         segmentation, merged_peak, ignore.strand = TRUE)
     refined_annotation = GenomicRanges::pintersect(pairs, ignore.strand = TRUE)
