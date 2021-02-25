@@ -569,6 +569,7 @@ plot_inter_correlation_scExp <- function(
 #' Coverage plot using Sushi
 #'
 #' @param coverages A list containing sample coverage as GenomicRanges
+#' @param label_color_list List of colors, list names are labels
 #' @param chrom Chromosome
 #' @param start Start
 #' @param end End
@@ -584,7 +585,7 @@ plot_inter_correlation_scExp <- function(
 #' @examples plot_intra_correlation_scExp(scExp)
 #' 
 plot_coverage_BigWig <- function(
-    coverages, chrom, start, end, ref = "hg38"){
+    coverages, label_color_list, chrom, start, end, ref = "hg38"){
     
     eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
     genebed = eval(parse(text = paste0("", ref, ".GeneTSS")))
@@ -593,26 +594,18 @@ plot_coverage_BigWig <- function(
     colnames(genebed)[5:6] = c("score", "strand")
 
     #Select region of interest
-    print("Values")
-    print(chrom)
-    print(start)
-    print(end)
     roi = GenomicRanges::GRanges(
         chrom, ranges = IRanges::IRanges(start, end))
-    print("roi")
-    print(roi)
+
     gl.sub <- genebed[which(genebed[,"chr"] == chrom),]
     
     for(i in seq_along(coverages)){
         coverages[[i]] = coverages[[i]][S4Vectors::subjectHits(
             GenomicRanges::findOverlaps(roi,coverages[[i]])),]
     }
-    print("Coverages i")
-    print(coverages[[i]])
-    print(sum(sapply(coverages, length)))
+
     if(sum(sapply(coverages, length)) >0){
-        print("Doing plot")
-        
+
         max = round(max(sapply(coverages, function(tab) max(tab$score))),3)
         min = round(max(sapply(coverages, function(tab) min(tab$score))),3)
     
@@ -632,8 +625,9 @@ plot_coverage_BigWig <- function(
                                 chrom, start, end,
                                 range = c(min, max),
                                 addscale = TRUE,
-                                ylab="",
-                                color="#afafafff",cex.lab=1,cex.main=2.1)
+                                ylab= names(label_color_list)[i],
+                                color= label_color_list[[i]],
+                                cex.lab=2,cex.main=2.1)
             )
         }
         par(mar = c(1, 6, 1, 1),xpd=NA)

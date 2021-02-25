@@ -1506,11 +1506,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       updateSelectInput(session, "cov_end", selected = gene_annot$end[which(gene_annot$gene == input$select_cov_gene)] + 25000)
       updateSelectInput(session, "select_cov_gene", selected = "Enter Gene...")
     }
-    
+    label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
         print("input$make_plot_coverage")
         output$coverage_region_plot <- renderPlot({
           plot_coverage_BigWig(
-            coverages(), chrom = input$cov_chr,
+            coverages(), 
+            label_color_list,
+            chrom = input$cov_chr,
             start = as.numeric(input$cov_start),
             end =  as.numeric(input$cov_end),
             ref = annotation_id())
