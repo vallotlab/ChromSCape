@@ -4,7 +4,14 @@
 \alias{call_macs2_merge_peaks}
 \title{Calling MACS2 peak caller and merging resulting peaks}
 \usage{
-call_macs2_merge_peaks(affectation, odir, p.value, ref, peak_distance_to_merge)
+call_macs2_merge_peaks(
+  affectation,
+  odir,
+  p.value,
+  format = "BAM",
+  ref,
+  peak_distance_to_merge
+)
 }
 \arguments{
 \item{affectation}{Annotation data.frame with cell cluster and cell id
@@ -13,6 +20,8 @@ information}
 \item{odir}{Output directory to write MACS2 output}
 
 \item{p.value}{P value to detect peaks, passed to MACS2}
+
+\item{format}{File format, either "BAM" or "BED"}
 
 \item{ref}{Reference genome}
 

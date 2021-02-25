@@ -14,7 +14,8 @@ exclude_features_scExp(
 \arguments{
 \item{scExp}{A SingleCellExperiment object.}
 
-\item{features_to_exclude}{A data.frame containing features to exclude.}
+\item{features_to_exclude}{A GenomicRanges object or data.frame containing
+genomic regions or features to exclude.}
 
 \item{by}{Type of features. Either 'region' or 'feature_name'. If 'region',
 will look for genomic coordinates in columns 1-3 (chr,start,stop).

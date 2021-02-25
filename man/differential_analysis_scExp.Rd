@@ -10,7 +10,9 @@ differential_analysis_scExp(
   method = "wilcox",
   qval.th = 0.01,
   cdiff.th = 1,
-  block = NULL
+  block = NULL,
+  group = NULL,
+  ref = NULL
 )
 }
 \arguments{
