@@ -182,7 +182,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                         ),
                                              column(3, align="left", uiOutput("pc_select_x")),
                                              column(3, align="left", uiOutput("pc_select_y"))),
-                                         uiOutput("color_box")),
+                                         uiOutput("contribution_to_pca_UI")),
                                   column(width=6,
                                          shinydashboard::box(title="UMAP", width = NULL, status="success", solidHeader=TRUE,
                                                              column(12, align="left", plotOutput("UMAP_plot") %>%
@@ -191,7 +191,8 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                                             content = "umap_plot")
                                                                     )),
                                          uiOutput("tsne_box")
-                                         )
+                                         ),
+                                  column(width=6, uiOutput("color_box"))
                                 )
                         ),
                         
@@ -293,7 +294,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                         
                         shinydashboard::tabItem(tabName = "peak_calling",
                                 fluidPage(
-                                  column(width=6,
+                                  column(width=4,
                                          shinydashboard::box(title="Peak calling", width=NULL, status="success", solidHeader=TRUE,
                                              column(12, align="left", textOutput("peak_calling_info"), hr()),
                                              tags$style(HTML(".large_icon { font-size: 70px; }")),
@@ -302,18 +303,19 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                              column(5,offset = 1,align="center", htmlOutput("peak_calling_icon")),
                                              column(12, align="left",
                                                     sliderInput("peak_distance_to_merge", "Select distance of peaks to merge:", min=0, max=50000, value=5000, step=100),
-                                                    shinyFiles::shinyDirButton("bam_folder", "Choose a folder containing the BAM files" ,
+                                                    shinyFiles::shinyDirButton("pc_folder", "Choose a folder containing the merged BAM files or single-cell BED files" ,
                                                                    title = "Please select a folder:",
                                                                    buttonType = "default", class = NULL), br(),
                                                     
-                                                    textOutput("bam_dir"), br(),
-                                                    uiOutput("bam_upload")),
+                                                    textOutput("pc_dir"), br(),
+                                                    uiOutput("pc_upload")),
                                              column(4, align="left", textOutput("pc_k_selection"),
                                                     selectInput("pc_stat","Select statistic for cutoff:", choices=c("p.value", "q.value"), selected="p.value")),
-                                             column(8, align="left", br(), br(), br(), br(),
+                                             column(12, align="left", br(), br(),
                                                     sliderInput("pc_stat_value", "Select significance threshold:", min=0, max=0.25, value=0.05, step=0.01)),
-                                             column(12, align="left", hr(), actionButton("do_pc", "Start"))))
-                                  # ,column(width=6, uiOutput("pc_plot_box"))
+                                             column(12, align="left", hr(), actionButton("do_pc", "Start")))),
+                                  column(width=8, uiOutput("coverage_UI"),
+                                         uiOutput("coverage_plot_UI"))
                                   )
                         ),
                         

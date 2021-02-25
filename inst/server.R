@@ -556,11 +556,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     t1 = system.time({
     scExp. = qs::qread(filename_sel)
     if(is.reactive(scExp.)) {
-      print("Is reactive scExp.")
       scExp. = isolate(scExp.())
     }
-    print("scExp.")
-    print(scExp.)
     scExp(scExp.) # retrieve filtered scExp
     rm(scExp.)
     gc()
@@ -652,6 +649,48 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
   output$pca_plot <- renderPlot(pca_plot())
+  
+  contrib_features_plot <- reactive({
+    req(scExp(),  input$pc_select_x)
+    if(input$pc_select_x %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
+      p = plot_most_contributing_features(scExp(), component = input$pc_select_x,
+                                          n_top_bot = as.numeric(input$n_top_features))
+      p
+    }
+  })
+  
+  output$contrib_features_plot <- renderPlotly(contrib_features_plot())
+  
+  contrib_chr_plot <- reactive({
+    req(scExp(),  input$pc_select_x)
+    if(input$pc_select_x %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
+      p = plot_pie_most_contributing_chr(scExp(), component = input$pc_select_x)
+      p
+    }
+  })
+  output$contrib_chr_plot <- renderPlot(contrib_chr_plot())
+  
+  output$contribution_to_pca_UI <- renderUI({
+    req(scExp(), input$pc_select_x)
+    if("PCA" %in% SingleCellExperiment::reducedDimNames(scExp())){
+      if(input$pc_select_x %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
+        shinydashboard::box(title="Contribution to PCA", width = NULL, status="success", solidHeader=TRUE,
+                            column(12, align="left",
+                                   selectInput("n_top_features", label =  "Top features",
+                                               choices = 5:100,
+                                               multiple = FALSE, selected = 10),
+                                   h3(paste0("Most contributing features to '", input$pc_select_x,"' .")),
+                                   plotlyOutput("contrib_features_plot") %>% 
+                                     shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+                            ),
+                            column(12, align="left", 
+                                   h3("Contribution of chromosomes in top 100 features."),
+                                   plotOutput("contrib_chr_plot") %>% 
+                                     shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+                                   ))
+      }
+    }
+  })
   
   output$tsne_box <- renderUI({
     req(scExp(), annotCol(), input$color_by)
@@ -1264,39 +1303,72 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       return( as.character(icon("times-circle", class = "large_icon")))
     }
   })
-      
-  shinyFiles::shinyDirChoose(input, "bam_folder", roots = volumes, session = 
-                   session)
-  list_bams = reactive({
-    if(!is.null(bam_folder())){
-      list.files(bam_folder(), full.names = TRUE, pattern = "*.bam$")
+   
+  output$select_raw_files <- renderUI({
+    req(scExp_cf(), list_bams())
+    
+  })  
+  
+  shinyFiles::shinyDirChoose(input, "pc_folder", roots = volumes, session = 
+                               session)
+  
+  pc_folder = reactiveVal(NULL)
+  
+  list_files_pc = reactive({
+    req(pc_folder())
+    if(!is.null(pc_folder())){
+      list.files(pc_folder(), full.names = TRUE, pattern = "*.bam$|*.bed|*.bed.gz")
     }
   })
   
-  bam_folder = reactiveVal(NULL)
+  bam_or_bed <- reactive({
+    req(list_files_pc())
+    nBAMs = length(grep(".*.bam$", list_files_pc()))
+    nBEDs = length(grep(".*.bed.gz|.*.bed", list_files_pc()))
+    print("is bam or bed ?")
+    print(nBAMs)
+    print(nBEDs)
+    ifelse(nBAMs>nBEDs,"BAM","BED")
+  })
   
-  observeEvent(input$bam_folder,
+  observeEvent(input$pc_folder,
                {
-               if(!is.null(input$bam_folder)){
-                 # browser()
-                 bam_folder(shinyFiles::parseDirPath(volumes, input$bam_folder))
-                 output$bam_dir <- renderText(bam_folder())
-               }
-})
-
-  output$bam_upload <- renderUI({
-    req(scExp_cf(), list_bams())
-    if(!is.null(list_bams()))
-      selectInput("bam_selection", label = "Selected BAM files",
-                  choices = basename(list_bams()), multiple = TRUE,
-                  selected = basename(list_bams()) )
+                 req(input$pc_folder)
+                 if(!is.null(input$pc_folder)){
+                   # browser()
+                   pc_folder(shinyFiles::parseDirPath(volumes, input$pc_folder))
+                   output$pc_dir <- renderText(pc_folder())
+                 }
+               })
+  
+  output$pc_upload <- renderUI({
+    req(list_files_pc(), bam_or_bed())
+    print("Inside output$pc_upload UI")
+    if(!is.null(list_files_pc()) & !is.null(bam_or_bed())){
+      if(bam_or_bed() == "BAM") {
+        files = list_files_pc()[grep(".bam$", list_files_pc())]
+        print("Inside output$pc_upload UI... BAM")
+        selectInput("bam_selection", label = "Selected BAM files",
+                    choices = basename(files), multiple = TRUE,
+                    selected = basename(files) )
+      } else {
+        print("Inside output$pc_upload UI... BED")
+        NULL
+      }
+    }
   })
   
   observeEvent(input$do_pc, {
-    inputBams <- as.character(file.path(dirname(list_bams()),input$bam_selection))
-  
-    if(length(inputBams)==0){
-      warning("Can't find input BAM files.")
+    req(bam_or_bed(), list_files_pc(), scExp_cf())
+    print("Doing peak call")
+    print(bam_or_bed())
+    if(bam_or_bed() == "BAM") {
+    input_files_pc <- as.character(file.path(dirname(list_files_pc()),input$bam_selection))
+    } else {
+      input_files_pc = as.character(list_files_pc()[grep(".bed|.bed.gz", list_files_pc())])
+    }
+    if(length(input_files_pc)==0){
+      warning("Can't find any input BAM / BED files.")
     } else{
       
       nclust = length(unique(scExp_cf()$cell_cluster))  
@@ -1310,13 +1382,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         # inputBams <- as.character(unlist(sapply(sample_ids, function(x){ input[[paste0('bam_', x)]] })))
 
         
-        checkBams <- sapply(inputBams, function(x){ if(file.exists(x)){ 0 } else { 
+        checkFiles <- sapply(input_files_pc, function(x){ if(file.exists(x)){ 0 } else { 
           showNotification(paste0("Could not find file ", x, ". Please make sure to give a full path including the file name."),
                            duration = 7, closeButton = TRUE, type="warning"); 1}  
         })
         incProgress(amount = 0.3, detail = paste("Running Peak Calling..."))
-        if(sum(checkBams)==0){
-          scExp_cf(subset_bam_call_peaks(scExp_cf(), odir, inputBams, as.numeric(input$pc_stat_value), annotation_id(), input$peak_distance_to_merge))
+        if(sum(checkFiles)==0){
+          scExp_cf(subset_bam_call_peaks(scExp_cf(), odir, input_files_pc, format = bam_or_bed(),
+                                         as.numeric(input$pc_stat_value), annotation_id(),
+                                         input$peak_distance_to_merge))
           data = list("scExp_cf" = scExp_cf())
           qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
                                       paste0(input$selected_reduced_dataset, ".qs")))
@@ -1330,13 +1404,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   pc <- reactiveValues(new="")
   
-  observeEvent({selected_filtered_dataset()  # reset label on actionButtion when new peak calling should be performed
-    input$pc_stat
-    input$pc_stat_value}, {
-      pc$available_pc <- has_available_pc()
-      updateActionButton(session, "do_pc", label="Start", icon = character(0))
-  })
-  
   has_available_pc <- reactive({
     if(!is.null(scExp_cf())){
       if("refined_annotation" %in% names(scExp_cf()@metadata) ){
@@ -1346,6 +1413,114 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       return(FALSE)
     }
   })
+  
+  observeEvent({selected_filtered_dataset()  # reset label on actionButtion when new peak calling should be performed
+    input$pc_stat
+    input$pc_stat_value}, {
+      pc$available_pc <- has_available_pc()
+      updateActionButton(session, "do_pc", label="Start", icon = character(0))
+  })
+  
+  
+  output$coverage_UI <- renderUI({
+    req(GenePool(),has_available_pc())
+    print("Inside output$coverage_UI ... ")
+      if(has_available_pc()){
+        print("Inside output$coverage_UI ... 2 ")
+        s <- shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
+                                 column(3, align="left", selectizeInput(inputId = "select_cov_gene", "Select gene:", choices = NULL, selected = 1)),
+                                 column(2, align="left", selectInput("cov_chr","Select chromosome:", choices = unique(rowRanges(scExp_cf())$chr))),
+                                 column(2, align="left", textInput("cov_start","Start", value = 15000000)),
+                                 column(2, align="left", textInput("cov_end","End", 16000000)),
+                                 column(2, align="left", actionButton("make_plot_coverage", "Plot Coverage", icon = icon("chart-area"))))
+        print("Inside output$coverage_UI ... 3")
+        updateSelectizeInput(session = session,
+                             inputId = 'select_cov_gene',
+                             choices = GenePool(),
+                             server = TRUE)
+        return(s)
+      }
+    })
+  
+  output$coverage_plot_UI <- renderUI({
+    req(GenePool(),has_available_pc(), display_coverage_plot())
+    print("Inside output$coverage_UI ... ")
+    if(has_available_pc()){
+      if(display_coverage_plot()){
+      shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
+                          column(12, align="left", plotOutput("coverage_region_plot") %>%
+                                   shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75))) 
+      }
+    }
+  })
+  
+  
+  GenePool <- reactive({
+    req(annotation_id())
+    print("Inside GenePool reactive ...")
+    eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
+    GenePool = unique(eval(parse(text = paste0("", annotation_id(), ".GeneTSS$gene"))))
+    print("Inside GenePool reactive2 ...")
+    c("Enter Gene...", GenePool)
+  })
+
+  
+  coverages <- reactive({
+    req(has_available_pc(), scExp_cf())
+    print("Inside coverage reactive ...")
+    display_coverage_plot(TRUE)
+    if(has_available_pc()){
+      nclust = length(unique(scExp_cf()$cell_cluster))
+      odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
+                        "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
+      BigWig_filenames <- list.files(odir,pattern = "*.bw", full.names = TRUE)
+      print("BigWig_filenames")
+      print(BigWig_filenames)
+      if(length(BigWig_filenames)>0){
+        print("coverages = sapply(BigWig_filenames, rtracklayer::import)")
+        coverages = sapply(BigWig_filenames, rtracklayer::import)
+        print(length(coverages))
+      } else {
+        coverages = NULL
+      }
+      coverages
+    }
+  })
+  
+  display_coverage_plot <- reactiveVal(FALSE)
+  
+  observeEvent(input$make_plot_coverage, { # load reduced data set to work with on next pages
+      req(input$cov_chr, has_available_pc(),
+          scExp_cf(), coverages(), annotation_id())
+    if(input$select_cov_gene != "Enter Gene..."){
+      print("Uploading Gene selection")
+      
+      eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
+      gene_annot = eval(parse(text = paste0("", annotation_id(), ".GeneTSS")))
+      print(input$select_cov_gene )
+      print(head(gene_annot))
+      print(head(gene_annot$gene))
+      print(which(gene_annot$gene == input$select_cov_gene))
+      updateSelectInput(session, "cov_chr", selected = gene_annot$chr[which(gene_annot$gene == input$select_cov_gene)])
+      updateSelectInput(session, "cov_start", selected = gene_annot$start[which(gene_annot$gene == input$select_cov_gene)] - 25000)
+      updateSelectInput(session, "cov_end", selected = gene_annot$end[which(gene_annot$gene == input$select_cov_gene)] + 25000)
+      updateSelectInput(session, "select_cov_gene", selected = "Enter Gene...")
+    }
+    
+        print("input$make_plot_coverage")
+        output$coverage_region_plot <- renderPlot({
+          plot_coverage_BigWig(
+            coverages(), chrom = input$cov_chr,
+            start = as.numeric(input$cov_start),
+            end =  as.numeric(input$cov_end),
+            ref = annotation_id())
+        })
+        
+  })
+  
+  
+
+ 
   # available_pc_plots <- reactive({
   #   fe <- sapply(c(1:input$pc_k_selection), function(i){file.exists(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$pc_k_selection), paste0("C", i, "_model.r")))})
   #   which(fe==TRUE)
