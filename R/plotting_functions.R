@@ -251,6 +251,122 @@ warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
                     " present in colnames of PCA of scExp."))
 }
 
+#' Plot Top/Bottom most contributing features to PCA
+#'
+#' @details 
+#' If a gene TSS is within 10,000bp of the region, the name of the gene(s) will
+#' be displayed instead of the region
+#' 
+#' @param scExp A SingleCellExperiment containing "PCA" in reducedDims and gene
+#' annotation in rowRanges
+#' @param component The name of the component of interest 
+#' @param n_top_bot An integer number of top and bot regions to plot 
+#'
+#' @return A barplot of top and bottom features with the largest absolute
+#' value in the component of interest
+#' 
+#' @importFrom SingleCellExperiment reducedDim normcounts
+#' @importFrom SummarizedExperiment rowRanges
+#'  
+#' @export
+#'
+#' @examples
+#'  plot_most_contributing_features(scExp, component = "Component_1")
+plot_most_contributing_features <- function(scExp, component = "Component_1",
+                                            n_top_bot = 10){
+    
+    top_bot  = retrieve_top_bot_features_pca(
+        SingleCellExperiment::reducedDim(scExp,"PCA"),
+        SingleCellExperiment::normcounts(scExp), component, n_top_bot)
+    
+    gene_info = SummarizedExperiment::rowRanges(scExp)
+    gene_info = gene_info[match(rownames(top_bot), gene_info$ID)]
+    Gene = substr(gene_info$Gene,start = 1, stop = 13)
+    Gene = ifelse(nchar(Gene)>=13, paste0(Gene,"..."), Gene)
+    top_bot$genes = ifelse(gene_info$distanceToTSS < 10000,
+                           Gene,  gene_info$ID)
+   
+    top_bot$genes = factor(top_bot$genes, levels = unique(top_bot$genes))
+    
+    ggplot(top_bot) + geom_bar(aes(x = genes, y = .data[[component]]),
+                               fill = c(rep("#52C461DF",n_top_bot),
+                                        rep("red",n_top_bot)),
+                               alpha = 0.7, stat="identity") + theme_classic() +
+        theme(axis.text.x = element_text(angle=75, hjust = 1)) +
+        xlab("") + ylab(paste0("Contribution of features to ", component))
+}
+
+#' Pie chart of top contribution of chromosomes in the 100 most contributing 
+#' features to PCA
+#'#' 
+#' @param scExp A SingleCellExperiment containing "PCA" in reducedDims and gene
+#' annotation in rowRanges
+#' @param component The name of the component of interest 
+#' @param n_top_bot An integer number of top and bot regions to plot (100)
+#'
+#' @return A pie chart showing the distribution of chromosomes in the top 
+#' features with the largest absolute value in the component of interest
+#' 
+#' @importFrom SingleCellExperiment reducedDim normcounts
+#' @importFrom SummarizedExperiment rowRanges
+#'  
+#' @export
+#'
+#' @examples
+#'  plot_pie_most_contributing_chr(scExp, component = "Component_1")
+plot_pie_most_contributing_chr <- function(scExp, component = "Component_1",
+                                           n_top_bot = 100){
+    
+    top_bot  = retrieve_top_bot_features_pca(
+        SingleCellExperiment::reducedDim(scExp,"PCA"),
+        SingleCellExperiment::normcounts(scExp), component, n_top_bot,
+        absolute = TRUE)
+    
+    chr_info = SummarizedExperiment::rowRanges(scExp)
+    chr_info = chr_info[match(rownames(top_bot), chr_info$ID)]
+    chr_info = as.data.frame(chr_info)
+    chr_info$absolute_value = abs(top_bot[,component])
+    distrib = chr_info %>% dplyr::group_by(chr) %>% 
+        summarise(contribution = sum(absolute_value))
+    distrib$contribution = 100 * distrib$contribution/sum(distrib$contribution)
+    distrib = setNames(distrib$contribution,distrib$chr)
+    distrib = sort(distrib, decreasing = T)
+    distrib[6] = sum(distrib[6:length(distrib)])
+    names(distrib)[6] = "Others"
+    distrib = distrib[1:6]
+    distrib_pc = round(distrib, 1)
+    names(distrib) = paste0(names(distrib), " - ",distrib_pc, " %")
+    pie(distrib,clockwise = TRUE, radius = 1,
+        col = c("#5DA5DA","#FAA43A","#60BD68","#F17CB0","#DECF3F","#4D4D4D"))
+}
+
+#' Retrieve Top and Bot most contributing features of PCA
+#'
+#' @param pca A matrix/data.frame of rotated data
+#' @param counts the normalized counts used for PCA
+#' @param component the componenent of interest
+#' @param n_top_bot the number of top & bot features to take
+#' @param absolute If TRUE, return the top features in absolute values instead.
+#'
+#' @return a data.frame of top bot contributing features in PCA 
+#'
+retrieve_top_bot_features_pca <- function(pca, counts, component, n_top_bot,
+                                          absolute = FALSE){
+    rotations = counts %*% as.matrix(pca)
+    rotations = rotations[,component,drop=F]
+    top = as.data.frame(as.matrix(
+        head(rotations[order(rotations, decreasing = T),, drop=F], n_top_bot)))
+    bot = as.data.frame(as.matrix(
+        tail(rotations[order(rotations, decreasing = T),, drop=F], n_top_bot)))
+    top_bot = as.data.frame(rbind(top, bot))
+    if(absolute) {
+        rotations = abs(rotations)
+        top_bot = as.data.frame(as.matrix(
+        head(rotations[order(rotations, decreasing = T),, drop=F], n_top_bot)))
+    }
+    return(top_bot)
+}
+
 #' Plot cell correlation heatmap with annotations
 #'
 #' @param scExp A SingleCellExperiment Object
@@ -477,16 +593,25 @@ plot_coverage_BigWig <- function(
     colnames(genebed)[5:6] = c("score", "strand")
 
     #Select region of interest
+    print("Values")
+    print(chrom)
+    print(start)
+    print(end)
     roi = GenomicRanges::GRanges(
         chrom, ranges = IRanges::IRanges(start, end))
-    
-    gl.sub <- genebed[ which(genebed[,"chr"] == chrom ),]
+    print("roi")
+    print(roi)
+    gl.sub <- genebed[which(genebed[,"chr"] == chrom),]
     
     for(i in seq_along(coverages)){
         coverages[[i]] = coverages[[i]][S4Vectors::subjectHits(
             GenomicRanges::findOverlaps(roi,coverages[[i]])),]
     }
+    print("Coverages i")
+    print(coverages[[i]])
+    print(sum(sapply(coverages, length)))
     if(sum(sapply(coverages, length)) >0){
+        print("Doing plot")
         
         max = round(max(sapply(coverages, function(tab) max(tab$score))),3)
         min = round(max(sapply(coverages, function(tab) min(tab$score))),3)
