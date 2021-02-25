@@ -260,11 +260,7 @@ DA_custom <- function(affectation, counts, method, feature,
                         | affectation$sample_id %in% ref[,1]), "cell_id"]))
     myrefs = list("a" = myrefs)
     names(myrefs) = refs
-    print("inside DA_custom")
-    print(ref)
-    print(refs)
-    print(group)
-    print(groups)
+
     if(method == "wilcox"){ res = CompareWilcox(
         dataMat = counts, annot = affectation, ref_group = myrefs, 
         groups = mygps, featureTab = feature, block = block)
