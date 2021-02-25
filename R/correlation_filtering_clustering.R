@@ -672,17 +672,19 @@ num_cell_in_cluster_scExp <- function(scExp){
     ord =  as.character(unique(SingleCellExperiment::colData(
         scExp)[, "sample_id"]))
     table_raw = table_raw[match(ord, rownames(table_raw)), , drop = FALSE]
-    chi <- suppressWarnings(
-        stats::chisq.test(x = as.matrix(table_raw), correct = FALSE))
     chi_pvalues = c()
-    for (i in seq_len((dim(as.matrix(table_raw))[2]))){
+    if(dim(as.matrix(table_raw))[2] > 1){
+
+    for (i in seq_len((dim(as.matrix(table_raw))[1]))){
         contingency_tab = rbind(table_raw[i,], colSums(table_raw))
+        print(contingency_tab)
         chi <- suppressWarnings(stats::chisq.test(
             x = contingency_tab, correct = FALSE))
         chi_pvalues[i] = chi$p.value}
+    } else {
+        chi_pvalues =  rep(1, dim(as.matrix(table_raw))[2])
+    }
     tab <- table_raw
-    if (length(unique(SingleCellExperiment::colData(scExp)$sample_id)) == 1)
-        chi_pvalues = rep(1, dim(as.matrix(table_raw))[2])
     chi_pvalues = round(chi_pvalues, 5)
     chi_pvalues[which(chi_pvalues == 0)] <- "<0.00001"
     chi_pvalues = c(chi_pvalues, "")
