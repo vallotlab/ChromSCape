@@ -163,7 +163,7 @@ raw_counts_to_feature_count_files <- function(
             cols = name_cells
         ))
     chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
-    regions_to_remove = which(!as.character(regions@seqnames) %in% chr$chr)
+    regions_to_remove = which(!as.character(which@seqnames) %in% chr$chr)
     if(length(regions_to_remove) > 0) mat = mat[-regions_to_remove,]
     return(mat)
 }
