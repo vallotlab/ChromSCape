@@ -581,8 +581,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   cell_cov_plot <- reactive({
     ggplot(cell_cov_df(), aes(x = coverage)) + 
-      geom_histogram(color="black", fill="steelblue", bins = input$coverage_bins) +
-      labs(x="Log10(Reads per cell)")  + 
+      geom_histogram(color="black", fill="steelblue", bins = 75) +
+      labs(x="Log10(Reads per cell)", y = "nCells")  + 
       theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), 
             panel.background=element_blank(), axis.line=element_line(colour="black"),
             panel.border=element_rect(colour="black", fill=NA)) +
@@ -594,6 +594,47 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$cell_coverage <- plotly::renderPlotly( plotly::ggplotly(cell_cov_plot(), 
                                                                  tooltip="Sample", dynamicTicks=TRUE) )
+  
+  feature_cov_df <- reactive ({
+    req(init$datamatrix)
+    if(ncol(init$datamatrix) * nrow(init$datamatrix) > 1e+08){
+      set.seed(47)
+      # cols = sample(seq_len(ncol(init$datamatrix)), min(1500,ncol(init$datamatrix)), replace = T)
+      row = sample(seq_len(nrow(init$datamatrix)), min(5000,nrow(init$datamatrix)), replace = T)
+      sample_mat = init$datamatrix[row, ]
+    } else{
+      sample_mat = init$datamatrix
+    }
+    sel_above_2 <- (sample_mat >= 2)
+    gc()
+    bina_counts = Matrix::sparseMatrix(i = 1, j = 1, x = 1, 
+                                       dims = dim(sample_mat))
+    bina_counts[1, 1] = 0
+    bina_counts[sel_above_2] <- 1
+    df = data.frame(coverage = sort(unname(Matrix::rowSums(bina_counts)))) 
+    df
+  })  # used for plotting feature coverage on first page
+  
+  percent_cell_threshold =  reactive({
+    req(init$datamatrix)
+    q = round(ncol(init$datamatrix) * as.numeric(input$min_cells_window) * 0.01)
+    q
+  })
+  
+  feature_cov_plot <- reactive({
+    ggplot(feature_cov_df(), aes(x = coverage)) + 
+      geom_histogram(color="black", fill="#F2B066", bins = 75) +
+      labs(x="Log10(Cells 'ON' per feature)", y = "nFeatures")  + 
+      theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), 
+            panel.background=element_blank(), axis.line=element_line(colour="black"),
+            panel.border=element_rect(colour="black", fill=NA)) +
+      geom_vline(xintercept = as.numeric(percent_cell_threshold()), color = "#9C36CF") +
+      scale_x_log10()
+    
+  })
+  
+  output$feature_coverage <- plotly::renderPlotly( plotly::ggplotly(feature_cov_plot(), 
+                                                                 tooltip="Feature", dynamicTicks=TRUE) )
   
   
   output$num_cell <- function(){
@@ -1507,21 +1548,27 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       updateSelectInput(session, "select_cov_gene", selected = "Enter Gene...")
     }
     label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
-        print("input$make_plot_coverage")
-        output$coverage_region_plot <- renderPlot({
-          plot_coverage_BigWig(
-            coverages(), 
-            label_color_list,
-            chrom = input$cov_chr,
-            start = as.numeric(input$cov_start),
-            end =  as.numeric(input$cov_end),
-            ref = annotation_id())
-        })
-        
+    nclust = length(unique(scExp_cf()$cell_cluster))
+    odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
+                      "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
+    if(file.exists(file.path(odir, "merged_peaks.bed"))){
+      peaks = rtracklayer::import.bed(file.path(odir, "merged_peaks.bed"))
+      } else{peaks = NULL}
+    
+    ChromSCape::
+    print("input$make_plot_coverage")
+    output$coverage_region_plot <- renderPlot({
+      plot_coverage_BigWig(
+        coverages(), 
+        label_color_list,
+        chrom = input$cov_chr,
+        start = as.numeric(input$cov_start),
+        end =  as.numeric(input$cov_end),
+        ref = annotation_id())
+    })
+    
   })
   
-  
-
  
   # available_pc_plots <- reactive({
   #   fe <- sapply(c(1:input$pc_k_selection), function(i){file.exists(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$pc_k_selection), paste0("C", i, "_model.r")))})

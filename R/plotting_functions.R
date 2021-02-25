@@ -609,19 +609,18 @@ plot_coverage_BigWig <- function(
     if(sum(sapply(coverages, length)) >0){
 
         max = round(max(sapply(coverages, function(tab) max(tab$score))),3)
-        min = round(max(sapply(coverages, function(tab) min(tab$score))),3)
+        # min = round(max(sapply(coverages, function(tab) min(tab$score))),3)
     
         n = length(coverages)
-        
+        layout.matrix <- matrix(
+            c(sort(rep(seq_len(n),3)), n+1,n+1,n+2), ncol = 1)
+        peaks_roi=data.frame()
         if(!is.null(peaks)){
             peaks_roi = peaks[S4Vectors::subjectHits(
                 GenomicRanges::findOverlaps(roi,peaks)),]
             peaks_roi = as.data.frame(peaks_roi)
-            layout.matrix <- matrix(
+            if(nrow(peaks_roi)>0) layout.matrix <- matrix(
                 c(sort(rep(seq_len(n),3)), n+1,n+1,n+2,n+2,n+3), ncol = 1)
-        } else{
-            layout.matrix <- matrix(
-                c(sort(rep(seq_len(n),3)), n+1,n+1,n+2), ncol = 1)
         }
 
         graphics::layout(mat = layout.matrix,
@@ -631,20 +630,21 @@ plot_coverage_BigWig <- function(
         par(cex=0.5)
         par(mar = c(0.75, 6, 0, 1), oma = c(1, 1, 1, 1))
         for(i in seq_along(coverages)){
-            print(
+            # print(
                 Sushi::plotBedgraph(as.data.frame(coverages[[i]])[,c(1,2,3,6)],
                                 chrom, start, end,
-                                range = c(min, max),
-                                addscale = TRUE,
+                                range = c(0, max),
+                                addscale = TRUE, 
                                 ylab= names(label_color_list)[i],
                                 color= label_color_list[[i]],
                                 cex.lab=2,cex.main=2.1)
-            )
+            # )
         }
         par(mar = c(1, 6, 1, 1),xpd=NA)
-        Sushi::plotBed(peaks_roi, chrom, start, end,row = "supplied",
-                       rowlabels = "Peaks",
-                       rowlabelcex = 2, rownumber = 1)
+        if(nrow(peaks_roi)>0) Sushi::plotBed(peaks_roi, chrom, start,
+                                             end,row = "supplied",
+                                             rowlabels = "Peaks",
+                                             rowlabelcex = 1.5)
         Sushi::plotGenes(gl.sub, chrom, start, end,
                   bentline=F, plotgenetype = "arrow",
                   labeltext = T, labelat = "start", fontsize=1,
