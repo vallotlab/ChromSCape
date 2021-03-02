@@ -74,6 +74,7 @@ Imports:
     SummarizedExperiment,
     msigdbr,
     qs,
-    Sushi
+    Sushi,
+    forcats
 Depends: 
     R (>= 4.0)

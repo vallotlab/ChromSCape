@@ -353,16 +353,16 @@ retrieve_top_bot_features_pca <- function(pca, counts, component, n_top_bot,
     rotations = counts %*% as.matrix(pca)
     rotations = rotations[,component,drop=FALSE]
     top = as.data.frame(as.matrix(
-        base::head(rotations[order(rotations, decreasing = TRUE),, drop=FALSE],
+        utils::head(rotations[order(rotations, decreasing = TRUE),, drop=FALSE],
              n_top_bot)))
     bot = as.data.frame(as.matrix(
-        base::tail(rotations[order(rotations, decreasing = TRUE),, drop=FALSE],
+        utils::tail(rotations[order(rotations, decreasing = TRUE),, drop=FALSE],
              n_top_bot)))
     top_bot = as.data.frame(rbind(top, bot))
     if(absolute) {
         rotations = abs(rotations)
         top_bot = as.data.frame(as.matrix(
-        base::head(rotations[order(rotations, decreasing = TRUE),, drop=FALSE],
+            utils::head(rotations[order(rotations, decreasing = TRUE),, drop=FALSE],
              n_top_bot)))
     }
     return(top_bot)
@@ -451,7 +451,7 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
 #'
 #' @return A violin plot of intra-correlation
 #' @export
-#'
+#' @importFrom forcats fct_inorder
 #' @examples plot_intra_correlation_scExp(scExp)
 plot_intra_correlation_scExp <- function(
     scExp_cf, by = c("sample_id", "cell_cluster")[1], jitter_by = NULL,
@@ -512,6 +512,8 @@ plot_intra_correlation_scExp <- function(
 #' @return A violin plot of inter-correlation
 #' @export
 #'
+#' @importFrom forcats fct_inorder
+#' 
 #' @examples plot_intra_correlation_scExp(scExp)
 plot_inter_correlation_scExp <- function(
     scExp_cf, by = c("sample_id", "cell_cluster")[1], jitter_by = NULL,

@@ -187,7 +187,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$input_data_ui <- renderUI({
     if(input$data_choice_box == "count_mat"){
-      column(12, br(),fileInput("datafile_matrix", "Upload all data matrices (.txt, .tsv or .csv) :",
+      column(12, br(),fileInput("datafile_matrix", "Upload all data matrices (.tsv / .gz) :",
                 multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv", ".csv", ".gz")),
              checkboxInput("is_combined_mat", "Single Multi-sample count matrix ?",value = FALSE),
              uiOutput("nb_samples_mat")
@@ -1044,20 +1044,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                    }
                  }
                })
-  
-  
-
-  # output$corr_clust_pca_plot <- renderPlot(hc_pca_plot())
-  
-  # output$cons_corr_clust_pca_plot <- renderPlot(plot_heatmap_scExp(scExp_cf()))
-  # 
-  # output$cons_corr_clust_pca_UI <- renderUI({
-  #   if(consensus_ran()){
-  #     plotOutput("cons_corr_clust_pca_plot", height = 500, width = 500) %>%
-  #       shinyhelper::helper(type = 'markdown', icon ="info-circle",
-  #                           content = "correlation_clustering")
-  #   }
-  # })
 
   output$download_cor_clust_plot <- downloadHandler(
     filename=function(){ paste0("correlation_clustering_", input$selected_reduced_dataset, ".png")},
@@ -1117,6 +1103,23 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
     })
   })
+  
+  observeEvent({input$reset_corr_cells  # reset label on actionButtion when new filtering should be filtered
+    input$percent_correlation}, {
+      req(scExp_cf())
+      
+      if("Unfiltered" %in% names(scExp_cf()@metadata)){
+        shiny::showNotification(paste0("Resetting original cells ..."),
+                                duration = 5, closeButton = TRUE, type="message")
+        scExp_cf(scExp_cf()@metadata$Unfiltered)
+        updateActionButton(session, "reset_corr_cells", label="Resetted", icon = icon("check-circle"))
+      } else {
+        shiny::showNotification(paste0("Alrready original cells ..."),
+                                duration = 5, closeButton = TRUE, type="warning")
+      }
+          
+      
+    })
   
   observeEvent({input$selected_reduced_dataset  # reset label on actionButtion when new filtering should be filtered
     input$percent_correlation}, {

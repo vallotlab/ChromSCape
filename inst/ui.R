@@ -20,6 +20,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                           shinydashboard::menuItem("Close App & Save Analysis", tabName = "close_and_save", icon=icon("close"))
                               )
                             ),
+                            
                             shinydashboard::dashboardBody(
                               shinyjs::useShinyjs(),
                               tags$head(includeCSS('www/style.css')),
@@ -92,17 +93,17 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                       uiOutput("input_data_ui")),
                                                                       column(12,
                                                                       uiOutput("advanced_data_input")),
-                                                                      column(12,actionButton("create_analysis", "Create analysis")))),
-
-                                                         shinydashboard::box(title="Load previous analysis", width = NULL, status="success", solidHeader=TRUE,
-                                                                             column(12, align="left",
-                                                                                    uiOutput("selected_analysis")
-                                                                             )
-                                                         )
+                                                                      column(12,actionButton("create_analysis", "Create analysis"))))
                                     ),
-                                    column(width=6, align="right",
-                                           actionButton("startHelp","Help", icon = icon("question-circle")), br(), br()),
-                                    column(width = 6, uiOutput("rename_file_box")),
+                                    column(6,
+                                           column(11, align="left",
+                                                  shinydashboard::box(title="Load previous analysis", width = NULL, status="success", solidHeader=TRUE,
+                                                                      column(12, align="left",
+                                                                             uiOutput("selected_analysis")
+                                                                      )),
+                                                  uiOutput("rename_file_box")),
+                                           column(1, actionButton("startHelp","Help", icon = icon("question-circle")), br()),
+                                    )
                                 )
                         ),
                         
@@ -174,7 +175,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                         
                         
                         ###############################################################
-                        # 2. Vizualising cells in reduced dimension
+                        # 3. Vizualising cells in reduced dimension
                         ###############################################################
                         
                         shinydashboard::tabItem(
@@ -254,6 +255,8 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                     sliderInput("percent_correlation", "Minimum percentage of cells to correlate with (%)", min=0, max=15, value=1, step=0.25)),
                                                              column(3, align="left", br(),
                                                                     actionButton("filter_corr_cells", "Filter & save")),
+                                                             column(3, align="left", br(),
+                                                                    actionButton("reset_corr_cells", "Reset filtering")),
                                                              column(12,  uiOutput("table_cor_filtered")
                                                              )
                                          )

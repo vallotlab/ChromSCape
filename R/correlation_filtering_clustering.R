@@ -92,11 +92,10 @@ correlation_and_hierarchical_clust_scExp <- function(
 filter_correlated_cell_scExp <- function(scExp, random_iter = 50,
     corr_threshold = 99, percent_correlation = 1, run_tsne =FALSE,
     verbose = FALSE){
-    
     warning_filter_correlated_cell_scExp(
         scExp, random_iter,corr_threshold, percent_correlation, run_tsne,
         verbose)
-
+    scExp@metadata$Unfiltered <- scExp
     pca_t = Matrix::t(SingleCellExperiment::reducedDim(scExp, "PCA"))
     correlation_values <- vector(length = random_iter)
     corChIP <- SingleCellExperiment::reducedDim(scExp, "Cor")
@@ -154,10 +153,10 @@ warning_filter_correlated_cell_scExp <- function(
     stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(random_iter),
             is.numeric(corr_threshold), is.numeric(percent_correlation))
     if (is.null(SingleCellExperiment::reducedDim(scExp, "Cor")))
-        stop("ChromSCape::correlation_and_hierarchical_clust_scExp - 
+        stop("ChromSCape::filter_correlated_cell_scExp - 
                 No correlation, run correlation_and_hierarchical_clust_scExp")
     if (is.null(SingleCellExperiment::reducedDim(scExp, "PCA")))
-        stop("ChromSCape::correlation_and_hierarchical_clust_scExp - No PCA, 
+        stop("ChromSCape::filter_correlated_cell_scExp - No PCA, 
                 run reduced_dim before filtering.")
 }
 
