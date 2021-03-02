@@ -369,8 +369,7 @@ smoothBin <- function(bin_score, nb_bins = 10){
 #' @param ref Reference genome.
 #' @param read_size Length of the reads.
 #'
-#' @importFrom Rsamtools export.bw
-#' @importFrom rtracklayer ScanBamParam
+#' @importFrom rtracklayer export.bw
 #' @importFrom GenomicRanges tileGenome width seqnames
 #' @return Writes a BigWig file as output
 #' 
@@ -412,7 +411,7 @@ rawfile_ToBigWig <- function(filename, BigWig_filename, format = "BAM",
 #' @param read_size Length of the reads
 #'   
 #' @importFrom Rsamtools ScanBamParam scanBam scanBamWhat
-#' @importFrom GenomicRanges tileGenome width seqnames seqlengths findOverlaps
+#' @importFrom GenomicRanges tileGenome width seqnames findOverlaps
 #' GRanges
 #' @importFrom IRanges IRanges
 #' 
