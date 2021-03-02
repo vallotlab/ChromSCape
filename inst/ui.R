@@ -84,7 +84,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                       column(6,
                                                                       radioButtons("data_choice_box", label = "Input data type",
                                                                                    choices = list("Count matrix(ces)"="count_mat",
-                                                                                                  "Index, Peak & Barcode files" = "Index_Peak_Barcode",
+                                                                                                  "Sparse Matrix" = "SparseMatrix",
                                                                                                   "Single-cell BAM files" = "BAM",
                                                                                                   "Single-cell BED files" = "BED"
                                                                                                   ))),
@@ -114,7 +114,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                 
                                                 fluidPage(
                                                     #Right Panel
-                                                    column(width=6,
+                                                    column(width=7,
                                                            shinydashboard::box(title="Filter & Normalize panel", width = NULL, status="success", solidHeader=TRUE,
                                                                                column(6, align="left",
                                                                                       column(12, align = "middle", h4("Cell coverage")),
@@ -136,7 +136,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                                               content = "filtering_parameters"),
                                                                                       sliderInput("quant_removal", shiny::HTML("<p><span style='color: red'>Select the upper percentile of cells to remove (potential doublets):</span></p>"),
-                                                                                                   min=80, max=100, value=95, step=1),
+                                                                                                   min=90, max=100, value=95, step=0.1),
                                                                                       sliderInput("min_cells_window", shiny::HTML("<p><span style='color: #9C36CF'>Select minimum percentage of cells to support a window :</span></p>"), min=0, max=5, value=1, step=0.05),
                                                                                       checkboxInput("run_tsne", "Run T-SNE", value= FALSE) %>%
                                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
@@ -160,12 +160,14 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                                column(12, align="left",
                                                                                       hr(),
                                                                                       actionButton("filter_normalize_reduce", "Filter, Normalize & Reduce")))),
-                                                    column(width = 6,
+                                                    column(width = 5,
                                                            shinydashboard::box(title="Select filtered & normalized dataset", width = NULL, status="success", solidHeader=TRUE,
                                                                                column(12, align="left",
                                                                                       htmlOutput("selected_reduced_dataset"),
                                                                                       textOutput("red_data_selection_info"),
-                                                                                      textOutput("red_data_selection_format"))))
+                                                                                      textOutput("red_data_selection_format")))
+                                                           # uiOutput("cell_feature_coverage_after")
+                                                           )
                                                     )
                         ),
                         
@@ -226,7 +228,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                     div(style="display: inline-block;vertical-align:top; width: 25px;",HTML("<br>")),
                                                                     div(style="display: inline-block;vertical-align:top; width: 200px;", sliderInput("consclust_iter", "Number of iterations:", min=10, max=1000, value=100, step=10)),
                                                                     div(style="display: inline-block;vertical-align:top; width: 25px;",HTML("<br>")),
-                                                                    div(style="display: inline-block;vertical-align:top; width: 200px;", selectInput("clusterAlg", "Cluster Algorithm:", choices = c("Hierarchical","Partitioning Medoids","K-means"),selected = "hc")),
+                                                                    div(style="display: inline-block;vertical-align:top; width: 200px;", selectInput("clusterAlg", "Cluster Algorithm:", choices = c("Hierarchical","Partitioning Medoids"))),
                                                                     br()),
                                                              column(3, align="left", actionButton("do_cons_clust", "Launch Consensus Clustering"),
                                                                     br()),
