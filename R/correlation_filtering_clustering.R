@@ -54,92 +54,6 @@ correlation_and_hierarchical_clust_scExp <- function(
     return(scExp)
 }
 
-#' Fast approximated correlation hierarchical clustering
-#'
-#' @param pca 
-#' @param n_cell_per_metacell 
-#' @param seed 
-#' @param correlation 
-#' @param hc_linkage 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-fast_approx_cor_clustering <- function(pca,
-                                       n_cell_per_metacell = 20,  seed = 47,
-                                       correlation = "pearson", 
-                                       hc_linkage = "ward.D"){
-    k = ceiling(nrow(pca) / n_cell_per_metacell)
-    set.seed(seed)
-    metacells = data.frame("cell_id" = rownames(pca),
-                           "metacell" = paste0("metacell_",kmeans(x = pca,
-                                                                  centers = k,
-                                                                  iter.max = 1000,
-                                                                  nstart = 5)$cluster))
-    pca$metacell =metacells$metacell
-    metacell_pca = as.data.frame(pca %>% dplyr::group_by(.data$metacell) %>%
-                                     dplyr::summarise(dplyr::across(.fns=mean)))
-    rownames(metacell_pca) = metacell_pca$metacell
-    metacell_pca = metacell_pca[,-1]
-    metacell_pca_t <- Matrix::t(metacell_pca)
-    cor_mat = stats::cor(metacell_pca_t, method = correlation)
-    hc_cor = stats::hclust(stats::as.dist(1 - cor_mat), method = hc_linkage)
-    
-    out = list("metacell_pca" = metacell_pca,
-               "cor_mat" = cor_mat,
-               "hc_cor" = hc_cor)
-    return(out)
-}
-
-#' Fast approximated correlation hierarchical clustering
-#'
-#' @param correlation Type of correlation
-#' @param hc_linkage Type of hierarchical clustering
-#'
-#' @return A list of clusters
-#'
-#' @examples fast_approx_cor_clustering()
-fast_heatmap <- function(scExp_cf, n_cell_per_metacell = 15, cluster = NULL,
-                         seed = 47, correlation = "pearson",
-                         hc_linkage = "ward.D"){
-    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(correlation),
-              is.character(hc_linkage))
-    pca = reducedDim(scExp_cf,"PCA")
-    
-    out = fast_approx_cor_clustering(pca, n_cell_per_metacell, seed,
-                                     correlation, hc_linkage)
-    
-    raw = ChromSCape::create_scDataset_raw(
-        ceiling(ncol(scExp_cf)/n_cell_per_metacell))
-    scExp_cf. = create_scExp(raw$mat,raw$annot)
-    scExp_cf.$cell_id = out$hc_cor$labels
-    SingleCellExperiment::reducedDim(scExp_cf.,"Cor") = out$cor_mat
-    scExp_cf.@metadata$hc_cor = out$hc_cor
-    
-    if(!is.null(cluster)){
-        scExp_cf.$cell_cluster= paste0("C",cutree(out$hc_cor,k = cluster))
-    }
-    
-    weights = as.data.frame(table(scExp_cf$sample_id)  / ncol(scExp_cf))
-    colnames(weights) = c("sample_id","weight")
-    out$metacells$sample_id = scExp_cf$sample_id[
-        match(out$metacells$cell_id, scExp_cf$cell_id)]
-    out$metacells$weight = weights$weight[match(out$metacells$sample_id,
-                                                weights$sample_id)]
-    scExp_cf.$sample_id = (
-        out$metacells %>%
-            group_by(metacell, sample_id, weight) %>%
-            count(sample_id) %>% mutate(weigthed.n = n / weight) %>%
-            group_by(metacell) %>% slice(which.max(weigthed.n)))$sample_id
-
-    
-    scExp_cf. = colors_scExp(scExp_cf., annotCol = c("sample_id",
-                                                     "cell_cluster"))
-    plot_heatmap_scExp(scExp_cf.)
-}
-
-
 #' Filter lowly correlated cells
 #'
 #' Remove cells that have a correlation score lower than what would be expected
@@ -335,6 +249,8 @@ num_cell_before_cor_filt_scExp <- function(scExp)
 #' @export
 #'
 #' @examples
+#' intra_correlation_scExp(scExp, by = "sample_id")
+#' intra_correlation_scExp(scExp, by = "cell_cluster")
 intra_correlation_scExp <- function(scExp_cf, by = c("sample_id",
                                                      "cell_cluster")[1]){
     stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(by))
@@ -378,6 +294,7 @@ intra_correlation_scExp <- function(scExp_cf, by = c("sample_id",
 #' @export
 #'
 #' @examples
+#' intra_correlation_scExp
 inter_correlation_scExp <- function(
     scExp_cf, by = c("sample_id","cell_cluster")[1],
     reference_group = unique(scExp_cf[[by]])[1],
