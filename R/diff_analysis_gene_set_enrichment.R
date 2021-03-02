@@ -27,6 +27,8 @@
 #' @param cdiff.th Fold change threshold. (1)
 #' @param method Wilcoxon or edgerGLM
 #' @param block Use batches as blocking factors ?
+#' @param group 
+#' @param ref 
 #'
 #' @return Returns a SingleCellExperiment object containing a differential list.
 #' @export
