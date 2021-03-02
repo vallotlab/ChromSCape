@@ -8,8 +8,7 @@ plot_intra_correlation_scExp(
   scExp_cf,
   by = c("sample_id", "cell_cluster")[1],
   jitter_by = NULL,
-  downsample = 5000,
-  seed = 47
+  downsample = 5000
 )
 }
 \arguments{
@@ -21,8 +20,6 @@ plot_intra_correlation_scExp(
 (cell_cluster or sample_id)}
 
 \item{downsample}{Downsample for plotting}
-
-\item{seed}{Random seed}
 }
 \value{
 A violin plot of intra-correlation

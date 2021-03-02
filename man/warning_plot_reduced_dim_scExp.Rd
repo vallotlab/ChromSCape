@@ -11,8 +11,7 @@ warning_plot_reduced_dim_scExp(
   select_x,
   select_y,
   downsample,
-  transparency,
-  seed
+  transparency
 )
 }
 \arguments{
@@ -29,8 +28,6 @@ warning_plot_reduced_dim_scExp(
 \item{downsample}{Number of cells to downsample}
 
 \item{transparency}{Alpha parameter, between 0 and 1}
-
-\item{seed}{Numeric random seed}
 }
 \value{
 Warning or errors if the inputs are not correct

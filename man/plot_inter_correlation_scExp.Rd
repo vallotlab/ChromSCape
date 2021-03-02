@@ -11,8 +11,7 @@ plot_inter_correlation_scExp(
   jitter_by = NULL,
   reference_group = unique(scExp_cf[[by]])[1],
   other_groups = unique(scExp_cf[[by]]),
-  downsample = 5000,
-  seed = 47
+  downsample = 5000
 )
 }
 \arguments{
@@ -24,8 +23,6 @@ plot_inter_correlation_scExp(
 (cell_cluster or sample_id)}
 
 \item{downsample}{Downsample for plotting}
-
-\item{seed}{Random seed}
 }
 \value{
 A violin plot of inter-correlation

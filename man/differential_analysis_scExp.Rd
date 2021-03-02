@@ -30,6 +30,10 @@ cluster against all others, or 'pairwise' to make 1 to 1 comparisons.
 \item{cdiff.th}{Fold change threshold. (1)}
 
 \item{block}{Use batches as blocking factors ?}
+
+\item{group}{}
+
+\item{ref}{}
 }
 \value{
 Returns a SingleCellExperiment object containing a differential list.

@@ -10,7 +10,6 @@ plot_heatmap_scExp(
   corColors = (grDevices::colorRampPalette(c("royalblue", "white", "indianred1")))(256),
   color_by = NULL,
   downsample = 1000,
-  seed = 47,
   hc_linkage = "ward.D"
 )
 }

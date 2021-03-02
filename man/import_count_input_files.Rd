@@ -5,32 +5,33 @@
 \title{Import and count input files depending on their format}
 \usage{
 import_count_input_files(
-  files_dir,
+  files_dir_list,
   file_type,
   which,
   ref,
-  peak_file_2,
+  feature_file,
   barcode_file,
-  index_file,
+  matrix_file,
   verbose
 )
 }
 \arguments{
-\item{files_dir}{Path to the input files}
-
 \item{file_type}{Input file type}
 
 \item{which}{A GRanges object of features}
 
 \item{ref}{Reference genome}
 
-\item{peak_file_2}{A bed file for peak annotation}
+\item{feature_file}{A file for containing unique feature genomic locations
+in tab separated format (.bed / .txt / .tsv / .*.gz), e.g. chr, start and end}
 
-\item{barcode_file}{A file containing barcode names}
+\item{barcode_file}{A file containing unique barcode names}
 
-\item{index_file}{A file containing indexes of non zero entries}
+\item{matrix_file}{A file containing indexes of non zero entries}
 
 \item{verbose}{Print ?}
+
+\item{files_dir}{A named list of directories containing the input files}
 }
 \value{
 A list with a GRanges object of feature types (which), the

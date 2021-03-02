@@ -30,3 +30,6 @@ with cells in reference_group
 \description{
 Calculate inter correlation between cluster or samples
 }
+\examples{
+intra_correlation_scExp
+}

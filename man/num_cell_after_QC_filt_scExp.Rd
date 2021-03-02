@@ -4,12 +4,14 @@
 \alias{num_cell_after_QC_filt_scExp}
 \title{Table of cells before / after QC}
 \usage{
-num_cell_after_QC_filt_scExp(scExp, annot)
+num_cell_after_QC_filt_scExp(scExp, annot, datamatrix)
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment object.}
 
 \item{annot}{A raw annotation data.frame of cells before filtering.}
+
+\item{datamatrix}{A matrix of cells per regions  before filtering.}
 }
 \value{
 A formatted kable in HTML.
