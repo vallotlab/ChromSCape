@@ -10,7 +10,9 @@ differential_analysis_scExp(
   method = "wilcox",
   qval.th = 0.01,
   cdiff.th = 1,
-  block = NULL
+  block = NULL,
+  group = NULL,
+  ref = NULL
 )
 }
 \arguments{
@@ -28,6 +30,10 @@ cluster against all others, or 'pairwise' to make 1 to 1 comparisons.
 \item{cdiff.th}{Fold change threshold. (1)}
 
 \item{block}{Use batches as blocking factors ?}
+
+\item{group}{}
+
+\item{ref}{}
 }
 \value{
 Returns a SingleCellExperiment object containing a differential list.

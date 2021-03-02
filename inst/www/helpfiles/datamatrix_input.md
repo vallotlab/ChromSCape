@@ -10,7 +10,7 @@ be already *summarized into features* :
  * **Peak-Index-Barcode** -3 files :  
     + '*_barcode.txt' : 1-column file of cell-barcode names
     + '*_peaks.bed': BED file of feature genomic location
-    + '_indexes.txt': 3 column space-separated file containing row index, column index and value of non-zeroes entries in the sparse matrix  
+    + '_index.txt': 3 column space-separated file containing row index, column index and value of non-zeroes entries in the sparse matrix  
     
 Or the signal can be stored directly in *raw format* (**single-cell BAM**,**single-cell BED/BED.gz**) containing genomic location of deduplicated reads for one cell.
 

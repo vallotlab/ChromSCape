@@ -4,10 +4,12 @@
 \alias{num_cell_scExp}
 \title{Table of cells}
 \usage{
-num_cell_scExp(annot)
+num_cell_scExp(annot, datamatrix)
 }
 \arguments{
 \item{annot}{An annotation of cells. Can be obtain through 'colData(scExp)'.}
+
+\item{datamatrix}{A matrix of cells per regions  before filtering.}
 }
 \value{
 A formatted kable in HTML.

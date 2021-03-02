@@ -7,7 +7,7 @@
 table_enriched_genes_scExp(
   scExp,
   set = "Both",
-  cell_cluster = "C1",
+  group = "C1",
   enr_class_sel = c("c1_positional", "c2_curated", "c3_motif", "c4_computational",
     "c5_GO", "c6_oncogenic", "c7_immunologic", "hallmark")
 )
@@ -19,10 +19,10 @@ sets.}
 \item{set}{A character vector, either 'Both', 'Overexpressed' or
 'Underexpressed'. ('Both')}
 
-\item{cell_cluster}{Cell cluster. ('C1')}
-
 \item{enr_class_sel}{Which classes of gene sets to show. (c('c1_positional',
 'c2_curated', ...))}
+
+\item{cell_cluster}{Cell cluster. ('C1')}
 }
 \value{
 A DT::data.table of enriched gene sets.

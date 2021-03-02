@@ -7,11 +7,13 @@
 subset_bam_call_peaks(
   scExp,
   odir,
-  inputBam,
+  input,
+  format = "BAM",
   p.value = 0.05,
   ref = "hg38",
   peak_distance_to_merge = 10000,
-  geneTSS_annotation = NULL
+  geneTSS_annotation = NULL,
+  run_coverage = TRUE
 )
 }
 \arguments{
@@ -20,7 +22,7 @@ subset_bam_call_peaks(
 \item{odir}{Output directory where to write temporary files and each
 cluster's BAM file}
 
-\item{inputBam}{A character vector of file paths to each sample's BAM file,
+\item{input}{A character vector of file paths to each sample's BAM file,
 containing cell barcode information as tags. BAM files can be paired-end or
 single-end.}
 
@@ -34,6 +36,8 @@ peak calling , in bp. (10000)}
 
 \item{geneTSS_annotation}{A data.frame annotation of genes TSS. If NULL will
 automatically load Gencode list of genes fro specified reference genome.}
+
+\item{run_coverage}{Create coverage tracks (.bw) for each cluster ?}
 }
 \value{
 A SingleCellExperiment with refinded annotation

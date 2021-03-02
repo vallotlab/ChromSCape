@@ -4,7 +4,7 @@
 \alias{warning_DA}
 \title{Warning for differential_analysis_scExp}
 \usage{
-warning_DA(scExp, de_type, method, qval.th, cdiff.th, block)
+warning_DA(scExp, de_type, method, qval.th, cdiff.th, block, group, ref)
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment object containing consclust with selected
@@ -21,6 +21,14 @@ cluster against all others, or 'pairwise' to make 1 to 1 comparisons.
 \item{cdiff.th}{Fold change threshold. (1)}
 
 \item{block}{Use batches as blocking factors ?}
+
+\item{group}{If de_type is custom, the group to compare (data.frame), must
+be a one-column data.frame with cell_clusters or sample_id as character in
+rows}
+
+\item{ref}{If de_type is custom, the reference to compare (data.frame), must
+be a one-column data.frame with cell_clusters or sample_id as character in
+rows}
 }
 \value{
 Warnings or Errors if the input are not correct

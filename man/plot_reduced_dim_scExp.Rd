@@ -9,7 +9,10 @@ plot_reduced_dim_scExp(
   color_by = "sample_id",
   reduced_dim = c("PCA", "TSNE", "UMAP"),
   select_x = "Component_1",
-  select_y = "Component_2"
+  select_y = "Component_2",
+  downsample = 5000,
+  transparency = 0.6,
+  size = 1
 )
 }
 \arguments{
@@ -22,6 +25,10 @@ plot_reduced_dim_scExp(
 \item{select_x}{Which variable to select for x axis}
 
 \item{select_y}{Which variable to select for y axis}
+
+\item{downsample}{Number of cells to downsample}
+
+\item{transparency}{Alpha parameter, between 0 and 1}
 }
 \value{
 A ggplot geom_point plot of reduced dimension 2D reprensentation

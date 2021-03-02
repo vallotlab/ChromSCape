@@ -19,5 +19,6 @@
 #' @import shiny
 #' @import ggplot2
 #' @importFrom colourpicker updateColourInput colourInput
+#' @importFrom qs qread qload qsave
 NULL
 

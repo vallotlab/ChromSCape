@@ -48,6 +48,7 @@ Imports:
     qualV,
     stringdist,
     fs,
+    qs,
     DT,
     scran,
     scater,
@@ -71,6 +72,8 @@ Imports:
     S4Vectors,
     SingleCellExperiment,
     SummarizedExperiment,
-    msigdbr
+    msigdbr,
+    qs,
+    Sushi
 Depends: 
     R (>= 4.0)

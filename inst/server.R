@@ -48,12 +48,14 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   #Global Functions
   init <- reactiveValues(data_folder =  getwd(), datamatrix = data.frame(), annot_raw = data.frame(),
                          available_analyses = list.dirs(path = file.path(getwd(), "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE),
-                         available_reduced_datasets = NULL)
+                         available_reduced_datasets = NULL, available_DA_GSA_datasets = NULL)
   reduced_datasets <- reactive({
-    if (is.null(init$available_reduced_datasets)) c() else gsub('.{6}$', '', basename(init$available_reduced_datasets)) })
+    if (is.null(init$available_reduced_datasets)) c() else gsub('.{3}$', '', basename(init$available_reduced_datasets)) })
   
   observeEvent({analysis_name()},{
     init$available_reduced_datasets = get.available.reduced.datasets(analysis_name())
+    print("observeEvent({analysis_name()}")
+    print(init$available_reduced_datasets)
   })
   annotCol <- reactive({
     if("batch_name" %in% colnames(SummarizedExperiment::colData(scExp()))){
@@ -63,19 +65,32 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     })
   output$feature_color <- renderUI({selectInput("color_by", "Color by", choices=annotCol())})
   
-  observeEvent(analysis_name(), { # application header (tells you which data set is selected)
+  observeEvent({
+    analysis_name()
+    input$selected_DA_GSA_dataset
+    input$selected_reduced_dataset
+    }, { # application header (tells you which data set is selected)
     req(analysis_name())
-    header <- paste0('<b>Analysis : ', analysis_name(), ' </b>')
-    shinyjs::html("pageHeader", header)
+      header <- paste0('<b>Analysis : ', analysis_name(), ' </b>')
+      if(!is.null(input$selected_DA_GSA_dataset)){
+        if(input$tabs %in% c("diff_analysis","enrich_analysis")){
+          pattern = paste0(input$selected_reduced_dataset, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_")
+          
+          suffix = gsub(pattern,"", input$selected_DA_GSA_dataset)
+          header <- paste0('<b>Analysis : ', analysis_name(), ' - ', suffix, ' </b>')
+        }
+      } 
+      shinyjs::html("pageHeader", header) 
   })
   
-  get.available.reduced.datasets <- function(selected_analysis){
-    list.files(path = file.path(init$data_folder, "ChromSCape_analyses", selected_analysis,"Filtering_Normalize_Reduce"), full.names = FALSE, recursive = TRUE,
-               pattern="[[:print:]]+_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+_(uncorrected|batchCorrected).RData")
-  }
   
-  get.available.filtered.datasets <- function(name, preproc){
-    list.files(path = file.path(init$data_folder, "ChromSCape_analyses", name, "correlation_clustering"), full.names = FALSE, recursive = FALSE, pattern = paste0(preproc, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?.RData"))
+  get.available.reduced.datasets <- function(selected_analysis){
+    print("get.available.reduced.datasets")
+    print(list.files(path = file.path(init$data_folder, "ChromSCape_analyses", selected_analysis,"Filtering_Normalize_Reduce"), full.names = FALSE, recursive = TRUE,
+                     pattern="[[:print:]]+_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_(uncorrected|batchCorrected).qs"))
+    list.files(path = file.path(init$data_folder, "ChromSCape_analyses", selected_analysis,"Filtering_Normalize_Reduce"), full.names = FALSE, recursive = TRUE,
+               pattern="[[:print:]]+_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_(uncorrected|batchCorrected).qs")
+    
   }
   
   able_disable_tab <- function(variables_to_check, tab_id) {
@@ -140,6 +155,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
            
            init$available_analyses <- list.dirs(path = file.path(init$data_folder, "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE)
            init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
+           print("observeEvent({ input$path_cookie}")
+           print(init$available_reduced_datasets)
          }
        }
       })
@@ -159,7 +176,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         path = file.path(init$data_folder, "ChromSCape_analyses"),
         full.names = FALSE, recursive = FALSE)
       init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
-
+      print("observeEvent({ input$data_folder}")
+      print(init$available_reduced_datasets)
       if(.Platform$OS.type != "windows"){
         js$save_cookie(init$data_folder)
       }
@@ -168,15 +186,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   
   output$input_data_ui <- renderUI({
-    if(input$data_choice_box== "count_mat"){
+    if(input$data_choice_box == "count_mat"){
       column(12, br(),fileInput("datafile_matrix", "Upload all data matrices (.txt, .tsv or .csv) :",
-                multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv", ".csv")),
+                multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv", ".csv", ".gz")),
              checkboxInput("is_combined_mat", "Single Multi-sample count matrix ?",value = FALSE),
              uiOutput("nb_samples_mat")
              )
       
     }
-    else{
+    else if (input$data_choice_box == "SparseMatrix"){
       column(12,
              br(),
              HTML(paste0("<b>Upload folder (", input$data_choice_box,")</b><br>")),
@@ -184,14 +202,58 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                         title =  paste0("Select a directory containing your ",
                                                         input$data_choice_box," files."),
                                         icon = icon("folder-open")),
-             selectInput(inputId = "nb_samples_to_find",label = "Number of samples:",
-                         choices = 1:100,selected = 1,multiple = FALSE)
+             checkboxInput("is_combined_mat", "Single Multi-sample count matrix ?",value = FALSE),
+             uiOutput("nb_samples_mat")
+      )
+    }else if(input$data_choice_box == "BAM" | input$data_choice_box == "BED"){
+      column(12,
+             br(),
+             HTML(paste0("<b>Upload folder (", input$data_choice_box,")</b><br>")),
+             shinyFiles::shinyDirButton(id = "datafile_folder", label = "Select folder containing raw files",
+                                        title =  paste0("Select a directory containing your ",
+                                                        input$data_choice_box," files."),
+                                        icon = icon("folder-open"))
+
              )
     }
     
   })
   
-  output$advanced_data_input <- renderUI({
+  observeEvent(input$datafile_folder, priority = 10000, {
+    showModal(modalDialog(
+      title = "How to select my samples:",
+      HTML("
+      <p> Before starting uploading your data, make sure you have placed all your 
+      datasets in a given <u>directory</u>. Each sample input data, no matter it's format,
+      should be place in its own <b>folder</b> in this <u>directory</u>. Labels will be given to
+      each sample based on the name of the <b>folders</b>. </p>
+      <br>
+      <p> Here, simply pick the <u>directory</u> containing the samples folders, and
+      ChromSCape will automatically detect your <b>samples</b>. </p>
+      <br>
+      Example of folder structure : <br>
+      <u>scChIPseq</u><br>
+          ├── <b>Sample_1</b><br>
+          │   ├── cell_1.bed<br>
+          │   ├── cell_2.bed<br>
+          │   ├── cell_3.bed<br>
+          │   └── cell_4.bed<br>
+          ├── <b>Sample_2</b><br>
+          │   ├── cell_1.bed<br>
+          │   ├── cell_2.bed<br>
+          │   ├── cell_3.bed<br>
+          │   └── cell_4.bed<br>
+
+      <br>
+      You're almost there !
+      <br>
+      ")
+      ,
+      easyClose = TRUE
+    ))
+  })
+  
+  output$rawcount_data_input <- renderUI({
    if(input$data_choice_box != "count_mat"){
     column(12,
            shinydashboard::box(title="Counting parameters", width = NULL, status="success", solidHeader = TRUE,
@@ -200,8 +262,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                             choices = list("Count on bins (width)"="bin_width",
                                                            "Count on bins (number of bins)" = "n_bins",
                                                            "Count on peaks (must provide a .bed file)" = "peak_file",
-                                                           "Count around gene TSS" = "geneTSS")),
-                                      
+                                                           "Count around gene TSS" = "geneTSS"))
                                ),
                                column(6,
                                       uiOutput("bin_width"),
@@ -212,6 +273,18 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     )
    }
   })
+  
+  output$advanced_data_input <- renderUI({
+    if(input$data_choice_box != "count_mat"){
+      if(input$data_choice_box == "SparseMatrix"){
+        column(12, uiOutput("datafile_folder_upload_UI"))
+      } else{
+        column(12, uiOutput("rawcount_data_input"),
+               uiOutput("datafile_folder_upload_UI"))
+      }
+    }
+  })
+  
   
   output$nb_samples_mat <- renderUI({ if(input$is_combined_mat == TRUE){
     selectInput(inputId = "nb_samples_to_find",label = "Number of samples:",
@@ -233,6 +306,32 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
   shinyFiles::shinyDirChoose(input, "datafile_folder", roots = volumes, session = 
                                session)
+  
+  files_dir <- reactiveVal(NULL)
+  
+  observeEvent(input$datafile_folder,
+              {
+                req(input$datafile_folder)
+                if(!is.null(input$datafile_folder)){
+                  print("Retrieving sample folders")
+                  datafile_folder = shinyFiles::parseDirPath(volumes, input$datafile_folder)
+                  files_dir_tmp = list.dirs(datafile_folder, recursive = FALSE, full.names = TRUE)
+                  names(files_dir_tmp) = basename(files_dir_tmp)
+                  files_dir(files_dir_tmp)
+                }
+              })
+  
+  output$datafile_folder_upload_UI <- renderUI({
+    req(files_dir())
+    print("Inside output$datafile_folder_upload_UI")
+    if(!is.null(files_dir()) & length(files_dir()) > 0 ){
+        print("Inside output$pc_upload UI... BAM")
+        selectInput("sample_selection", label = "Selected samples",
+                    choices = names(files_dir()), multiple = TRUE,
+                    selected = names(files_dir()) )
+    }
+  })
+  
   
   observeEvent(input$create_analysis, {  # save new dataset
     req(input$new_analysis_name, input$annotation)
@@ -271,15 +370,18 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                    sample_id = samples_ids,
                                    batch_id = factor(rep(1, ncol(datamatrix))))
           } else{ annot_raw = tmp_list$annot_raw }
-        }
-        else if(type_file %in% c("BAM","BED","Index_Peak_Barcode") & !is.null(input$datafile_folder)) {
-          datafile_folder = shinyFiles::parseDirPath(volumes, input$datafile_folder)
+        } else {
+          selected_sample_folders = files_dir()[input$sample_selection]
           send_warning = FALSE
-          if(type_file == "BAM") if(length(list.files(datafile_folder,pattern = "*.bam$"))==0) send_warning = TRUE
-          if(type_file == "BED") if(length(list.files(datafile_folder,pattern = "*.bed$|.*.bed.gz"))==0) send_warning = TRUE
-          if(type_file == "Index_Peak_Barcode") 
-            if(length(list.files(datafile_folder,pattern = "*.index.txt|.*.barcodes.txt|.*.peak.bed"))==0) send_warning = TRUE
-          
+          if(type_file == "BAM") if(length(list.files(selected_sample_folders[1],pattern = "*.bam$"))==0) send_warning = TRUE
+          if(type_file == "BED") if(length(list.files(selected_sample_folders[1],pattern = "*.bed$|.*.bed.gz"))==0) send_warning = TRUE
+          if(type_file == "SparseMatrix") {
+            combin = expand.grid(c(".*features", ".*barcodes", ".*matrix"), c(".mtx",".tsv",".txt",".bed",".*.gz"))[-c(1,2,6,9,11,12),]
+            pattern = paste(combin$Var1,combin$Var2, sep="", collapse = "|")
+            if(length(list.files(selected_sample_folders[1],
+                                 pattern = pattern))!=3) send_warning = TRUE
+          }
+
           if(send_warning) {
             showNotification(paste0("Warning : Can't find any specified file types in the upload folder. 
                                     Select another upload folder or another data type."),
@@ -288,43 +390,44 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           }
           incProgress(0.2, detail=paste0("Reading ",type_file," files to create matrix. This might take a while."))
           
-          if(input$count_on_box == "bin_width") datamatrix = ChromSCape:::raw_counts_to_feature_count_files(
-            files_dir = datafile_folder,
+          if(type_file == "SparseMatrix"){
+            out =  ChromSCape:::raw_counts_to_feature_count_files(
+            files_dir = selected_sample_folders,
+            file_type = type_file,
+            ref = input$annotation)
+        } else if(type_file %in% c("BAM","BED") & !is.null(input$datafile_folder)) {
+
+          if(input$count_on_box == "bin_width") out = ChromSCape:::raw_counts_to_feature_count_files(
+            files_dir = selected_sample_folders,
             file_type = type_file,
             bin_width = as.numeric(input$bin_width),
             ref = input$annotation)
           
-          if(input$count_on_box == "n_bins") datamatrix = ChromSCape:::raw_counts_to_feature_count_files(
-            files_dir = datafile_folder,
+          if(input$count_on_box == "n_bins") out = ChromSCape:::raw_counts_to_feature_count_files(
+            files_dir = selected_sample_folders,
             file_type = type_file,
             n_bins = as.numeric(input$n_bins),
             ref = input$annotation)
           
-          
-          if(input$count_on_box == "peak_file") datamatrix = ChromSCape:::raw_counts_to_feature_count_files(
-            files_dir = datafile_folder,
+          if(input$count_on_box == "peak_file") out = ChromSCape:::raw_counts_to_feature_count_files(
+            files_dir = selected_sample_folders,
             file_type = type_file,
             peak_file = as.character(input$peak_file$datapath),
             ref = input$annotation)
           
-          if(input$count_on_box == "geneTSS") datamatrix = ChromSCape:::raw_counts_to_feature_count_files(
-            files_dir = datafile_folder,
+          if(input$count_on_box == "geneTSS")  out = ChromSCape:::raw_counts_to_feature_count_files(
+            files_dir = selected_sample_folders,
             file_type = type_file,
             geneTSS = TRUE,
             aroundTSS = as.numeric(input$aroundTSS),
             ref = input$annotation)
-          
-          incProgress(0.3, detail=paste0("Finished creating matrix, assigning sample labels to cells heuristically."))
-          samples_ids = detect_samples(colnames(datamatrix), nb_samples = as.numeric(input$nb_samples_to_find))
-          annot_raw = data.frame(barcode = colnames(datamatrix),
-                                 cell_id = colnames(datamatrix),
-                                 sample_id = samples_ids,
-                                 batch_id = factor(rep(1, ncol(datamatrix)))
-          )
-          
-                  
-        } else {
-          stop("No data folder or data files selected.")
+                  } else {
+                    stop("No data folder or data files selected.")
+                  }
+          incProgress(0.3, detail=paste0("Finished creating matrix."))
+
+          datamatrix = out$datamatrix
+          annot_raw = out$annot_raw
         }
         incProgress(0.4, detail="Saving matrix & annotation...")
         dir.create(file.path(init$data_folder, "ChromSCape_analyses"), showWarnings = FALSE)
@@ -335,8 +438,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Diff_Analysis_Gene_Sets"))
         write.table(input$annotation, file.path(init$data_folder, 'ChromSCape_analyses', input$new_analysis_name, 'annotation.txt'), row.names = FALSE, col.names = FALSE, quote = FALSE)
         
-        save(datamatrix, annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "scChIP_raw.RData"))
-
+        qs::qsave(datamatrix, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "datamatrix.qs"))
+        qs::qsave(annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "annot_raw.qs"))
+        
         init$available_analyses <- list.dirs(path = file.path(init$data_folder, "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE)
 
         updateSelectInput(session = session, inputId = "selected_analysis",
@@ -354,29 +458,76 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$selected_analysis, {  # load precompiled dataset and update coverage plot
     if(!is.null(input$selected_analysis) & input$selected_analysis != ""){
-      myData = new.env()
-      load(file.path(init$data_folder,"ChromSCape_analyses", input$selected_analysis, "scChIP_raw.RData"), envir = myData)
-      init$datamatrix <- myData$datamatrix
-      init$annot_raw <- myData$annot_raw
-      
+      init$datamatrix <- qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "datamatrix.qs"))
+      init$annot_raw <-  qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "annot_raw.qs"))
     }
   })
   
-  # observeEvent(input$selected_analysis,{
-  #   req(input$selected_analysis)
-  #   
-  #   if(!is.null(input$selected_reduced_dataset)){
-  #     delay(1500, {
-  #       if(gsub(pattern ="_\\d*_\\d*_\\d*_\\w*","",input$selected_reduced_dataset) != input$selected_analysis){
-  #         
-  #         showNotification(paste0("Warning : Selected Analysis '",input$selected_analysis,
-  #                                 "' is different from selected reduced dataset '", input$selected_reduced_dataset,"'"),
-  #                          duration = 5, closeButton = TRUE, type="warning")
-  #       }
-  #     })
-  #   }
-  # })
+  output$rename_file_box <- renderUI({
+    shinydashboard::box(title = tagList("Rename Samples", shiny::icon("signature")),
+                        width = NULL, status = "success", solidHeader = TRUE, 
+                        collapsible = TRUE, collapsed = TRUE,
+                        column(8, htmlOutput("rename_file_UI")),
+                        br(),
+                        column(6, actionButton("save_rename", "Rename", icon = icon("save")))
+                        )
+  })
   
+  output$rename_file_UI <- renderUI({
+    req(analysis_name())
+    print("Inside rename_file_UI")
+    if(nrow(init$datamatrix) > 0 & nrow(init$annot_raw) > 0 ){
+      sample_names = unique(init$annot_raw$sample_id)
+      print(sample_names)
+      lapply(sample_names, function(i) {
+        shiny::textInput(inputId = paste0("sample_", i),
+                         placeholder = i,
+                         label = i,
+                         value = i
+        )
+      })
+    }
+  })
+  
+  observeEvent(input$save_rename, {  
+    req(analysis_name(), init$data_folder, init$datamatrix, init$annot_raw)
+    
+    if(nrow(init$datamatrix) > 0 & nrow(init$annot_raw) > 0 ){
+      annot_raw = init$annot_raw
+      datamatrix = init$datamatrix
+      sample_names = unique(annot_raw$sample_id)
+      for(i in sample_names) {
+        expr <- paste0("re_name = input$sample_", i)
+        eval(parse(text = expr))
+
+        if(re_name != i){
+          cell_idxs = which( annot_raw$sample_id == i)
+          annot_raw[cell_idxs, "sample_id"] = re_name
+          annot_raw[cell_idxs, "cell_id"] = gsub(i,"",annot_raw[cell_idxs, "cell_id"])
+          annot_raw[cell_idxs, "cell_id"] = paste0(re_name,annot_raw[cell_idxs, "cell_id"])
+          rownames(annot_raw) = annot_raw$cell_id
+
+          colnames(datamatrix)[cell_idxs] = annot_raw$cell_id[cell_idxs]
+        }
+      }
+     
+      init$annot_raw <- annot_raw
+      init$datamatrix <- datamatrix
+
+      qs::qsave(datamatrix, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "datamatrix.qs"))
+      qs::qsave(annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "annot_raw.qs"))
+      
+      if(length(list.files(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering"), pattern = ".qs"))>0){
+        showNotification(paste0("Please re-run analysis from filtering in order to rename downstream analysis."),
+                         duration = 15, closeButton = TRUE, type="warning")
+        
+      }
+      
+      print("Renaming file done !")
+      
+    }
+  })
+
   observeEvent(input$new_analysis_name, {  # reset label on actionButtion when new dataset is added
     updateActionButton(session, "create_analysis", label="Create Analysis", icon = character(0))
   })
@@ -415,7 +566,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     quantile of cell read counts to keep and batch correction type."})
   
   output$exclude_file <- renderUI({ if(input$exclude_regions){
-    fileInput("exclude_file", ".bed file containing the regions to exclude from data set:", multiple = FALSE, accept = c(".bed",".txt"))
+    fileInput("exclude_file", ".bed / .bed.gz / .txt file containing the feature to exclude from data set:", multiple = FALSE, accept = c(".bed",".txt", ".bed.gz"))
   }})
   output$num_batches <- renderUI({ if(input$do_batch_corr){
     selectInput("num_batches","Select number of batches (each can have one or multiple samples):", choices=c(2:10))
@@ -442,27 +593,29 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     subsample_n <- if(input$do_subsample){input$subsample_n}
     
     annotationId <- annotation_id_norm()
-    exclude_regions <- if(input$exclude_regions) {
+    print(input$exclude_file)
+    if(input$exclude_regions) {
       if(!is.null(input$exclude_file) && file.exists(as.character(input$exclude_file$datapath))){
-      setNames(read.table(
-      input$exclude_file$datapath, header = FALSE, stringsAsFactors = FALSE),
-      c("chr", "start", "stop"))
+        tmp_file = tempfile(fileext = ".bed.gz")
+        file.copy(input$exclude_file$datapath, tmp_file, overwrite = TRUE)
+        exclude_regions <- rtracklayer::import(tmp_file)
       } else {
         warning("The BED file you specified doesn't exist. No specific features will be
                 removed during filtering.")
-        NULL
+        exclude_regions <- NULL
       }
     }
     else {
-      NULL
+      exclude_regions <- NULL
     }
-  
+
     callModule(Module_preprocessing_filtering_and_reduction, "Module_preprocessing_filtering_and_reduction", reactive({input$selected_analysis}), reactive({input$min_coverage_cell}),
                reactive({input$min_cells_window}), reactive({input$quant_removal}), reactive({init$datamatrix}), reactive({init$annot_raw}),
                reactive({init$data_folder}),reactive({annotationId}), reactive({exclude_regions}) ,reactive({input$do_batch_corr}),
                 reactive({batch_sels}), reactive({input$run_tsne}), reactive({subsample_n}))
     
     init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
+
     updateActionButton(session, "filter_normalize_reduce", label="Processed and saved successfully", icon = icon("check-circle"))
     
   })
@@ -486,13 +639,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     
     
     t1 = system.time({
-    myData = new.env()
-    load(filename_sel, envir = myData)
-    if(is.reactive(myData$scExp)) {
-      myData$scExp = isolate(myData$scExp())
+    scExp. = qs::qread(filename_sel)
+    if(is.reactive(scExp.)) {
+      scExp. = isolate(scExp.())
     }
-    scExp(myData$scExp) # retrieve filtered scExp
-    rm(myData)
+    scExp(scExp.) # retrieve filtered scExp
+    rm(scExp.)
     gc()
     })
     cat("Loaded reduced data in ",t1[3]," secs\n")
@@ -500,11 +652,14 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
 
   cell_cov_df <- reactive ({
+    req(init$datamatrix)
     df = data.frame(coverage = sort(unname(Matrix::colSums(init$datamatrix)))) 
     df
     })  # used for plotting cell coverage on first page
   
+  
   quantile_threshold =  reactive({
+    req(init$datamatrix)
     index = round(ncol(init$datamatrix) * as.numeric(input$quant_removal) * 0.01)
     q = cell_cov_df()$coverage[index]
     q
@@ -512,8 +667,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   cell_cov_plot <- reactive({
     ggplot(cell_cov_df(), aes(x = coverage)) + 
-      geom_histogram(color="black", fill="steelblue", bins = input$coverage_bins) +
-      labs(x="Log10(Reads per cell)")  + 
+      geom_histogram(color="black", fill="steelblue", bins = 75) +
+      labs(x="Log10(Reads per cell)", y = "nCells")  + 
       theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), 
             panel.background=element_blank(), axis.line=element_line(colour="black"),
             panel.border=element_rect(colour="black", fill=NA)) +
@@ -526,16 +681,116 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$cell_coverage <- plotly::renderPlotly( plotly::ggplotly(cell_cov_plot(), 
                                                                  tooltip="Sample", dynamicTicks=TRUE) )
   
+  feature_cov_df <- reactive ({
+    req(init$datamatrix)
+    if(ncol(init$datamatrix) * nrow(init$datamatrix) > 1e+08){
+      set.seed(47)
+      # cols = sample(seq_len(ncol(init$datamatrix)), min(1500,ncol(init$datamatrix)), replace = TRUE)
+      row = sample(seq_len(nrow(init$datamatrix)), min(5000,nrow(init$datamatrix)), replace = TRUE)
+      sample_mat = init$datamatrix[row, ]
+    } else{
+      sample_mat = init$datamatrix
+    }
+    sel_above_2 <- (sample_mat >= 2)
+    gc()
+    bina_counts = Matrix::sparseMatrix(i = 1, j = 1, x = 1, 
+                                       dims = dim(sample_mat))
+    bina_counts[1, 1] = 0
+    bina_counts[sel_above_2] <- 1
+    df = data.frame(coverage = sort(unname(Matrix::rowSums(bina_counts)))) 
+    df
+  })  # used for plotting feature coverage on first page
+  
+  percent_cell_threshold =  reactive({
+    req(init$datamatrix)
+    q = round(ncol(init$datamatrix) * as.numeric(input$min_cells_window) * 0.01)
+    q
+  })
+  
+  feature_cov_plot <- reactive({
+    ggplot(feature_cov_df(), aes(x = coverage)) + 
+      geom_histogram(color="black", fill="#F2B066", bins = 75) +
+      labs(x="Log10(Cells 'ON' per feature)", y = "nFeatures")  + 
+      theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), 
+            panel.background=element_blank(), axis.line=element_line(colour="black"),
+            panel.border=element_rect(colour="black", fill=NA)) +
+      geom_vline(xintercept = as.numeric(percent_cell_threshold()), color = "#9C36CF") +
+      scale_x_log10()
+    
+  })
+  
+  output$feature_coverage <- plotly::renderPlotly( plotly::ggplotly(feature_cov_plot(), 
+                                                                 tooltip="Feature", dynamicTicks=TRUE) )
+  
+  # cell_cov_plot_after <- reactive({
+  #   req(scExp())
+  #   df = data.frame(coverage = sort(unname(Matrix::colSums(SingleCellExperiment::count(scExp())))))
+  #   ggplot(df, aes(x = coverage)) + 
+  #     geom_histogram(color="black", fill="steelblue", bins = 75) +
+  #     labs(x="Log10(Reads per cell)", y = "nCells")  + 
+  #     theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), 
+  #           panel.background=element_blank(), axis.line=element_line(colour="black"),
+  #           panel.border=element_rect(colour="black", fill=NA)) +
+  #     geom_vline(xintercept = as.numeric(input$min_coverage_cell), color = "#22AD18") + 
+  #     geom_vline(xintercept = quantile_threshold(), color = "#D61111") +
+  #     scale_x_log10()
+  #   
+  # })
+  # output$cell_coverage_after <- plotly::renderPlotly( plotly::ggplotly(cell_cov_plot_after(), 
+  #                                                                tooltip="Sample", dynamicTicks=TRUE) )
+  # feature_cov_df_after <- reactive ({
+  #   req(scExp())
+  #   if(ncol(scExp()) * nrow(scExp()) > 1e+08){
+  #     set.seed(47)
+  #     # cols = sample(seq_len(ncol(init$datamatrix)), min(1500,ncol(init$datamatrix)), replace = TRUE)
+  #     row = sample(seq_len(nrow(scExp())), min(5000,nrow(scExp())), replace = TRUE)
+  #     sample_mat = SingleCellExperiment::counts(scExp())[row, ]
+  #   } else{
+  #     sample_mat = SingleCellExperiment::counts(scExp())
+  #   }
+  #   sel_above_2 <- (sample_mat >= 2)
+  #   gc()
+  #   bina_counts = Matrix::sparseMatrix(i = 1, j = 1, x = 1, 
+  #                                      dims = dim(sample_mat))
+  #   bina_counts[1, 1] = 0
+  #   bina_counts[sel_above_2] <- 1
+  #   df = data.frame(coverage = sort(unname(Matrix::rowSums(bina_counts)))) 
+  #   df
+  # })
+  # 
+  # feature_cov_plot_after <- reactive({
+  #   ggplot(feature_cov_df_after(), aes(x = coverage)) + 
+  #     geom_histogram(color="black", fill="#F2B066", bins = 75) +
+  #     labs(x="Log10(Cells 'ON' per feature)", y = "nFeatures")  + 
+  #     theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), 
+  #           panel.background=element_blank(), axis.line=element_line(colour="black"),
+  #           panel.border=element_rect(colour="black", fill=NA)) +
+  #     geom_vline(xintercept = as.numeric(percent_cell_threshold()), color = "#9C36CF") +
+  #     scale_x_log10()
+  #   
+  # })
+  # 
+  # output$feature_coverage_after <- plotly::renderPlotly(
+  #   plotly::ggplotly(feature_cov_plot_after(),tooltip="Feature", dynamicTicks=TRUE) )
+  # 
+  # output$cell_feature_coverage_after <- renderUI({
+  #   req(scExp())
+  #   if(!is.null(scExp())){
+  #   shinydashboard::box(title="Select filtered & normalized dataset", width = NULL, status="success", solidHeader=TRUE,
+  #                       column(6,plotOutput("feature_coverage_after")),
+  #                       column(6,plotOutput("cell_coverage_after")))
+  #   }
+  # })
   
   output$num_cell <- function(){
     req(init$annot_raw)
-    tab = num_cell_scExp(init$annot_raw)
+    tab = num_cell_scExp(init$annot_raw, init$datamatrix)
     tab
   }
   
   output$num_cell_after_QC_filt <- function(){
     req(input$selected_reduced_dataset,scExp())
-    tab = num_cell_after_QC_filt_scExp(scExp(),init$annot_raw)
+    tab = num_cell_after_QC_filt_scExp(scExp(),init$annot_raw, init$datamatrix)
     tab
   }
   
@@ -580,6 +835,48 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
   output$pca_plot <- renderPlot(pca_plot())
+  
+  contrib_features_plot <- reactive({
+    req(scExp(),  input$pc_select_x)
+    if(input$pc_select_x %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
+      p = plot_most_contributing_features(scExp(), component = input$pc_select_x,
+                                          n_top_bot = as.numeric(input$n_top_features))
+      p
+    }
+  })
+  
+  output$contrib_features_plot <- renderPlotly(contrib_features_plot())
+  
+  contrib_chr_plot <- reactive({
+    req(scExp(),  input$pc_select_x)
+    if(input$pc_select_x %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
+      p = plot_pie_most_contributing_chr(scExp(), component = input$pc_select_x)
+      p
+    }
+  })
+  output$contrib_chr_plot <- renderPlot(contrib_chr_plot())
+  
+  output$contribution_to_pca_UI <- renderUI({
+    req(scExp(), input$pc_select_x)
+    if("PCA" %in% SingleCellExperiment::reducedDimNames(scExp())){
+      if(input$pc_select_x %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
+        shinydashboard::box(title="Contribution to PCA", width = NULL, status="success", solidHeader=TRUE,
+                            column(12, align="left",
+                                   selectInput("n_top_features", label =  "Top features",
+                                               choices = 5:100,
+                                               multiple = FALSE, selected = 10),
+                                   h3(paste0("Most contributing features to '", input$pc_select_x,"' .")),
+                                   plotlyOutput("contrib_features_plot") %>% 
+                                     shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+                            ),
+                            column(12, align="left", 
+                                   h3("Contribution of chromosomes in top 100 features."),
+                                   plotOutput("contrib_chr_plot") %>% 
+                                     shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+                                   ))
+      }
+    }
+  })
   
   output$tsne_box <- renderUI({
     req(scExp(), annotCol(), input$color_by)
@@ -646,9 +943,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     scExp. = colors_scExp(scExp(),annotCol = input$color_by,color_by = input$color_by, color_df = color_df)
     scExp(scExp.)
     
-    save("scExp", file = file.path(init$data_folder, "ChromSCape_analyses",
+    qs::qsave(scExp, file = file.path(init$data_folder, "ChromSCape_analyses",
                                    analysis_name(), "Filtering_Normalize_Reduce",
-                                   paste0(input$selected_reduced_dataset,".RData")))
+                                   paste0(input$selected_reduced_dataset,".qs")))
+    
     rm(scExp.)
     rm(color_df)
     gc()
@@ -672,17 +970,29 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   selected_filtered_dataset <- reactive({input$selected_reduced_dataset})
   
+  annotCol_cf <- reactive({
+    req(scExp_cf())
+    cols = c("sample_id")
+    if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
+      cols = c(cols,"cell_cluster")
+      } 
+    if("batch_name" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
+      cols = c(cols,"batch_name")
+      } 
+    cols = c(cols, "total_counts")
+    cols
+  })
+  
   observeEvent(input$tabs, 
                {
                if(input$tabs == "cons_clustering"){
                  file = file.path(init$data_folder, "ChromSCape_analyses",
                                   analysis_name(), "correlation_clustering",
-                                  paste0(selected_filtered_dataset(),".RData"))
+                                  paste0(selected_filtered_dataset(),".qs"))
                  if(file.exists(file)){
-                   myData = new.env()
-                   load(file, envir = myData)
-                   scExp_cf(myData$data$scExp_cf)
-                   rm(myData)
+                   data = qs::qread(file)
+                   scExp_cf(data$scExp_cf)
+                   rm(data)
                    gc()
 
                  } else {
@@ -724,10 +1034,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                    gc()
                    file = file.path(init$data_folder, "ChromSCape_analyses",
                                     analysis_name(), "correlation_clustering",
-                                    paste0(selected_filtered_dataset(),".RData"))
+                                    paste0(selected_filtered_dataset(),".qs"))
                    if(!file.exists(file)){
                      data = list("scExp_cf" = scExp_cf())
-                     save(data,file=file )
+                     qs::qsave(data,file=file )
                      rm(data)
                      gc()
 
@@ -798,8 +1108,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       gc()
       incProgress(amount=0.2, detail=paste("Saving"))
       data = list("scExp_cf" = scExp_cf())
-      save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
-                                              paste0(input$selected_reduced_dataset,  ".RData")))
+      qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
+                                              paste0(input$selected_reduced_dataset, ".qs")))
       incProgress(amount=0.2, detail=paste("Finished"))
       rm(data)
       gc()
@@ -875,8 +1185,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                           prefix = plotting_directory()))
       gc()
       data = list("scExp_cf" = scExp_cf())
-      save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
-                                  paste0(input$selected_reduced_dataset, ".RData")))
+      qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
+                                  paste0(input$selected_reduced_dataset, ".qs")))
       rm(data)
       gc()
       clust$clust_pdf <- NULL  # needed in order to update the pdf output
@@ -923,6 +1233,50 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                }
                }
   )
+  
+  output$violin_color <- renderUI({
+    req(annotCol_cf())
+    selectInput("violin_color","Color by", choices=annotCol_cf()[-which(annotCol_cf() == "total_counts")])
+  })
+  
+  output$jitter_color <- renderUI({
+    req(annotCol_cf(), input$add_jitter)
+    if(input$add_jitter) selectInput("jitter_color","Color cells", choices=annotCol_cf())
+  })
+  
+  output$intra_corr_UI <- renderUI({
+    req(annotCol_cf(), input$violin_color)
+   
+    if(input$add_jitter) jitter_col = input$jitter_color else jitter_col = NULL
+     
+   output$intra_corr_plot = renderPlotly(
+     plot_intra_correlation_scExp(scExp_cf(), by = input$violin_color,
+                                  jitter_by = jitter_col))
+    plotly::plotlyOutput("intra_corr_plot",width = 500,height = 500) %>%
+      shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+    
+    })
+  
+  output$reference_group <- renderUI({
+    req(annotCol_cf(), scExp_cf(), input$violin_color)
+    selectInput("reference_group","Correlate with",
+                choices = unique(scExp_cf()[[input$violin_color]]) )
+  })
+  
+
+  output$inter_corr_UI <- renderUI({
+    req(annotCol_cf(), input$violin_color)
+    
+    if(input$add_jitter) jitter_col = input$jitter_color else jitter_col = NULL
+    output$inter_corr_plot = renderPlotly(
+      plot_inter_correlation_scExp(scExp_cf(), by = input$violin_color,
+                                   jitter_by = jitter_col,
+                                   reference_group = input$reference_group))
+    
+    plotly::plotlyOutput("inter_corr_plot",width = 500,height = 500) %>%
+      shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+    
+  })
   
 #   
 # output$cons_clust_anno_plot <- renderPlot({
@@ -972,6 +1326,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
 
+  
     
   output$hcor_kable <- function(){
     req(scExp_cf())
@@ -1133,39 +1488,72 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       return( as.character(icon("times-circle", class = "large_icon")))
     }
   })
-      
-  shinyFiles::shinyDirChoose(input, "bam_folder", roots = volumes, session = 
-                   session)
-  list_bams = reactive({
-    if(!is.null(bam_folder())){
-      list.files(bam_folder(), full.names = TRUE, pattern = "*.bam$")
+   
+  output$select_raw_files <- renderUI({
+    req(scExp_cf(), list_bams())
+    
+  })  
+  
+  shinyFiles::shinyDirChoose(input, "pc_folder", roots = volumes, session = 
+                               session)
+  
+  pc_folder = reactiveVal(NULL)
+  
+  list_files_pc = reactive({
+    req(pc_folder())
+    if(!is.null(pc_folder())){
+      list.files(pc_folder(), full.names = TRUE, pattern = "*.bam$|*.bed|*.bed.gz")
     }
   })
   
-  bam_folder = reactiveVal(NULL)
+  bam_or_bed <- reactive({
+    req(list_files_pc())
+    nBAMs = length(grep(".*.bam$", list_files_pc()))
+    nBEDs = length(grep(".*.bed.gz|.*.bed", list_files_pc()))
+    print("is bam or bed ?")
+    print(nBAMs)
+    print(nBEDs)
+    ifelse(nBAMs>nBEDs,"BAM","BED")
+  })
   
-  observeEvent(input$bam_folder,
+  observeEvent(input$pc_folder,
                {
-               if(!is.null(input$bam_folder)){
-                 # browser()
-                 bam_folder(shinyFiles::parseDirPath(volumes, input$bam_folder))
-                 output$bam_dir <- renderText(bam_folder())
-               }
-})
-
-  output$bam_upload <- renderUI({
-    req(scExp_cf(), list_bams())
-    if(!is.null(list_bams()))
-      selectInput("bam_selection", label = "Selected BAM files",
-                  choices = basename(list_bams()), multiple = TRUE,
-                  selected = basename(list_bams()) )
+                 req(input$pc_folder)
+                 if(!is.null(input$pc_folder)){
+                   # browser()
+                   pc_folder(shinyFiles::parseDirPath(volumes, input$pc_folder))
+                   output$pc_dir <- renderText(pc_folder())
+                 }
+               })
+  
+  output$pc_upload <- renderUI({
+    req(list_files_pc(), bam_or_bed())
+    print("Inside output$pc_upload UI")
+    if(!is.null(list_files_pc()) & !is.null(bam_or_bed())){
+      if(bam_or_bed() == "BAM") {
+        files = list_files_pc()[grep(".bam$", list_files_pc())]
+        print("Inside output$pc_upload UI... BAM")
+        selectInput("bam_selection", label = "Selected BAM files",
+                    choices = basename(files), multiple = TRUE,
+                    selected = basename(files) )
+      } else {
+        print("Inside output$pc_upload UI... BED")
+        NULL
+      }
+    }
   })
   
   observeEvent(input$do_pc, {
-    inputBams <- as.character(file.path(dirname(list_bams()),input$bam_selection))
-  
-    if(length(inputBams)==0){
-      warning("Can't find input BAM files.")
+    req(bam_or_bed(), list_files_pc(), scExp_cf())
+    print("Doing peak call")
+    print(bam_or_bed())
+    if(bam_or_bed() == "BAM") {
+    input_files_pc <- as.character(file.path(dirname(list_files_pc()),input$bam_selection))
+    } else {
+      input_files_pc = as.character(list_files_pc()[grep(".bed|.bed.gz", list_files_pc())])
+    }
+    if(length(input_files_pc)==0){
+      warning("Can't find any input BAM / BED files.")
     } else{
       
       nclust = length(unique(scExp_cf()$cell_cluster))  
@@ -1179,16 +1567,18 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         # inputBams <- as.character(unlist(sapply(sample_ids, function(x){ input[[paste0('bam_', x)]] })))
 
         
-        checkBams <- sapply(inputBams, function(x){ if(file.exists(x)){ 0 } else { 
+        checkFiles <- sapply(input_files_pc, function(x){ if(file.exists(x)){ 0 } else { 
           showNotification(paste0("Could not find file ", x, ". Please make sure to give a full path including the file name."),
                            duration = 7, closeButton = TRUE, type="warning"); 1}  
         })
         incProgress(amount = 0.3, detail = paste("Running Peak Calling..."))
-        if(sum(checkBams)==0){
-          scExp_cf(subset_bam_call_peaks(scExp_cf(), odir, inputBams, as.numeric(input$pc_stat_value), annotation_id(), input$peak_distance_to_merge))
+        if(sum(checkFiles)==0){
+          scExp_cf(subset_bam_call_peaks(scExp_cf(), odir, input_files_pc, format = bam_or_bed(),
+                                         as.numeric(input$pc_stat_value), annotation_id(),
+                                         input$peak_distance_to_merge))
           data = list("scExp_cf" = scExp_cf())
-          save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
-                                      paste0(input$selected_reduced_dataset, ".RData")))
+          qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
+                                      paste0(input$selected_reduced_dataset, ".qs")))
           pc$new <- Sys.time()
           updateActionButton(session, "do_pc", label="Finished successfully", icon = icon("check-circle"))
         }
@@ -1199,13 +1589,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   pc <- reactiveValues(new="")
   
-  observeEvent({selected_filtered_dataset()  # reset label on actionButtion when new peak calling should be performed
-    input$pc_stat
-    input$pc_stat_value}, {
-      pc$available_pc <- has_available_pc()
-      updateActionButton(session, "do_pc", label="Start", icon = character(0))
-  })
-  
   has_available_pc <- reactive({
     if(!is.null(scExp_cf())){
       if("refined_annotation" %in% names(scExp_cf()@metadata) ){
@@ -1215,6 +1598,134 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       return(FALSE)
     }
   })
+  
+  observeEvent({selected_filtered_dataset()  # reset label on actionButtion when new peak calling should be performed
+    input$pc_stat
+    input$pc_stat_value}, {
+      pc$available_pc <- has_available_pc()
+      updateActionButton(session, "do_pc", label="Start", icon = character(0))
+  })
+  
+  
+  output$coverage_UI <- renderUI({
+    req(GenePool(),has_available_pc())
+    print("Inside output$coverage_UI ... ")
+      if(has_available_pc()){
+        print("Inside output$coverage_UI ... 2 ")
+        s <- shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
+                                 column(3, align="left", selectizeInput(inputId = "select_cov_gene", "Select gene:", choices = NULL, selected = 1)),
+                                 column(2, align="left", selectInput("cov_chr","Chromosome", choices = unique(rowRanges(scExp_cf())$chr))),
+                                 column(2, align="left", textInput("cov_start","Start", value = 15000000)),
+                                 column(2, align="left", textInput("cov_end","End", 16000000)),
+                                 column(2, align="left", actionButton("make_plot_coverage", "Plot Coverage", icon = icon("chart-area"))),
+                                 column(12, align="left", textOutput("top_genes")))
+        print("Inside output$coverage_UI ... 3")
+        updateSelectizeInput(session = session,
+                             inputId = 'select_cov_gene',
+                             choices = GenePool(),
+                             server = TRUE)
+        return(s)
+      }
+    })
+  
+  output$coverage_plot_UI <- renderUI({
+    req(GenePool(),has_available_pc(), display_coverage_plot())
+    print("Inside output$coverage_UI ... ")
+    if(has_available_pc()){
+      if(display_coverage_plot()){
+      shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
+                          column(12, align="left", plotOutput("coverage_region_plot") %>%
+                                   shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75))) 
+      }
+    }
+  })
+  
+  
+  GenePool <- reactive({
+    req(annotation_id())
+    print("Inside GenePool reactive ...")
+    eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
+    GenePool = unique(eval(parse(text = paste0("", annotation_id(), ".GeneTSS$gene"))))
+    print("Inside GenePool reactive2 ...")
+    c("Enter Gene...", GenePool)
+  })
+
+  
+  coverages <- reactive({
+    req(has_available_pc(), scExp_cf())
+    print("Inside coverage reactive ...")
+    display_coverage_plot(TRUE)
+    if(has_available_pc()){
+      nclust = length(unique(scExp_cf()$cell_cluster))
+      odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
+                        "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
+      BigWig_filenames <- list.files(odir,pattern = "*.bw", full.names = TRUE)
+      print("BigWig_filenames")
+      print(BigWig_filenames)
+      if(length(BigWig_filenames)>0){
+        print("coverages = sapply(BigWig_filenames, rtracklayer::import)")
+        coverages = sapply(BigWig_filenames, rtracklayer::import)
+        print(length(coverages))
+      } else {
+        coverages = NULL
+      }
+      coverages
+    }
+  })
+  
+  display_coverage_plot <- reactiveVal(FALSE)
+  top_genes <- reactive({
+    req(scExp_cf())
+    top_feats = ChromSCape:::retrieve_top_bot_features_pca(SingleCellExperiment::reducedDim(scExp_cf(),"PCA"),
+                                                           component = "Component_1",
+                                                           counts = SingleCellExperiment::counts(scExp_cf()),
+                                                           n_top_bot = 50, absolute = TRUE)
+    
+    genes = SummarizedExperiment::rowRanges(scExp_cf())$Gene[which(rownames(top_feats) %in% rownames(scExp_cf()))]
+    genes = paste0(paste(genes[seq_len(min(10, length(genes)))], collapse = ", "),"...")
+    genes
+  })
+  output$top_genes = renderText({paste0("Top contributing genes: ", top_genes())})
+  
+  observeEvent(input$make_plot_coverage, { # load reduced data set to work with on next pages
+      req(input$cov_chr, has_available_pc(),
+          scExp_cf(), coverages(), annotation_id())
+    if(input$select_cov_gene != "Enter Gene..."){
+      print("Uploading Gene selection")
+      
+      eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
+      gene_annot = eval(parse(text = paste0("", annotation_id(), ".GeneTSS")))
+      print(input$select_cov_gene )
+      print(head(gene_annot))
+      print(head(gene_annot$gene))
+      print(which(gene_annot$gene == input$select_cov_gene))
+      updateSelectInput(session, "cov_chr", selected = gene_annot$chr[which(gene_annot$gene == input$select_cov_gene)])
+      updateSelectInput(session, "cov_start", selected = gene_annot$start[which(gene_annot$gene == input$select_cov_gene)] - 25000)
+      updateSelectInput(session, "cov_end", selected = gene_annot$end[which(gene_annot$gene == input$select_cov_gene)] + 25000)
+      updateSelectInput(session, "select_cov_gene", selected = "Enter Gene...")
+    }
+    label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
+    nclust = length(unique(scExp_cf()$cell_cluster))
+    odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
+                      "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
+    if(file.exists(file.path(odir, "merged_peaks.bed"))){
+      peaks = rtracklayer::import.bed(file.path(odir, "merged_peaks.bed"))
+      } else{peaks = NULL}
+    
+    print("input$make_plot_coverage")
+    output$coverage_region_plot <- renderPlot({
+      plot_coverage_BigWig(
+        coverages(), 
+        label_color_list,
+        chrom = input$cov_chr,
+        start = as.numeric(input$cov_start),
+        end =  as.numeric(input$cov_end),
+        ref = annotation_id())
+    })
+    
+  })
+  
+ 
   # available_pc_plots <- reactive({
   #   fe <- sapply(c(1:input$pc_k_selection), function(i){file.exists(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$pc_k_selection), paste0("C", i, "_model.r")))})
   #   which(fe==TRUE)
@@ -1257,6 +1768,43 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   # 6. Differential analysis
   ###############################################################
   
+  get.available.DA_GSEA.datasets <- function(name, preproc){
+    list.files(path = file.path(init$data_folder, "ChromSCape_analyses", name, "Diff_Analysis_Gene_Sets"),
+               full.names = FALSE, recursive = FALSE, pattern = paste0(preproc, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_"))
+  }
+  
+  observeEvent(c(input$qval.th, input$tabs, input$cdiff.th, input$de_type, selected_filtered_dataset()), priority = 10,{
+    if(input$tabs == "diff_analysis"){
+    init$available_DA_GSA_datasets = get.available.DA_GSEA.datasets(analysis_name(), input$selected_reduced_dataset)
+    }
+  })
+  
+  DA_GSA_datasets <- reactive({
+  if (is.null(init$available_DA_GSA_datasets)) c() else gsub('.{3}$', '', basename(init$available_DA_GSA_datasets)) })
+  
+  output$selected_DA_GSA_dataset <- renderUI({ 
+    selectInput("selected_DA_GSA_dataset", "Select set with Differential Analysis:",
+                choices = DA_GSA_datasets()) 
+  })
+  
+  observeEvent(input$selected_DA_GSA_dataset, { # load reduced data set to work with on next pages
+    req(input$selected_DA_GSA_dataset)
+  
+    file_index <- match(c(input$selected_DA_GSA_dataset), DA_GSA_datasets())
+    filename_sel <- file.path(init$data_folder, "ChromSCape_analyses", 
+                              analysis_name(),"Diff_Analysis_Gene_Sets",
+                              init$available_DA_GSA_datasets[file_index])
+    t1 = system.time({
+      scExp_cf. = qs::qread(filename_sel)
+      if(is.reactive(scExp_cf.)) {
+        scExp_cf. = isolate(scExp_cf.())
+      }
+      scExp_cf(scExp_cf.$scExp_cf) # retrieve filtered scExp
+      rm(scExp_cf.)
+    })
+    cat("Loaded reduced data in ",t1[3]," secs\n")
+  })
+
   output$diff_analysis_info <- renderText({"Differential analysis is performed using
     the cluster assignment obtained with the Cluster Cells module. To change the
     partition of the datasets - number of k clusters - go back to this module and
@@ -1264,7 +1812,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     User can choose either a non-parametric test (Wilcoxon) or a parametric test
     (here edgeR GLM) depending on the observed distribution of the reads."})
   output$selected_k <- renderUI({
-    HTML(paste0("<h3><b>Number of clusters selected  = ", dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster),"</b></h3>"))
+    req(scExp_cf())
+    HTML(paste0("<h3><b>Number of clusters selected  = ", 
+                                         dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster),"</b></h3>"))
   })
   # output$only_contrib_cell_ui <- renderUI({
   #   if("icl" %in% names(scExp_cf()@metadata) && !is.null(scExp_cf()@metadata$icl)){
@@ -1297,15 +1847,17 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(c(input$qval.th, input$tabs, input$cdiff.th, input$de_type, selected_filtered_dataset()), priority = 10,{
     if(input$tabs == "diff_analysis"){
       if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$cdiff.th)){
+        DA_GSA_suffix = input$de_type
+        if(input$de_type == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
+                                                             gsub("[^[:alnum:]|_]","",input$name_ref))
         filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                               paste0(selected_filtered_dataset(), "_", input$nclust,
-                                     "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData"))
+                                     "_", input$qval.th, "_", input$cdiff.th, "_", DA_GSA_suffix, ".qs"))
         
         if(file.exists(filename)){
-          myData = new.env()
-          load(filename, envir = myData)
-          scExp_cf(myData$data$scExp_cf)
-          rm(myData)
+          data = qs::qread(filename)
+          scExp_cf(data$scExp_cf)
+          rm(data)
           gc()
         } else {
           NULL
@@ -1313,26 +1865,118 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       }
     }
     })
+  output$custom_da_ref <- renderUI({
+    req(input$de_type)
+    if(input$de_type == "custom"){
+      shiny::radioButtons("ref_type","Reference type", choices = c("sample_id","cell_cluster"))
+    }
+  })
+  output$custom_da_group <- renderUI({
+    req(input$de_type)
+    if(input$de_type == "custom"){
+      shiny::radioButtons("group_type","Group type", choices= c("sample_id","cell_cluster"))
+    }
+  })
   
-  observeEvent(input$do_wilcox, {  # perform differential analysis based on wilcoxon test
+  output$ref_choice <- renderUI({
+    req(scExp_cf(), input$ref_type, input$de_type)
+    if(input$de_type == "custom"){
+      if(input$ref_type == "sample_id"){
+        choices = unique(scExp_cf()$sample_id)
+        selectInput("ref_choice","Reference sample(s)", choices= choices, 
+                    multiple = TRUE)
+      } else if(input$ref_type == "cell_cluster"){
+        choices = unique(scExp_cf()$cell_cluster)
+        selectInput("ref_choice","Reference cluster(s)", choices=choices,
+                    multiple = TRUE)
+      } else{NULL}
+    }
+  })
+  
+  output$group_choice <- renderUI({
+    req(scExp_cf(), input$group_type,input$de_type)
+    if(input$de_type == "custom"){
+      if(input$group_type == "sample_id"){
+        choices = unique(scExp_cf()$sample_id)
+        selectInput("group_choice","Group sample(s)", choices= choices, 
+                    multiple = TRUE)
+      } else if(input$group_type == "cell_cluster"){
+        choices = unique(scExp_cf()$cell_cluster)
+        selectInput("group_choice","Group cluster(s)", choices=choices,
+                    multiple = TRUE)
+      } else{ NULL}
+    }
+  })
+  
+  output$text_vs <- renderUI({
+    req(input$de_type)
+    if(input$de_type == "custom") h3(" VS ")
+  })
+  
+  output$name_group <- renderUI({
+    req(input$de_type)
+    if(input$de_type == "custom") textInput("name_group", label = "Name Group:", value = "group")
+  })
+  
+  output$name_ref <- renderUI({
+    req(input$de_type)
+    if(input$de_type == "custom") textInput("name_ref", label = "Name Reference:", value = "ref")
+  })
+  
+  observeEvent(input$run_DA, {  # perform differential analysis based on wilcoxon test
+  print("RUN DA")
+  print(input$group_choice)
+  print(input$ref_choice)
+    if(input$de_type == "custom"){
+      
+        if(TRUE %in% all.equal(input$group_choice, input$ref_choice)){
+          showNotification(paste0("Warning : Please select different group and references."),
+                           duration = 7, closeButton = TRUE, type="warning")
+          return(0)
+        }
+      
+  }
     withProgress(message='Performing differential analysis...', value = 0, {
       incProgress(amount = 0.2, detail = paste("Initializing DA"))
       if(batchUsed()) block = TRUE else block = FALSE
       gc()
+      group = ""
+      ref = ""
+      if(input$de_type == "custom"){
+        group = data.frame(input$group_choice)
+        ref = data.frame(input$ref_choice)
+        colnames(group) = gsub("[^[:alnum:]|_]","",input$name_group)
+        colnames(ref) = gsub("[^[:alnum:]|_]","",input$name_ref)
+      }
+
       scExp_cf(differential_analysis_scExp(scExp = scExp_cf(),
                                            method= input$da_method,
                                            de_type = input$de_type,
                                            cdiff.th = input$cdiff.th,
                                            qval.th = input$qval.th,
-                                           block = block)) 
+                                           block = block,
+                                           group = group,
+                                           ref = ref)) 
       gc()
       incProgress(amount = 0.6, detail = paste("Finishing DA..."))
       data = list("scExp_cf" = scExp_cf())
-      save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
-                                  paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
-                                         "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData")))
+      DA_GSA_suffix = input$de_type
+      if(input$de_type == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
+                                                           gsub("[^[:alnum:]|_]","",input$name_ref))
+      
+      suffix = paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
+             "_", input$qval.th, "_", input$cdiff.th, "_", DA_GSA_suffix, ".qs")
+      
+      qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
+                                       suffix))
       rm(data)
       gc()
+      init$available_DA_GSA_datasets = get.available.DA_GSEA.datasets(analysis_name(), input$selected_reduced_dataset)
+
+      updateSelectInput(session = session, inputId = "selected_DA_GSA_dataset",
+                        label =  "Select set with Differential Analysis:",
+                        choices = DA_GSA_datasets(),
+                        selected =  gsub(".qs$","",suffix))
       incProgress(amount = 0.2, detail = paste("Saving DA"))
     })
   })
@@ -1375,19 +2019,29 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     })
   
   output$da_table <- DT::renderDataTable({
-    req(input$gpsamp)
+    req(input$gpsamp, scExp_cf())
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
-        table <- scExp_cf()@metadata$diff$res[, -c(1)]
-        rownames(table) <- NULL
-        for(i in seq(from = 0, to=(dim(table)[2]-8)/5, by = 1)){
-          table[, (5*i+5)] <- round(table[, (5*i+5)], 3) #counts
-          table[, (5*i+6)] <- round(table[, (5*i+6)], 3) #cdiff
+        if(input$gpsamp %in% scExp_cf()@metadata$diff$groups){
+        diff = scExp_cf()@metadata$diff$res[,-grep("Rank|pval|ID",colnames(scExp_cf()@metadata$diff$res))]
+        if(!is.null(SummarizedExperiment::rowRanges(scExp_cf())$Gene)){
+          diff = cbind(SummarizedExperiment::rowRanges(scExp_cf())$distanceToTSS, diff)
+          diff = cbind(SummarizedExperiment::rowRanges(scExp_cf())$Gene, diff)
+          colnames(diff)[1:2] = c("Gene","distanceToTSS")
         }
+        rownames(diff) <- NULL
+        # for(i in seq(from = 0, to=(dim(diff)[2]-8)/5, by = 1)){
+        #   diff[, (5*i+5)] <- round(diff[, (5*i+5)], 3) #counts
+        #   diff[, (5*i+6)] <- round(diff[, (5*i+6)], 3) #cdiff
+        # }
         
-        table = table[,c("chr","start","end",colnames(table)[grep(input$gpsamp,colnames(table))] )]
-        table <- table[order(table[,paste0("cdiff.",input$gpsamp)]),]
-        DT::datatable(table, options = list(dom='tpi'))
+        diff = diff[,c("Gene","distanceToTSS", "chr","start","end",
+                       colnames(diff)[grep(input$gpsamp,colnames(diff))] )]
+        diff <- diff[order(diff[,paste0("cdiff.",input$gpsamp)]),]
+        DT::datatable(diff, options = list(dom='tpi'), class = "display",
+                      rownames = FALSE, autoHideNavigation = TRUE,
+                      )
+      }
       }
     }
   })
@@ -1405,7 +2059,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
         shinydashboard::box(title="Detailed differential analysis per cluster", width = NULL, status="success", solidHeader = TRUE,
-            column(4, align="left", selectInput("gpsamp", "Select cluster:", choices = scExp_cf()@metadata$diff$groups)),
+            column(4, align="left", selectInput("gpsamp", "Select group:", choices = scExp_cf()@metadata$diff$groups)),
             column(4, align="left", downloadButton("download_da_table", "Download table")),
             column(12, align="left", div(style = 'overflow-x: scroll', DT::dataTableOutput('da_table')), br()),
             column(12, align="left", plotOutput("h1_prop", height = 300, width = 500),
@@ -1417,10 +2071,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   output$h1_prop <- renderPlot({
+    req(scExp_cf())
     if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$diff)){
-        plot_differential_H1_scExp(scExp_cf(), input$gpsamp)
-      }  
+      if(input$gpsamp %in% scExp_cf()@metadata$diff$groups){
+        if(!is.null(scExp_cf()@metadata$diff)){
+          plot_differential_H1_scExp(scExp_cf(), input$gpsamp)
+        }  
+      }
     }
   })
   
@@ -1435,10 +2092,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   output$da_volcano <- renderPlot({
+    req(scExp_cf())
     if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$diff)){
-        plot_differential_volcano_scExp(scExp_cf(),cell_cluster = input$gpsamp,
-                                        cdiff.th = input$cdiff.th, qval.th = input$qval.th)
+      if(input$gpsamp %in% scExp_cf()@metadata$diff$groups){
+        if(!is.null(scExp_cf()@metadata$diff)){
+          plot_differential_volcano_scExp(scExp_cf(),cell_cluster = input$gpsamp,
+                                          cdiff.th = input$cdiff.th, qval.th = input$qval.th)
+        }
       }
     }
   })
@@ -1532,9 +2192,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       gc()
       incProgress(amount = 0.6, detail = paste("Finishing Pathway Enrichment Analysis..."))
       data = list("scExp_cf" = scExp_cf() )
-      save(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
+      DA_GSA_suffix = input$de_type
+      if(input$de_type == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
+                                                           gsub("[^[:alnum:]|_]","",input$name_ref))
+      qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                                   paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
-                                         "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".RData")))
+                                         "_", input$qval.th, "_", input$cdiff.th, "_", DA_GSA_suffix, ".qs")))
       rm(data)
       gc()
       incProgress(amount = 0.6, detail = paste("Saving Pathway Enrichment Analysis"))
@@ -1542,10 +2205,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     })
   })
   
-  output$enr_clust_sel <- renderUI({ 
+  output$GSA_group_sel <- renderUI({ 
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$diff)){
-      selectInput("enr_clust_sel", "Select cluster:", choices = scExp_cf()@metadata$diff$groups) 
+      selectInput("GSA_group_sel", "Select group:", choices = scExp_cf()@metadata$diff$groups) 
       }
     }
     })
@@ -1561,8 +2224,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$all_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$enr) && !is.null(input$enr_clust_sel) && !is.null(input$enr_class_sel)){
-        table_enriched_genes_scExp(scExp_cf(),set = "Both", cell_cluster = input$enr_clust_sel, input$enr_class_sel)
+      if(!is.null(scExp_cf()@metadata$enr) && !is.null(input$GSA_group_sel) && !is.null(input$enr_class_sel)){
+        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups)
+          table_enriched_genes_scExp(scExp_cf(),set = "Both", group = input$GSA_group_sel, input$enr_class_sel)
       }
     }
   })
@@ -1570,7 +2234,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$over_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
-        table_enriched_genes_scExp(scExp_cf(), set = "Overexpressed", cell_cluster = input$enr_clust_sel, input$enr_class_sel)
+        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups)
+          table_enriched_genes_scExp(scExp_cf(), set = "Overexpressed", group = input$GSA_group_sel, input$enr_class_sel)
       }
     }
   })
@@ -1578,7 +2243,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$under_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
-        table_enriched_genes_scExp(scExp_cf(), set = "Underexpressed", cell_cluster = input$enr_clust_sel, input$enr_class_sel)
+        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups) 
+          table_enriched_genes_scExp(scExp_cf(), set = "Underexpressed", group = input$GSA_group_sel, input$enr_class_sel)
       }
     }
   })
@@ -1675,6 +2341,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       unlink(file.path(init$data_folder, "ChromSCape_analyses", input$selected_delete_analysis), recursive=TRUE)
       init$available_analyses <- list.dirs(path=file.path(init$data_folder, "ChromSCape_analyses"), full.names=FALSE, recursive=FALSE)
       init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
+      print("observeEvent({ input$delete_analysis}")
+      print(init$available_reduced_datasets)
       incProgress(amount=0.5, detail=paste("... finished"))
     })
     showNotification("Data set successfully deleted.", duration=5, closeButton=TRUE, type="warning")
@@ -1686,9 +2354,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     
     if(!is.null(scExp()) & !is.null(input$selected_reduced_dataset)){
       scExp = isolate(scExp())
-      save(scExp, file = file.path(init$data_folder, "ChromSCape_analyses",
+      qs::qsave(scExp, file = file.path(init$data_folder, "ChromSCape_analyses",
                                    analysis_name(), "Filtering_Normalize_Reduce",
-                                   paste0(input$selected_reduced_dataset,".RData")))
+                                   paste0(input$selected_reduced_dataset,".qs")))
       
     }
     if(!is.null(scExp_cf()) & !is.null(selected_filtered_dataset())){
@@ -1702,14 +2370,14 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                            selected_filtered_dataset(), "_",
                            length(unique(scExp_cf()$cell_cluster)),
                            "_", input$qval.th, "_", input$cdiff.th, "_",
-                           input$de_type, ".RData"))
+                           input$de_type, ".qs"))
         } else{
           dir = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
                           "correlation_clustering",
                          paste0(selected_filtered_dataset(), 
-                                 ".RData"))
+                                 ".qs"))
         }
-        save(scExp, file = dir)
+        qs::qsave(scExp, file = dir)
       } 
       
     }

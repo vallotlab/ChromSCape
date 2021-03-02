@@ -54,7 +54,6 @@ correlation_and_hierarchical_clust_scExp <- function(
     return(scExp)
 }
 
-
 #' Filter lowly correlated cells
 #'
 #' Remove cells that have a correlation score lower than what would be expected
@@ -237,6 +236,115 @@ num_cell_before_cor_filt_scExp <- function(scExp)
         kableExtra::kable_styling(
             c("striped", "condensed"), full_width = TRUE) %>% 
         kableExtra::group_rows("Total cell count", dim(table)[1], dim(table)[1])
+}
+
+
+#' Calculate intra correlation between cluster or samples
+#'
+#' @param scExp_cf A SingleCellExperiment
+#' @param by On which feature to calculate correlation ("sample_id" or 
+#' "cell_cluster")
+#'
+#' @return A data.frame of cell average intra-correlation
+#' @export
+#'
+#' @examples
+#' intra_correlation_scExp(scExp, by = "sample_id")
+#' intra_correlation_scExp(scExp, by = "cell_cluster")
+intra_correlation_scExp <- function(scExp_cf, by = c("sample_id",
+                                                     "cell_cluster")[1]){
+    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(by))
+    if (is.null(SingleCellExperiment::reducedDim(scExp, "Cor")))
+        stop("ChromSCape::intra_correlation_scExp - 
+                No correlation, run correlation_and_hierarchical_clust_scExp")
+    if (is.null(SingleCellExperiment::reducedDim(scExp, "PCA")))
+        stop("ChromSCape::intra_correlation_scExp - No PCA, 
+                run reduced_dim before filtering.")
+    
+    # By sample
+    annot = SingleCellExperiment::colData(scExp_cf)
+    
+    pca_t = SingleCellExperiment::reducedDim(scExp_cf,"PCA")
+    cor_mat = reducedDim(scExp_cf,"Cor")
+    
+    intra_corr=data.frame()
+    for(i in unique(annot[,by])){
+        cells = as.character(annot$cell_id[which(annot[,by]==i)])
+        tmp = cor_mat[cells,cells]
+        tab = data.frame(tmp = rep(i,ncol(tmp)), "intra_corr" = colMeans(tmp))
+        colnames(tab)[1] = by
+        intra_corr=rbind(intra_corr,tab)
+    }
+    
+    return(intra_corr)
+}
+
+#' Calculate inter correlation between cluster or samples
+#'
+#' @param scExp_cf A SingleCellExperiment
+#' @param by On which feature to calculate correlation ("sample_id" or 
+#' "cell_cluster")
+#' @param reference_group Reference group to calculate correlation with. 
+#' Must be in accordance with "by".
+#' @param other_groups Groups on which to calculate correlation (can contain
+#' multiple groups, and also reference_group). Must be in accordance with "by".
+#'
+#' @return A data.frame of average inter-correlation of cells in other_groups
+#' with cells in reference_group
+#' @export
+#'
+#' @examples
+#' intra_correlation_scExp
+inter_correlation_scExp <- function(
+    scExp_cf, by = c("sample_id","cell_cluster")[1],
+    reference_group = unique(scExp_cf[[by]])[1],
+    other_groups = unique(scExp_cf[[by]])){
+    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(by))
+    if (is.null(SingleCellExperiment::reducedDim(scExp, "Cor")))
+        stop("ChromSCape::inter_correlation_scExp - 
+                No correlation, run correlation_and_hierarchical_clust_scExp")
+    if (is.null(SingleCellExperiment::reducedDim(scExp, "PCA")))
+        stop("ChromSCape::inter_correlation_scExp - No PCA, 
+                run reduced_dim before filtering.")
+    
+    if (! (reference_group %in% unique(scExp_cf[[by]])) )
+        stop("ChromSCape::inter_correlation_scExp - Wrong reference_group.")
+    if (any(!(other_groups %in% unique(scExp_cf[[by]]))))
+        stop("ChromSCape::inter_correlation_scExp - Wrong reference_group.")
+    
+    # Select groups :
+    sel = (scExp_cf[[by]] %in% c(reference_group, other_groups))
+    scExp_cf = scExp_cf[,sel]
+    
+    # By sample
+    annot = SingleCellExperiment::colData(scExp_cf)
+    pca_t = SingleCellExperiment::reducedDim(scExp_cf,"PCA")
+    cor_mat = reducedDim(scExp_cf,"Cor")
+    
+    inter_corr = data.frame()
+    for(i in unique(annot[,by])){
+        cells_i = as.character(annot$cell_id[which(annot[,by]==i)])
+        for(j in unique(annot[,by])){
+            cells_j = as.character(annot$cell_id[which(annot[,by]==j)])
+            tmp = cor_mat[cells_i,cells_j]
+            tab = data.frame("cells_i" = cells_i,
+                             "by_i" = rep(i,nrow(tmp)),
+                             "by_j" = rep(j,nrow(tmp)),
+                             "inter_corr" = rowMeans(tmp))
+            inter_corr=rbind(inter_corr,tab)
+            
+        }
+    }
+    colnames(inter_corr)[2:3] = c(paste0(by,"_i"), paste0(by,"_j"))
+
+    inter_corr = inter_corr[which(
+        inter_corr[,paste0(by,"_i")] %in% other_groups & 
+            inter_corr[,paste0(by,"_j")] %in% reference_group),]
+    rownames(inter_corr) = inter_corr$cells_i
+    inter_corr$association = forcats::fct_inorder(
+        paste0(inter_corr[,paste0(by,"_i")],"_",inter_corr[,paste0(by,"_j")]))
+    
+    return(inter_corr)
 }
 
 #' Number of cells before & after correlation filtering
@@ -475,24 +583,25 @@ choose_cluster_scExp <- function(scExp, nclust = 3, consensus = TRUE,
 #'
 num_cell_in_cluster_scExp <- function(scExp){
     stopifnot(is(scExp, "SingleCellExperiment"))
-    table_raw <- as.data.frame.matrix(table(as.data.frame(
+    table_raw <- as.data.frame.matrix(t(table(as.data.frame(
         SingleCellExperiment::colData(scExp))[, c("cell_cluster", "sample_id")
-                                            ]))
+                                            ])))
     ord =  as.character(unique(SingleCellExperiment::colData(
         scExp)[, "sample_id"]))
-    table_raw = table_raw[, match(ord, colnames(table_raw)), drop = FALSE]
-    chi <- suppressWarnings(
-        stats::chisq.test(x = as.matrix(table_raw), correct = FALSE))
+    table_raw = table_raw[match(ord, rownames(table_raw)), , drop = FALSE]
     chi_pvalues = c()
+    if(dim(as.matrix(table_raw))[2] > 1){
+
     for (i in seq_len((dim(as.matrix(table_raw))[1]))){
         contingency_tab = rbind(table_raw[i,], colSums(table_raw))
+        print(contingency_tab)
         chi <- suppressWarnings(stats::chisq.test(
             x = contingency_tab, correct = FALSE))
-        chi_pvalues[i] = chi$p.value
+        chi_pvalues[i] = chi$p.value}
+    } else {
+        chi_pvalues =  rep(1, dim(as.matrix(table_raw))[2])
     }
     tab <- table_raw
-    if (length(unique(SingleCellExperiment::colData(scExp)$sample_id)) == 1)
-        chi_pvalues = rep(1, dim(as.matrix(table_raw))[1])
     chi_pvalues = round(chi_pvalues, 5)
     chi_pvalues[which(chi_pvalues == 0)] <- "<0.00001"
     chi_pvalues = c(chi_pvalues, "")
@@ -500,26 +609,27 @@ num_cell_in_cluster_scExp <- function(scExp){
         unique(SingleCellExperiment::colData(scExp)[, "cell_cluster_color"]))
     colors_sample_id = col2hex(
         unique(SingleCellExperiment::colData(scExp)[, "sample_id_color"]))
-    tab <- rbind(tab, colSums(table_raw))
-    tab <- cbind(tab, `#Cells` = c(Matrix::rowSums(table_raw),
-                                sum(Matrix::rowSums(table_raw))))
-    tab <- cbind(tab, `p-value` = chi_pvalues)
+    tab <- cbind(tab, rowSums(table_raw))
+    tab <- rbind(tab, `#Cells` = c(Matrix::colSums(table_raw),
+                                sum(Matrix::colSums(table_raw))))
+    tab <- rbind(tab, `p-value` = chi_pvalues)
     tab <- as.data.frame(
-        cbind(Cluster = c(rownames(tab)[seq_along(rownames(tab))-1], ""), tab))
-    tab$Cluster = as.character(tab$Cluster)
-    rownames(tab) <- NULL
-    tab = rbind(rep("", nrow(tab)), tab[(seq_len(nrow(tab))),])
+        rbind(Cluster = c(colnames(tab)[seq_along(colnames(tab))-1], ""), tab))
+    tab["Cluster",] = as.character(tab["Cluster",])
+    tab = cbind(rep("", nrow(tab)), tab[,(seq_len(ncol(tab)))])
     samples = kableExtra::cell_spec(
-        colnames(tab)[2:(length(colors_sample_id) + 1)], color = "white",
-        bold = TRUE, background = colors_sample_id)
-    tab[1, 2:(length(colors_sample_id) + 1)] = samples
-    colnames(tab)[2:(length(colors_sample_id) + 1)] = rep(
-        "", length(colors_sample_id))
-    tab[2:(
-        length(colors_chromatin_group) + 1), "Cluster"] = kableExtra::cell_spec(
-            tab[2:(length(colors_chromatin_group) +1), "Cluster"],
-            color = "white", bold = TRUE, background = colors_chromatin_group)
-    tab %>% kableExtra::kable(escape = FALSE, align = "c") %>%
+        rownames(tab)[2:(length(colors_sample_id) + 3)], color = "white",
+        bold = TRUE, background = c(colors_sample_id,"black","black"))
+    tab[2:(length(colors_sample_id) + 3), 1] = samples
+    colnames(tab) <- NULL
+    tab["Cluster",length(colors_chromatin_group) + 2] = "#Cells"
+    tab["Cluster",2:(
+        length(colors_chromatin_group) + 2)] = kableExtra::cell_spec(
+            tab["Cluster", 2:(length(colors_chromatin_group) +2)],
+            color = "white", bold = TRUE, background = c(
+                colors_chromatin_group,"black"))
+    rownames(tab) = NULL
+    tab %>% kableExtra::kable(escape = FALSE, align = "c") %>% 
         kableExtra::kable_styling(c("striped","condensed"),
-                                full_width = FALSE) %>%
-        kableExtra::group_rows("Total", dim(tab)[1],dim(tab)[1])}
+                                full_width = FALSE) %>% kableExtra::scroll_box()
+    }

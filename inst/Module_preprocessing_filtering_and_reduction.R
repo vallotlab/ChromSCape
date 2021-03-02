@@ -87,12 +87,18 @@ Module_preprocessing_filtering_and_reduction <- function(
             {scExp = correlation_and_hierarchical_clust_scExp(scExp)}))
         
         ### 8. Save data ###
-        save(
+        print("saving :")
+        print(file.path(
+            data_folder(), "ChromSCape_analyses", raw_dataset_name(), 
+            "Filtering_Normalize_Reduce", paste0(
+                paste(raw_dataset_name(), min_cov_cell(), percentMin(), 
+                      quant_removal(), batch_string, sep = "_"), ".qs")))
+        qs::qsave(
             scExp, file = file.path(
                 data_folder(), "ChromSCape_analyses", raw_dataset_name(), 
                 "Filtering_Normalize_Reduce", paste0(
                     paste(raw_dataset_name(), min_cov_cell(), percentMin(), 
-                        quant_removal(), batch_string, sep = "_"), ".RData"))
+                        quant_removal(), batch_string, sep = "_"), ".qs"))
         )
         
         gc()

@@ -8,7 +8,9 @@ plot_heatmap_scExp(
   scExp,
   name_hc = "hc_cor",
   corColors = (grDevices::colorRampPalette(c("royalblue", "white", "indianred1")))(256),
-  color_by = NULL
+  color_by = NULL,
+  downsample = 1000,
+  hc_linkage = "ward.D"
 )
 }
 \arguments{

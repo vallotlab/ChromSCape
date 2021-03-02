@@ -5,7 +5,7 @@
 \title{Create a sparse count matrix from various format of input data.}
 \usage{
 raw_counts_to_feature_count_files(
-  files_dir,
+  files_dir_list,
   file_type = c("BAM", "BED", "Index_Peak_Barcode"),
   peak_file = NULL,
   n_bins = NULL,
@@ -17,7 +17,9 @@ raw_counts_to_feature_count_files(
 )
 }
 \arguments{
-\item{files_dir}{The directory containing the files}
+\item{files_dir_list}{A named character vector of directories containing
+the files. The
+names correspond to sample names.}
 
 \item{file_type}{Input file(s) type(s) ('BAM')}
 

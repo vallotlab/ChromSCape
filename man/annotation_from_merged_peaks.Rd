@@ -4,10 +4,12 @@
 \alias{annotation_from_merged_peaks}
 \title{Find nearest peaks of each gene and return refined annotation}
 \usage{
-annotation_from_merged_peaks(scExp, merged_peaks, geneTSS_annotation)
+annotation_from_merged_peaks(scExp, odir, merged_peaks, geneTSS_annotation)
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment object}
+
+\item{odir}{An output directory where to write the mergedpeaks BED file}
 
 \item{merged_peaks}{A list of GRanges object containing the merged peaks}
 

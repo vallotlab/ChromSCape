@@ -37,7 +37,7 @@
 #' @param scExp A SingleCellExperiment object
 #' @param odir Output directory where to write temporary files and each
 #'   cluster's BAM file
-#' @param inputBam A character vector of file paths to each sample's BAM file,
+#' @param input A character vector of file paths to each sample's BAM file,
 #'   containing cell barcode information as tags. BAM files can be paired-end or
 #'   single-end.
 #' @param p.value a p-value to use for MACS2 to determine significant peaks.
@@ -47,6 +47,7 @@
 #'   peak calling , in bp. (10000)
 #' @param geneTSS_annotation A data.frame annotation of genes TSS. If NULL will
 #'   automatically load Gencode list of genes fro specified reference genome.
+#' @param run_coverage Create coverage tracks (.bw) for each cluster ? 
 #'
 #' @return A SingleCellExperiment with refinded annotation
 #' @export
@@ -66,9 +67,9 @@
 #'    p.value = 0.05, ref = "hg38", peak_distance_to_merge = 10000, 
 #'    geneTSS_annotation = NULL)
 #'}
-subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05,
+subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 0.05,
                                 ref = "hg38", peak_distance_to_merge = 10000,
-                                geneTSS_annotation = NULL)
+                                geneTSS_annotation = NULL, run_coverage = TRUE)
     {
     stopifnot(is(scExp, "SingleCellExperiment"), dir.exists(odir),
             is.numeric(p.value), is.character(ref),
@@ -83,37 +84,109 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05,
         stop("ChromSCape::subset_bam_call_peaks -
             Colnames of cell annotation must contain 'cell_cluster'.")
     
+    print("Subset Bam Call peaks")
+    print(format)
     if (is.null(geneTSS_annotation))
     {
         message("ChromSCape::gene_set_enrichment_analysis_scExp - ",
                     "Selecting ", 
             ref, " genes from Gencode.")
         eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
-        geneTSS_annotation = as(
-            eval(parse(text = paste0("", ref, ".GeneTSS"))),"GRanges")
+        geneTSS_annotation = 
+            eval(parse(text = paste0("", ref, ".GeneTSS")))
+        start = geneTSS_annotation$start
+        geneTSS_annotation$start = ifelse(geneTSS_annotation$strand == "+",
+                                          geneTSS_annotation$start,
+                                          geneTSS_annotation$end)
+        geneTSS_annotation$end = ifelse(geneTSS_annotation$strand == "+",
+                                        start +1,
+                                        geneTSS_annotation$end +1)
+        geneTSS_annotation$strand = NULL
+        geneTSS_annotation = as(geneTSS_annotation,"GRanges")
     } else geneTSS_annotation = as(geneTSS_annotation, "GRanges")
-    if (length(inputBam) > 1)
-    {
-        merged_bam = file.path(odir, "merged.bam")
-        Rsamtools::mergeBam(inputBam, destination = merged_bam,
-                            overwrite = TRUE, indexDestination = TRUE)        
-    } else merged_bam = inputBam[1]
-    if(!file.exists(paste0(merged_bam,".bai"))) 
-        Rsamtools::indexBam(merged_bam, overwrite= TRUE)
+    if(format == "BAM"){
+        if (length(input) > 1)
+        {
+            merged = file.path(odir, "merged.bam")
+            Rsamtools::mergeBam(input, destination = merged_bam,
+                                overwrite = TRUE, indexDestination = TRUE)
+            
+        } else merged = input[1]
+        if(!file.exists(paste0(merged,".bai"))) 
+            Rsamtools::indexBam(merged, overwrite= TRUE)
+    } 
     print("Writting barcode files...")
     affectation = SingleCellExperiment::colData(scExp)
     affectation$cell_cluster = as.factor(affectation$cell_cluster)
     
     p.value = paste0(" -p ", p.value, " ")  # format for system call to macs2
     
-    separate_BAM_into_clusters(affectation, odir, merged_bam)
-    merged_peaks <- call_macs2_merge_peaks(affectation,odir,p.value,ref,
-                                        peak_distance_to_merge)
+    if(format == "BAM") separate_BAM_into_clusters(affectation, odir, merged) 
+    else concatenate_scBed_into_clusters(affectation, input, odir, ref)
+    
+    merged_peaks <- call_macs2_merge_peaks(affectation, odir, p.value, 
+                                           format, ref, peak_distance_to_merge)
     scExp@metadata$refined_annotation <- 
-        annotation_from_merged_peaks(scExp, merged_peaks, geneTSS_annotation)
+        annotation_from_merged_peaks(scExp, odir,
+                                     merged_peaks, geneTSS_annotation)
+    print("Finished creating BAM and annot")
+    cat("Running coverage ? ", run_coverage)
+    if(run_coverage){
+        suffix = ifelse(format=="BAM", ".bam", ".bed")
+        for(class in unique(scExp$cell_cluster)) {
+            input_file = file.path(odir, paste0(class,suffix))
+            out_bw = file.path(odir, paste0(class,".bw"))
+            rawfile_ToBigWig(input_file, out_bw, format, bin_width = 150,
+                             n_smoothBin = 5,  ref = ref, read_size = 101)
+        }
+    }
     return(scExp)
 }
 
+#' Concatenate single-cell BED into clusters
+#'
+#' @param affectation Annotation data.frame containing cluster information
+#' @param files Input files to concatenate (must match affectation$barcode)
+#' @param odir Output directory
+#'
+#' @return Merge single-cell BED files into cluster BED files. Ungzip file if 
+#' BED is gzipped.
+#'
+concatenate_scBed_into_clusters <- function(affectation, files, odir,
+                                            ref){
+    unlink(file.path(odir, "*.bed"))
+    # canonical_chr <- eval(parse(text = paste0("ChromSCape::",
+    #                                           ref, ".chromosomes")))
+    # canonical_chr$start = 1
+    # canonical_chr <- as(canonical_chr, "GRanges")
+    gzipped = grepl(".gz",files[1])
+    suffix = ""
+    if(gzipped) suffix = ".gz"
+    print(files)
+    for (class in levels(factor(affectation$cell_cluster)))
+    {
+        message("ChromSCape:::concatenate_scBed_into_clusters - generating ",
+                class, " BED file...")
+        class_barcodes <- affectation$barcode[which(affectation$cell_cluster == 
+                                                        as.character(class))]
+        files_class = files[grep(paste(class_barcodes, collapse="|"),files)]
+        for(file in files_class){
+            command = paste0("cat '", file, "' >> '",
+                             file.path(odir, paste0(class, ".bed",suffix,"'")))
+            system(command)
+        }
+        if(gzipped) {
+            command = paste0("gzip -cd '", file.path(
+                odir,paste0(class,".bed", suffix)),
+                "' > '", file.path(odir,paste0(class, ".bed'")))
+            system(command)
+        }
+        # bed = rtracklayer::import(file.path(odir, paste0(class, ".bed")))
+        # bed= bed[GenomicRanges::findOverlaps(
+        #     canonical_chr,bed,minoverlap = 1)@to]
+        # rtracklayer::export.bed(bed, file.path(odir, paste0(class, ".bed")))
+    }
+}
 
 #' Calling MACS2 peak caller and merging resulting peaks
 #'
@@ -121,27 +194,31 @@ subset_bam_call_peaks <- function(scExp, odir, inputBam, p.value = 0.05,
 #'   information
 #' @param odir Output directory to write MACS2 output
 #' @param p.value P value to detect peaks, passed to MACS2
+#' @param format File format, either "BAM" or "BED"
 #' @param ref Reference genome
 #' @param peak_distance_to_merge Distance to merge peaks
 #'
 #' @return A list of merged GRanges peaks
 #'
 #' 
-call_macs2_merge_peaks <- function(affectation,odir,p.value,
-                                ref,peak_distance_to_merge){
+call_macs2_merge_peaks <- function(affectation, odir, p.value, format = "BAM",
+                                ref, peak_distance_to_merge){
+    suffix = ".bam"
+    if(format != "BAM") suffix = ".bed"
     merged_peaks=list()
     for (class in levels(factor(affectation$cell_cluster))){
         
-        macs2_options = " --nomodel --extsize 300 "
+        macs2_options = paste0(" -f ",format," --nomodel --extsize 300 ")
         
         command = paste0("macs2 callpeak ", p.value,
-                    macs2_options, " --keep-dup all --broad -t ", 
-                    file.path(odir, paste0(class, ".bam")),
-                    " --outdir ", odir, " --name ", class)
+                    macs2_options, " --keep-dup all --broad -t '", 
+                    file.path(odir, paste0(class, suffix)),
+                    "' --outdir '", odir, "' --name ", class)
+        print(command)
         system(command)
         merged_peaks[[class]] <-
-            merge_MACS2_peaks(odir,class,peak_distance_to_merge,ref)
-        }
+            merge_MACS2_peaks(odir, class, peak_distance_to_merge, ref)
+    }
     unlink(file.path(odir, "*.xls"))
     unlink(file.path(odir, "*.gappedPeak"))
     unlink(file.path(odir, "*_model.r"))
@@ -183,6 +260,7 @@ merge_MACS2_peaks <- function(odir,class,peak_distance_to_merge,ref){
 #' Find nearest peaks of each gene and return refined annotation
 #'
 #' @param scExp A SingleCellExperiment object 
+#' @param odir An output directory where to write the mergedpeaks BED file
 #' @param merged_peaks A list of GRanges object containing the merged peaks
 #' @param geneTSS_annotation A GRanges object with reference genes
 #'
@@ -192,7 +270,8 @@ merge_MACS2_peaks <- function(odir,class,peak_distance_to_merge,ref){
 #' pintersect
 #' @importFrom S4Vectors mcols queryHits subjectHits
 #' @importFrom IRanges findOverlapPairs
-annotation_from_merged_peaks <- function(scExp,
+#' @importFrom rtracklayer export.bed
+annotation_from_merged_peaks <- function(scExp, odir,
                                         merged_peaks,
                                         geneTSS_annotation){
     segmentation = SummarizedExperiment::rowRanges(scExp)
@@ -208,7 +287,7 @@ annotation_from_merged_peaks <- function(scExp,
             GenomicRanges::union(merged_peak, merged_peaks[[i]], 
                                 ignore.strand = TRUE))
     }
-    
+    rtracklayer::export.bed(merged_peak, file.path(odir, "merged_peaks.bed"))
     pairs <- IRanges::findOverlapPairs(
         segmentation, merged_peak, ignore.strand = TRUE)
     refined_annotation = GenomicRanges::pintersect(pairs, ignore.strand = TRUE)
@@ -253,4 +332,121 @@ separate_BAM_into_clusters <- function(affectation, odir, merged_bam){
         Rsamtools::filterBam(merged_bam,file.path(odir,paste0(class,".bam")),
                     indexDestination = TRUE, overwrite=TRUE, param=filt)
     }
+}
+
+
+#' Smooth a vector of values with nb_bins left and righ values
+#'
+#' @param bin_score A numeric vector of values to be smoothed
+#' @param nb_bins Number of values to take left and right
+#'  
+#'  @importFrom BiocParallel bpvec
+#' @return A smooth vector of the same size 
+#' 
+smoothBin <- function(bin_score, nb_bins = 10){
+    bin_original = bin_score
+    fun <-function(v){
+        v_or = v
+        start = nb_bins + 1
+        end = length(v) - nb_bins -1
+        for(i in start:end){
+            v[i] = mean(v_or[(i-nb_bins):(i+nb_bins)])
+        }
+        return(v)
+    }
+    bin_score = unlist(BiocParallel::bpvec(bin_score, fun))
+    return(bin_score)
+}
+
+#' rawfile_ToBigWig : reads in BAM file and write out BigWig coverage file, 
+#' normalized and smoothed
+#'
+#' @param filename Path to the BAM file (with index) or BED file
+#' @param BigWig_filename Path to write the output BigWig file
+#' @param format File format, either "BAM" or "BED"
+#' @param bin_width Bin size for coverage
+#' @param n_smoothBin Number of bins for smoothing values
+#' @param ref Reference genome.
+#' @param read_size Length of the reads.
+#'
+#' @importFrom rtracklayer export.bw
+#' @importFrom GenomicRanges tileGenome width seqnames
+#' @return Writes a BigWig file as output
+#' 
+rawfile_ToBigWig <- function(filename, BigWig_filename, format = "BAM",
+                        bin_width = 150, n_smoothBin = 5, ref = "hg38",
+                        read_size = 101){
+    canonical_chr <- eval(parse(text = paste0("ChromSCape::",
+                                              ref, ".chromosomes")))
+    canonical_chr$start = 1
+    canonical_chr <- as(canonical_chr, "GRanges")
+    
+    bins <- unlist(GenomicRanges::tileGenome(
+        setNames(
+            GenomicRanges::width(canonical_chr),
+            GenomicRanges::seqnames(canonical_chr)
+        ),
+        tilewidth = bin_width
+    ))
+    gc()
+    
+    bins <- count_coverage(filename, format, bins, canonical_chr, n_smoothBin,
+                           ref, read_size)
+    ## export as bigWig
+    rtracklayer::export.bw(bins, BigWig_filename)
+}
+
+#' Create a smoothed and normalized coverage track from a BAM file and
+#' given a bin GenomicRanges object (same as deepTools bamCoverage)
+#'
+#' Normalization is CPM, smoothing is done by averaging on n_smoothBin regions
+#' left and right of any given region.
+#' 
+#' @param filename Path towards the BAM to create coverage from
+#' @param format File format, either "BAM" or "BED"
+#' @param bins A GenomicRanges object of binned genome
+#' @param canonical_chr GenomicRanges of the chromosomes to read the BAM file.
+#' @param n_smoothBin Number of bins left and right to smooth the signal.
+#' @param ref Genomic reference
+#' @param read_size Length of the reads
+#'   
+#' @importFrom Rsamtools ScanBamParam scanBam scanBamWhat
+#' @importFrom GenomicRanges tileGenome width seqnames findOverlaps
+#' GRanges
+#' @importFrom IRanges IRanges
+#' 
+#' 
+#'  
+#' @return A binned GenomicRanges that can be readily exported into bigwig file.
+#'
+count_coverage <-function(filename, format = "BAM", bins, canonical_chr,
+                          n_smoothBin = 5, ref = "hg38", read_size = 101)
+    {
+    if(format == "BAM"){
+        param = Rsamtools::ScanBamParam(which = canonical_chr,
+                                        what = Rsamtools::scanBamWhat()[c(3,5)])
+        gr <- Rsamtools::scanBam(file = filename, param = param)
+        chr = unlist(lapply(1:length(canonical_chr), function(i){gr[[i]]$rname}))
+        start = unlist(lapply(1:length(canonical_chr), function(i){gr[[i]]$pos}))
+        end = start + 101
+        gr = GenomicRanges::GRanges(seqnames = chr,
+                                    ranges = IRanges::IRanges("start" = start,
+                                                              "end" = end))
+    } else {
+        gr <- rtracklayer::import(filename)
+    }
+    
+    hits <- GenomicRanges::findOverlaps(
+        bins, gr, minoverlap = 1, ignore.strand = TRUE)
+    hits = as.matrix(hits)
+    hits_agg = table(hits[,1])
+    bins$score = 0
+    bins$score[as.numeric(names(hits_agg))] = hits_agg
+    rm(hits_agg)
+    gc()
+    bins$score = 10^6* bins$score / length(gr)
+    bins$score = smoothBin(bins$score, n_smoothBin)
+    bins = bins[-which(bins$score==0)]
+    gc()
+    return(bins)
 }

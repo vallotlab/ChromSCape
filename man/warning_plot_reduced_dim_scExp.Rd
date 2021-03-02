@@ -9,7 +9,9 @@ warning_plot_reduced_dim_scExp(
   color_by,
   reduced_dim,
   select_x,
-  select_y
+  select_y,
+  downsample,
+  transparency
 )
 }
 \arguments{
@@ -22,6 +24,10 @@ warning_plot_reduced_dim_scExp(
 \item{select_x}{Which variable to select for x axis}
 
 \item{select_y}{Which variable to select for y axis}
+
+\item{downsample}{Number of cells to downsample}
+
+\item{transparency}{Alpha parameter, between 0 and 1}
 }
 \value{
 Warning or errors if the inputs are not correct

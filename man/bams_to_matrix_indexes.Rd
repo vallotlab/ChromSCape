@@ -4,10 +4,10 @@
 \alias{bams_to_matrix_indexes}
 \title{Count bam files on interval to create count indexes}
 \usage{
-bams_to_matrix_indexes(files_dir, which)
+bams_to_matrix_indexes(dir, which)
 }
 \arguments{
-\item{files_dir}{Directory containing the single cell BAM files}
+\item{dir}{A directory containing single cell  BAM files and BAI files}
 
 \item{which}{Genomic Range on which to count}
 }

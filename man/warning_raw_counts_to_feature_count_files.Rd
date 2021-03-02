@@ -2,10 +2,10 @@
 % Please edit documentation in R/preprocessing_filtering_reduction.R
 \name{warning_raw_counts_to_feature_count_files}
 \alias{warning_raw_counts_to_feature_count_files}
-\title{Warning for _raw_counts_to_feature_count_files}
+\title{Warning for raw_counts_to_feature_count_files}
 \usage{
 warning_raw_counts_to_feature_count_files(
-  files_dir,
+  files_dir_list,
   file_type = c("BAM", "BED", "Index_Peak_Barcode"),
   peak_file = NULL,
   n_bins = NULL,
@@ -17,7 +17,8 @@ warning_raw_counts_to_feature_count_files(
 )
 }
 \arguments{
-\item{files_dir}{The directory containing the files}
+\item{files_dir_list}{A named character vector of directory containing
+the raw files}
 
 \item{file_type}{Input file(s) type(s) ('BAM')}
 
@@ -39,5 +40,5 @@ warning_raw_counts_to_feature_count_files(
 Error or warnings if the input are not correct
 }
 \description{
-Warning for _raw_counts_to_feature_count_files
+Warning for raw_counts_to_feature_count_files
 }
