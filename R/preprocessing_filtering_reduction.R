@@ -26,6 +26,9 @@
 #' samples = detect_samples(barcodes, nb_samples=2)
 #' 
 detect_samples <- function(barcodes, nb_samples = 1) {
+    if(barcodes > 2000){
+        
+    }
     t = system.time({
         mat = stringdist::stringdistmatrix(
             barcodes, barcodes, useNames = "strings",
@@ -107,7 +110,9 @@ create_sample_name_mat <- function(nb_samples, samples_names){
 #'
 #' @param ref reference genome to use (hg38)
 #' @param verbose Verbose (TRUE)
-#' @param files_dir The directory containing the files
+#' @param files_dir_list A named character vector of directories containing
+#'  the files. The 
+#' names correspond to sample names.
 #' @param peak_file A file containing genomic location of peaks (NULL)
 #' @param n_bins The number of bins to tile the genome (NULL)
 #' @param bin_width The size of bins to tile the genome (NULL)
@@ -124,22 +129,26 @@ create_sample_name_mat <- function(nb_samples, samples_names){
 #' sort.GenomicRanges
 #' 
 raw_counts_to_feature_count_files <- function(
-    files_dir, file_type = c("BAM", "BED", "Index_Peak_Barcode"),
+    files_dir_list, file_type = c("BAM", "BED", "Index_Peak_Barcode"),
     peak_file = NULL, n_bins = NULL, bin_width = NULL, geneTSS = NULL,
     aroundTSS = 2500, verbose = TRUE, ref = "hg38") {
     warning_raw_counts_to_feature_count_files(
-        files_dir, file_type, peak_file, n_bins, bin_width, geneTSS,
+        files_dir_list, file_type, peak_file, n_bins, bin_width, geneTSS,
         aroundTSS, verbose, ref)
-    peak_file_2 <- barcode_file <- index_file <- NULL
-    if (file_type == "Index_Peak_Barcode") {
-        peak_file_2 = list.files(path = files_dir, full.names = TRUE,
-                                pattern = ".*peaks.bed$")
-        index_file = list.files(path = files_dir, full.names = TRUE,
-                                pattern = ".*index.txt$")
-        barcode_file = list.files(path = files_dir, full.names = TRUE,
-                                pattern = ".*barcodes.txt$")
+    
+    feature_file <- barcode_file <- matrix_file <- NULL
+    if (file_type == "SparseMatrix") {
+        pattern = ".*features.tsv|.*features.txt|.*features.bed|.*features.*.gz"
+        feature_file = list.files(path = files_dir_list[1], full.names = TRUE,
+                                pattern = pattern)
+        pattern = ".*barcodes.tsv|.*barcodes.txt|.*barcodes.*.gz"
+        barcode_file = list.files(path = files_dir_list[1], full.names = TRUE,
+                                  pattern = pattern)
+        pattern = ".*matrix.mtx|.*matrix.*.gz"
+        matrix_file = list.files(path = files_dir_list[1], full.names = TRUE,
+                                pattern = pattern)
         
-        if (length(c(peak_file_2, index_file, barcode_file)) != 3)
+        if (length(c(feature_file, matrix_file, barcode_file)) != 3)
             stop(paste0(
                 "ChromSCape::raw_counts_to_feature_count_files - For ",
                 "Index Count type, the folder must contain exactly two files ",
@@ -148,12 +157,18 @@ raw_counts_to_feature_count_files <- function(
     which <- define_feature(ref, peak_file, n_bins, bin_width, geneTSS,
                             aroundTSS)
     out <- import_count_input_files(
-        files_dir, file_type, which, ref, peak_file_2, barcode_file,
-        index_file, verbose)
-    which <- out$which
-    feature_indexes <- out$feature_indexes
-    name_cells <- out$name_cells
-    mat = Matrix::sparseMatrix(
+        files_dir_list, file_type, which, ref, feature_file, barcode_file,
+        matrix_file, verbose)
+    mat = list()
+    samples_ids = c()
+    for(i in seq_along(out$feature_indexes)){
+        sample_id = names(out$feature_indexes)[i]
+        # which <- out$which[[i]]
+        feature_indexes <- out$feature_indexes[[i]]
+        name_cells <- paste0(sample_id, "_", out$name_cells[[i]])
+        samples_ids = c(samples_ids, rep(sample_id, length(name_cells)))
+        
+    mat[[sample_id]] = Matrix::sparseMatrix(
         i = as.numeric(feature_indexes$feature_index),
         j = feature_indexes$barcode_index,
         x = feature_indexes$counts,
@@ -162,18 +177,27 @@ raw_counts_to_feature_count_files <- function(
             rows = gsub(":|-", "_", as.character(which)),
             cols = name_cells
         ))
+    }
+    mat <- do.call("cbind", mat)
     chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
     regions_to_remove = which(!as.character(which@seqnames) %in% chr$chr)
     if(length(regions_to_remove) > 0) mat = mat[-regions_to_remove,]
-    return(mat)
+    annot_raw = data.frame(barcode = colnames(mat),
+                           cell_id = colnames(mat),
+                           sample_id = samples_ids,
+                           batch_id = factor(rep(1, ncol(mat)))
+    )
+    out = list("datamatrix" = mat, "annot_raw" = annot_raw)
+    return(out)
 }
 
 
-#' Warning for _raw_counts_to_feature_count_files
+#' Warning for raw_counts_to_feature_count_files
 #'
 #' @param ref reference genome to use (hg38)
 #' @param verbose Verbose (TRUE)
-#' @param files_dir The directory containing the files
+#' @param files_dir_list A named character vector of directory containing
+#'  the raw files
 #' @param peak_file A file containing genomic location of peaks (NULL)
 #' @param n_bins The number of bins to tile the genome (NULL)
 #' @param bin_width The size of bins to tile the genome (NULL)
@@ -183,10 +207,10 @@ raw_counts_to_feature_count_files <- function(
 #'
 #' @return Error or warnings if the input are not correct
 warning_raw_counts_to_feature_count_files <- function(
-    files_dir, file_type = c("BAM", "BED", "Index_Peak_Barcode"),
+    files_dir_list, file_type = c("BAM", "BED", "Index_Peak_Barcode"),
     peak_file = NULL, n_bins = NULL, bin_width = NULL, geneTSS = NULL,
     aroundTSS = 2500, verbose = TRUE, ref = "hg38"){
-        stopifnot(dir.exists(files_dir), is.numeric(aroundTSS),
+        stopifnot(dir.exists(files_dir_list), is.numeric(aroundTSS),
                 ref %in% c("mm10", "hg38"))
         
         if (!is.null(peak_file) && !file.exists(peak_file))
@@ -220,7 +244,9 @@ warning_raw_counts_to_feature_count_files <- function(
 #' @return A GRanges object
 #'   
 #' @importFrom rtracklayer import
-define_feature <- function(ref,peak_file, n_bins, bin_width,
+#' @importFrom GenomicRanges GRanges duplicated tileGenome width seqnames
+#' @importFrom IRanges subsetByOverlaps
+define_feature <- function(ref, peak_file, n_bins, bin_width,
                         geneTSS, aroundTSS){
     chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
     chr <- GenomicRanges::GRanges(chr)
@@ -229,6 +255,11 @@ define_feature <- function(ref,peak_file, n_bins, bin_width,
                 'Reading in peaks file...')
         features <- rtracklayer::import(peak_file, format="bed")
         which <- IRanges::subsetByOverlaps(features,chr)
+        if(length(which(GenomicRanges::duplicated(which)))>0) 
+            message("ChromSCape::define_feature - Removing ",
+                    length(which(GenomicRanges::duplicated(which))), 
+                    " duplicated regions from peak file.")
+        which = which[!GenomicRanges::duplicated(which)]
     } else if (!is.null(n_bins) | !is.null(bin_width)) {
         message('ChromSCape::raw_counts_to_feature_count_files - ',
                 'Counting on genomic bins...')
@@ -268,57 +299,62 @@ define_feature <- function(ref,peak_file, n_bins, bin_width,
 
 #' Import and count input files depending on their format
 #'
-#' @param files_dir Path to the input files
+#' @param files_dir A named list of directories containing the input files
 #' @param which A GRanges object of features 
 #' @param ref Reference genome
 #' @param verbose Print ?
 #' @param file_type Input file type
-#' @param peak_file_2 A bed file for peak annotation
-#' @param barcode_file A file containing barcode names
-#' @param index_file A file containing indexes of non zero entries
+#' @param feature_file A file for containing unique feature genomic locations 
+#' in tab separated format (.bed / .txt / .tsv / .*.gz), e.g. chr, start and end
+#' @param barcode_file A file containing unique barcode names
+#' @param matrix_file A file containing indexes of non zero entries
 #'
 #' @return A list with a GRanges object of feature types (which), the 
 #' feature indexes data.frame containing non-zeroes entries in the count matrix
 #' and the cell names
 #'
-import_count_input_files <- function(files_dir, file_type,
-                                    which, ref, peak_file_2, 
-                                    barcode_file, index_file, verbose){
-    if (file_type == "BAM") {
-        t1 = system.time({
-            l = bams_to_matrix_indexes(files_dir, which)
-        })
-        feature_indexes = l[[1]]
-        name_cells = l[[2]]
-        if (verbose)
-            message("ChromSCape::raw_counts_to_feature_count_files - ",
-                    "Count matrix created from BAM files in ", t1[3], " sec.\n")
+import_count_input_files <- function(files_dir_list, file_type,
+                                    which, ref, feature_file, 
+                                    barcode_file, matrix_file, verbose){
+    feature_indexes = list()
+    name_cells = list()
+    for(i in seq_along(files_dir_list)){
+        dir = files_dir_list[[i]]
+        sample_id = names(files_dir_list)[i]
+        if (file_type == "BAM") {
+            t1 = system.time({
+                l = bams_to_matrix_indexes(dir, which)
+            })
+            if (verbose)
+                message("ChromSCape::raw_counts_to_feature_count_files - ",
+                        "Count matrix ", sample_id ,"created from BAM files in "
+                        , t1[3], " sec.\n")
+        }
+        else if (file_type == "BED") {
+            t1 = system.time({
+                l = beds_to_matrix_indexes(dir, which)
+            })
+            if (verbose)
+                message("ChromSCape::raw_counts_to_feature_count_files - ",
+                        "Count matrix ", sample_id ,"
+                        created from BED files in ", t1[3], " sec.")}
+        else if (file_type == "Index_Peak_Barcode") {
+            t1 = system.time({
+                l = index_peaks_barcodes_to_matrix_indexes(
+                    feature_file = feature_file, matrix_file = matrix_file,
+                    barcode_file = barcode_file)
+            })
+            which = l[[3]]
+            if (verbose)
+                message("ChromSCape::raw_counts_to_feature_count_files - ",
+                        "Count matrix ", sample_id ,
+                        "created from Index-Peak-Barcodes files in ",
+                        t1[3], " sec.")
+        }
+        feature_indexes[[sample_id]] = l[[1]]
+        name_cells[[sample_id]] = l[[2]]
     }
-    else if (file_type == "BED") {
-        t1 = system.time({
-            l = beds_to_matrix_indexes(files_dir, which)
-        })
-        feature_indexes = l$feature_indexes
-        name_cells = l$names_cells
-        if (verbose)
-            message("ChromSCape::raw_counts_to_feature_count_files - ",
-                    "Count matrix created from BED files in ", t1[3],
-                    " sec.")}
-    else if (file_type == "Index_Peak_Barcode") {
-        name_cells = read.table(barcode_file, sep = "", quote = "",
-                                stringsAsFactors = FALSE)[, 1]
-        t1 = system.time({
-            l = index_peaks_barcodes_to_matrix_indexes(
-                peak_file = peak_file_2, index_file = index_file,
-                name_cells = name_cells, ref = ref )
-        })
-        feature_indexes = l[[1]]
-        which = l[[2]]
-        if (verbose)
-            message("ChromSCape::raw_counts_to_feature_count_files - ",
-                    "Count matrix created from Index-Peak-Barcodes files in ",
-                    t1[3], " sec.")
-    }
+    
     out <- list("which" = which, "feature_indexes" = feature_indexes,
                 "name_cells" = name_cells)
 
@@ -327,7 +363,7 @@ import_count_input_files <- function(files_dir, file_type,
 
 #' Count bam files on interval to create count indexes
 #'
-#' @param files_dir Directory containing the single cell BAM files
+#' @param dir A directory containing single cell  BAM files and BAI files
 #' @param which Genomic Range on which to count
 #'
 #' @return A list containing a "feature index" data.frame and a 
@@ -335,21 +371,21 @@ import_count_input_files <- function(files_dir, file_type,
 #'
 #' @importFrom Rsamtools BamFileList indexBam ScanBamParam countBam
 #' @importFrom BiocParallel bplapply
-bams_to_matrix_indexes = function(files_dir, which) {
-    single_cell_bams = list.files(files_dir,
+bams_to_matrix_indexes = function(dir, which) {
+    single_cell_bams = list.files(dir,
                                 full.names = TRUE,
                                 pattern = paste0(".*.bam$"))
     bam_files = Rsamtools::BamFileList(single_cell_bams)
     name_cells = gsub("*.bam$", "", basename(as.character(single_cell_bams)))
     names(bam_files) = name_cells
     
-    indexes = list.files(files_dir,
+    indexes = list.files(dir,
                         full.names = TRUE,
                         pattern = paste0(".*.bai$"))
     if (length(indexes) < length(bam_files)) {
         message("ChromSCape::bams_to_matrix_indexes - indexing BAM files...")
         BiocParallel::bplapply(bam_files, Rsamtools::indexBam)
-        indexes = list.files(files_dir,
+        indexes = list.files(files_dir_list,
                             full.names = TRUE,
                             pattern = paste0(".*.bai$"))
     }
@@ -384,40 +420,48 @@ bams_to_matrix_indexes = function(files_dir, which) {
 #'
 #'
 #' @param peak_file A file containing the peak genomic locations
-#' @param index_file A file containing the indexes of non-zeroes values and
+#' @param matrix_file A file containing the indexes of non-zeroes values and
 #'   their value (respectively i,j,x,see sparseMatrix)
-#' @param name_cells A vector with cell names
+#' @param barcode_file A file containing the barcode ids
 #' @param binarize Binarize matrix ?
-#' @param ref Reference genome
 #'
 #' @importFrom GenomicRanges GRanges
 #'
-#' @return A list containing a "feature index" data.frame and a region
-#'   GenomicRange object both used to form the sparse matrix
+#' @return A list containing a "feature index" data.frame, name_cells, and a
+#'  region GenomicRange object used to form the sparse matrix
 #'   
 index_peaks_barcodes_to_matrix_indexes = function(
-    peak_file, index_file, name_cells, binarize = FALSE, ref = "hg38") {
+    feature_file, matrix_file, barcode_file, binarize = FALSE) {
     regions = GenomicRanges::GRanges(setNames(
-        read.table(peak_file, sep = "\t", quote = "")[, seq_len(3)],
+        read.table(feature_file, sep = "\t", quote = "")[, seq_len(3)],
         c("chr", "start", "end")
     ))
-    chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
     
+    if(any(GenomicRanges::duplicated(regions))){
+        stop("ChromSCape::index_peaks_barcodes_to_matrix_indexes - The ",
+             "features are not unique, check your file : ", feature_file)
+    }
+    
+    name_cells = read.table(barcode_file, sep = "", quote = "",
+                            stringsAsFactors = FALSE)[, 1]
+    if(length(unique(name_cells)) != length(name_cells)){
+        stop("ChromSCape::index_peaks_barcodes_to_matrix_indexes - The ",
+             "barcode IDs are not unique, check your file : ",barcode_file)
+    }
     feature_indexes = setNames(
-        read.table(index_file, sep = "", quote = "")[, seq_len(3)],
+        read.table(matrix_file, sep = "", quote = "")[, seq_len(3)],
         c("feature_index", "barcode_index", "counts")
     )
-    
     
     feature_indexes$cell_id = name_cells[feature_indexes$barcode_index]
     feature_indexes = feature_indexes[, c("cell_id", "feature_index",
                                         "counts", "barcode_index")]
-    return(list(feature_indexes, regions))
+    return(list(feature_indexes, name_cells, regions))
 }
 
 #' Count bed files on interval to create count indexes
 #'
-#' @param files_dir Directory containing the single cell BAM files
+#' @param dir A directory containing the single cell BED files
 #' @param which Genomic Range on which to count
 #'
 #' @importFrom BiocParallel bplapply
@@ -426,9 +470,9 @@ index_peaks_barcodes_to_matrix_indexes = function(
 #' @return A list containing a "feature index" data.frame and a 
 #' names of cells as vector both used to form the sparse matrix
 #' 
-beds_to_matrix_indexes <- function(files_dir, which) {
+beds_to_matrix_indexes <- function(dir, which) {
     single_cell_beds = list.files(
-        files_dir, full.names = TRUE, pattern = ".*.bed$|.*.bed.gz$")
+        dir, full.names = TRUE, pattern = ".*.bed$|.*.bed.gz$")
     names_cells = gsub(".bed$|.bed.gz$", 
                     "", basename(as.character(single_cell_beds)))
     names(single_cell_beds) = names_cells
@@ -455,8 +499,7 @@ beds_to_matrix_indexes <- function(files_dir, which) {
     feature_indexes = do.call(rbind, feature_list)
     feature_indexes$barcode_index = as.numeric(
         as.factor(feature_indexes$cell_id))
-    out = list("feature_indexes" = feature_indexes,
-            "names_cells" = names_cells)
+    out = list(feature_indexes, names_cells)
     return(out)
 }
 
@@ -1771,31 +1814,38 @@ pca_irlba_for_sparseMatrix <- function(x, n_comp)
 #' Table of cells
 #'
 #' @param annot An annotation of cells. Can be obtain through 'colData(scExp)'. 
-#'
+#' @param datamatrix A matrix of cells per regions  before filtering.
+#' 
 #' @export
 #' @return A formatted kable in HTML.
 #' @importFrom SingleCellExperiment colData
-#' @importFrom dplyr bind_rows tibble left_join
+#' @importFrom dplyr bind_rows tibble left_join n summarise
 #' @importFrom kableExtra kable kable_styling group_rows
 #' 
 #' @examples 
 #' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 #' \dontrun{num_cell_scExp(SingleCellExperiment::colData(scExp))}
-num_cell_scExp <- function(annot)
+num_cell_scExp <- function(annot, datamatrix)
 {
-    stopifnot(!is.null(annot))
+    stopifnot(!is.null(annot), !is.null(datamatrix))
+    annot$total_counts = colSums(datamatrix)
+    table <- as.data.frame(
+        annot %>% dplyr::group_by(sample_id) %>% 
+            dplyr::summarise("#Cells" = n(),
+                             "Median Reads"= 
+                                 paste0(round(median(total_counts),0)," +/- ",
+                                        round(stats::sd(total_counts),0))))
     
-    table <- as.data.frame(table(annot$sample_id))
-    
-    colnames(table) <- c("Sample", "#Cells")
     rownames(table) <- NULL
     
     table[, 1] <- as.character(table[, 1])
-    table[nrow(table) + 1, ] = c("", sum(table[, 2]))
+    table[nrow(table) + 1, ] = c(
+        "", sum(table[, 2]), paste0(round(median(annot$total_counts),0),
+                                    " +/- ", round(stats::sd(annot$total_counts),0)))
     table %>% kableExtra::kable(escape = FALSE, align = "c") %>%
         kableExtra::kable_styling(c("striped",
                                     "condensed"), full_width = TRUE) %>%
-        kableExtra::group_rows("Total cell count",
+        kableExtra::group_rows("Total",
                             dim(table)[1], dim(table)[1])
 }
 
@@ -1803,11 +1853,13 @@ num_cell_scExp <- function(annot)
 #'
 #' @param scExp A SingleCellExperiment object.
 #' @param annot A raw annotation data.frame of cells before filtering.
+#' @param datamatrix A matrix of cells per regions  before filtering.
 #'
 #' @export
 #' @return A formatted kable in HTML.
 #' @importFrom SingleCellExperiment colData
-#' @importFrom dplyr bind_rows tibble left_join
+#' @importFrom dplyr bind_rows tibble left_join n summarise
+#' @importFrom kableExtra kable kable_styling group_rows
 #' @importFrom kableExtra kable kable_styling group_rows
 #'
 #' @examples 
@@ -1816,33 +1868,48 @@ num_cell_scExp <- function(annot)
 #' \dontrun{ num_cell_after_QC_filt_scExp(
 #' scExp_filtered,SingleCellExperiment::colData(scExp))}
 #' 
-num_cell_after_QC_filt_scExp <- function(scExp, annot)
+num_cell_after_QC_filt_scExp <- function(scExp, annot, datamatrix)
 {
     stopifnot(is(scExp, "SingleCellExperiment"), !is.null(annot))
-    
-    table <- as.data.frame(table(annot$sample_id))
+    annot$total_counts = colSums(datamatrix)
+    table <- as.data.frame(
+        annot %>% dplyr::group_by(sample_id) %>% 
+        dplyr::summarise("#Cells" = n(),
+                            "Median Reads"= 
+                            paste0(round(median(total_counts),0)," +/- ",
+                                   round(stats::sd(total_counts),0))))
     table_filtered <-
-        as.data.frame(table(SingleCellExperiment::colData(scExp)$sample_id))
-    
-    colnames(table) <- c("Sample", "#Cells Before Filtering")
+        as.data.frame(SingleCellExperiment::colData(scExp))
+    table_filtered <- as.data.frame(
+        table_filtered %>% dplyr::group_by(sample_id) %>% 
+            dplyr::summarise("#Cells after" = n(),
+                             "Median Reads after"= 
+                                 paste0(round(median(total_counts),0)," +/- ",
+                                        round(stats::sd(total_counts),0))))
+    colnames(table)[1] <- c("Sample")
     rownames(table) <- NULL
-    colnames(table_filtered) <-
-        c("Sample", "#Cells After Filtering")
+    colnames(table_filtered) [1] <- c("Sample")
     rownames(table_filtered) <- NULL
     
     table_both <-
         dplyr::left_join(table, table_filtered, by = c("Sample"))
     table_both[, 1] <- as.character(table_both[, 1])
-    table_both <-dplyr::bind_rows(table_both,
-            dplyr::tibble(
-                "Sample" = "",
-                "#Cells Before Filtering" = sum(table_both[,2]),
-                "#Cells After Filtering" = sum(table_both[, 3])))
-    
+    table_both <- dplyr::bind_rows(
+        table_both,
+        dplyr::tibble(
+            "Sample" = "",
+            "#Cells" = sum(table_both[,2]),
+            "Median Reads" = paste0(round(median(annot$total_counts),0),
+                                                 " +/- ",
+                                           round(stats::sd(annot$total_counts),0)),
+            "#Cells after" = sum(table_both[, 4]),
+            "Median Reads after" = paste0(round(median(scExp$total_counts),0),
+                                          " +/- ",
+                                          round(stats::sd(scExp$total_counts),0))))
     table_both %>% kableExtra::kable(escape = FALSE, align = "c") %>%
         kableExtra::kable_styling(c("striped",
                                     "condensed"), full_width = TRUE) %>%
-        kableExtra::group_rows("Total cell count",
+        kableExtra::group_rows("Total",
                             dim(table_both)[1], dim(table_both)[1])
 }
 

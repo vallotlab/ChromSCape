@@ -149,7 +149,6 @@ get_color_dataframe_from_input <- function(
 #' @param select_y Which variable to select for y axis
 #' @param downsample Number of cells to downsample
 #' @param transparency Alpha parameter, between 0 and 1
-#' @param seed Numeric random seed
 #' 
 #' @return A ggplot geom_point plot of reduced dimension 2D reprensentation 
 #' @export
@@ -167,14 +166,13 @@ get_color_dataframe_from_input <- function(
 plot_reduced_dim_scExp <- function(
     scExp, color_by = "sample_id", reduced_dim = c("PCA", "TSNE", "UMAP"),
     select_x = "Component_1", select_y = "Component_2", downsample = 5000, 
-    transparency = 0.6,  size = 1, seed = 47)
+    transparency = 0.6,  size = 1)
 {
-    set.seed(seed)
     warning_plot_reduced_dim_scExp(scExp, color_by , reduced_dim,
-                                   select_x, select_y, downsample, transparency,
-                                   seed)
+                                   select_x, select_y, downsample, transparency)
     if(ncol(scExp) > downsample) scExp = scExp[,sample(ncol(scExp),
-                                                       downsample,replace = F)]
+                                                       downsample,
+                                                       replace = FALSE)]
     plot_df = as.data.frame(
         cbind(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]), 
               SingleCellExperiment::colData(scExp)))
@@ -214,17 +212,16 @@ plot_reduced_dim_scExp <- function(
 #' @param select_y Which variable to select for y axis
 #' @param downsample Number of cells to downsample
 #' @param transparency Alpha parameter, between 0 and 1
-#' @param seed Numeric random seed
 #'
 #' @return Warning or errors if the inputs are not correct
 #' 
 warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
                                            select_x, select_y, downsample,
-                                           transparency, seed){
+                                           transparency){
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(color_by),
               is.character(reduced_dim), is.character(select_x),
               is.character(select_y), is.numeric(downsample),
-              is.numeric(transparency), is.numeric(seed))
+              is.numeric(transparency))
     if (!reduced_dim[1] %in% SingleCellExperiment::reducedDimNames(scExp)) 
         stop(paste0("ChromSCape::plot_reduced_dim_scExp - ", reduced_dim[1],
                     " is not present in object, please run normalize_scExp ",
@@ -309,6 +306,7 @@ plot_most_contributing_features <- function(scExp, component = "Component_1",
 #' 
 #' @importFrom SingleCellExperiment reducedDim normcounts
 #' @importFrom SummarizedExperiment rowRanges
+#' @importFrom graphics pie
 #'  
 #' @export
 #'
@@ -330,13 +328,13 @@ plot_pie_most_contributing_chr <- function(scExp, component = "Component_1",
         summarise(contribution = sum(absolute_value))
     distrib$contribution = 100 * distrib$contribution/sum(distrib$contribution)
     distrib = setNames(distrib$contribution,distrib$chr)
-    distrib = sort(distrib, decreasing = T)
+    distrib = sort(distrib, decreasing = TRUE)
     distrib[6] = sum(distrib[6:length(distrib)])
     names(distrib)[6] = "Others"
     distrib = distrib[1:6]
     distrib_pc = round(distrib, 1)
     names(distrib) = paste0(names(distrib), " - ",distrib_pc, " %")
-    pie(distrib,clockwise = TRUE, radius = 1,
+    graphics::pie(distrib,clockwise = TRUE, radius = 1,
         col = c("#5DA5DA","#FAA43A","#60BD68","#F17CB0","#DECF3F","#4D4D4D"))
 }
 
@@ -353,16 +351,19 @@ plot_pie_most_contributing_chr <- function(scExp, component = "Component_1",
 retrieve_top_bot_features_pca <- function(pca, counts, component, n_top_bot,
                                           absolute = FALSE){
     rotations = counts %*% as.matrix(pca)
-    rotations = rotations[,component,drop=F]
+    rotations = rotations[,component,drop=FALSE]
     top = as.data.frame(as.matrix(
-        head(rotations[order(rotations, decreasing = T),, drop=F], n_top_bot)))
+        base::head(rotations[order(rotations, decreasing = TRUE),, drop=FALSE],
+             n_top_bot)))
     bot = as.data.frame(as.matrix(
-        tail(rotations[order(rotations, decreasing = T),, drop=F], n_top_bot)))
+        base::tail(rotations[order(rotations, decreasing = TRUE),, drop=FALSE],
+             n_top_bot)))
     top_bot = as.data.frame(rbind(top, bot))
     if(absolute) {
         rotations = abs(rotations)
         top_bot = as.data.frame(as.matrix(
-        head(rotations[order(rotations, decreasing = T),, drop=F], n_top_bot)))
+        base::head(rotations[order(rotations, decreasing = TRUE),, drop=FALSE],
+             n_top_bot)))
     }
     return(top_bot)
 }
@@ -388,7 +389,7 @@ retrieve_top_bot_features_pca <- function(pca, counts, component, n_top_bot,
 #' 
 plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
     grDevices::colorRampPalette(c("royalblue", "white", "indianred1")))(256),
-    color_by = NULL, downsample = 1000, seed = 47, hc_linkage = "ward.D")
+    color_by = NULL, downsample = 1000, hc_linkage = "ward.D")
 {
     
     stopifnot(is(scExp, "SingleCellExperiment"))
@@ -403,9 +404,8 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
     if (length(scExp@metadata[[name_hc]]$order) != ncol(scExp)) 
         stop(paste0("ChromSCape::plot_heatmap_scExp - Dendrogram has different",
                     " number of cells than dataset."))
-    set.seed(seed)
     if(ncol(scExp) > downsample) {
-        samp = sample(ncol(scExp),downsample,replace = F)
+        samp = sample(ncol(scExp),downsample, replace = FALSE)
         scExp = scExp[,samp]
         SingleCellExperiment::reducedDim(scExp, "Cor") = 
             SingleCellExperiment::reducedDim(scExp, "Cor")[,samp]
@@ -448,7 +448,6 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
 #' @param jitter_by Add jitter points of another layer
 #'  (cell_cluster or sample_id)
 #' @param downsample Downsample for plotting
-#' @param seed Random seed
 #'
 #' @return A violin plot of intra-correlation
 #' @export
@@ -456,11 +455,11 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
 #' @examples plot_intra_correlation_scExp(scExp)
 plot_intra_correlation_scExp <- function(
     scExp_cf, by = c("sample_id", "cell_cluster")[1], jitter_by = NULL,
-    downsample = 5000, seed = 47){
+    downsample = 5000){
     
-    set.seed(seed)
     if(ncol(scExp_cf) > downsample) scExp_cf = scExp_cf[,sample(ncol(scExp_cf),
-                                                       downsample,replace = F)]
+                                                       downsample,
+                                                       replace = FALSE)]
     
     samp = intra_correlation_scExp(scExp_cf, by)
     annot = SingleCellExperiment::colData(scExp_cf)
@@ -509,7 +508,6 @@ plot_intra_correlation_scExp <- function(
 #' @param jitter_by Add jitter points of another layer
 #'  (cell_cluster or sample_id)
 #' @param downsample Downsample for plotting
-#' @param seed Random seed
 #'
 #' @return A violin plot of inter-correlation
 #' @export
@@ -519,11 +517,10 @@ plot_inter_correlation_scExp <- function(
     scExp_cf, by = c("sample_id", "cell_cluster")[1], jitter_by = NULL,
     reference_group = unique(scExp_cf[[by]])[1],
     other_groups = unique(scExp_cf[[by]]),
-    downsample = 5000, seed = 47){
+    downsample = 5000){
     
-    set.seed(seed)
     if(ncol(scExp_cf) > downsample) scExp_cf =
-            scExp_cf[,sample(ncol(scExp_cf),downsample,replace = F)]
+            scExp_cf[,sample(ncol(scExp_cf),downsample,replace = FALSE)]
     
     samp = inter_correlation_scExp(scExp_cf, by, reference_group, other_groups)
     annot = SingleCellExperiment::colData(scExp_cf)
@@ -646,8 +643,8 @@ plot_coverage_BigWig <- function(
                                              rowlabels = "Peaks",
                                              rowlabelcex = 1.5)
         Sushi::plotGenes(gl.sub, chrom, start, end,
-                  bentline=F, plotgenetype = "arrow",
-                  labeltext = T, labelat = "start", fontsize=1,
+                  bentline=FALSE, plotgenetype = "arrow",
+                  labeltext = TRUE, labelat = "start", fontsize=1,
                   labeloffset = 0.4, bheight=0.07)
         
         par(mar = c(1, 6, 1, 1))
