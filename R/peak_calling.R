@@ -48,6 +48,7 @@
 #' @param geneTSS_annotation A data.frame annotation of genes TSS. If NULL will
 #'   automatically load Gencode list of genes fro specified reference genome.
 #' @param run_coverage Create coverage tracks (.bw) for each cluster ? 
+#' @param progress A shiny Progress instance to display progress bar.
 #'
 #' @return A SingleCellExperiment with refinded annotation
 #' @export
@@ -69,11 +70,13 @@
 #'}
 subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 0.05,
                                 ref = "hg38", peak_distance_to_merge = 10000,
-                                geneTSS_annotation = NULL, run_coverage = TRUE)
+                                geneTSS_annotation = NULL, run_coverage = TRUE,
+                                progress = NULL)
     {
     stopifnot(is(scExp, "SingleCellExperiment"), dir.exists(odir),
             is.numeric(p.value), is.character(ref),
             is.numeric(peak_distance_to_merge))
+    if (!is.null(progress)) progress$set(detail = "Checking for annotation...", value = 0.15)
     if (!ref %in% c("hg38", "mm10")) 
         stop("ChromSCape::subset_bam_call_peaks - 
             Reference genome (ref) must be 'hg38' or 'mm10'.")
@@ -83,14 +86,11 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
     if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))) 
         stop("ChromSCape::subset_bam_call_peaks -
             Colnames of cell annotation must contain 'cell_cluster'.")
-    
-    print("Subset Bam Call peaks")
-    print(format)
+
     if (is.null(geneTSS_annotation))
     {
-        message("ChromSCape::gene_set_enrichment_analysis_scExp - ",
-                    "Selecting ", 
-            ref, " genes from Gencode.")
+        message("ChromSCape::subset_bam_call_peaks - Selecting ", ref,
+                " genes from Gencode.")
         eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
         geneTSS_annotation = 
             eval(parse(text = paste0("", ref, ".GeneTSS")))
@@ -105,6 +105,7 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
         geneTSS_annotation = as(geneTSS_annotation,"GRanges")
     } else geneTSS_annotation = as(geneTSS_annotation, "GRanges")
     if(format == "BAM"){
+        if (!is.null(progress)) progress$set(detail = "Merging BAM files...", value = 0.25)
         if (length(input) > 1)
         {
             merged = file.path(odir, "merged.bam")
@@ -115,7 +116,7 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
         if(!file.exists(paste0(merged,".bai"))) 
             Rsamtools::indexBam(merged, overwrite= TRUE)
     } 
-    print("Writting barcode files...")
+    if (!is.null(progress)) progress$set(detail = "Generating pseudo-bulk of each cluster...", value = 0.35)
     affectation = SingleCellExperiment::colData(scExp)
     affectation$cell_cluster = as.factor(affectation$cell_cluster)
     
@@ -124,14 +125,17 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
     if(format == "BAM") separate_BAM_into_clusters(affectation, odir, merged) 
     else concatenate_scBed_into_clusters(affectation, input, odir, ref)
     
+    if (!is.null(progress)) progress$set(detail = "Calling peaks with MACS2...", value = 0.45)
     merged_peaks <- call_macs2_merge_peaks(affectation, odir, p.value, 
                                            format, ref, peak_distance_to_merge)
+    if (!is.null(progress)) progress$set(detail = "Refining annotation based on merged peaks...", value = 0.65)
     scExp@metadata$refined_annotation <- 
         annotation_from_merged_peaks(scExp, odir,
                                      merged_peaks, geneTSS_annotation)
     print("Finished creating BAM and annot")
     cat("Running coverage ? ", run_coverage)
     if(run_coverage){
+        if (!is.null(progress)) progress$set(detail = "Creating coverage files for each cluster...", value = 0.85)
         suffix = ifelse(format=="BAM", ".bam", ".bed")
         for(class in unique(scExp$cell_cluster)) {
             input_file = file.path(odir, paste0(class,suffix))
@@ -162,7 +166,7 @@ concatenate_scBed_into_clusters <- function(affectation, files, odir,
     gzipped = grepl(".gz",files[1])
     suffix = ""
     if(gzipped) suffix = ".gz"
-    print(files)
+    print(head(files))
     for (class in levels(factor(affectation$cell_cluster)))
     {
         message("ChromSCape:::concatenate_scBed_into_clusters - generating ",

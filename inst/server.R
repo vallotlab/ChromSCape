@@ -1179,14 +1179,17 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     else "hc"})
   
   observeEvent(input$do_cons_clust, {
-    withProgress(message='Performing consensus clustering...', value = 0, {
-      incProgress(amount=0.4, detail=paste("part one"))
-
+    # withProgress(message='Performing consensus clustering...', value = 0, {
+      # incProgress(amount=0.4, detail=paste("part one"))
+      progress <- shiny::Progress$new(session, min=0, max=1)
+      on.exit(progress$close())
+      progress$set(message='Performing consensus clustering...', value = 0.1)
       scExp_cf(consensus_clustering_scExp(scExp_cf(), reps = as.numeric(input$consclust_iter),
                                           maxK=as.numeric(input$maxK),
                                           clusterAlg = clusterAlg(),
                                           prefix = plotting_directory()))
       gc()
+      progress$set(value = 0.7)
       data = list("scExp_cf" = scExp_cf())
       qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
                                   paste0(input$selected_reduced_dataset, ".qs")))
@@ -1194,9 +1197,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       gc()
       clust$clust_pdf <- NULL  # needed in order to update the pdf output
       clust$clust_pdf <- file.path("Plots", selected_filtered_dataset(), "consensus.pdf")
-  
-      incProgress(amount=0.2, detail=paste("Finished"))
-    })
+      progress$set(message='Consensus clustering done !', value = 0.9)
+      # incProgress(amount=0.2, detail=paste("Finished"))
+    # })
   })
   
  output$cons_clust_pdf <- renderUI({
@@ -1560,9 +1563,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     } else{
       
       nclust = length(unique(scExp_cf()$cell_cluster))  
-      withProgress(message='Performing enrichment analysis...', value = 0, {
+      # withProgress(message='Performing enrichment analysis...', value = 0, {
         
-        incProgress(amount = 0.1, detail = paste("Starting Peak Calling..."))
+        # incProgress(amount = 0.1, detail = paste("Starting Peak Calling..."))
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks"), showWarnings = FALSE)
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
         odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
@@ -1574,19 +1577,23 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           showNotification(paste0("Could not find file ", x, ". Please make sure to give a full path including the file name."),
                            duration = 7, closeButton = TRUE, type="warning"); 1}  
         })
-        incProgress(amount = 0.3, detail = paste("Running Peak Calling..."))
+        # incProgress(amount = 0.3, detail = paste("Running Peak Calling..."))
         if(sum(checkFiles)==0){
+          progress <- shiny::Progress$new(session, min=0, max=1)
+          on.exit(progress$close())
+          progress$set(message='Performing peak calling and coverage...', value = 0.1)
           scExp_cf(subset_bam_call_peaks(scExp_cf(), odir, input_files_pc, format = bam_or_bed(),
                                          as.numeric(input$pc_stat_value), annotation_id(),
-                                         input$peak_distance_to_merge))
+                                         input$peak_distance_to_merge, progress = progress))
+          progress$set(detail = "Done !", value = 0.95)
           data = list("scExp_cf" = scExp_cf())
           qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
                                       paste0(input$selected_reduced_dataset, ".qs")))
           pc$new <- Sys.time()
           updateActionButton(session, "do_pc", label="Finished successfully", icon = icon("check-circle"))
         }
-        incProgress(amount = 0.3, detail = paste("Finished Peak Calling..."))
-      })
+        # incProgress(amount = 0.3, detail = paste("Finished Peak Calling..."))
+      # })
     }
   })
   
