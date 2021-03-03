@@ -27,8 +27,13 @@
 #' @param cdiff.th Fold change threshold. (1)
 #' @param method Wilcoxon or edgerGLM
 #' @param block Use batches as blocking factors ?
-#' @param group 
-#' @param ref 
+#' @param group If de_type = "custom", the sample / cluster of interest as a 
+#' one- column data.frame. The name of the column is the group name and the
+#'  values are character either cluster ("C1", "C2", ...) or sample_id.
+#' @param ref If de_type = "custom", the sample / cluster of reference as a one-
+#' column data.frame. The name of the column is the group name and the values
+#' are character either cluster ("C1", "C2", ...) or sample_id.
+#' @param progress A shiny Progress instance to display progress bar. 
 #'
 #' @return Returns a SingleCellExperiment object containing a differential list.
 #' @export
@@ -44,11 +49,11 @@
 #' 
 differential_analysis_scExp = function(
     scExp, de_type = "one_vs_rest", method = "wilcox", qval.th = 0.01, 
-    cdiff.th = 1, block = NULL, group = NULL, ref = NULL)
+    cdiff.th = 1, block = NULL, group = NULL, ref = NULL, progress = NULL)
 {
     warning_DA(scExp, de_type, method, qval.th, cdiff.th, block,
                group, ref)
-    
+    if (!is.null(progress)) progress$set(detail = "Retrieving counts...", value = 0.15)
     if (isFALSE(block)) block = NULL
     nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
     if(method == "wilcox"){counts = SingleCellExperiment::normcounts(scExp)
@@ -60,13 +65,16 @@ differential_analysis_scExp = function(
     diff = list(res = NULL, summary = NULL, groups = NULL, refs = NULL)
     if (de_type == "one_vs_rest"){
         out <- DA_one_vs_rest_fun(affectation, nclust, counts,
-                                method, feature, block)
+                                method, feature, block, progress)
     } else if(de_type == "pairwise"){
-        out <- DA_pairwise(affectation,nclust, counts, method, feature, block)
+        out <- DA_pairwise(affectation,nclust, counts, method, feature, block,
+                           progress)
     } else if(de_type == "custom"){
         out <- DA_custom(affectation, counts, method, feature, block,
-                         ref, group)
+                         ref, group, progress)
     }
+    if (!is.null(progress)) progress$inc(
+        detail = paste0("Generating differential table..."), amount = 0.1)
     res <- out$res
     groups <- out$groups
     refs <- out$refs
@@ -142,11 +150,12 @@ warning_DA <- function(scExp, de_type, method, qval.th, cdiff.th, block,
 #' @param method DA method : Wilcoxon or EdgeR
 #' @param feature Feature tables
 #' @param block Blocking feature
-#'
+#' @param progress A shiny Progress instance to display progress bar. 
+#' 
 #' @return A list of results, groups compared and references
 #'   
 DA_one_vs_rest_fun <- function(affectation,nclust, counts, method, feature,
-                            block){
+                            block, progress = NULL){
     stopifnot(is.data.frame(affectation),is.integer(nclust),
                 is(counts,"dgCMatrix")|is.matrix(counts), is.character(method),
                 is.data.frame(feature))
@@ -165,6 +174,8 @@ DA_one_vs_rest_fun <- function(affectation,nclust, counts, method, feature,
     })
     names(myrefs) = paste0("notC", seq_len(nclust))
     refs = names(myrefs)
+    if (!is.null(progress)) progress$inc(
+        detail = paste0("Comparing Group vs Refs"), amount = 0.2)
     if(method == "wilcox"){ res = CompareWilcox(
         dataMat = counts, annot = affectation, ref_group = myrefs, 
         groups = mygps, featureTab = feature, block = block)
@@ -192,16 +203,20 @@ DA_one_vs_rest_fun <- function(affectation,nclust, counts, method, feature,
 #' @param feature Feature data.frame
 #' @param method DA method, Wilcoxon or edgeR
 #' @param block Blocking feature
-#'
+#' @param progress A shiny Progress instance to display progress bar. 
+#' 
 #' @return A list of results, groups compared and references
 #'
 DA_pairwise <- function(affectation,nclust, counts,
-                        method, feature, block){
+                        method, feature, block, progress = NULL){
     stopifnot(is.data.frame(affectation),is.integer(nclust),
                 is(counts,"dgCMatrix")|is.matrix(counts), is.character(method),
                 is.data.frame(feature))
     res = feature
-    out <- run_pairwise_tests(affectation, nclust, counts,feature,method)
+    out <- run_pairwise_tests(affectation, nclust, counts,feature, method,
+                              progress = progress)
+    if (!is.null(progress)) progress$inc(detail = "Merging results...",
+                                         amount = 0.1)
     count_save <- out$count_save
     pairs <- out$pairs
     single_results <- out$single_results
@@ -243,14 +258,17 @@ DA_pairwise <- function(affectation,nclust, counts,
 #' @param method DA method : Wilcoxon or EdgeR
 #' @param feature Feature tables
 #' @param block Blocking feature
+#' @param progress A shiny Progress instance to display progress bar. 
 #'
 #' @return A list of results, groups compared and references
 #'   
 DA_custom <- function(affectation, counts, method, feature,
-                               block, ref, group){
+                               block, ref, group, progress = NULL){
     stopifnot(is.data.frame(affectation),
               is(counts,"dgCMatrix")|is.matrix(counts), is.character(method),
               is.data.frame(feature), is.data.frame(ref), is.data.frame(group))
+    if (!is.null(progress)) progress$inc(detail = "Retrieving group and ref...",
+                                         amount = 0.1)
     # compare each cluster to all the rest
     groups = colnames(group)
     mygps = unique(c(affectation[which(affectation$cell_cluster %in% group[,1]
@@ -263,7 +281,10 @@ DA_custom <- function(affectation, counts, method, feature,
     myrefs = list("a" = myrefs)
     names(myrefs) = refs
 
-    if(method == "wilcox"){ res = CompareWilcox(
+    if (!is.null(progress)) progress$inc(
+        detail = paste0("Comparing ", groups, " vs ", refs), amount = 0.2)
+    if(method == "wilcox"){
+        res = CompareWilcox(
         dataMat = counts, annot = affectation, ref_group = myrefs, 
         groups = mygps, featureTab = feature, block = block)
     } else {
@@ -289,11 +310,12 @@ DA_custom <- function(affectation, counts, method, feature,
 #' @param counts Count matrix
 #' @param feature Feature data.frame
 #' @param method DA method, Wilcoxon or edgeR
-#'
+#' @param progress A shiny Progress instance to display progress bar. 
+#' 
 #' @return A list containing objects for DA function
 #'
 run_pairwise_tests <- function(affectation, nclust, counts, 
-                            feature, method){
+                            feature, method, progress = NULL){
     stopifnot(is.data.frame(affectation),is.integer(nclust),
                 is(counts,"dgCMatrix")|is.matrix(counts), is.character(method))
     count_save = data.frame(ID = feature$ID)
@@ -310,6 +332,9 @@ run_pairwise_tests <- function(affectation, nclust, counts,
                 affectation$cell_cluster == paste0("C",j)), "cell_id"])
             names(myrefs) = paste0("C", j)
             refs = names(myrefs)
+            if (!is.null(progress)) progress$set(
+                detail = paste0(groups, " vs ",refs),
+                value = 0.15 + (0.85 / ((as.integer(nclust) - 1) * (as.integer(nclust) - 1) )))
             if(method == "wilcox"){ tmp_result = CompareWilcox(
                 dataMat = counts, annot = affectation, ref_group = myrefs, 
                 groups = mygps, featureTab = feature)
@@ -375,7 +400,8 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #' @param use_peaks Use peak calling method (must be calculated beforehand).
 #'   (FALSE)
 #' @param GeneSetClasses Which classes of MSIGdb to look for.  
-#'
+#' @param progress A shiny Progress instance to display progress bar. 
+#' 
 #' @return Returns a SingleCellExperiment object containing list of enriched
 #'   Gene Sets for each cluster, either in depleted features, enriched features
 #'   or simply differential features (both).
@@ -396,12 +422,15 @@ gene_set_enrichment_analysis_scExp = function(
     GeneSetsDf = NULL, GenePool = NULL, qval.th = 0.01, cdiff.th = 1, 
     peak_distance = 1000, use_peaks = FALSE, GeneSetClasses = c(
         "c1_positional","c2_curated","c3_motif","c4_computational",
-        "c5_GO","c6_oncogenic","c7_immunologic","hallmark"))
+        "c5_GO","c6_oncogenic","c7_immunologic","hallmark"), progress=NULL)
 {
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(ref),
             is.numeric(enrichment_qval), is.numeric(peak_distance),
             is.numeric(qval.th), is.numeric(cdiff.th), 
             is.character(GeneSetClasses))
+    if (!is.null(progress)) progress$inc(
+        detail = "Loading reference gene sets...", amount = 0.1)
+
     if (is.null(scExp@metadata$diff)) 
         stop("ChromSCape::gene_set_enrichment_analysis_scExp - No DA, ",
         "please run run_differential_analysis_scExp first.")
@@ -436,7 +465,7 @@ gene_set_enrichment_analysis_scExp = function(
     enr <- combine_enrichmentTests(
         scExp@metadata$diff, enrichment_qval, qval.th, cdiff.th,
         annotFeat_long,peak_distance, refined_annotation, GeneSets,
-        GeneSetsDf, GenePool)
+        GeneSetsDf, GenePool, progress = progress)
     scExp@metadata$enr <- enr
     return(scExp)
 }
@@ -553,13 +582,14 @@ results_enrichmentTest <- function(
 #' @param GeneSets List of pathways
 #' @param GeneSetsDf Data.frame of pathways
 #' @param GenePool Pool of possible genes for testing
-#'
+#' @param progress A shiny Progress instance to display progress bar. 
+#' 
 #' @return A list of list of pathway enrichment data.frames for 
 #' Both / Over / Under and for each cluster
 #'
 combine_enrichmentTests <- function(
     diff, enrichment_qval, qval.th, cdiff.th, annotFeat_long, peak_distance,
-    refined_annotation, GeneSets, GeneSetsDf, GenePool)
+    refined_annotation, GeneSets, GeneSetsDf, GenePool, progress = NULL)
     {
     stopifnot(is.list(diff), is.numeric(enrichment_qval), is.numeric(qval.th),
                 is.numeric(cdiff.th), is.data.frame(annotFeat_long),
@@ -570,6 +600,9 @@ combine_enrichmentTests <- function(
     enr = list(Both = list(), Overexpressed = list(), Underexpressed = list())
     for (i in seq_along(groups)) {
         gp = groups[i]
+        if (!is.null(progress)) progress$set(
+            detail = paste0("Enrichment for ",gp, "..."),
+            value = 0.3 + (0.5 / length(groups)))
         qval.col <- paste("qval", gp, sep = ".")
         cdiff.col <- paste("cdiff", gp, sep = ".")
         signific = res$ID[which(res[, qval.col] <= qval.th & 

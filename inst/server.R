@@ -1551,8 +1551,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$do_pc, {
     req(bam_or_bed(), list_files_pc(), scExp_cf())
-    print("Doing peak call")
-    print(bam_or_bed())
+    progress <- shiny::Progress$new(session, min=0, max=1)
+    on.exit(progress$close())
+    progress$set(message='Performing peak calling and coverage...', value = 0.0)
+    
     if(bam_or_bed() == "BAM") {
     input_files_pc <- as.character(file.path(dirname(list_files_pc()),input$bam_selection))
     } else {
@@ -1561,39 +1563,30 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(length(input_files_pc)==0){
       warning("Can't find any input BAM / BED files.")
     } else{
-      
       nclust = length(unique(scExp_cf()$cell_cluster))  
-      # withProgress(message='Performing enrichment analysis...', value = 0, {
+      
+      dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks"), showWarnings = FALSE)
+      dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
+      odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
+      sample_ids <- unique(SummarizedExperiment::colData(scExp_cf())$sample_id)
+      
+      checkFiles <- sapply(input_files_pc, function(x){ if(file.exists(x)){ 0 } else { 
+        showNotification(paste0("Could not find file ", x, ". Please make sure to give a full path including the file name."),
+                         duration = 7, closeButton = TRUE, type="warning"); 1}  
+      })
+      if(sum(checkFiles)==0){
         
-        # incProgress(amount = 0.1, detail = paste("Starting Peak Calling..."))
-        dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks"), showWarnings = FALSE)
-        dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
-        odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
-        sample_ids <- unique(SummarizedExperiment::colData(scExp_cf())$sample_id)
-        # inputBams <- as.character(unlist(sapply(sample_ids, function(x){ input[[paste0('bam_', x)]] })))
-
-        
-        checkFiles <- sapply(input_files_pc, function(x){ if(file.exists(x)){ 0 } else { 
-          showNotification(paste0("Could not find file ", x, ". Please make sure to give a full path including the file name."),
-                           duration = 7, closeButton = TRUE, type="warning"); 1}  
-        })
-        # incProgress(amount = 0.3, detail = paste("Running Peak Calling..."))
-        if(sum(checkFiles)==0){
-          progress <- shiny::Progress$new(session, min=0, max=1)
-          on.exit(progress$close())
-          progress$set(message='Performing peak calling and coverage...', value = 0.1)
-          scExp_cf(subset_bam_call_peaks(scExp_cf(), odir, input_files_pc, format = bam_or_bed(),
-                                         as.numeric(input$pc_stat_value), annotation_id(),
-                                         input$peak_distance_to_merge, progress = progress))
-          progress$set(detail = "Done !", value = 0.95)
-          data = list("scExp_cf" = scExp_cf())
-          qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
-                                      paste0(input$selected_reduced_dataset, ".qs")))
-          pc$new <- Sys.time()
-          updateActionButton(session, "do_pc", label="Finished successfully", icon = icon("check-circle"))
-        }
-        # incProgress(amount = 0.3, detail = paste("Finished Peak Calling..."))
-      # })
+        progress$set(message='Performing peak calling and coverage...', value = 0.1)
+        scExp_cf(subset_bam_call_peaks(scExp_cf(), odir, input_files_pc, format = bam_or_bed(),
+                                       as.numeric(input$pc_stat_value), annotation_id(),
+                                       input$peak_distance_to_merge, progress = progress))
+        progress$set(detail = "Done !", value = 0.95)
+        data = list("scExp_cf" = scExp_cf())
+        qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
+                                         paste0(input$selected_reduced_dataset, ".qs")))
+        pc$new <- Sys.time()
+        updateActionButton(session, "do_pc", label="Finished successfully", icon = icon("check-circle"))
+      }
     }
   })
   
@@ -1809,6 +1802,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       if(is.reactive(scExp_cf.)) {
         scExp_cf. = isolate(scExp_cf.())
       }
+      scExp_cf(NULL)
       scExp_cf(scExp_cf.$scExp_cf) # retrieve filtered scExp
       rm(scExp_cf.)
     })
@@ -1856,14 +1850,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   # 
   observeEvent(c(input$qval.th, input$tabs, input$cdiff.th, input$de_type, selected_filtered_dataset()), priority = 10,{
     if(input$tabs == "diff_analysis"){
-      if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$cdiff.th)){
-        DA_GSA_suffix = input$de_type
-        if(input$de_type == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
-                                                             gsub("[^[:alnum:]|_]","",input$name_ref))
-        filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
-                              paste0(selected_filtered_dataset(), "_", input$nclust,
-                                     "_", input$qval.th, "_", input$cdiff.th, "_", DA_GSA_suffix, ".qs"))
+      req(input$selected_DA_GSA_dataset)
+      if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$cdiff.th) &
+         length(input$selected_DA_GSA_dataset) > 0){
         
+        filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
+                              paste0(input$selected_DA_GSA_dataset, ".qs"))
+        print(paste0("Loading ", filename, " for GSA..."))
         if(file.exists(filename)){
           data = qs::qread(filename)
           scExp_cf(data$scExp_cf)
@@ -1945,9 +1938,14 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           return(0)
         }
       
-  }
-    withProgress(message='Performing differential analysis...', value = 0, {
-      incProgress(amount = 0.2, detail = paste("Initializing DA"))
+    }
+  progress <- shiny::Progress$new(session, min=0, max=1)
+  on.exit(progress$close())
+  progress$set(message='Performing differential analysis...', value = 0.05)
+  progress$set(detail='Initialization...', value = 0.15)
+  
+    # withProgress(message='Performing differential analysis...', value = 0, {
+    #   incProgress(amount = 0.2, detail = paste("Initializing DA"))
       if(batchUsed()) block = TRUE else block = FALSE
       gc()
       group = ""
@@ -1958,7 +1956,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         colnames(group) = gsub("[^[:alnum:]|_]","",input$name_group)
         colnames(ref) = gsub("[^[:alnum:]|_]","",input$name_ref)
       }
-
+      if(!is.null(scExp_cf()@metadata$enr)){
+        scExp_cf. = scExp_cf()
+        scExp_cf.@metadata$enr = NULL
+        scExp_cf(scExp_cf.)
+      } 
       scExp_cf(differential_analysis_scExp(scExp = scExp_cf(),
                                            method= input$da_method,
                                            de_type = input$de_type,
@@ -1966,9 +1968,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                            qval.th = input$qval.th,
                                            block = block,
                                            group = group,
-                                           ref = ref)) 
+                                           ref = ref,
+                                           progress = progress)) 
       gc()
-      incProgress(amount = 0.6, detail = paste("Finishing DA..."))
+      # incProgress(amount = 0.6, detail = paste("Finishing DA..."))
       data = list("scExp_cf" = scExp_cf())
       DA_GSA_suffix = input$de_type
       if(input$de_type == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
@@ -1987,8 +1990,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                         label =  "Select set with Differential Analysis:",
                         choices = DA_GSA_datasets(),
                         selected =  gsub(".qs$","",suffix))
-      incProgress(amount = 0.2, detail = paste("Saving DA"))
-    })
+      # incProgress(amount = 0.2, detail = paste("Saving DA"))
+    # })
   })
   
   output$da_summary_box <- renderUI({
@@ -2049,8 +2052,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                        colnames(diff)[grep(input$gpsamp,colnames(diff))] )]
         diff <- diff[order(diff[,paste0("cdiff.",input$gpsamp)]),]
         DT::datatable(diff, options = list(dom='tpi'), class = "display",
-                      rownames = FALSE, autoHideNavigation = TRUE,
-                      )
+                      rownames = FALSE)
       }
       }
     }
@@ -2191,28 +2193,25 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   observeEvent(input$do_enrich, {
-    withProgress(message='Running Pathway Enrichment Analysis...', value = 0, {
+    
+    progress <- shiny::Progress$new(session, min=0, max=1)
+    on.exit(progress$close())
+    progress$set(message='Performing Gene Set Analysis...', value = 0.05)
+    progress$set(detail='Initialization...', value = 0.15)
+    scExp_cf(gene_set_enrichment_analysis_scExp(scExp_cf(), enrichment_qval = 0.01, qval.th = input$qval.th,
+                                                ref = annotation_id(), cdiff.th = input$cdiff.th,
+                                                peak_distance = 1000, use_peaks = input$use_peaks,
+                                                GeneSetClasses = MSIG.classes(),progress = progress))
+    gc()
+    progress$inc(detail='Finished Gene Set Analysis - Saving...', amount = 0.0)
+    data = list("scExp_cf" = scExp_cf() )
 
-      incProgress(amount = 0.3, detail = paste("Running Hypergeometric Enrichment Testing against MSigDB..."))
-      gc()
-      scExp_cf(gene_set_enrichment_analysis_scExp(scExp_cf(), enrichment_qval = 0.01, qval.th = input$qval.th,
-                                                  ref = annotation_id(), cdiff.th = input$cdiff.th,
-                                                  peak_distance = 1000, use_peaks = input$use_peaks,
-                                                  GeneSetClasses = MSIG.classes()))
-      gc()
-      incProgress(amount = 0.6, detail = paste("Finishing Pathway Enrichment Analysis..."))
-      data = list("scExp_cf" = scExp_cf() )
-      DA_GSA_suffix = input$de_type
-      if(input$de_type == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
-                                                           gsub("[^[:alnum:]|_]","",input$name_ref))
-      qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
-                                  paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
-                                         "_", input$qval.th, "_", input$cdiff.th, "_", DA_GSA_suffix, ".qs")))
-      rm(data)
-      gc()
-      incProgress(amount = 0.6, detail = paste("Saving Pathway Enrichment Analysis"))
-      
-    })
+    qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
+                                     paste0(input$selected_DA_GSA_dataset, ".qs")))
+    rm(data)
+    gc()
+    progress$inc(detail='Done !', amount = 0.5)
+    
   })
   
   output$GSA_group_sel <- renderUI({ 
@@ -2235,8 +2234,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$all_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr) && !is.null(input$GSA_group_sel) && !is.null(input$enr_class_sel)){
-        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups)
-          table_enriched_genes_scExp(scExp_cf(),set = "Both", group = input$GSA_group_sel, input$enr_class_sel)
+        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups){
+          if(length(scExp_cf()@metadata$enr$Both)>0){
+            table_enriched_genes_scExp(scExp_cf(),set = "Both", group = input$GSA_group_sel, input$enr_class_sel)
+          }
+        }
       }
     }
   })
@@ -2244,8 +2246,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$over_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
-        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups)
-          table_enriched_genes_scExp(scExp_cf(), set = "Overexpressed", group = input$GSA_group_sel, input$enr_class_sel)
+        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups){
+          if(length(scExp_cf()@metadata$enr$Overexpressed)>0){
+            table_enriched_genes_scExp(scExp_cf(), set = "Overexpressed", group = input$GSA_group_sel, input$enr_class_sel) 
+          }
+        }
+          
       }
     }
   })
@@ -2253,8 +2259,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$under_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
-        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups) 
-          table_enriched_genes_scExp(scExp_cf(), set = "Underexpressed", group = input$GSA_group_sel, input$enr_class_sel)
+        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups){
+          if(length(scExp_cf()@metadata$enr$Underexpressed)>0){
+            table_enriched_genes_scExp(scExp_cf(), set = "Underexpressed", group = input$GSA_group_sel, input$enr_class_sel)
+          }
+        }
+          
       }
     }
   })
@@ -2284,17 +2294,21 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     contentType = "application/zip"
   )
   
+
   output$gene_sel <- renderUI({
     req(annotFeat_long())
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
+        s = selectizeInput(inputId = "gene_sel", label = "Select gene:", choices = NULL)
         most_diff = scExp_cf()@metadata$diff$res %>% dplyr::select(ID,starts_with("qval."))
         most_diff[,"qval"] = Matrix::rowMeans(as.matrix(most_diff[,-1]))
         most_diff = dplyr::left_join(most_diff[order(most_diff$qval),], annotFeat_long(),by = c("ID"))
         most_diff = most_diff %>% dplyr::filter(!is.na(Gene)) 
         genes = base::intersect(most_diff$Gene,unique(GencodeGenes()))
-
-        selectizeInput(inputId = "gene_sel", "Select gene:",options= list(maxOptions = 250),genes)
+        print(head(genes))
+        updateSelectizeInput(session = session, inputId = "gene_sel",
+                             label =  "Select gene:", choices = genes, server = TRUE)
+        return(s)
       }
     }
   })
