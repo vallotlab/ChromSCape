@@ -160,12 +160,13 @@ raw_counts_to_feature_count_files <- function(
         files_dir_list, file_type, which, ref, feature_file, barcode_file,
         matrix_file, verbose)
     mat = list()
-    samples_ids = c()
+    samples_ids = barcodes = c()
     for(i in seq_along(out$feature_indexes)){
         sample_id = names(out$feature_indexes)[i]
         # which <- out$which[[i]]
         feature_indexes <- out$feature_indexes[[i]]
         name_cells <- paste0(sample_id, "_", out$name_cells[[i]])
+        barcodes <- c(barcodes,out$name_cells[[i]])
         samples_ids = c(samples_ids, rep(sample_id, length(name_cells)))
         
     mat[[sample_id]] = Matrix::sparseMatrix(
@@ -182,7 +183,7 @@ raw_counts_to_feature_count_files <- function(
     chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
     regions_to_remove = which(!as.character(which@seqnames) %in% chr$chr)
     if(length(regions_to_remove) > 0) mat = mat[-regions_to_remove,]
-    annot_raw = data.frame(barcode = colnames(mat),
+    annot_raw = data.frame(barcode = barcodes,
                            cell_id = colnames(mat),
                            sample_id = samples_ids,
                            batch_id = factor(rep(1, ncol(mat)))
