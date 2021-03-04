@@ -284,11 +284,14 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                              collapsible = TRUE, collapsed = TRUE,
                                                              column(12, align="left",
                                                                     column(width=4,uiOutput("violin_color")),
-                                                                    column(width=4,checkboxInput("add_jitter", shiny::HTML("<b>Add single-cells</b>"), value= FALSE)),
+                                                                    column(width=4,checkboxInput("add_jitter", shiny::HTML("<b>Add single-cells</b>"), value= FALSE) %>%
+                                                                               shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                                                   content = "intra_inter_correlation")),
                                                                     column(width=4,uiOutput("jitter_color")),  br(),br(),br(),br(),br(),
                                                                     mainPanel(tabsetPanel(id='inter_intra_cor',
                                                                                           
-                                                                                          tabPanel("Intracorrelation", column(width=12, uiOutput("intra_corr_UI"))),
+                                                                                          tabPanel("Intracorrelation", column(width=12, uiOutput("intra_corr_UI") 
+                                                                                                                              )),
                                                                                           tabPanel("Intercorrelation", column(width=12, column(10, uiOutput("reference_group")),
                                                                                                                               br(), br(), br(), br(), br(),
                                                                                                                               uiOutput("inter_corr_UI")))
@@ -316,9 +319,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                     sliderInput("peak_distance_to_merge", "Select distance of peaks to merge:", min=0, max=50000, value=5000, step=100),
                                                     shinyFiles::shinyDirButton("pc_folder", "Browse folder of BAM / scBED files" ,
                                                                    title = "Please select a folder:",
-                                                                   buttonType = "default", class = NULL), br(),
-                                                    
-                                                    textOutput("pc_dir"), br(),
+                                                                   buttonType = "default", class = NULL),
                                                     uiOutput("pc_upload")),
                                              column(4, align="left", textOutput("pc_k_selection"),
                                                     selectInput("pc_stat","Select statistic for cutoff:", choices=c("p.value", "q.value"), selected="p.value")),
@@ -338,10 +339,12 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                 fluidPage(
                                   column(width=6,
                                          shinydashboard::box(title="Differential Analysis parameters", width=NULL, status="success", solidHeader=TRUE,
-                                             column(12, align="left", textOutput("diff_analysis_info"), br(),
+                                             column(12, align="left", textOutput("diff_analysis_info") %>%
+                                                        shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                            content = "differential_analysis"), br(),
                                                     htmlOutput("selected_DA_GSA_dataset")),
                                              column(8, align="left", uiOutput("selected_k"), br(), br()),
-                                             column(5, align="left", selectInput("de_type", "Select type of cluster comparison:",
+                                             column(5, align="left", selectInput("de_type", "Select type of comparison:",
                                                                                  choices=c("one_vs_rest","pairwise","custom"))),
                                              column(2, offset = 0,align="left"),
                                              column(4, align="left", selectInput("da_method", "Select type of DA method:",
@@ -397,7 +400,14 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                          shinydashboard::box(title="Enrichment near TSS", width=NULL, status="success", solidHeader=TRUE,
                                              column(4, align="left", uiOutput("gene_sel")),
                                              column(8, align="left", uiOutput("region_sel")),
-                                             column(12, align="left", uiOutput("gene_umap_UI")))))
+                                             column(12, align="left", uiOutput("gene_umap_UI"))
+                                             ),
+                                         shinydashboard::box(title="Enrichment in Gene Sets", width=NULL, status="success", solidHeader=TRUE,
+                                                             column(4, align="left", actionButton("plot_pathways", "Plot pathways")), 
+                                                             column(8, align="left", uiOutput("pathways_sel")), 
+                                                             column(12, align="left",uiOutput("pathways_umap_UI"))
+                                         )
+                                         ))
                         ),
                         
                         ###############################################################

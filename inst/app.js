@@ -19,7 +19,7 @@ $(document).ready(function() {
             position:'auto'},
           {
             element:document.getElementsByClassName("input-group-btn")[0],
-            intro:'Browse your computer to upload one or multiple matrice(s). The matrices should be tab-separated and in .tsv or .txt format. The first row must be cell/barcode names, the first column must be  genomic location (chr:start-end). The matrices must all be placed in the same folder and uploaded simultaneously (Use Ctrl + Left Click).',position:'auto'},
+            intro:'Browse your computer to upload your data. ChromSCape accepts a wide variety of format, either processed (count matrices / Sparse matrices) or raw (single-cell BED or BAM files). For the latter 3, place the files of each condition in a separate folder, and places all those folders in the same directory.',position:'auto'},
           {
             element:'#create_analysis',
             intro:'Click here to create analysis & upload the selected matrices.',
@@ -45,7 +45,7 @@ $(document).ready(function() {
           },
           {
             element: tabs[4],
-            intro: "<b>Peak Call:</b> <br> This tab is reserved for advanced users on a Unix machine that have installed MACS2 & samtools. Using BAM sequencing files as input for peak calling of each cell cluster, this allows to refine the annotation of genes to genomic bins.",
+            intro: "<b>Peak Call:</b> <br> The peak calling & coverage tabs will refine the signal based on cell clusters defined in previous step. It will also creates pseudo-bulk coverage of each cluster for you to explore the intra-cluster heterogeneity anywhere in the genome !.",
             position: 'right'
           },
           {

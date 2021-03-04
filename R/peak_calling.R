@@ -158,11 +158,7 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
 #'
 concatenate_scBed_into_clusters <- function(affectation, files, odir,
                                             ref){
-    unlink(file.path(odir, "*.bed"))
-    # canonical_chr <- eval(parse(text = paste0("ChromSCape::",
-    #                                           ref, ".chromosomes")))
-    # canonical_chr$start = 1
-    # canonical_chr <- as(canonical_chr, "GRanges")
+    unlink(file.path(odir, "C*.bed"))
     gzipped = grepl(".gz",files[1])
     suffix = ""
     if(gzipped) suffix = ".gz"
@@ -185,10 +181,7 @@ concatenate_scBed_into_clusters <- function(affectation, files, odir,
                 "' > '", file.path(odir,paste0(class, ".bed'")))
             system(command)
         }
-        # bed = rtracklayer::import(file.path(odir, paste0(class, ".bed")))
-        # bed= bed[GenomicRanges::findOverlaps(
-        #     canonical_chr,bed,minoverlap = 1)@to]
-        # rtracklayer::export.bed(bed, file.path(odir, paste0(class, ".bed")))
+
     }
 }
 

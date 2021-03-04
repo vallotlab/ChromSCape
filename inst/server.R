@@ -219,8 +219,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     
   })
   
-  observeEvent(input$datafile_folder, priority = 10000, {
-    showModal(modalDialog(
+  input_sc <- function(){
+    modalDialog(
       title = "How to select my samples:",
       HTML("
       <p> Before starting uploading your data, make sure you have placed all your 
@@ -250,7 +250,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       ")
       ,
       easyClose = TRUE
-    ))
+    )
+  }
+  
+  showHelpSC = reactiveVal(TRUE)
+  observeEvent(input$datafile_folder, priority = 10000, {
+       if(showHelpSC()) {
+         showModal(input_sc())
+         showHelpSC(FALSE)
+         } else { showHelpSC(TRUE)}
   })
   
   output$rawcount_data_input <- renderUI({
@@ -867,7 +875,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                                multiple = FALSE, selected = 10),
                                    h3(paste0("Most contributing features to '", input$pc_select_x,"' .")),
                                    plotlyOutput("contrib_features_plot") %>% 
-                                     shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+                                     shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
+                                     shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                         content = "most_contributing_features")
                             ),
                             column(12, align="left", 
                                    h3("Contribution of chromosomes in top 100 features."),
@@ -1494,28 +1504,39 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       return( as.character(icon("times-circle", class = "large_icon")))
     }
   })
-   
-  output$select_raw_files <- renderUI({
-    req(scExp_cf(), list_bams())
-    
-  })  
-  
+
   shinyFiles::shinyDirChoose(input, "pc_folder", roots = volumes, session = 
                                session)
   
   pc_folder = reactiveVal(NULL)
   
+  observeEvent(input$pc_folder, priority = 10000, {
+    if(showHelpSC()) {
+      showModal(input_sc())
+      showHelpSC(FALSE)
+    } else { showHelpSC(TRUE)}
+  })
+  
   list_files_pc = reactive({
     req(pc_folder())
     if(!is.null(pc_folder())){
-      list.files(pc_folder(), full.names = TRUE, pattern = "*.bam$|*.bed|*.bed.gz")
+      list.files(pc_folder(), full.names = TRUE, pattern = "*.bam$|*.bed|*.bed.gz", recursive = TRUE)
+    }
+  })
+  
+  list_dirs_pc = reactive({
+    req(pc_folder())
+    if(!is.null(pc_folder())){
+      print("list_dirs_pc")
+      print(setNames(list.dirs(pc_folder(), full.names = TRUE, recursive = FALSE), basename(list.dirs(pc_folder(), recursive = FALSE))))
+      setNames(list.dirs(pc_folder(), full.names = TRUE, recursive = FALSE), basename(list.dirs(pc_folder(), recursive = FALSE)))
     }
   })
   
   bam_or_bed <- reactive({
     req(list_files_pc())
     nBAMs = length(grep(".*.bam$", list_files_pc()))
-    nBEDs = length(grep(".*.bed.gz|.*.bed", list_files_pc()))
+    nBEDs = length(grep(".*.bed.gz$|.*.bed$", list_files_pc()))
     print("is bam or bed ?")
     print(nBAMs)
     print(nBEDs)
@@ -1528,29 +1549,30 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                  if(!is.null(input$pc_folder)){
                    # browser()
                    pc_folder(shinyFiles::parseDirPath(volumes, input$pc_folder))
-                   output$pc_dir <- renderText(pc_folder())
+                   output$pc_dir <- renderText(bam_or_bed())
                  }
                })
   
   output$pc_upload <- renderUI({
-    req(list_files_pc(), bam_or_bed())
+    req(list_files_pc(), bam_or_bed(), list_dirs_pc())
     print("Inside output$pc_upload UI")
     if(!is.null(list_files_pc()) & !is.null(bam_or_bed())){
       if(bam_or_bed() == "BAM") {
         files = list_files_pc()[grep(".bam$", list_files_pc())]
-        print("Inside output$pc_upload UI... BAM")
-        selectInput("bam_selection", label = "Selected BAM files",
+        selectInput("bam_selection", label = "Selected samples:",
                     choices = basename(files), multiple = TRUE,
                     selected = basename(files) )
       } else {
-        print("Inside output$pc_upload UI... BED")
-        NULL
+        dirs = basename(list_dirs_pc())
+        selectInput("bed_selection", label = "Selected samples:",
+                    choices = dirs, multiple = TRUE,
+                    selected = dirs)
       }
     }
   })
   
   observeEvent(input$do_pc, {
-    req(bam_or_bed(), list_files_pc(), scExp_cf())
+    req(bam_or_bed(), scExp_cf(), input$bed_selection)
     progress <- shiny::Progress$new(session, min=0, max=1)
     on.exit(progress$close())
     progress$set(message='Performing peak calling and coverage...', value = 0.0)
@@ -1558,7 +1580,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(bam_or_bed() == "BAM") {
     input_files_pc <- as.character(file.path(dirname(list_files_pc()),input$bam_selection))
     } else {
-      input_files_pc = as.character(list_files_pc()[grep(".bed|.bed.gz", list_files_pc())])
+      if(is.null(input$bed_selection) | length(input$bed_selection) ==0 ) {
+        warning("Can't find any input BED files.")
+        return()
+      }
+      print(list_dirs_pc())
+      print(input$bed_selection)
+      print(list.files(list_dirs_pc()[1], full.names = T, pattern = ".bed|.bed.gz"))
+      input_files_pc = as.character(unlist( sapply(list_dirs_pc()[input$bed_selection],
+                                                   function(i) list.files(i, full.names = T, pattern = ".bed|.bed.gz")) ))
     }
     if(length(input_files_pc)==0){
       warning("Can't find any input BAM / BED files.")
@@ -2323,7 +2353,98 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
   
-
+  output$pathways_sel <- renderUI({ 
+    shiny::selectizeInput("pathways_sel", label = "Select pathways:", choices = NULL)
+  })
+  
+  pathways <- reactive({
+    req(scExp_cf())
+    print("Retrieving pathways ....")
+    if(!is.null(scExp_cf()@metadata$enr)){
+      print(scExp_cf()@metadata$diff$groups)
+      all_paths <- unique(as.character(unlist(sapply(1:length(scExp_cf()@metadata$diff$groups), 
+                          function(i) {
+                            all = c()
+                            if(length(scExp_cf()@metadata$enr$Overexpressed)>0) 
+                              all = c(all, scExp_cf()@metadata$enr$Overexpressed[[i]]$Gene.Set)
+                            if(length(scExp_cf()@metadata$enr$Underexpressed)>0) 
+                              all = c(all, scExp_cf()@metadata$enr$Underexpressed[[i]]$Gene.Set)
+                            if(length(scExp_cf()@metadata$enr$Both)>0) 
+                              all = c(all, scExp_cf()@metadata$enr$Both[[i]]$Gene.Set)
+                            return(all)
+                          }))))
+      print("Done & update selectize input!")
+      shiny::updateSelectizeInput(session =  session, inputId = "pathways_sel",
+                                  label = "Select pathways:", choices = all_paths, server = TRUE)
+      print(head(all_paths))
+      print(head(input$pathways_sel))
+      all_paths
+    }
+  })
+  
+  pathways_mat <- reactiveVal(NULL)
+  observeEvent(input$plot_pathways, {
+    req(pathways(), annotation_id(), MSIG.classes())
+    if(!is.null(scExp_cf()@metadata$enr)){
+      progress <- shiny::Progress$new(session, min=0, max=1)
+      on.exit(progress$close())
+      progress$set(message='Loading Pathways for visualization...', value = 0.05)
+      progress$set(detail='Initialization...', value = 0.15)
+      normcounts = SingleCellExperiment::normcounts(scExp_cf())
+      regions = SummarizedExperiment::rowRanges(scExp_cf())
+      regions = regions[which(regions$distanceToTSS <= 1000)]
+      database <- ChromSCape:::load_MSIGdb(annotation_id(), MSIG.classes())
+      progress$set(message='Finished loading...', value = 0.65)
+      progress$set(detail='Creating Pathways x Region mat...', value = 0.70)
+      pathways_to_regions = sapply(seq_along(pathways()),
+                                   function(i){
+                                     genes = database$GeneSets[[pathways()[i]]]
+                                     reg = unique(regions$ID[grep(paste(genes, collapse="|"),regions$Gene)])
+                                   })
+      names(pathways_to_regions) = pathways()
+      pathways_mat. =  sapply(seq_along(pathways()),
+                            function(i){
+                              if(length(pathways_to_regions[[i]])>1) {
+                                r = colSums(normcounts[pathways_to_regions[[i]],])
+                              } else{
+                                r = rep(0, ncol(normcounts))
+                              }
+                              r = as.matrix(r)
+                              colnames(r) = pathways()[i]
+                              r
+                            })
+      colnames(pathways_mat.) = pathways()
+      rownames(pathways_mat.) = colnames(normcounts)
+      progress$set(detail='Done !', value = 0.90)
+      pathways_mat(pathways_mat.)
+    }
+  })
+  
+  pathways_umap_p <- reactive({
+    req(pathways_mat())
+    if(input$pathways_sel %in% colnames(pathways_mat())){
+      cols = rev(viridis::magma(100))[round(changeRange(pathways_mat()[,input$pathways_sel],
+                                                             newmin = 1, newmax = 100))]
+      p <- ggplot(as.data.frame(SingleCellExperiment::reducedDim(scExp_cf(), "UMAP")),
+                  aes(x = Component_1, y = Component_2)) +
+        geom_point(alpha = 0.3,  color = cols, aes(shape = SummarizedExperiment::colData(scExp_cf())$cell_cluster)) +
+        labs(color="Sum norm. count for region", title = "UMAP", shape="Cluster", x="Component 1", y="Component 2") +
+        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+              panel.background = element_blank(), axis.line = element_line(colour="black"),
+              panel.border = element_rect(colour="black", fill = NA))
+    }
+  })
+  
+  output$pathways_umap_plot <- plotly::renderPlotly({
+    req(pathways_umap_p())
+    plotly::ggplotly(pathways_umap_p(), tooltip="Sample", dynamicTicks = TRUE)
+  })
+  
+  output$pathways_umap_UI <- renderUI({
+    req(pathways_umap_p())
+     plotly::plotlyOutput("pathways_umap_plot")
+  })
+  
   gene_umap_p <- reactive({
     req(input$gene_sel, input$region_sel)
     region <- strsplit(input$region_sel, " ")[[1]][1]

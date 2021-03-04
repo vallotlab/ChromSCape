@@ -497,7 +497,7 @@ plot_intra_correlation_scExp <- function(
                         match(rownames(samp),annot$cell_id)]))
         }
     }
-    return(p)
+    return(p + theme(legend.title = element_text("")))
 }
 
 #' Violin plot of inter-correlation distribution between one or multiple groups
@@ -562,7 +562,7 @@ plot_inter_correlation_scExp <- function(
                         match(rownames(samp),annot$cell_id)]))
         }
     }
-    return(p)
+    return(p + theme(legend.title = element_text("")))
 }
 
 #' Coverage plot using Sushi
