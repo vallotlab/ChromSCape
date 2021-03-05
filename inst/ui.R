@@ -284,7 +284,10 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                              collapsible = TRUE, collapsed = TRUE,
                                                              column(12, align="left",
                                                                     column(width=4,uiOutput("violin_color")),
-                                                                    column(width=4,checkboxInput("add_jitter", shiny::HTML("<b>Add single-cells</b>"), value= FALSE) %>%
+                                                                    column(width=4,checkboxInput("add_jitter", shiny::HTML("<b>Add single-cells</b>"), value= FALSE),
+                                                                    column(3, align = "left", actionButton(inputId = "save_plots_violins",
+                                                                                                                  label = "Save HQ plots",
+                                                                                                                  icon = icon("fa-picture-o"))) %>%
                                                                                shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                                    content = "intra_inter_correlation")),
                                                                     column(width=4,uiOutput("jitter_color")),  br(),br(),br(),br(),br(),
@@ -327,7 +330,8 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                     sliderInput("pc_stat_value", "Select significance threshold:", min=0, max=0.25, value=0.05, step=0.01)),
                                              column(12, align="left", hr(), actionButton("do_pc", "Start")))),
                                   column(width=8, uiOutput("coverage_UI"),
-                                         uiOutput("coverage_plot_UI"))
+                                         uiOutput("coverage_plot_UI"),
+                                         column(3, actionButton("save_plots_coverage", "Save HQ plot", icon =  icon("fa-picture-o"))))
                                   )
                         ),
                         
@@ -398,8 +402,9 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                     downloadButton("download_enr_data", "Download tables")))),
                                   column(width=6,
                                          shinydashboard::box(title="Enrichment near TSS", width=NULL, status="success", solidHeader=TRUE,
-                                             column(4, align="left", uiOutput("gene_sel")),
-                                             column(8, align="left", uiOutput("region_sel")),
+                                             column(3, align="left", uiOutput("gene_sel")),
+                                             column(6, align="left", uiOutput("region_sel")),
+                                             column(3, align="left", actionButton("save_plot_GSA", "Save HQ plot")),
                                              column(12, align="left", uiOutput("gene_umap_UI"))
                                              ),
                                          shinydashboard::box(title="Enrichment in Gene Sets", width=NULL, status="success", solidHeader=TRUE,

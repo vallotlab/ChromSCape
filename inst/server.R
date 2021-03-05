@@ -444,6 +444,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "correlation_clustering"))
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "correlation_clustering","Plots"))
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Diff_Analysis_Gene_Sets"))
+        dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Plots"))
         write.table(input$annotation, file.path(init$data_folder, 'ChromSCape_analyses', input$new_analysis_name, 'annotation.txt'), row.names = FALSE, col.names = FALSE, quote = FALSE)
         
         qs::qsave(datamatrix, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "datamatrix.qs"))
@@ -919,7 +920,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                           width = NULL, status = "success", solidHeader = TRUE,
           column(6, htmlOutput("color_picker")),
           column(6 , br(), actionButton("col_reset", "Default colours", icon = icon("undo")),
-                 br(), br(), actionButton("save_color", "Save colors & apply to all", icon = icon("save"))))
+                 br(), br(), actionButton("save_color", "Save colors & apply to all", icon = icon("save")),
+                 br(), br(), actionButton("save_plots_PCA", "Save HQ plots", icon = icon("fa-picture-o"))))
     }
   })
   
@@ -968,7 +970,25 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       levels_selected = SummarizedExperiment::colData(scExp())[,input$color_by] %>% unique() %>% as.vector()
     else NULL
   })
-
+  
+  plot_dir <- reactive({
+    req(input$selected_analysis)
+    file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "Plots")
+  })
+  
+  observeEvent(input$save_plots_PCA,{
+    print('Saving plots...')
+    if(!dir.exists(plot_dir())) dir.create(plot_dir())
+    pdf(file = file.path(plot_dir(), paste0("PCA_UMAP_",input$color_by,".pdf")))
+    print(pca_plot())
+    print(plot_reduced_dim_scExp(scExp(), input$color_by, "UMAP"))
+    print(pca_plot() + theme(text = element_blank(), legend.position = "none"))
+    print(plot_reduced_dim_scExp(scExp(), input$color_by, "UMAP") + theme(text = element_blank(), legend.position = "none"))
+    if("t-SNE" %in% names(scExp()@metadata)) print(tsne_plot()  + theme(text = element_blank(),legend.position = "none"))
+    dev.off()
+    updateActionButton(session = session, inputId = "save_plots_PCA", label = "Save HQ plots", icon = icon("check-circle"))
+    })
+  
   observeEvent(unlocked$list,able_disable_tab(c("pca"),"cons_clustering")) # if conditions are met, unlock tab Correlation Clustering
   
   
@@ -1294,6 +1314,25 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     
   })
   
+  observeEvent(input$save_plots_violins,{
+    print('Saving plots...')
+    if(!dir.exists(plot_dir())) dir.create(plot_dir())
+    if(input$add_jitter) jitter_col = input$jitter_color else jitter_col = NULL
+    pdf(file = file.path(plot_dir(), paste0("violins_intra_inter_correlation.pdf")))
+    print(plot_intra_correlation_scExp(scExp_cf(), by = input$violin_color,
+                                       jitter_by = jitter_col))
+    if(!is.null(input$reference_group)) print(plot_inter_correlation_scExp(scExp_cf(), by = input$violin_color,
+                                       jitter_by = jitter_col,
+                                       reference_group = input$reference_group))
+    
+    if(!is.null(input$reference_group))  print(plot_inter_correlation_scExp(scExp_cf(), by = input$violin_color,
+                                       jitter_by = jitter_col,
+                                       reference_group = input$reference_group) + theme(legend.position = "none"))
+    print(plot_intra_correlation_scExp(scExp_cf(), by = input$violin_color,
+                                       jitter_by = jitter_col) + theme(legend.position = "none"))
+    dev.off()
+    updateActionButton(session = session, inputId = "save_plots_COR", label = "Save HQ plots", icon = icon("check-circle"))
+  })
 #   
 # output$cons_clust_anno_plot <- renderPlot({
 #   if(! is.null(scExp_cf())){
@@ -1399,13 +1438,27 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf())) ){
         shinydashboard::box(title="UMAP vizualisation 2", width = NULL, status="success", solidHeader = TRUE,
-                            column(6, align="left",
+                            column(4, align="left",
                                    selectInput("color_by_cf", "Color by",
                                                selected = "cell_cluster",
                                                choices = c(annotCol(),'cell_cluster'))),
+                            column(3, align = "left", actionButton(inputId = "save_plots_COR",
+                                                                   label = "Save HQ plots",
+                                                                   icon = icon("fa-picture-o"))),
                             column(12, align="left", plotOutput("plot_CF_UMAP")))
       }
     }
+  })
+  
+  observeEvent(input$save_plots_COR,{
+    print('Saving plots...')
+    if(!dir.exists(plot_dir())) dir.create(plot_dir())
+    pdf(file = file.path(plot_dir(), paste0("UMAP_heatmap_",input$color_by_cf,".pdf")))
+    print(umap_p_cf())
+    print(umap_p_cf() + theme(text = element_blank(), legend.position = "none"))
+    plot_heatmap_scExp(isolate(scExp_cf()))
+    dev.off()
+    updateActionButton(session = session, inputId = "save_plots_COR", label = "Save HQ plots", icon = icon("check-circle"))
   })
   
   output$color_box_cf <- renderUI({
@@ -1586,9 +1639,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       }
       print(list_dirs_pc())
       print(input$bed_selection)
-      print(list.files(list_dirs_pc()[1], full.names = T, pattern = ".bed|.bed.gz"))
-      input_files_pc = as.character(unlist( sapply(list_dirs_pc()[input$bed_selection],
-                                                   function(i) list.files(i, full.names = T, pattern = ".bed|.bed.gz")) ))
+      input_files_pc = sapply(list_dirs_pc()[input$bed_selection], function(i) list.files(i, full.names = T, pattern = ".bed|.bed.gz"))
+      names(input_files_pc) = basename(list_dirs_pc()[input$bed_selection])
+      
+      print(names(input_files_pc))
+      print(length(input_files_pc))
     }
     if(length(input_files_pc)==0){
       warning("Can't find any input BAM / BED files.")
@@ -1600,10 +1655,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
       sample_ids <- unique(SummarizedExperiment::colData(scExp_cf())$sample_id)
       
-      checkFiles <- sapply(input_files_pc, function(x){ if(file.exists(x)){ 0 } else { 
-        showNotification(paste0("Could not find file ", x, ". Please make sure to give a full path including the file name."),
-                         duration = 7, closeButton = TRUE, type="warning"); 1}  
-      })
+      # checkFiles <- sapply(input_files_pc, function(x){ if(file.exists(x)){ 0 } else {
+      #   showNotification(paste0("Could not find file ", x, ". Please make sure to give a full path including the file name."),
+      #                    duration = 7, closeButton = TRUE, type="warning"); 1}
+      # })
+      checkFiles = 0
       if(sum(checkFiles)==0){
         
         progress$set(message='Performing peak calling and coverage...', value = 0.1)
@@ -1643,8 +1699,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$coverage_UI <- renderUI({
     req(GenePool(),has_available_pc())
     print("Inside output$coverage_UI ... ")
-      if(has_available_pc()){
-        print("Inside output$coverage_UI ... 2 ")
+      print("Inside output$coverage_UI ... 2 ")
         s <- shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
                                  column(3, align="left", selectizeInput(inputId = "select_cov_gene", "Select gene:", choices = NULL, selected = 1)),
                                  column(2, align="left", selectInput("cov_chr","Chromosome", choices = unique(rowRanges(scExp_cf())$chr))),
@@ -1658,7 +1713,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                              choices = GenePool(),
                              server = TRUE)
         return(s)
-      }
+      
     })
   
   output$coverage_plot_UI <- renderUI({
@@ -1753,11 +1808,33 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         chrom = input$cov_chr,
         start = as.numeric(input$cov_start),
         end =  as.numeric(input$cov_end),
-        ref = annotation_id())
+        ref = annotation_id(),
+        peaks = peaks)
     })
     
   })
   
+  observeEvent(input$save_plots_coverage,{
+    print('Saving plots...')
+    label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
+    nclust = length(unique(scExp_cf()$cell_cluster))
+    odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
+                      "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
+    if(file.exists(file.path(odir, "merged_peaks.bed"))){
+      peaks = rtracklayer::import.bed(file.path(odir, "merged_peaks.bed"))
+    } else{peaks = NULL}
+    pdf(file.path(plot_dir(), paste0("coverage_",input$cov_chr,"_",input$cov_start,"_",input$cov_end, ".pdf") ))
+    
+    plot_coverage_BigWig(
+      coverages(), 
+      label_color_list,
+      chrom = input$cov_chr,
+      start = as.numeric(input$cov_start),
+      end =  as.numeric(input$cov_end),
+      ref = annotation_id())
+    dev.off()
+    updateActionButton(session = session, inputId = "save_plots_coverage", label = "Save HQ plots", icon = icon("check-circle"))
+  })
  
   # available_pc_plots <- reactive({
   #   fe <- sapply(c(1:input$pc_k_selection), function(i){file.exists(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$pc_k_selection), paste0("C", i, "_model.r")))})
@@ -2088,6 +2165,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
   
+  
+  
+  
   output$download_da_table <- downloadHandler(
     filename = function(){ paste0("diffAnalysis_data_", selected_filtered_dataset(),
                                   "_", length(unique(scExp_cf()$cell_cluster)), "_",
@@ -2107,9 +2187,20 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
             column(12, align="left", plotOutput("h1_prop", height = 300, width = 500),
                    plotOutput("da_volcano", height = 500, width = 500)),
             column(4, align="left", downloadButton("download_h1_plot", "Download histogram")),
-            column(4, align="left", downloadButton("download_da_volcano", "Download volcano plot")))
+            column(4, align="left", downloadButton("download_da_volcano", "Download volcano plot")),
+            column(4, align="left", actionButton("save_plots_DA", "Save HQ plots", icon = icon("fa-picture-o"))
+            ))
       }
     }
+  })
+  
+  observeEvent(input$save_plots_DA,{
+    print('Saving plots...')
+    pdf(file.path(plot_dir(), paste0("differential_analysis_", input$gpsamp,".pdf")))
+    plot_differential_volcano_scExp(scExp_cf(),cell_cluster = input$gpsamp,
+                                    cdiff.th = input$cdiff.th, qval.th = input$qval.th)
+    dev.off()
+    updateActionButton(session = session, inputId = "save_plots_DA", label = "Save HQ plots", icon = icon("check-circle"))
   })
   
   output$h1_prop <- renderPlot({
@@ -2351,6 +2442,17 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       regions <- paste0(subset$ID, " (distanceToTSS to gene TSS: ", subset$distanceToTSS, ")")
       selectInput("region_sel", "Select associated genomic region:", choices = regions)
     }
+  })
+  
+  observeEvent(input$save_plot_GSA,{
+    print('Saving plots...')
+    req(gene_umap_p(), input$gene_sel)
+    print(input$gene_sel)
+    pdf(file.path(plot_dir(), paste0("UMAP_", input$gene_sel,".pdf")))
+    print(gene_umap_p())
+    if(!is.null(pathways_mat())) print(pathways_umap_p())
+    dev.off()
+    updateActionButton(session = session, inputId = "save_plot_GSA", label = "Save HQ plots", icon = icon("check-circle"))
   })
   
   output$pathways_sel <- renderUI({ 

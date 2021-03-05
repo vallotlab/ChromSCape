@@ -123,7 +123,7 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
     p.value = paste0(" -p ", p.value, " ")  # format for system call to macs2
     
     if(format == "BAM") separate_BAM_into_clusters(affectation, odir, merged) 
-    else concatenate_scBed_into_clusters(affectation, input, odir, ref)
+    else concatenate_scBed_into_clusters(affectation, input, odir)
     
     if (!is.null(progress)) progress$set(detail = "Calling peaks with MACS2...", value = 0.45)
     merged_peaks <- call_macs2_merge_peaks(affectation, odir, p.value, 
@@ -135,9 +135,13 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
     print("Finished creating BAM and annot")
     cat("Running coverage ? ", run_coverage)
     if(run_coverage){
-        if (!is.null(progress)) progress$set(detail = "Creating coverage files for each cluster...", value = 0.85)
+        if (!is.null(progress)) progress$set(detail = "Creating coverage files for each cluster...", value = 0.70)
         suffix = ifelse(format=="BAM", ".bam", ".bed")
+        n = 0
         for(class in unique(scExp$cell_cluster)) {
+            n = n + 1
+            if (!is.null(progress)) progress$set(detail = paste0("Coverage ",class,"..."),
+                                                 value = 0.7 + n * (0.3/length(unique(scExp$cell_cluster))) )
             input_file = file.path(odir, paste0(class,suffix))
             out_bw = file.path(odir, paste0(class,".bw"))
             rawfile_ToBigWig(input_file, out_bw, format, bin_width = 150,
@@ -150,38 +154,51 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
 #' Concatenate single-cell BED into clusters
 #'
 #' @param affectation Annotation data.frame containing cluster information
-#' @param files Input files to concatenate (must match affectation$barcode)
-#' @param odir Output directory
+#' @param files_list Named list of scBED file paths to concatenate. List Names 
+#' must match affectation$sample_id and basenames must match
+#'  affectation$barcode.
+#' @param odir Output directory to write concatenate pseudo-bulk BEDs.
 #'
 #' @return Merge single-cell BED files into cluster BED files. Ungzip file if 
 #' BED is gzipped.
 #'
-concatenate_scBed_into_clusters <- function(affectation, files, odir,
-                                            ref){
+concatenate_scBed_into_clusters <- function(affectation, files_list, odir){
     unlink(file.path(odir, "C*.bed"))
-    gzipped = grepl(".gz",files[1])
+    gzipped = grepl(".gz",files_list[[1]][1])
     suffix = ""
     if(gzipped) suffix = ".gz"
-    print(head(files))
-    for (class in levels(factor(affectation$cell_cluster)))
-    {
-        message("ChromSCape:::concatenate_scBed_into_clusters - generating ",
-                class, " BED file...")
-        class_barcodes <- affectation$barcode[which(affectation$cell_cluster == 
-                                                        as.character(class))]
-        files_class = files[grep(paste(class_barcodes, collapse="|"),files)]
-        for(file in files_class){
-            command = paste0("cat '", file, "' >> '",
-                             file.path(odir, paste0(class, ".bed",suffix,"'")))
-            system(command)
+    print(head(files_list[[1]]))
+    for(sample in names(files_list)){
+        cat("Doing ", sample, "\n")
+        message("ChromSCape:::concatenate_scBed_into_clusters - concatenating ",
+        "files for ", sample, " files...")
+        file_pool = files_list[[sample]]
+        cat("Length file pool ", length(file_pool), "\n")
+        for (class in levels(factor(affectation$cell_cluster)))
+        {
+            message("ChromSCape:::concatenate_scBed_into_clusters - concatenating ", class,"...")
+            class_barcodes <- affectation$barcode[which(affectation$cell_cluster == as.character(class) &
+                                                            affectation$sample_id == sample)]
+            cat("Length class_barcodes", length(class_barcodes), "\n")
+            files_class = file_pool[grep(paste(class_barcodes, collapse="|"),file_pool, perl = T)]
+            print(head(files_class))
+            cat("Length files_class", length(files_class), "\n")
+            if(length(class_barcodes>0)){
+                for(file in files_class){
+                    command = paste0("cat '", file, "' >> '",
+                                     file.path(odir, paste0(class, ".bed",suffix,"'")))
+                    system(command)
+                }
+            }
         }
+    }
+    for(class in levels(factor(affectation$cell_cluster))){
         if(gzipped) {
             command = paste0("gzip -cd '", file.path(
                 odir,paste0(class,".bed", suffix)),
                 "' > '", file.path(odir,paste0(class, ".bed'")))
             system(command)
         }
-
     }
 }
 
