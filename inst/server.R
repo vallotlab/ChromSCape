@@ -692,7 +692,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   feature_cov_df <- reactive ({
     req(init$datamatrix)
-    if(ncol(init$datamatrix) * nrow(init$datamatrix) > 1e+08){
+    dims = ncol(init$datamatrix) * nrow(init$datamatrix)
+    if( is.na(dims) | dims > 1e+08){
       set.seed(47)
       # cols = sample(seq_len(ncol(init$datamatrix)), min(1500,ncol(init$datamatrix)), replace = TRUE)
       row = sample(seq_len(nrow(init$datamatrix)), min(5000,nrow(init$datamatrix)), replace = TRUE)
