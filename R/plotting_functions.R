@@ -188,7 +188,7 @@ plot_reduced_dim_scExp <- function(
             axis.line = element_line(colour = "black"),
             panel.border = element_rect(colour = "black", fill = NA))
     
-    if (color_by == "total_counts")
+    if (is.numeric(SingleCellExperiment::colData(scExp)[,color_by]))
     {
         p <- p + scale_color_gradientn(colours = matlab.like(100))
     } else
