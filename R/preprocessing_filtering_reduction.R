@@ -1094,14 +1094,14 @@ create_scExp <- function(
     }
     SummarizedExperiment::colData(scExp)$total_counts = 
         colSums(SingleCellExperiment::counts(scExp))
-    if(!is.na(ncol(scExp) * nrow(scExp))){
-    SummarizedExperiment::colData(scExp)$detected = 
-        apply(SingleCellExperiment::counts(scExp), 2,
-              function(i) length(which(i>0)))
-    } else{
-        SummarizedExperiment::colData(scExp)$detected = 
-            SummarizedExperiment::colData(scExp)$total_counts
-    }
+    # if(!is.na(ncol(scExp) * nrow(scExp))){
+    # SummarizedExperiment::colData(scExp)$detected = 
+    #     apply(SingleCellExperiment::counts(scExp), 2,
+    #           function(i) length(which(i>0)))
+    # } else{
+    #     SummarizedExperiment::colData(scExp)$detected = 
+    #         SummarizedExperiment::colData(scExp)$total_counts
+    # }
     return(scExp)
 }
 
