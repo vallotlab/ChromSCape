@@ -14,7 +14,8 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                           shinydashboard::menuItem("Filter & Normalize", tabName = "filter_normalize", icon=icon("fas fa-filter")),
                                           shinydashboard::menuItem("Visualize Cells", tabName = "vizualize_dim_red", icon=icon("fas fa-image")),
                                           shinydashboard::menuItem("Cluster Cells", tabName = "cons_clustering", icon=icon("th")),
-                                          shinydashboard::menuItem("Peak Calling & Coverage", tabName = "peak_calling", icon=icon("chart-area")), #mountain
+                                          shinydashboard::menuItem("Coverage", tabName = "coverage", icon=icon("chart-area")), #mountain
+                                          shinydashboard::menuItem("Peak Calling", tabName = "peak_calling", icon=icon("fab fa-mountain")), #mountain
                                           shinydashboard::menuItem("Differential Analysis", tabName = "diff_analysis", icon=icon("chart-bar")),
                                           shinydashboard::menuItem("Pathway Enrichment Analysis", tabName = "enrich_analysis", icon=icon("code-branch")),
                                           shinydashboard::menuItem("Close App & Save Analysis", tabName = "close_and_save", icon=icon("close"))
@@ -304,14 +305,34 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                   )
                                 )
                         ),
+                        ###############################################################
+                        # 5. Coverages [optional]
+                        ###############################################################
+                        shinydashboard::tabItem(tabName = "coverage",
+                                                fluidPage(
+                                                    column(width=4,
+                                                           shinydashboard::box(title="Coverage plots", width=NULL, status="success", solidHeader=TRUE,
+                                                                               column(12, align="left", textOutput("coverage_info"), hr()),
+                                                                               tags$style(HTML(".large_icon { font-size: 70px; }")),
+                                                                               
+                                                                               column(12, align="left",
+                                                                                      shinyFiles::shinyDirButton("coverage_folder", "Browse directory of raw signal (sc-BED)" ,
+                                                                                                                 title = "Please select a folder:",
+                                                                                                                 buttonType = "default", class = NULL),
+                                                                                      uiOutput("coverage_upload")),
+                                                                               column(12, align="left", hr(), actionButton("do_coverage", "Create coverage")))),
+                                                    column(width=8, uiOutput("coverage_UI"),
+                                                           uiOutput("coverage_plot_UI"))
+                                                )
+                        ),
                         
                         ###############################################################
-                        # 5. Peak calling [optional]
+                        # 6. Peak calling [optional]
                         ###############################################################
                         
                         shinydashboard::tabItem(tabName = "peak_calling",
                                 fluidPage(
-                                  column(width=4,
+                                  column(width=6,
                                          shinydashboard::box(title="Peak calling", width=NULL, status="success", solidHeader=TRUE,
                                              column(12, align="left", textOutput("peak_calling_info"), hr()),
                                              tags$style(HTML(".large_icon { font-size: 70px; }")),
@@ -328,15 +349,12 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                     selectInput("pc_stat","Select statistic for cutoff:", choices=c("p.value", "q.value"), selected="p.value")),
                                              column(12, align="left", br(), br(),
                                                     sliderInput("pc_stat_value", "Select significance threshold:", min=0, max=0.25, value=0.05, step=0.01)),
-                                             column(12, align="left", hr(), actionButton("do_pc", "Start")))),
-                                  column(width=8, uiOutput("coverage_UI"),
-                                         uiOutput("coverage_plot_UI"),
-                                         column(3, actionButton("save_plots_coverage", "Save HQ plot", icon =  icon("fa-picture-o"))))
+                                             column(12, align="left", hr(), actionButton("do_pc", "Start"))))
                                   )
                         ),
                         
                         ###############################################################
-                        # 6. Differential analysis
+                        # 7. Differential analysis
                         ###############################################################
                         
                         shinydashboard::tabItem(tabName = "diff_analysis",
@@ -380,7 +398,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                         ),
                         
                         ###############################################################
-                        # 7. Enrichment analysis
+                        # 8. Enrichment analysis
                         ###############################################################
                         
                         shinydashboard::tabItem(tabName = "enrich_analysis",
@@ -416,7 +434,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                         ),
                         
                         ###############################################################
-                        # 8. Close app
+                        # 9. Close app
                         ###############################################################
                         
                         shinydashboard::tabItem(tabName="close_and_save",
