@@ -18,6 +18,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   tab_vector = c("filter_normalize",
                  "vizualize_dim_red",
                  "cons_clustering",
+                 "coverage",
                  "peak_calling",
                  "diff_analysis",
                  "enrich_analysis") #list of all lockable tabs
@@ -77,7 +78,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           pattern = paste0(input$selected_reduced_dataset, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_")
           
           suffix = gsub(pattern,"", input$selected_DA_GSA_dataset)
-          header <- paste0('<b>Analysis : ', analysis_name(), ' - ', suffix, ' </b>')
+          header <- paste0('<b>Analysis : ', analysis_name(), ' - k = ', input$nclust, ' - ', suffix, ' </b>')
         }
       } 
       shinyjs::html("pageHeader", header) 
@@ -1071,11 +1072,37 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                      qs::qsave(data,file=file )
                      rm(data)
                      gc()
+                   }
+                   odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$nclust))
+                   if(file.exists(file.path(odir,"refined_annotation.qs"))){
+                     print("Loading refined annotation")
+                     # Loading refined peak annotation
+                     scExp_cf. = scExp_cf()
+                     scExp_cf.@metadata[["refined_annotation"]] = qs::qread(file = file.path(odir, "refined_annotation.qs"))
+                     scExp_cf(scExp_cf.)
+                     rm(scExp_cf.)
+                   } else{
+                     print("Resetting refined annotation")
 
+                     # Reset any refined annotation found with other nclust
+                     if("refined_annotation" %in% names(scExp_cf()@metadata)){
+                       scExp_cf. = scExp_cf()
+                       scExp_cf.@metadata[["refined_annotation"]] <- NULL
+                       scExp_cf(scExp_cf.)
+                       rm(scExp_cf.)
+                     } 
                    }
                  }
                })
-
+  
+  observeEvent({
+    input$choose_cluster
+  }, { # application header (tells you which data set is selected)
+    req(analysis_name(), input$nclust)
+    header <- paste0('<b>Analysis : ', analysis_name(), ' - k = ', input$nclust, ' </b>')
+    shinyjs::html("pageHeader", header) 
+  })
+  
   output$download_cor_clust_plot <- downloadHandler(
     filename=function(){ paste0("correlation_clustering_", input$selected_reduced_dataset, ".png")},
     content=function(file){
@@ -1180,13 +1207,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$filtered_data_selection_format <- renderText({"The name of the filtered dataset is composed of the following information: data set name, min percentage of reads per cell, 
     min percentage of cells to support a window, quantile of cell read counts to keep, correlation threshold, percent of cell correlation. To work on a different dataset or different preprocessing state, select it on the first page."})
-  output$select_n_clust_hc = renderUI({
-    selectInput("nclust", "Select number of clusters:", choices=c(2:10))
-    })
-  output$select_n_clust_chc = renderUI({
-    selectInput("nclust", "Select number of clusters:", choices=c(2:10))
-  })
-
+  
   plotting_directory <- reactive({
     req( selected_filtered_dataset())
     if(!dir.exists(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering","Plots")))
@@ -1523,12 +1544,275 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   # }
   # )
   
-  observeEvent(unlocked$list, {able_disable_tab(c("selected_reduced_dataset","affectation"),c("peak_calling","diff_analysis"))}) 
+  observeEvent(unlocked$list, {able_disable_tab(c("selected_reduced_dataset","affectation"),c("coverage","peak_calling","diff_analysis"))}) 
+  
+  ###############################################################
+  # 5. Coverage plot [optional]
+  ###############################################################
+  
+  output$coverage_info <- renderText({"In order to visualize the cumulative signal of each subpopulation (cluster), create & plot the coverage tracks of some loci of interest. 
+    The coverage tracks are saved as bigwig files in the analysis directory (under peaks/). This can be ressource & time heavy depending on the number of cells & clusters."})
+  
+  shinyFiles::shinyDirChoose(input, "coverage_folder", roots = volumes, session = session)
+  
+  coverage_folder = reactiveVal(NULL)
+  
+  observeEvent(input$coverage_folder, priority = 10000, {
+    if(showHelpSC()) {
+      showModal(input_sc())
+      showHelpSC(FALSE)
+    } else { showHelpSC(TRUE)}
+  })
+  
+  list_files_coverage = reactive({
+    req(coverage_folder())
+    if(!is.null(coverage_folder())){
+      list.files(coverage_folder(), full.names = TRUE, pattern = "*.bed|*.bed.gz", recursive = TRUE)
+    }
+  })
+  
+  list_dirs_coverage = reactive({
+    req(coverage_folder())
+    if(!is.null(coverage_folder())){
+      print("list_dirs_coverage")
+      print(setNames(list.dirs(coverage_folder(), full.names = TRUE, recursive = FALSE), basename(list.dirs(coverage_folder(), recursive = FALSE))))
+      setNames(list.dirs(coverage_folder(), full.names = TRUE, recursive = FALSE), basename(list.dirs(coverage_folder(), recursive = FALSE)))
+    }
+  })
+  
+  observeEvent(input$coverage_folder,
+               {
+                 req(input$coverage_folder)
+                 if(!is.null(input$coverage_folder)){
+                   # browser()
+                   coverage_folder(shinyFiles::parseDirPath(volumes, input$coverage_folder))
+                 }
+               })
+  
+  output$coverage_upload <- renderUI({
+    req(list_files_coverage(),  list_dirs_coverage())
+    print("Inside output$coverage_upload UI")
+    print(head(list_files_coverage()))
+    print(list_dirs_coverage())
+    if(!is.null(list_files_coverage())){
+        dirs = basename(list_dirs_coverage())
+        selectInput("coverage_selection", label = "Selected samples:",
+                    choices = dirs, multiple = TRUE,
+                    selected = dirs)
+      
+    }
+  })
+  
+  has_available_coverage <- reactive({
+    req(scExp_cf(), input$nclust, analysis_name(), selected_filtered_dataset())
+    if(!is.null(scExp_cf())){
+      nclust = input$nclust
+      odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
+      if(length(list.files(odir, pattern = ".bw|.bigWig|.bigwig")) > 0){
+        return(TRUE)
+      } else return(FALSE)
+    } else{
+      return(FALSE)
+    }
+  })
+  
+  observeEvent(input$do_coverage, {
+    req(scExp_cf(), input$coverage_selection)
+    progress <- shiny::Progress$new(session, min=0, max=1)
+    on.exit(progress$close())
+    progress$set(message='Generating coverage tracks...', value = 0.0)
+
+      if(is.null(input$coverage_selection) | length(input$coverage_selection) ==0 ) {
+        warning("Can't find any input BED files.")
+        return()
+      }
+    print(list_dirs_coverage())
+    print(input$coverage_selection)
+    input_files_coverage = sapply(list_dirs_coverage()[input$coverage_selection], function(i) list.files(i, full.names = T, pattern = ".bed|.bed.gz"))
+    names(input_files_coverage) = basename(list_dirs_coverage()[input$coverage_selection])
+    
+    if(length(input_files_coverage)==0){
+      warning("Can't find any input single-cell BED files. Please make sure you selected the root of a directory",
+              " containing one folder per sample. Each folder should contain single-cell raw reads as .bed or .bed.gz file (one file per cell).")
+    } else{
+      nclust = input$nclust
+      dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage"), showWarnings = FALSE)
+      dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
+      odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
+      sample_ids <- unique(SummarizedExperiment::colData(scExp_cf())$sample_id)
+
+      checkFiles = 0
+      if(sum(checkFiles)==0){
+        
+        progress$set(message=paste0('Generating coverage tracks for k= ', nclust,' clusters ...'), value = 0.1)
+        
+        affectation = SingleCellExperiment::colData(scExp_cf())
+        affectation$cell_cluster = as.factor(affectation$cell_cluster)
+        
+        progress$set(detail = "Generating pseudo-bulk...", value = 0.2)
+        concatenate_scBed_into_clusters(affectation, input_files_coverage, odir)
+        
+        progress$set(detail = "Creating coverage files for each cluster...", value = 0.40)
+        suffix = ".bed"
+        n = 0
+        for(class in unique(scExp_cf()$cell_cluster)) {
+          n = n + 1
+          if (!is.null(progress)) progress$set(detail = paste0("Coverage ",class,"..."),
+                                               value = 0.4 + n * (0.6/length(unique(scExp_cf()$cell_cluster))) )
+          input_file = file.path(odir, paste0(class,suffix))
+          out_bw = file.path(odir, paste0(class,".bw"))
+          rawfile_ToBigWig(input_file, out_bw, "BED", bin_width = 150,
+                           n_smoothBin = 5,  ref = annotation_id(), read_size = 101)
+        }
+        progress$set(detail = "Done !", value = 0.95)
+        has_available_coverage(TRUE)
+        updateActionButton(session, "do_coverage", label="Finished successfully", icon = icon("check-circle"))
+      }
+    }
+  })
+  
+  
+  output$coverage_UI <- renderUI({
+    req(GenePool(),has_available_coverage())
+    print("Inside output$coverage_UI ... ")
+    print("Inside output$coverage_UI ... 2 ")
+    s <- shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
+                             column(3, align="left", selectizeInput(inputId = "select_cov_gene", "Select gene:", choices = NULL, selected = 1)),
+                             column(2, align="left", selectInput("cov_chr","Chromosome", choices = unique(rowRanges(scExp_cf())$chr))),
+                             column(2, align="left", textInput("cov_start","Start", value = 15000000)),
+                             column(2, align="left", textInput("cov_end","End", 16000000)),
+                             column(2, align="left", actionButton("make_plot_coverage", "Plot Coverage", icon = icon("chart-area"))),
+                             column(12, align="left", textOutput("top_genes")))
+    print("Inside output$coverage_UI ... 3")
+    updateSelectizeInput(session = session,
+                         inputId = 'select_cov_gene',
+                         choices = GenePool(),
+                         server = TRUE)
+    return(s)
+    
+  })
+  
+  output$coverage_plot_UI <- renderUI({
+    req(GenePool(), has_available_coverage(), display_coverage_plot())
+    print("Inside output$coverage_UI ... ")
+    if(has_available_coverage()){
+      if(display_coverage_plot()){
+        shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
+                            column(12, align="left", plotOutput("coverage_region_plot") %>%
+                                     shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)),
+                            column(3, actionButton("save_plots_coverage", "Save HQ plot", icon =  icon("fa-picture-o")))) 
+      }
+    }
+  })
+  
+  
+  GenePool <- reactive({
+    req(annotation_id())
+    print("Inside GenePool reactive ...")
+    eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
+    GenePool = unique(eval(parse(text = paste0("", annotation_id(), ".GeneTSS$gene"))))
+    print("Inside GenePool reactive2 ...")
+    c("Enter Gene...", GenePool)
+  })
+  
+  
+  coverages <- reactive({
+    withProgress(message='Loading coverage (.bw) tracks...', value = 0, {
+      incProgress(amount = 0.3)
+      req(has_available_coverage(), scExp_cf())
+      display_coverage_plot(TRUE)
+      if(has_available_coverage()){
+        nclust = input$nclust
+        odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
+                          "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
+        BigWig_filenames <- list.files(odir, pattern = "*.bw", full.names = TRUE)
+        if(length(BigWig_filenames)>0){
+          incProgress(amount = 0.3)
+          coverages = sapply(BigWig_filenames, rtracklayer::import)
+          incProgress(amount = 0.3, detail = paste("Done !"))
+        } else {
+          coverages = NULL
+        }
+        coverages
+      }
+    })
+  })
+  
+  display_coverage_plot <- reactiveVal(FALSE)
+  top_genes <- reactive({
+    req(scExp_cf())
+    top_feats = ChromSCape:::retrieve_top_bot_features_pca(SingleCellExperiment::reducedDim(scExp_cf(),"PCA"),
+                                                           component = "Component_1",
+                                                           counts = SingleCellExperiment::counts(scExp_cf()),
+                                                           n_top_bot = 50, absolute = TRUE)
+    
+    genes = SummarizedExperiment::rowRanges(scExp_cf())$Gene[which(rownames(top_feats) %in% rownames(scExp_cf()))]
+    genes = paste0(paste(genes[seq_len(min(10, length(genes)))], collapse = ", "),"...")
+    genes
+  })
+  output$top_genes = renderText({paste0("Top contributing genes: ", top_genes())})
+  
+  observeEvent(input$make_plot_coverage, { # load reduced data set to work with on next pages
+    req(input$cov_chr, has_available_coverage(),
+        scExp_cf(), coverages(), annotation_id())
+    if(input$select_cov_gene != "Enter Gene..."){
+      print("Uploading Gene selection")
+      
+      eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
+      gene_annot = eval(parse(text = paste0(annotation_id(), ".GeneTSS")))
+      updateSelectInput(session, "cov_chr", selected = gene_annot$chr[which(gene_annot$gene == input$select_cov_gene)])
+      updateSelectInput(session, "cov_start", selected = gene_annot$start[which(gene_annot$gene == input$select_cov_gene)] - 25000)
+      updateSelectInput(session, "cov_end", selected = gene_annot$end[which(gene_annot$gene == input$select_cov_gene)] + 25000)
+      updateSelectInput(session, "select_cov_gene", selected = "Enter Gene...")
+    }
+    label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
+    nclust = input$nclust
+    odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
+                      "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
+    if(file.exists(file.path(odir, "merged_peaks.bed"))){
+      peaks = rtracklayer::import.bed(file.path(odir, "merged_peaks.bed"))
+    } else{peaks = NULL}
+    
+    print("input$make_plot_coverage")
+    output$coverage_region_plot <- renderPlot({
+      plot_coverage_BigWig(
+        coverages(), 
+        label_color_list,
+        chrom = input$cov_chr,
+        start = as.numeric(input$cov_start),
+        end =  as.numeric(input$cov_end),
+        ref = annotation_id(),
+        peaks = peaks)
+    })
+    
+  })
+  
+  observeEvent(input$save_plots_coverage, {
+    print('Saving plots...')
+    label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
+    nclust = input$nclust
+    odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
+                      "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
+    if(file.exists(file.path(odir, "merged_peaks.bed"))){
+      peaks = rtracklayer::import.bed(file.path(odir, "merged_peaks.bed"))
+    } else{peaks = NULL}
+    pdf(file.path(plot_dir(), paste0("coverage_",input$cov_chr,"_",input$cov_start,"_",input$cov_end, ".pdf") ))
+    
+    plot_coverage_BigWig(
+      coverages(), 
+      label_color_list,
+      chrom = input$cov_chr,
+      start = as.numeric(input$cov_start),
+      end =  as.numeric(input$cov_end),
+      ref = annotation_id())
+    dev.off()
+    updateActionButton(session = session, inputId = "save_plots_coverage", label = "Save HQ plots", icon = icon("check-circle"))
+  })
   
   ###############################################################
   # 5. Peak calling [optional]
   ###############################################################
-  
+
   output$peak_calling_info <- renderText({"This module is optional, but recommended in order to obtain the most meaningful results for pathway enrichment analysis. Peaks will be called from the BAM files of the samples selected in your project, using MACS2 [only works on unix systems] so that counts can be assigned more specifically to genes TSS . If you have MACS2 installed but ChromSCape can’t find these softwares, try relaunching R from the terminal and start ChromSCape again."})
   
   can_run = reactiveVal({FALSE})
@@ -1649,7 +1933,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(length(input_files_pc)==0){
       warning("Can't find any input BAM / BED files.")
     } else{
-      nclust = length(unique(scExp_cf()$cell_cluster))  
+      nclust = input$nclust
       
       dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks"), showWarnings = FALSE)
       dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
@@ -1668,9 +1952,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                        as.numeric(input$pc_stat_value), annotation_id(),
                                        input$peak_distance_to_merge, progress = progress))
         progress$set(detail = "Done !", value = 0.95)
-        data = list("scExp_cf" = scExp_cf())
-        qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
-                                         paste0(input$selected_reduced_dataset, ".qs")))
+
+        # Export rowRanges as peaks
+        refined_annotation = scExp_cf()@metadata$refined_annotation
+        qs::qsave(refined_annotation, file = file.path(odir, "refined_annotation.qs"))
+        
         pc$new <- Sys.time()
         updateActionButton(session, "do_pc", label="Finished successfully", icon = icon("check-circle"))
       }
@@ -1697,145 +1983,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   
-  output$coverage_UI <- renderUI({
-    req(GenePool(),has_available_pc())
-    print("Inside output$coverage_UI ... ")
-      print("Inside output$coverage_UI ... 2 ")
-        s <- shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
-                                 column(3, align="left", selectizeInput(inputId = "select_cov_gene", "Select gene:", choices = NULL, selected = 1)),
-                                 column(2, align="left", selectInput("cov_chr","Chromosome", choices = unique(rowRanges(scExp_cf())$chr))),
-                                 column(2, align="left", textInput("cov_start","Start", value = 15000000)),
-                                 column(2, align="left", textInput("cov_end","End", 16000000)),
-                                 column(2, align="left", actionButton("make_plot_coverage", "Plot Coverage", icon = icon("chart-area"))),
-                                 column(12, align="left", textOutput("top_genes")))
-        print("Inside output$coverage_UI ... 3")
-        updateSelectizeInput(session = session,
-                             inputId = 'select_cov_gene',
-                             choices = GenePool(),
-                             server = TRUE)
-        return(s)
-      
-    })
   
-  output$coverage_plot_UI <- renderUI({
-    req(GenePool(),has_available_pc(), display_coverage_plot())
-    print("Inside output$coverage_UI ... ")
-    if(has_available_pc()){
-      if(display_coverage_plot()){
-      shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
-                          column(12, align="left", plotOutput("coverage_region_plot") %>%
-                                   shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75))) 
-      }
-    }
-  })
-  
-  
-  GenePool <- reactive({
-    req(annotation_id())
-    print("Inside GenePool reactive ...")
-    eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
-    GenePool = unique(eval(parse(text = paste0("", annotation_id(), ".GeneTSS$gene"))))
-    print("Inside GenePool reactive2 ...")
-    c("Enter Gene...", GenePool)
-  })
-
-  
-  coverages <- reactive({
-    req(has_available_pc(), scExp_cf())
-    print("Inside coverage reactive ...")
-    display_coverage_plot(TRUE)
-    if(has_available_pc()){
-      nclust = length(unique(scExp_cf()$cell_cluster))
-      odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
-                        "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
-      BigWig_filenames <- list.files(odir,pattern = "*.bw", full.names = TRUE)
-      print("BigWig_filenames")
-      print(BigWig_filenames)
-      if(length(BigWig_filenames)>0){
-        print("coverages = sapply(BigWig_filenames, rtracklayer::import)")
-        coverages = sapply(BigWig_filenames, rtracklayer::import)
-        print(length(coverages))
-      } else {
-        coverages = NULL
-      }
-      coverages
-    }
-  })
-  
-  display_coverage_plot <- reactiveVal(FALSE)
-  top_genes <- reactive({
-    req(scExp_cf())
-    top_feats = ChromSCape:::retrieve_top_bot_features_pca(SingleCellExperiment::reducedDim(scExp_cf(),"PCA"),
-                                                           component = "Component_1",
-                                                           counts = SingleCellExperiment::counts(scExp_cf()),
-                                                           n_top_bot = 50, absolute = TRUE)
-    
-    genes = SummarizedExperiment::rowRanges(scExp_cf())$Gene[which(rownames(top_feats) %in% rownames(scExp_cf()))]
-    genes = paste0(paste(genes[seq_len(min(10, length(genes)))], collapse = ", "),"...")
-    genes
-  })
-  output$top_genes = renderText({paste0("Top contributing genes: ", top_genes())})
-  
-  observeEvent(input$make_plot_coverage, { # load reduced data set to work with on next pages
-      req(input$cov_chr, has_available_pc(),
-          scExp_cf(), coverages(), annotation_id())
-    if(input$select_cov_gene != "Enter Gene..."){
-      print("Uploading Gene selection")
-      
-      eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
-      gene_annot = eval(parse(text = paste0("", annotation_id(), ".GeneTSS")))
-      print(input$select_cov_gene )
-      print(head(gene_annot))
-      print(head(gene_annot$gene))
-      print(which(gene_annot$gene == input$select_cov_gene))
-      updateSelectInput(session, "cov_chr", selected = gene_annot$chr[which(gene_annot$gene == input$select_cov_gene)])
-      updateSelectInput(session, "cov_start", selected = gene_annot$start[which(gene_annot$gene == input$select_cov_gene)] - 25000)
-      updateSelectInput(session, "cov_end", selected = gene_annot$end[which(gene_annot$gene == input$select_cov_gene)] + 25000)
-      updateSelectInput(session, "select_cov_gene", selected = "Enter Gene...")
-    }
-    label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
-    nclust = length(unique(scExp_cf()$cell_cluster))
-    odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
-                      "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
-    if(file.exists(file.path(odir, "merged_peaks.bed"))){
-      peaks = rtracklayer::import.bed(file.path(odir, "merged_peaks.bed"))
-      } else{peaks = NULL}
-    
-    print("input$make_plot_coverage")
-    output$coverage_region_plot <- renderPlot({
-      plot_coverage_BigWig(
-        coverages(), 
-        label_color_list,
-        chrom = input$cov_chr,
-        start = as.numeric(input$cov_start),
-        end =  as.numeric(input$cov_end),
-        ref = annotation_id(),
-        peaks = peaks)
-    })
-    
-  })
-  
-  observeEvent(input$save_plots_coverage,{
-    print('Saving plots...')
-    label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
-    nclust = length(unique(scExp_cf()$cell_cluster))
-    odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
-                      "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
-    if(file.exists(file.path(odir, "merged_peaks.bed"))){
-      peaks = rtracklayer::import.bed(file.path(odir, "merged_peaks.bed"))
-    } else{peaks = NULL}
-    pdf(file.path(plot_dir(), paste0("coverage_",input$cov_chr,"_",input$cov_start,"_",input$cov_end, ".pdf") ))
-    
-    plot_coverage_BigWig(
-      coverages(), 
-      label_color_list,
-      chrom = input$cov_chr,
-      start = as.numeric(input$cov_start),
-      end =  as.numeric(input$cov_end),
-      ref = annotation_id())
-    dev.off()
-    updateActionButton(session = session, inputId = "save_plots_coverage", label = "Save HQ plots", icon = icon("check-circle"))
-  })
  
   # available_pc_plots <- reactive({
   #   fe <- sapply(c(1:input$pc_k_selection), function(i){file.exists(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$pc_k_selection), paste0("C", i, "_model.r")))})
@@ -1878,10 +2026,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   ###############################################################
   # 6. Differential analysis
   ###############################################################
-  
+
   get.available.DA_GSEA.datasets <- function(name, preproc){
-    list.files(path = file.path(init$data_folder, "ChromSCape_analyses", name, "Diff_Analysis_Gene_Sets"),
+    l = list.files(path = file.path(init$data_folder, "ChromSCape_analyses", name, "Diff_Analysis_Gene_Sets"),
                full.names = FALSE, recursive = FALSE, pattern = paste0(preproc, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_"))
+    l = l[grep(paste0("orrected_",input$nclust),l)]
   }
   
   observeEvent(c(input$qval.th, input$tabs, input$cdiff.th, input$de_type, selected_filtered_dataset()), priority = 10,{
