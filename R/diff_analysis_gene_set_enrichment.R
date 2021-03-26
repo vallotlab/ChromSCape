@@ -25,8 +25,11 @@
 #'   ('one_vs_rest')
 #' @param qval.th Adjusted p-value threshold. (0.01)
 #' @param cdiff.th Fold change threshold. (1)
-#' @param method Wilcoxon or edgerGLM
-#' @param block Use batches as blocking factors ?
+#' @param method Differential testing method, either 'wilcox' for Wilcoxon non-
+#' parametric testing or 'neg.binomial' for edgerGLM based testing. ('wilcox')
+#' @param block Use batches as blocking factors ? If TRUE, block will be taken
+#' as the column "batch_id" from the SCE. Cells will be compared only within
+#' samples belonging to the same batch. 
 #' @param group If de_type = "custom", the sample / cluster of interest as a 
 #' one- column data.frame. The name of the column is the group name and the
 #'  values are character either cluster ("C1", "C2", ...) or sample_id.
@@ -381,7 +384,7 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #'
 #' @param scExp A SingleCellExperiment object containing list of differential
 #'   features.
-#' @param ref A reference annotation. ('hg38')
+#' @param ref A reference annotation, either 'hg38' or 'mm10'. ('hg38')
 #' @param enrichment_qval Adjusted p-value threshold for gene set enrichment.
 #'   (0.1)
 #' @param GeneSets A named list of gene sets. If NULL will automatically load
