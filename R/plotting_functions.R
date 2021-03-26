@@ -320,14 +320,13 @@ plot_pie_most_contributing_chr <- function(scExp, component = "Component_1",
         SingleCellExperiment::normcounts(scExp), component, n_top_bot,
         absolute = TRUE)
     
-    chr_info = SummarizedExperiment::rowRanges(scExp)
-    chr_info = chr_info[match(rownames(top_bot), chr_info$ID)]
-    chr_info = as.data.frame(chr_info)
+    chr_info = as.data.frame(SummarizedExperiment::rowRanges(scExp))
+    chr_info = chr_info[match(rownames(top_bot), chr_info$ID),]
     chr_info$absolute_value = abs(top_bot[,component])
-    distrib = chr_info %>% dplyr::group_by(chr) %>% 
+    distrib = chr_info %>% dplyr::group_by(seqnames) %>% 
         summarise(contribution = sum(absolute_value))
     distrib$contribution = 100 * distrib$contribution/sum(distrib$contribution)
-    distrib = setNames(distrib$contribution,distrib$chr)
+    distrib = setNames(distrib$contribution,distrib$seqnames)
     distrib = sort(distrib, decreasing = TRUE)
     distrib[6] = sum(distrib[6:length(distrib)])
     names(distrib)[6] = "Others"

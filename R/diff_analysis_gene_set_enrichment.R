@@ -61,8 +61,8 @@ differential_analysis_scExp = function(
     nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
     if(method == "wilcox"){counts = SingleCellExperiment::normcounts(scExp)
     } else{counts = SingleCellExperiment::counts(scExp)}
-    feature <- SingleCellExperiment::rowData(scExp)
-    feature = data.frame(ID = feature[, "ID"], chr = feature[, "chr"],
+    feature <- as.data.frame(SummarizedExperiment::rowRanges(scExp))
+    feature = data.frame(ID = feature[, "ID"], chr = feature[, "seqnames"],
         start = feature[, "start"], end = feature[, "end"])
     affectation = as.data.frame(SingleCellExperiment::colData(scExp))
     diff = list(res = NULL, summary = NULL, groups = NULL, refs = NULL)
@@ -135,7 +135,7 @@ warning_DA <- function(scExp, de_type, method, qval.th, cdiff.th, block,
         & de_type != "custom") 
         stop("ChromSCape::run_differential_analysis_scExp - scExp ",
                     "object must have selected number of clusters.")
-    if (FALSE %in% (c("chr", "start", "end") %in% 
+    if (FALSE %in% (c("ID", "Gene", "distanceToTSS") %in% 
                     colnames(SingleCellExperiment::rowData(scExp)))) 
         stop("ChromSCape::run_differential_analysis_scExp - Please run ",
                     "feature_annotation_scExp first.")
@@ -463,11 +463,11 @@ gene_set_enrichment_analysis_scExp = function(
     nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
     
     annotFeat_long = as.data.frame(tidyr::separate_rows(
-        as.data.frame(SingleCellExperiment::rowData(scExp)), 
+        as.data.frame(SummarizedExperiment::rowRanges(scExp)), 
         .data$Gene, sep = ", "))
     enr <- combine_enrichmentTests(
         scExp@metadata$diff, enrichment_qval, qval.th, cdiff.th,
-        annotFeat_long,peak_distance, refined_annotation, GeneSets,
+        annotFeat_long, peak_distance, refined_annotation, GeneSets,
         GeneSetsDf, GenePool, progress = progress)
     scExp@metadata$enr <- enr
     return(scExp)

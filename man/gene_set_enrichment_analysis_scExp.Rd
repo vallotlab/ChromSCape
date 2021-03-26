@@ -28,7 +28,7 @@ features.}
 \item{enrichment_qval}{Adjusted p-value threshold for gene set enrichment.
 (0.1)}
 
-\item{ref}{A reference annotation. ('hg38')}
+\item{ref}{A reference annotation, either 'hg38' or 'mm10'. ('hg38')}
 
 \item{GeneSets}{A named list of gene sets. If NULL will automatically load
 MSigDB list of gene sets for specified reference genome. (NULL)}

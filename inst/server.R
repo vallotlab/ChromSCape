@@ -1678,7 +1678,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     print("Inside output$coverage_UI ... 2 ")
     s <- shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
                              column(3, align="left", selectizeInput(inputId = "select_cov_gene", "Select gene:", choices = NULL, selected = 1)),
-                             column(2, align="left", selectInput("cov_chr","Chromosome", choices = unique(rowRanges(scExp_cf())$chr))),
+                             column(2, align="left", selectInput("cov_chr","Chromosome", choices = unique(as.character(seqnames(rowRanges(scExp_cf())))))),
                              column(2, align="left", textInput("cov_start","Start", value = 15000000)),
                              column(2, align="left", textInput("cov_end","End", 16000000)),
                              column(2, align="left", actionButton("make_plot_coverage", "Plot Coverage", icon = icon("chart-area"))),
