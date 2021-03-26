@@ -1619,7 +1619,7 @@ feature_annotation_scExp <- function(scExp, ref = "hg38",
         as.data.frame()
     annotFeat <- annotFeat[match(rownames(scExp), annotFeat$ID), ]
     rownames(annotFeat) <- annotFeat$ID
-    SummarizedExperiment::rowData(scExp) <- annotFeat
+    SummarizedExperiment::rowData(scExp) <- annotFeat[,c("ID","Gene","distanceToTSS")]
     return(scExp)
 }
 
