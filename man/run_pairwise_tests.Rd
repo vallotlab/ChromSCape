@@ -4,7 +4,14 @@
 \alias{run_pairwise_tests}
 \title{Run pairwise tests}
 \usage{
-run_pairwise_tests(affectation, nclust, counts, feature, method)
+run_pairwise_tests(
+  affectation,
+  nclust,
+  counts,
+  feature,
+  method,
+  progress = NULL
+)
 }
 \arguments{
 \item{affectation}{An annotation data.frame with cell_cluster and cell_id
@@ -17,6 +24,8 @@ columins}
 \item{feature}{Feature data.frame}
 
 \item{method}{DA method, Wilcoxon or edgeR}
+
+\item{progress}{A shiny Progress instance to display progress bar.}
 }
 \value{
 A list containing objects for DA function

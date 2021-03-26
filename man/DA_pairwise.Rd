@@ -4,7 +4,15 @@
 \alias{DA_pairwise}
 \title{Run differential analysis in Pairwise mode}
 \usage{
-DA_pairwise(affectation, nclust, counts, method, feature, block)
+DA_pairwise(
+  affectation,
+  nclust,
+  counts,
+  method,
+  feature,
+  block,
+  progress = NULL
+)
 }
 \arguments{
 \item{affectation}{An annotation data.frame with cell_cluster and cell_id
@@ -19,6 +27,8 @@ columns}
 \item{feature}{Feature data.frame}
 
 \item{block}{Blocking feature}
+
+\item{progress}{A shiny Progress instance to display progress bar.}
 }
 \value{
 A list of results, groups compared and references

@@ -12,7 +12,8 @@ differential_analysis_scExp(
   cdiff.th = 1,
   block = NULL,
   group = NULL,
-  ref = NULL
+  ref = NULL,
+  progress = NULL
 )
 }
 \arguments{
@@ -23,17 +24,26 @@ number of cluster.}
 cluster against all others, or 'pairwise' to make 1 to 1 comparisons.
 ('one_vs_rest')}
 
-\item{method}{Wilcoxon or edgerGLM}
+\item{method}{Differential testing method, either 'wilcox' for Wilcoxon non-
+parametric testing or 'neg.binomial' for edgerGLM based testing. ('wilcox')}
 
 \item{qval.th}{Adjusted p-value threshold. (0.01)}
 
 \item{cdiff.th}{Fold change threshold. (1)}
 
-\item{block}{Use batches as blocking factors ?}
+\item{block}{Use batches as blocking factors ? If TRUE, block will be taken
+as the column "batch_id" from the SCE. Cells will be compared only within
+samples belonging to the same batch.}
 
-\item{group}{}
+\item{group}{If de_type = "custom", the sample / cluster of interest as a
+one- column data.frame. The name of the column is the group name and the
+values are character either cluster ("C1", "C2", ...) or sample_id.}
 
-\item{ref}{}
+\item{ref}{If de_type = "custom", the sample / cluster of reference as a one-
+column data.frame. The name of the column is the group name and the values
+are character either cluster ("C1", "C2", ...) or sample_id.}
+
+\item{progress}{A shiny Progress instance to display progress bar.}
 }
 \value{
 Returns a SingleCellExperiment object containing a differential list.

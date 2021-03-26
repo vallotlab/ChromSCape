@@ -4,7 +4,15 @@
 \alias{DA_one_vs_rest_fun}
 \title{Differential Analysis in 'One vs Rest' mode}
 \usage{
-DA_one_vs_rest_fun(affectation, nclust, counts, method, feature, block)
+DA_one_vs_rest_fun(
+  affectation,
+  nclust,
+  counts,
+  method,
+  feature,
+  block,
+  progress = NULL
+)
 }
 \arguments{
 \item{affectation}{An annotation data.frame with cell_id and cell_cluster
@@ -19,6 +27,8 @@ columns}
 \item{feature}{Feature tables}
 
 \item{block}{Blocking feature}
+
+\item{progress}{A shiny Progress instance to display progress bar.}
 }
 \value{
 A list of results, groups compared and references

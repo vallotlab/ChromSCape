@@ -4,7 +4,16 @@
 \alias{DA_custom}
 \title{Differential Analysis in 'One vs Rest' mode}
 \usage{
-DA_custom(affectation, counts, method, feature, block, ref, group)
+DA_custom(
+  affectation,
+  counts,
+  method,
+  feature,
+  block,
+  ref,
+  group,
+  progress = NULL
+)
 }
 \arguments{
 \item{affectation}{An annotation data.frame with cell_id and cell_cluster
@@ -17,6 +26,8 @@ columns}
 \item{feature}{Feature tables}
 
 \item{block}{Blocking feature}
+
+\item{progress}{A shiny Progress instance to display progress bar.}
 
 \item{nclust}{Number of clusters}
 }

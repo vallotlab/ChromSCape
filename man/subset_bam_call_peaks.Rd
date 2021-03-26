@@ -13,7 +13,8 @@ subset_bam_call_peaks(
   ref = "hg38",
   peak_distance_to_merge = 10000,
   geneTSS_annotation = NULL,
-  run_coverage = TRUE
+  run_coverage = FALSE,
+  progress = NULL
 )
 }
 \arguments{
@@ -38,6 +39,8 @@ peak calling , in bp. (10000)}
 automatically load Gencode list of genes fro specified reference genome.}
 
 \item{run_coverage}{Create coverage tracks (.bw) for each cluster ?}
+
+\item{progress}{A shiny Progress instance to display progress bar.}
 }
 \value{
 A SingleCellExperiment with refinded annotation

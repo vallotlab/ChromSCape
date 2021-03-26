@@ -14,7 +14,8 @@ combine_enrichmentTests(
   refined_annotation,
   GeneSets,
   GeneSetsDf,
-  GenePool
+  GenePool,
+  progress = NULL
 )
 }
 \arguments{
@@ -39,6 +40,8 @@ done}
 \item{GeneSetsDf}{Data.frame of pathways}
 
 \item{GenePool}{Pool of possible genes for testing}
+
+\item{progress}{A shiny Progress instance to display progress bar.}
 }
 \value{
 A list of list of pathway enrichment data.frames for

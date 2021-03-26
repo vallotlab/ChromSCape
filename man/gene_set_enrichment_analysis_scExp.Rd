@@ -17,7 +17,8 @@ gene_set_enrichment_analysis_scExp(
   peak_distance = 1000,
   use_peaks = FALSE,
   GeneSetClasses = c("c1_positional", "c2_curated", "c3_motif", "c4_computational",
-    "c5_GO", "c6_oncogenic", "c7_immunologic", "hallmark")
+    "c5_GO", "c6_oncogenic", "c7_immunologic", "hallmark"),
+  progress = NULL
 )
 }
 \arguments{
@@ -52,6 +53,8 @@ associated, in bp. (1000)}
 (FALSE)}
 
 \item{GeneSetClasses}{Which classes of MSIGdb to look for.}
+
+\item{progress}{A shiny Progress instance to display progress bar.}
 }
 \value{
 Returns a SingleCellExperiment object containing list of enriched
