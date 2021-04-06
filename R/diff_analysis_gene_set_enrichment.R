@@ -729,7 +729,7 @@ table_enriched_genes_scExp <- function(
             setNames(
                 data.frame(matrix(ncol = 6, nrow = 0)),
                 c("Gene_set", "Class", "Num_deregulated_genes", "p.value",
-                "q.value", "Deregulated_genes")))
+                "adj.p.value", "Deregulated_genes")))
     }
     table <- tidyr::unite(table, "dereg_genes", c(
         "Nb_of_deregulated_genes", "Nb_of_genes"), sep = "/")
@@ -738,5 +738,5 @@ table_enriched_genes_scExp <- function(
     table[, 4] <- round(table[, 4], 9)
     table[, 5] <- round(table[, 5], 9)
     table <- table[order(table$adj.p.value, table$p.value), ]
-    DT::datatable(table, options = list(dom = "tpi"))
+    return(table)
 }
