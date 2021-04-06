@@ -132,22 +132,7 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
     scExp@metadata$refined_annotation <- 
         annotation_from_merged_peaks(scExp, odir,
                                      merged_peaks, geneTSS_annotation)
-    print("Finished creating BAM and annot")
-    cat("Running coverage ? ", run_coverage)
-    if(run_coverage){
-        if (!is.null(progress)) progress$set(detail = "Creating coverage files for each cluster...", value = 0.70)
-        suffix = ifelse(format=="BAM", ".bam", ".bed")
-        n = 0
-        for(class in unique(scExp$cell_cluster)) {
-            n = n + 1
-            if (!is.null(progress)) progress$set(detail = paste0("Coverage ",class,"..."),
-                                                 value = 0.7 + n * (0.3/length(unique(scExp$cell_cluster))) )
-            input_file = file.path(odir, paste0(class,suffix))
-            out_bw = file.path(odir, paste0(class,".bw"))
-            rawfile_ToBigWig(input_file, out_bw, format, bin_width = 150,
-                             n_smoothBin = 5,  ref = ref, read_size = 101)
-        }
-    }
+
     return(scExp)
 }
 
@@ -157,17 +142,19 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
 #'   information
 #' @param odir Output directory to write MACS2 output
 #' @param p.value P value to detect peaks, passed to MACS2
-#' @param format File format, either "BAM" or "BED"
+#' @param format File format, either "scBAM" or "scBED"
 #' @param ref Reference genome
 #' @param peak_distance_to_merge Distance to merge peaks
 #'
 #' @return A list of merged GRanges peaks
 #'
 #' 
-call_macs2_merge_peaks <- function(affectation, odir, p.value, format = "BAM",
+call_macs2_merge_peaks <- function(affectation, odir, p.value,
+                                   format = c("scBED","scBAM")[1],
                                 ref, peak_distance_to_merge){
     suffix = ".bam"
-    if(format != "BAM") suffix = ".bed"
+    if(format != "scBAM") suffix = ".bed"
+    if(format == "scBAM") format = "BAM" else format = "BED"
     merged_peaks=list()
     for (class in levels(factor(affectation$cell_cluster))){
         
