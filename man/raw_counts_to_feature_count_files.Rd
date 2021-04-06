@@ -6,22 +6,21 @@
 \usage{
 raw_counts_to_feature_count_files(
   files_dir_list,
-  file_type = c("BAM", "BED", "Index_Peak_Barcode"),
+  file_type = c("scBAM", "scBED", "SparseMatrix"),
   peak_file = NULL,
   n_bins = NULL,
   bin_width = NULL,
   geneTSS = NULL,
   aroundTSS = 2500,
   verbose = TRUE,
-  ref = "hg38"
+  ref = c("hg38", "mm10")[1]
 )
 }
 \arguments{
 \item{files_dir_list}{A named character vector of directories containing
-the files. The
-names correspond to sample names.}
+the files. The names correspond to sample names.}
 
-\item{file_type}{Input file(s) type(s) ('BAM')}
+\item{file_type}{Input file(s) type(s) ('scBED','scBAM','SparseMatrix')}
 
 \item{peak_file}{A file containing genomic location of peaks (NULL)}
 

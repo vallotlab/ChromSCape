@@ -8,7 +8,7 @@ call_macs2_merge_peaks(
   affectation,
   odir,
   p.value,
-  format = "BAM",
+  format = c("scBED", "scBAM")[1],
   ref,
   peak_distance_to_merge
 )
@@ -21,7 +21,7 @@ information}
 
 \item{p.value}{P value to detect peaks, passed to MACS2}
 
-\item{format}{File format, either "BAM" or "BED"}
+\item{format}{File format, either "scBAM" or "scBED"}
 
 \item{ref}{Reference genome}
 
