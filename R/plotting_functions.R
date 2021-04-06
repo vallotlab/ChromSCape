@@ -350,6 +350,7 @@ plot_pie_most_contributing_chr <- function(scExp, component = "Component_1",
 retrieve_top_bot_features_pca <- function(pca, counts, component, n_top_bot,
                                           absolute = FALSE){
     rotations = counts %*% as.matrix(pca)
+
     rotations = rotations[,component,drop=FALSE]
     top = as.data.frame(as.matrix(
         utils::head(rotations[order(rotations, decreasing = TRUE),, drop=FALSE],
@@ -607,7 +608,6 @@ plot_coverage_BigWig <- function(
     if(sum(sapply(coverages, length)) >0){
 
         max = round(max(sapply(coverages, function(tab) max(tab$score))),3)
-        # min = round(max(sapply(coverages, function(tab) min(tab$score))),3)
     
         n = length(coverages)
         layout.matrix <- matrix(
@@ -628,7 +628,7 @@ plot_coverage_BigWig <- function(
         par(cex=0.5)
         par(mar = c(0.75, 6, 0, 1), oma = c(1, 1, 1, 1))
         for(i in seq_along(coverages)){
-            # print(
+
                 Sushi::plotBedgraph(as.data.frame(coverages[[i]])[,c(1,2,3,6)],
                                 chrom, start, end,
                                 range = c(0, max),
@@ -636,7 +636,7 @@ plot_coverage_BigWig <- function(
                                 ylab= names(label_color_list)[i],
                                 color= label_color_list[[i]],
                                 cex.lab=2,cex.main=2.1)
-            # )
+
         }
         par(mar = c(1, 6, 1, 1),xpd=NA)
         if(nrow(peaks_roi)>0) Sushi::plotBed(peaks_roi, chrom, start,
