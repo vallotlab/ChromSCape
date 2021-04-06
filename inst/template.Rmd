@@ -1,0 +1,439 @@
+---
+title: "`r  paste0('ChromSCape - ', analysis_name)`"
+date: "`r date()`"
+logo: www/ChromSCape_logo.svg
+output: 
+  flexdashboard::flex_dashboard:
+    vertical_layout: scroll
+    navbar:
+      - { title: "GitHub", icon: "fa-github", href: "https://github.com/vallotlab/ChromSCape" }
+      - { title: "Demo", icon: "fa-desktop", href: "https://vallotlab.shinyapps.io/ChromSCape/" }
+      - { title: "Article", icon: "fa-book", href: "https://www.nature.com/articles/s41467-020-19542-x" }
+params:
+  analysis_name: ""
+  datamatrix: ""
+  scExp: ""
+  scExp_cf: ""
+  genes_to_plot: ""
+  ref_genome: ""
+  coverages: ""
+  control_samples_CNA: ""
+  
+---
+
+<script>
+$('.navbar-logo').wrap('<a href="https://bioconductor.org/packages/release/bioc/html/ChromSCape.html">');
+</script>
+
+<style>
+
+.navbar-inverse.navbar-fixed-top{ overflow:auto }
+#dashboard-container{ position: relative; top: 10% }
+.navbar-brand {
+  color:white;
+  font-size: 30px;
+}
+
+body {
+    font-size: 18px;
+}
+.chart-title {
+    font-size: 18px;
+}
+
+</style>
+
+```{r global, include=FALSE}
+options(knitr.duplicate.label = "allow")
+# datamatrix = qs::qread("/media/pacome/LaCie/InstitutCurie/Documents/Data/Tests/Test_ChromSCape/Test_generate_analysis/ChromSCape_analyses/Analysis_2/datamatrix.qs")
+# scExp = qs::qread("/media/pacome/LaCie/InstitutCurie/Documents/Data/Tests/Test_ChromSCape/Test_generate_analysis/ChromSCape_analyses/Analysis_2/Filtering_Normalize_Reduce/Analysis_2_1600_0.5_95_uncorrected.qs")
+# scExp_cf = qs::qread("/media/pacome/LaCie/InstitutCurie/Documents/Data/Tests/Test_ChromSCape/Test_generate_analysis/ChromSCape_analyses/Analysis_2/Diff_Analysis_Gene_Sets/Analysis_2_1600_0.5_95_uncorrected_2_0.1_1_one_vs_rest.qs")$scExp_cf
+# genes_to_plot = c("Krt8","Krt5","Tgfb1", "Foxq1", "Cdkn2b", "Cdkn2a", "chr7:15000000-20000000")
+# ref_genome = "mm10"
+MSIG.classes <- c("c1_positional","c2_curated","c3_motif","c4_computational",
+          "c5_GO","c6_oncogenic","c7_immunologic","hallmark")[c(2,5,6,7,8)]
+```
+
+QC & Dimensionality Reduction
+=====================================
+
+Column {data-width=250}
+-----------------------------------------------------------------------
+
+### Cells
+
+```{r}
+valueBox(value = ncol(datamatrix), caption = "Number of cells", icon ="fa-circle")
+```
+
+### Cells after filterings
+```{r}
+valueBox(value = ncol(scExp), caption = "Number of cells after filtering", icon ="fa-circle-notch")
+```
+
+### Percentage of features passing filtering
+```{r}
+gauge(100*round(nrow(scExp)/ nrow(datamatrix),3), min = 0, max = 100, 
+          symbol = '%', sectors = gaugeSectors(
+    success = c(20, 100), warning = c(5, 19.99), danger = c(0, 4.999)
+  ))
+```
+
+### Raw Cell count distribution
+```{r}
+df = data.frame(coverage = sort(unname(Matrix::colSums(datamatrix)))) 
+ggplot(df, aes(x = coverage)) + 
+      geom_histogram(color="black", fill="steelblue", bins = 75) +
+      labs(x="Log10(Reads per cell)", y = "nCells")  + 
+      theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), 
+            panel.background=element_blank(), axis.line=element_line(colour="black"),
+            panel.border=element_rect(colour="black", fill=NA)) +
+      scale_x_log10()
+```
+
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### UMAP - sample
+
+```{r}
+plot_reduced_dim_scExp(scExp_cf, color_by = "sample_id")
+```
+
+### UMAP - total counts
+
+```{r}
+plot_reduced_dim_scExp(scExp_cf, color_by = "total_counts")
+```
+
+
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Most contributing features
+
+```{r}
+plot_most_contributing_features(scExp)
+```
+
+### Most contributing chromosomes
+
+```{r}
+plot_pie_most_contributing_chr(scExp)
+```
+
+Correlation Clustering
+=====================================
+
+Column {data-width=250}
+-----------------------------------------------------------------------
+
+### Number of cluster
+```{r}
+valueBox(value = length(unique(scExp_cf$cell_cluster)), caption = "Number of clusters", icon ="fa-sitemap")
+```
+
+### Percentage of well correlated cells
+```{r}
+gauge(100*round(ncol(scExp_cf) / ncol(scExp),1), min = 0, max = 100, 
+          symbol = '%', sectors = gaugeSectors(
+    success = c(80, 100), warning = c(50, 79.99), danger = c(0, 49.999)
+  ))
+```
+
+### Cell affectation
+```{r}
+num_cell_in_cluster_scExp(scExp_cf)
+```
+
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Correlation
+
+```{r}
+plot_heatmap_scExp(scExp_cf)
+```
+
+### Consensus scores
+
+```{r}
+plot_cluster_consensus_scExp(scExp_cf)
+```
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### UMAP - cell cluster
+
+```{r}
+plot_reduced_dim_scExp(scExp_cf, color_by = "cell_cluster")
+```
+
+### Sample intra-correlation
+
+```{r}
+plot_intra_correlation_scExp(scExp_cf, by = "sample_id")
+```
+
+DA & GSA
+=====================================
+
+Column
+-----------------------------------------------------------------------
+
+### Number of differential regions
+```{r}
+valueBox(value = sum(scExp_cf@metadata$diff$summary["differential",]), caption = "Number of differential regons", icon ="fa-cube")
+```
+
+### Number unique gene sets
+```{r}
+all_paths <- unique(as.character(unlist(sapply(1:length(scExp_cf@metadata$diff$groups), 
+                          function(i) {
+                            all = c()
+                            if(length(scExp_cf@metadata$enr$Overexpressed)>=i) 
+                              all = c(all, scExp_cf@metadata$enr$Overexpressed[[i]]$Gene.Set)
+                            if(length(scExp_cf@metadata$enr$Underexpressed)>=i) 
+                              all = c(all, scExp_cf@metadata$enr$Underexpressed[[i]]$Gene.Set)
+                            if(length(scExp_cf@metadata$enr$Both)>=i) 
+                              all = c(all, scExp_cf@metadata$enr$Both[[i]]$Gene.Set)
+                            return(all)
+                          }))))
+
+valueBox(value = length(all_paths), caption = "Number of unique pathways", icon ="fa-cubes")
+```
+
+### Cell affectation
+```{r}
+num_cell_in_cluster_scExp(scExp_cf)
+```
+
+Column 
+-----------------------------------------------------------------------
+
+##  Differential Volcano plots 
+
+```{r, echo = FALSE, eval = TRUE}
+
+
+diff_list = list()
+if(!is.null(scExp_cf)){
+  if(!is.null(scExp_cf@metadata$diff)){
+    
+    
+   for(i in seq_along(scExp_cf@metadata$diff$groups)){
+      
+      diff = scExp_cf@metadata$diff$res[,-grep("Rank|pval|ID|Count",colnames(scExp_cf@metadata$diff$res))]
+      if(nrow(diff)>0){
+        if(!is.null(SummarizedExperiment::rowRanges(scExp_cf)$Gene)){
+          diff = cbind(SummarizedExperiment::rowRanges(scExp_cf)$distanceToTSS, diff)
+          diff = cbind(SummarizedExperiment::rowRanges(scExp_cf)$Gene, diff)
+          colnames(diff)[1:2] = c("Gene","distanceToTSS")
+        }
+        rownames(diff) <- NULL
+        diff = diff[,c("Gene","distanceToTSS", "chr","start","end",
+                       colnames(diff)[grep(scExp_cf@metadata$diff$groups[i],colnames(diff))] )]
+        diff = diff[which(!is.infinite(diff[,grep("cdiff",colnames(diff))])),]
+        diff <- diff[order(diff[,paste0("qval.",scExp_cf@metadata$diff$groups[i])]),]
+        diff[,paste0("qval.",scExp_cf@metadata$diff$groups[i])] = round(diff[,paste0("qval.",scExp_cf@metadata$diff$groups[i])],8)
+        diff[,paste0("cdiff.",scExp_cf@metadata$diff$groups[i])] = round(diff[,paste0("cdiff.",scExp_cf@metadata$diff$groups[i])],4)
+        diff$Gene = substr(diff$Gene,1,20)
+        diff_list[[i]] = diff
+       
+      }
+       # collapse together all lines with newline separator
+    }
+    
+  }
+}
+
+out_volcano <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
+
+  a1 <- knitr::knit_expand(text = sprintf("### %s\n", scExp_cf@metadata$diff$groups[i])) 
+  a2 <- knitr::knit_expand(text = "\n```{r fig.width=5, fig.height=5}") # start r chunk
+  a3 <- knitr::knit_expand(text = sprintf("\nplot_differential_volcano_scExp(scExp_cf, cell_cluster = scExp_cf@metadata$diff$groups[%d])", i)) 
+  a4 <- knitr::knit_expand(text = "\n```\n") 
+
+  paste(a1, a2, a3, a4, collapse = '\n') # collapse together all lines with newline separator
+
+})
+
+out_table <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
+
+ a1 <- knitr::knit_expand(text = sprintf("### %s\n", scExp_cf@metadata$diff$groups[i])) 
+        a2 <- knitr::knit_expand(text = "\n```{r}") # start r chunk
+        a3 <- knitr::knit_expand(text = sprintf("\nDT::datatable(diff_list[[%d]][1:min(20,nrow(diff_list[[%d]])),], options = list(pageLength = 5, bPaginate = FALSE,  dom = 'tip'), class = 'display', rownames = FALSE)", i,i)) 
+        a4 <- knitr::knit_expand(text = "\n```\n") 
+        
+        paste(a1, a2, a3, a4, collapse = '\n')
+})
+
+out = list()
+for(i in seq_along(scExp_cf@metadata$diff$groups)){
+  out = c(out, out_volcano[[i]], out_table[[i]])  
+}
+
+```
+
+
+`r paste(knitr::knit(text = paste(out, collapse = '\n')))`
+
+
+Column
+-----------------------------------------------------------------------
+
+```{r }
+options(DT.options = list(scrollY="300px",scrollX="300px", pageLength = 10, autoWidth = TRUE))
+
+
+gsa_over = gsa_under = list()
+if(!is.null(scExp_cf)){
+    if(!is.null(scExp_cf@metadata$enr)){
+        
+        for(i in seq_along(scExp_cf@metadata$diff$groups)){
+            if(length(scExp_cf@metadata$enr$Overexpressed)>=i){
+                if(!is.null(scExp_cf@metadata$enr$Overexpressed[[i]])){
+                    over_tab = table_enriched_genes_scExp(scExp_cf, set = 'Overexpressed',  group = paste0('C',i), enr_class_sel = MSIG.classes)
+                    colnames(over_tab)[3] = "N_genes"
+                    colnames(over_tab)[6] = "Genes"
+                    over_tab$p.value =   round(over_tab$p.value,7)
+                    over_tab$adj.p.value =   round(over_tab$adj.p.value,7)
+                    over_tab$Gene_set = ifelse(nchar(over_tab$Gene_set)>25, paste0(substr(over_tab$Gene_set,1,25),"..."), over_tab$Gene_set)
+                    over_tab$Genes = ifelse(nchar(over_tab$Genes)>20, paste0(substr(over_tab$Genes,1,20),"..."), over_tab$Genes)
+                    gsa_over[[i]] = over_tab
+                }
+            }
+            if(length(scExp_cf@metadata$enr$Underexpressed)>=i){
+                if(!is.null(scExp_cf@metadata$enr$Underexpressed[[i]])){
+                    under_tab = table_enriched_genes_scExp(scExp_cf, set = 'Underexpressed',  group = paste0('C',i), enr_class_sel = MSIG.classes)
+                    colnames(under_tab)[3] = "N_genes"
+                    colnames(under_tab)[6] = "Genes"
+                    under_tab$p.value =   round(under_tab$p.value,7)
+                    under_tab$adj.p.value =   round(under_tab$adj.p.value,7)
+                    under_tab$Gene_set = ifelse(nchar(under_tab$Gene_set)>25, paste0(substr(under_tab$Gene_set,1,25),"..."), under_tab$Gene_set)
+                    under_tab$Genes = ifelse(nchar(under_tab$Genes)>20, paste0(substr(under_tab$Genes,1,20),"..."), under_tab$Genes)
+                    gsa_under[[i]] = under_tab
+                }
+            }
+        }
+    }
+}
+
+out_gsa_table_up <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
+  if(!is.null(scExp_cf@metadata$enr)){
+    if(length(scExp_cf@metadata$enr$Overexpressed)>=i){
+      if(!is.null(scExp_cf@metadata$enr$Overexpressed[[i]])){
+          if(nrow(gsa_over[[i]])>0){
+                      a1 <- knitr::knit_expand(text = sprintf("### Gene sets associated with enriched mark - %s \n", scExp_cf@metadata$diff$groups[i])) 
+        a2 <- knitr::knit_expand(text = "\n```{r}") # start r chunk
+        a3 <- knitr::knit_expand(text = sprintf("\nDT::datatable(gsa_over[[%d]], options = list(pageLength = 10,  dom = 'tip', bPaginate = FALSE), class = 'display', rownames = FALSE)", i))
+        a4 <- knitr::knit_expand(text = "\n```\n") 
+        
+        paste(a1, a2, a3, a4, collapse = '\n')
+          }
+
+      }
+      
+    }
+  }
+})
+
+out_gsa_table_dn <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
+  if(!is.null(scExp_cf@metadata$enr)){
+    if(length(scExp_cf@metadata$enr$Underexpressed)>=i){
+      if(!is.null(scExp_cf@metadata$enr$Underexpressed[[i]])){
+          if(nrow(gsa_under[[i]])>0){
+        a1 <- knitr::knit_expand(text = sprintf("### Gene sets associated with depleted mark - %s \n", scExp_cf@metadata$diff$groups[i])) 
+        a2 <- knitr::knit_expand(text = "\n```{r}") # start r chunk
+        a3 <- knitr::knit_expand(text = sprintf("\nDT::datatable(gsa_over[[%d]], options = list(pageLength = 10,  dom = 'tip', bPaginate = FALSE), class = 'display', rownames = FALSE)", i))
+        a4 <- knitr::knit_expand(text = "\n```\n") 
+        
+        paste(a1, a2, a3, a4, collapse = '\n')
+          }
+      }
+    }
+  }
+})
+
+out = list()
+for(i in seq_along(scExp_cf@metadata$diff$groups)){
+  
+  out = c(out, out_gsa_table_up[[i]], out_gsa_table_dn[[i]])  
+}
+
+```
+
+`r paste(knitr::knit(text = paste(out, collapse = '\n')))`
+
+
+Copy Number
+=====================================
+
+Column {data-width=250}
+-----------------------------------------------------------------------
+
+
+### Percentage of copy number gains in non-controls
+
+```{r}
+gain_or_loss_cytoBand = reducedDim(scExp, "gainOrLoss_cytoBand")
+gain_or_loss_cytoBand = gain_or_loss_cytoBand[which(!scExp$sample_id %in% control_samples_CNA),]
+percent_gol = round(100 * sum(abs(gain_or_loss_cytoBand[gain_or_loss_cytoBand==1])) / (ncol(gain_or_loss_cytoBand) * nrow(gain_or_loss_cytoBand)),3)
+valueBox(value = percent_gol, caption = "% of copy number gains in non-controls", icon ="fa-chevron-circle-up",  color = "danger")
+```
+
+
+### Percentage of copy number loss in non-controls
+
+```{r}
+gain_or_loss_cytoBand = reducedDim(scExp, "gainOrLoss_cytoBand")
+gain_or_loss_cytoBand = gain_or_loss_cytoBand[which(!scExp$sample_id %in% control_samples_CNA),]
+percent_gol = round(100 * sum(abs(gain_or_loss_cytoBand[gain_or_loss_cytoBand==-1])) / (ncol(gain_or_loss_cytoBand) * nrow(gain_or_loss_cytoBand)),3)
+valueBox(value = percent_gol, caption = "% of copy number loss in non-controls", icon ="fa-chevron-circle-down", color = "success")
+```
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+###  Gain or Loss barplots of top 20 most variable cytoBands 
+
+```{r, echo = FALSE, eval = TRUE}
+plot_gain_or_loss_barplots(scExp, cells = scExp$cell_id[which(!scExp$sample_id %in% control_samples_CNA)])
+```
+
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+
+###  UMAPs of top 1 most variable cytoBands
+
+```{r, echo = FALSE, eval = TRUE}
+top_variable_cyto = get_most_variable_cyto(scExp, top = 4)
+plot_reduced_dim_scExp_CNA(scExp, top_variable_cyto$cytoBand[1])
+```
+
+###  UMAPs of top 2 most variable cytoBands
+
+```{r, echo = FALSE, eval = TRUE}
+plot_reduced_dim_scExp_CNA(scExp, top_variable_cyto$cytoBand[2])
+```
+
+
+<!-- ##  UMAPs of top 3 most variable cytoBands -->
+
+<!-- ```{r, echo = FALSE, eval = TRUE} -->
+<!-- plot_reduced_dim_scExp_CNA(scExp, top_variable_cyto$cytoBand[3]) -->
+<!-- ``` -->
+
+
+<!-- ##  UMAPs of top 4 most variable cytoBands -->
+
+<!-- ```{r, echo = FALSE, eval = TRUE} -->
+<!-- plot_reduced_dim_scExp_CNA(scExp, top_variable_cyto$cytoBand[4]) -->
+<!-- ``` -->
