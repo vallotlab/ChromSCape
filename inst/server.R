@@ -31,7 +31,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     js$disableTab(tab) #Disabling all tabs but the first one
   }
 
-  
   observeEvent(input$startHelp,{
     print("Started help")
     # on click, send custom message to start help
@@ -187,7 +186,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   
   output$input_data_ui <- renderUI({
-    if(input$data_choice_box == "count_mat"){
+    if(input$data_choice_box == "DenseMatrix"){
       column(12, br(),fileInput("datafile_matrix", "Upload all data matrices (.tsv / .gz) :",
                 multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv", ".csv", ".gz")),
              checkboxInput("is_combined_mat", "Single Multi-sample count matrix ?",value = FALSE),
@@ -206,7 +205,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
              checkboxInput("is_combined_mat", "Single Multi-sample count matrix ?",value = FALSE),
              uiOutput("nb_samples_mat")
       )
-    }else if(input$data_choice_box == "BAM" | input$data_choice_box == "BED"){
+    }else if(input$data_choice_box == "scBAM" | input$data_choice_box == "scBED"){
       column(12,
              br(),
              HTML(paste0("<b>Upload folder (", input$data_choice_box,")</b><br>")),
@@ -263,7 +262,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   output$rawcount_data_input <- renderUI({
-   if(input$data_choice_box != "count_mat"){
+   if(input$data_choice_box != "DenseMatrix"){
     column(12,
            shinydashboard::box(title="Counting parameters", width = NULL, status="success", solidHeader = TRUE,
                                column(6, 
@@ -284,7 +283,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   output$advanced_data_input <- renderUI({
-    if(input$data_choice_box != "count_mat"){
+    if(input$data_choice_box != "DenseMatrix"){
       if(input$data_choice_box == "SparseMatrix"){
         column(12, uiOutput("datafile_folder_upload_UI"))
       } else{
@@ -357,7 +356,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }else{
       withProgress(message='Creating new data set...',value = 0, {
         
-        if(type_file == "count_mat" & !is.null(input$datafile_matrix)){
+        if(type_file == "DenseMatrix" & !is.null(input$datafile_matrix)){
           incProgress(0.3, detail="Reading count matrices")
           if(input$is_combined_mat == TRUE){
             if(length(input$datafile_matrix$name)>1){
@@ -382,8 +381,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         } else {
           selected_sample_folders = files_dir()[input$sample_selection]
           send_warning = FALSE
-          if(type_file == "BAM") if(length(list.files(selected_sample_folders[1],pattern = "*.bam$"))==0) send_warning = TRUE
-          if(type_file == "BED") if(length(list.files(selected_sample_folders[1],pattern = "*.bed$|.*.bed.gz"))==0) send_warning = TRUE
+          if(type_file == "scBAM") if(length(list.files(selected_sample_folders[1],pattern = "*.bam$"))==0) send_warning = TRUE
+          if(type_file == "scBED") if(length(list.files(selected_sample_folders[1],pattern = "*.bed$|.*.bed.gz"))==0) send_warning = TRUE
           if(type_file == "SparseMatrix") {
             combin = expand.grid(c(".*features", ".*barcodes", ".*matrix"), c(".mtx",".tsv",".txt",".bed",".*.gz"))[-c(1,2,6,9,11,12),]
             pattern = paste(combin$Var1,combin$Var2, sep="", collapse = "|")
@@ -401,31 +400,31 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           
           if(type_file == "SparseMatrix"){
             out =  ChromSCape:::raw_counts_to_feature_count_files(
-            files_dir = selected_sample_folders,
+              files_dir_list = selected_sample_folders,
             file_type = type_file,
             ref = input$annotation)
-        } else if(type_file %in% c("BAM","BED") & !is.null(input$datafile_folder)) {
+        } else if(type_file %in% c("scBAM","scBED") & !is.null(input$datafile_folder)) {
 
           if(input$count_on_box == "bin_width") out = ChromSCape:::raw_counts_to_feature_count_files(
-            files_dir = selected_sample_folders,
+            files_dir_list = selected_sample_folders,
             file_type = type_file,
             bin_width = as.numeric(input$bin_width),
             ref = input$annotation)
           
           if(input$count_on_box == "n_bins") out = ChromSCape:::raw_counts_to_feature_count_files(
-            files_dir = selected_sample_folders,
+            files_dir_list = selected_sample_folders,
             file_type = type_file,
             n_bins = as.numeric(input$n_bins),
             ref = input$annotation)
           
           if(input$count_on_box == "peak_file") out = ChromSCape:::raw_counts_to_feature_count_files(
-            files_dir = selected_sample_folders,
+            files_dir_list = selected_sample_folders,
             file_type = type_file,
             peak_file = as.character(input$peak_file$datapath),
             ref = input$annotation)
           
           if(input$count_on_box == "geneTSS")  out = ChromSCape:::raw_counts_to_feature_count_files(
-            files_dir = selected_sample_folders,
+            files_dir_list = selected_sample_folders,
             file_type = type_file,
             geneTSS = TRUE,
             aroundTSS = as.numeric(input$aroundTSS),
@@ -1603,17 +1602,25 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
   
-  has_available_coverage <- reactive({
-    req(scExp_cf(), input$nclust, analysis_name(), selected_filtered_dataset())
-    if(!is.null(scExp_cf())){
-      nclust = input$nclust
-      odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
-      if(length(list.files(odir, pattern = ".bw|.bigWig|.bigwig")) > 0){
-        return(TRUE)
-      } else return(FALSE)
-    } else{
-      return(FALSE)
+  has_available_coverage <- reactiveVal(FALSE)
+  
+  observe({
+    req(input$tabs, scExp_cf(), input$nclust, analysis_name(), selected_filtered_dataset())
+    print("Observing has_available_coverage 1 ...")
+    
+    if(input$tabs == "coverage"){
+      print("Observing has_available_coverage 2...")
+      if(!is.null(scExp_cf())){
+        nclust = input$nclust
+        odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
+        if(length(list.files(odir, pattern = ".bw|.bigWig|.bigwig")) > 0){
+          has_available_coverage(TRUE)
+        } else has_available_coverage(FALSE)
+      } else{
+        has_available_coverage(FALSE)
+      }
     }
+    
   })
   
   observeEvent(input$do_coverage, {
@@ -1643,28 +1650,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
       checkFiles = 0
       if(sum(checkFiles)==0){
-        
-        progress$set(message=paste0('Generating coverage tracks for k= ', nclust,' clusters ...'), value = 0.1)
-        
-        affectation = SingleCellExperiment::colData(scExp_cf())
-        affectation$cell_cluster = as.factor(affectation$cell_cluster)
-        
-        progress$set(detail = "Generating pseudo-bulk...", value = 0.2)
-        concatenate_scBed_into_clusters(affectation, input_files_coverage, odir)
-        
-        progress$set(detail = "Creating coverage files for each cluster...", value = 0.40)
-        suffix = ".bed"
-        n = 0
-        for(class in unique(scExp_cf()$cell_cluster)) {
-          n = n + 1
-          if (!is.null(progress)) progress$set(detail = paste0("Coverage ",class,"..."),
-                                               value = 0.4 + n * (0.6/length(unique(scExp_cf()$cell_cluster))) )
-          input_file = file.path(odir, paste0(class,suffix))
-          out_bw = file.path(odir, paste0(class,".bw"))
-          rawfile_ToBigWig(input_file, out_bw, "BED", bin_width = 150,
-                           n_smoothBin = 5,  ref = annotation_id(), read_size = 101)
-        }
-        progress$set(detail = "Done !", value = 0.95)
+        generate_coverage_tracks(scExp_cf(),)
         has_available_coverage(TRUE)
         updateActionButton(session, "do_coverage", label="Finished successfully", icon = icon("check-circle"))
       }
@@ -1796,6 +1782,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(file.exists(file.path(odir, "merged_peaks.bed"))){
       peaks = rtracklayer::import.bed(file.path(odir, "merged_peaks.bed"))
     } else{peaks = NULL}
+    
+    if(!dir.exists(plot_dir())) dir.create(plot_dir())
     pdf(file.path(plot_dir(), paste0("coverage_",input$cov_chr,"_",input$cov_start,"_",input$cov_end, ".pdf") ))
     
     plot_coverage_BigWig(
@@ -2184,9 +2172,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   observeEvent(input$run_DA, {  # perform differential analysis based on wilcoxon test
-  print("RUN DA")
-  print(input$group_choice)
-  print(input$ref_choice)
+
     if(input$de_type == "custom"){
       
         if(TRUE %in% all.equal(input$group_choice, input$ref_choice)){
@@ -2200,9 +2186,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   on.exit(progress$close())
   progress$set(message='Performing differential analysis...', value = 0.05)
   progress$set(detail='Initialization...', value = 0.15)
-  
-    # withProgress(message='Performing differential analysis...', value = 0, {
-    #   incProgress(amount = 0.2, detail = paste("Initializing DA"))
+
       if(batchUsed()) block = TRUE else block = FALSE
       gc()
       group = ""
@@ -2228,7 +2212,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                            ref = ref,
                                            progress = progress)) 
       gc()
-      # incProgress(amount = 0.6, detail = paste("Finishing DA..."))
       data = list("scExp_cf" = scExp_cf())
       DA_GSA_suffix = input$de_type
       if(input$de_type == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
@@ -2346,6 +2329,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$save_plots_DA,{
     print('Saving plots...')
+    if(!dir.exists(plot_dir())) dir.create(plot_dir())
     pdf(file.path(plot_dir(), paste0("differential_analysis_", input$gpsamp,".pdf")))
     plot_differential_volcano_scExp(scExp_cf(),cell_cluster = input$gpsamp,
                                     cdiff.th = input$cdiff.th, qval.th = input$qval.th)
@@ -2507,7 +2491,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       if(!is.null(scExp_cf()@metadata$enr) && !is.null(input$GSA_group_sel) && !is.null(input$enr_class_sel)){
         if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups){
           if(length(scExp_cf()@metadata$enr$Both)>0){
-            table_enriched_genes_scExp(scExp_cf(),set = "Both", group = input$GSA_group_sel, input$enr_class_sel)
+            DT::datatable(table_enriched_genes_scExp(
+              scExp_cf(), set = 'Both',  group = input$GSA_group_sel,
+              enr_class_sel = input$enr_class_sel),
+              options = list(pageLength = 10,  dom = 'tpi'), class = 'display', rownames = FALSE)
           }
         }
       }
@@ -2519,7 +2506,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       if(!is.null(scExp_cf()@metadata$enr)){
         if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups){
           if(length(scExp_cf()@metadata$enr$Overexpressed)>0){
-            table_enriched_genes_scExp(scExp_cf(), set = "Overexpressed", group = input$GSA_group_sel, input$enr_class_sel) 
+            DT::datatable(table_enriched_genes_scExp(
+              scExp_cf(), set = 'Overexpressed',  group = input$GSA_group_sel,
+              enr_class_sel = input$enr_class_sel),
+              options = list(pageLength = 10,  dom = 'tpi'), class = 'display', rownames = FALSE)
           }
         }
           
@@ -2532,7 +2522,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       if(!is.null(scExp_cf()@metadata$enr)){
         if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups){
           if(length(scExp_cf()@metadata$enr$Underexpressed)>0){
-            table_enriched_genes_scExp(scExp_cf(), set = "Underexpressed", group = input$GSA_group_sel, input$enr_class_sel)
+            DT::datatable(table_enriched_genes_scExp(
+              scExp_cf(), set = 'Underexpressed',  group = input$GSA_group_sel,
+              enr_class_sel = input$enr_class_sel),
+              options = list(pageLength = 10,  dom = 'tpi'), class = 'display', rownames = FALSE)
           }
         }
           
@@ -2597,9 +2590,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(input$save_plot_GSA,{
     print('Saving plots...')
     req(gene_umap_p(), input$gene_sel)
-    print(input$gene_sel)
+    if(!dir.exists(plot_dir())) dir.create(plot_dir())
     pdf(file.path(plot_dir(), paste0("UMAP_", input$gene_sel,".pdf")))
-    print(gene_umap_p())
     if(!is.null(pathways_mat())) print(pathways_umap_p())
     dev.off()
     updateActionButton(session = session, inputId = "save_plot_GSA", label = "Save HQ plots", icon = icon("check-circle"))
@@ -2617,19 +2609,18 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       all_paths <- unique(as.character(unlist(sapply(1:length(scExp_cf()@metadata$diff$groups), 
                           function(i) {
                             all = c()
-                            if(length(scExp_cf()@metadata$enr$Overexpressed)>0) 
+                            if(length(scExp_cf()@metadata$enr$Overexpressed)>=i) 
                               all = c(all, scExp_cf()@metadata$enr$Overexpressed[[i]]$Gene.Set)
-                            if(length(scExp_cf()@metadata$enr$Underexpressed)>0) 
+                            if(length(scExp_cf()@metadata$enr$Underexpressed)>=i) 
                               all = c(all, scExp_cf()@metadata$enr$Underexpressed[[i]]$Gene.Set)
-                            if(length(scExp_cf()@metadata$enr$Both)>0) 
+                            if(length(scExp_cf()@metadata$enr$Both)>=i) 
                               all = c(all, scExp_cf()@metadata$enr$Both[[i]]$Gene.Set)
                             return(all)
                           }))))
       print("Done & update selectize input!")
       shiny::updateSelectizeInput(session =  session, inputId = "pathways_sel",
                                   label = "Select pathways:", choices = all_paths, server = TRUE)
-      print(head(all_paths))
-      print(head(input$pathways_sel))
+
       all_paths
     }
   })

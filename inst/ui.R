@@ -85,10 +85,10 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                                               content = "datamatrix_input")),
                                                                       column(6,
                                                                       radioButtons("data_choice_box", label = "Input data type",
-                                                                                   choices = list("Count matrix(ces)"="count_mat",
+                                                                                   choices = list("Count matrix(ces)"="DenseMatrix",
                                                                                                   "Sparse Matrix" = "SparseMatrix",
-                                                                                                  "Single-cell BAM files" = "BAM",
-                                                                                                  "Single-cell BED files" = "BED"
+                                                                                                  "Single-cell BAM files" = "scBAM",
+                                                                                                  "Single-cell BED files" = "scBED"
                                                                                                   ))),
                                                                       column(6,
                                                                       uiOutput("input_data_ui")),
