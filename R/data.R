@@ -13,6 +13,38 @@
 #' }
 "hg38.chromosomes"
 
+#' Data.frame of cytoBandlocation - hg38
+#' 
+#' This data frame provides the location of each cytoBands of
+#'  Homo Sapiens genome build hg38. 
+#'
+#' @usage data("hg38.cytoBand")
+#'
+#' @format hg38.cytoBand - a data frame with 862 rows and 4 variables:
+#' \describe{
+#'   \item{chr}{Chromosome - character}
+#'   \item{start}{Start of the chromosome (bp) - integer}
+#'   \item{end}{End of the chromosome (bp) - integer}
+#'   \item{cytoBand}{Name of the cytoBand - character}
+#' }
+"hg38.cytoBand"
+
+#' Data.frame of cytoBandlocation - mm10
+#' 
+#' This data frame provides the location of each cytoBands of
+#'  Homo Sapiens genome build mm10. 
+#'
+#' @usage data("mm10.cytoBand")
+#'
+#' @format mm10.cytoBand - a data frame with 862 rows and 4 variables:
+#' \describe{
+#'   \item{chr}{Chromosome - character}
+#'   \item{start}{Start of the chromosome (bp) - integer}
+#'   \item{end}{End of the chromosome (bp) - integer}
+#'   \item{cytoBand}{Name of the cytoBand - character}
+#' }
+"mm10.cytoBand"
+
 #' Data.frame of chromosome length - mm10
 #'
 #'This data frame provides the length of each "canonical" chromosomes of
