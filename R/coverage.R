@@ -1,3 +1,82 @@
+
+#' Generate cell cluster pseudo-bulk coverage tracks
+#' 
+#' @description  Generate cell cluster pseudo-bulk coverage tracks. First, scBED
+#' files are concatenated into cell clusters contained in the 'cell_cluster' 
+#' column of your SingleCellExperiment object. To do so, for each sample in the 
+#' given list, the barcodes of each cluster are grepped and BED files are 
+#' merged into pseudo-bulk of clusters (C1,C2...). Two cells from different can
+#' have the same barcode ID as cell affectation is done sample by sample.
+#'  Then coverage of pseudo-bulk BED files is calculated by averaging &
+#'   smoothing reads on small genomic window (150bp per default). The pseudo 
+#'   bulk BED and BigWigs coverage tracks are writtend to the output directory.
+#'   This functionality is not available on Windows as it uses the 'cat' and 
+#'   'gzip' utilities from Unix OS.
+#' 
+#' @param scExp_cf A SingleCellExperiment with cluster selected.
+#' (see \code{\link{choose_cluster_scExp}}). It is recommended having a minimum
+#' of ~100 cells per cluster in order to obtain smooth tracks.
+#' @param input_files_coverage A named list of character vector of path towards 
+#' single-cell BED files. The names MUST correspond to the 'sample_id' column in 
+#' your SingleCellExperiment object. The single-cell BED files names MUST 
+#' match the  barcode names in your SingleCellExperiment (column 'barcode'). The
+#' scBED files can be gzipped or not.
+#' @param odir The output directory to write the cumulative BED and BigWig
+#'  files.
+#' @param ref_genome The genome of reference, used to constrain to canonical 
+#' chromosomes. Either 'hg38' or 'mm10'. 'hg38' per default. 
+#' @param bin_width The width of the bin to create the coverage track. The 
+#' smaller the greater the resolution & runtime. Default to 150.
+#' @param n_smoothBin Number of bins left & right to average ('smooth') the 
+#' signal on. Default to 5.
+#' @param read_size The estimated size of reads. Default to 101.
+#' @param progress A Progress object for Shiny. Default to NULL.
+#'
+#' @return
+#' @export
+#'
+#' @examples \dontrun{
+#' input_files_coverage = list(
+#'   "scChIP_Jurkat_K4me3" = paste0("/path/to/",scExp$barcode[1:51],".bed"),
+#'   "scChIP_Ramos_K4me3" = paste0("/path/to/",scExp$barcode[52:106],".bed")
+#' )
+#' generate_coverage_tracks(scExp, input_files_coverage, "/path/to/output",
+#' ref_genome = "hg38")
+#' }
+generate_coverage_tracks <- function(scExp_cf, input_files_coverage, odir,
+                                     ref_genome = c("hg38","mm10")[1],
+                                     bin_width = 150,  n_smoothBin = 5,
+                                     read_size = 101,
+                                     progress = NULL){
+    stopifnot(is(scExp_cf,"SingleCellExperiment"), is.list(input_files_coverage),
+              length(intersect(scExp_cf$sample_id,names(input_files_coverage))) > 0,
+              dir.exists(odir), ref_genome %in% c("hg38","mm10"), 
+              is.numeric(bin_width), is.numeric(n_smoothBin),
+              is.numeric(read_size))
+    if (!is.null(progress)) progress$set(message=paste0('Generating coverage tracks for k= ', nclust,' clusters ...'), value = 0.1)
+    
+    affectation = SingleCellExperiment::colData(scExp_cf)
+    affectation$cell_cluster = as.factor(affectation$cell_cluster)
+    
+    if (!is.null(progress)) progress$set(detail = "Generating pseudo-bulk...", value = 0.2)
+    concatenate_scBed_into_clusters(affectation, input_files_coverage, odir)
+    
+    if (!is.null(progress)) progress$set(detail = "Creating coverage files for each cluster...", value = 0.40)
+    suffix = ".bed"
+    n = 0
+    for(class in unique(scExp_cf$cell_cluster)) {
+        n = n + 1
+        if (!is.null(progress)) progress$set(detail = paste0("Coverage ",class,"..."),
+                                             value = 0.4 + n * (0.6/length(unique(scExp_cf$cell_cluster))) )
+        input_file = file.path(odir, paste0(class,suffix))
+        out_bw = file.path(odir, paste0(class,".bw"))
+        rawfile_ToBigWig(input_file, out_bw, "BED", bin_width = bin_width,
+                         n_smoothBin = n_smoothBin,  ref = ref_genome,
+                         read_size = read_size)
+    }
+    if (!is.null(progress)) progress$set(detail = "Done !", value = 0.95)
+}
+
 #' Concatenate single-cell BED into clusters
 #'
 #' @param affectation Annotation data.frame containing cluster information
@@ -11,26 +90,37 @@
 #'
 concatenate_scBed_into_clusters <- function(affectation, files_list, odir){
     unlink(file.path(odir, "C*.bed"))
-    gzipped = grepl(".gz",files_list[[1]][1])
+    gzipped = grepl(".gz", files_list[[1]][1])
     suffix = ""
     if(gzipped) suffix = ".gz"
-    print(head(files_list[[1]]))
     for(sample in names(files_list)){
-        cat("Doing ", sample, "\n")
         message("ChromSCape:::concatenate_scBed_into_clusters - concatenating ",
                 "files for ", sample, " files...")
         file_pool = files_list[[sample]]
-        cat("Length file pool ", length(file_pool), "\n")
         for (class in levels(factor(affectation$cell_cluster)))
         {
             message("ChromSCape:::concatenate_scBed_into_clusters - concatenating ", class,"...")
             class_barcodes <- affectation$barcode[which(affectation$cell_cluster == as.character(class) &
                                                             affectation$sample_id == sample)]
-            cat("Length class_barcodes", length(class_barcodes), "\n")
-            files_class = file_pool[grep(paste(class_barcodes, collapse="|"),file_pool, perl = T)]
-            print(head(files_class))
-            cat("Length files_class", length(files_class), "\n")
-            if(length(class_barcodes>0)){
+   
+            files_class = c()
+            if(length(class_barcodes)>500){
+                
+                while(length(class_barcodes)>500){
+                    class_barcodes_chunk = class_barcodes[1:500]
+                    files_class = c(files_class,
+                                    file_pool[grep(paste(class_barcodes_chunk, collapse="|"),
+                                                   file_pool,useBytes = TRUE, perl = T)])
+                    class_barcodes = class_barcodes[-c(1:500)]
+                }
+                files_class = c(files_class,
+                                file_pool[grep(paste(class_barcodes, collapse="|"),
+                                               file_pool,useBytes = TRUE, perl = T)])
+                
+            } else {
+                files_class = file_pool[grep(paste(class_barcodes, collapse="|"), file_pool,useBytes = TRUE, perl = T)]
+            }
+            if(length(class_barcodes)>0){
                 for(file in files_class){
                     command = paste0("cat '", file, "' >> '",
                                      file.path(odir, paste0(class, ".bed",suffix,"'")))
