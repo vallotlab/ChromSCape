@@ -111,14 +111,13 @@ create_sample_name_mat <- function(nb_samples, samples_names){
 #' @param ref reference genome to use (hg38)
 #' @param verbose Verbose (TRUE)
 #' @param files_dir_list A named character vector of directories containing
-#'  the files. The 
-#' names correspond to sample names.
+#'  the files. The names correspond to sample names.
 #' @param peak_file A file containing genomic location of peaks (NULL)
 #' @param n_bins The number of bins to tile the genome (NULL)
 #' @param bin_width The size of bins to tile the genome (NULL)
 #' @param geneTSS Use geneTSS regions for annotation ? (NULL)
 #' @param aroundTSS Space up and downstream of TSS to use (2500)
-#' @param file_type Input file(s) type(s) ('BAM')
+#' @param file_type Input file(s) type(s) ('scBED','scBAM','SparseMatrix')
 #'
 #' @return A sparse matrix of features x cells
 #'
@@ -129,9 +128,9 @@ create_sample_name_mat <- function(nb_samples, samples_names){
 #' sort.GenomicRanges
 #' 
 raw_counts_to_feature_count_files <- function(
-    files_dir_list, file_type = c("BAM", "BED", "Index_Peak_Barcode"),
+    files_dir_list, file_type = c("scBAM", "scBED", "SparseMatrix"),
     peak_file = NULL, n_bins = NULL, bin_width = NULL, geneTSS = NULL,
-    aroundTSS = 2500, verbose = TRUE, ref = "hg38") {
+    aroundTSS = 2500, verbose = TRUE, ref = c("hg38","mm10")[1]) {
     warning_raw_counts_to_feature_count_files(
         files_dir_list, file_type, peak_file, n_bins, bin_width, geneTSS,
         aroundTSS, verbose, ref)
@@ -151,7 +150,7 @@ raw_counts_to_feature_count_files <- function(
         if (length(c(feature_file, matrix_file, barcode_file)) != 3)
             stop(paste0(
                 "ChromSCape::raw_counts_to_feature_count_files - For ",
-                "Index Count type, the folder must contain exactly two files ",
+                "SparseMatrix Count type, the folder must contain exactly two files ",
                 "matching respectively *index.txt, peaks.bed, barcodes.txt"))
     }
     which <- define_feature(ref, peak_file, n_bins, bin_width, geneTSS,
@@ -204,11 +203,11 @@ raw_counts_to_feature_count_files <- function(
 #' @param bin_width The size of bins to tile the genome (NULL)
 #' @param geneTSS Use geneTSS regions for annotation ? (NULL)
 #' @param aroundTSS Space up and downstream of TSS to use (2500)
-#' @param file_type Input file(s) type(s) ('BAM')
+#' @param file_type Input file(s) type(s) ('scBED','scBAM','SparseMatrix')
 #'
 #' @return Error or warnings if the input are not correct
 warning_raw_counts_to_feature_count_files <- function(
-    files_dir_list, file_type = c("BAM", "BED", "Index_Peak_Barcode"),
+    files_dir_list, file_type = c("scBAM", "scBED", "SparseMatrix"),
     peak_file = NULL, n_bins = NULL, bin_width = NULL, geneTSS = NULL,
     aroundTSS = 2500, verbose = TRUE, ref = "hg38"){
         stopifnot(dir.exists(files_dir_list), is.numeric(aroundTSS),
@@ -322,7 +321,7 @@ import_count_input_files <- function(files_dir_list, file_type,
     for(i in seq_along(files_dir_list)){
         dir = files_dir_list[[i]]
         sample_id = names(files_dir_list)[i]
-        if (file_type == "BAM") {
+        if (file_type == "scBAM") {
             t1 = system.time({
                 l = bams_to_matrix_indexes(dir, which)
             })
@@ -331,7 +330,7 @@ import_count_input_files <- function(files_dir_list, file_type,
                         "Count matrix ", sample_id ,"created from BAM files in "
                         , t1[3], " sec.\n")
         }
-        else if (file_type == "BED") {
+        else if (file_type == "scBED") {
             t1 = system.time({
                 l = beds_to_matrix_indexes(dir, which)
             })
@@ -339,7 +338,7 @@ import_count_input_files <- function(files_dir_list, file_type,
                 message("ChromSCape::raw_counts_to_feature_count_files - ",
                         "Count matrix ", sample_id ,"
                         created from BED files in ", t1[3], " sec.")}
-        else if (file_type == "Index_Peak_Barcode") {
+        else if (file_type == "SparseMatrix") {
             t1 = system.time({
                 l = index_peaks_barcodes_to_matrix_indexes(
                     feature_file = feature_file, matrix_file = matrix_file,
