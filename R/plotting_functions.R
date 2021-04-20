@@ -143,18 +143,23 @@ get_color_dataframe_from_input <- function(
 #' Plot reduced dimensions (PCA, TSNE, UMAP)
 #'
 #' @param scExp A SingleCellExperiment Object
-#' @param color_by Feature used for coloration
+#' @param color_by Character of eature used for coloration. Can be cell 
+#' metadata ('total_counts', 'sample_id', ...) or a gene name.
 #' @param reduced_dim Reduced Dimension used for plotting
 #' @param select_x Which variable to select for x axis
 #' @param select_y Which variable to select for y axis
 #' @param downsample Number of cells to downsample
 #' @param transparency Alpha parameter, between 0 and 1
-#' 
+#' @param max_distanceToTSS The maximum distance to TSS to consider a gene 
+#' linked to a region. Used only if "color_by" is a gene name.
+#'  
 #' @return A ggplot geom_point plot of reduced dimension 2D reprensentation 
 #' @export
 #'
-#' @importFrom SingleCellExperiment reducedDim reducedDimNames colData
+#' @import SingleCellExperiment
 #' @import ggplot2
+#' @import dplyr
+#' @import tidyr
 #' @importFrom colorRamps matlab.like
 #' 
 #' @examples
@@ -162,24 +167,60 @@ get_color_dataframe_from_input <- function(
 #' plot_reduced_dim_scExp(scExp, color_by = "sample_id")
 #' plot_reduced_dim_scExp(scExp, color_by = "total_counts")
 #' plot_reduced_dim_scExp(scExp, reduced_dim = "UMAP")
+#' plot_reduced_dim_scExp(scExp, color_by = "CD52",  reduced_dim = "UMAP")
 #' 
 plot_reduced_dim_scExp <- function(
     scExp, color_by = "sample_id", reduced_dim = c("PCA", "TSNE", "UMAP"),
     select_x = "Component_1", select_y = "Component_2", downsample = 5000, 
-    transparency = 0.6,  size = 1)
+    transparency = 0.6,  size = 1, max_distanceToTSS = 1000,
+    annotate_clusters = "cell_cluster" %in% colnames(colData(scExp)))
 {
     warning_plot_reduced_dim_scExp(scExp, color_by , reduced_dim,
                                    select_x, select_y, downsample, transparency)
     if(ncol(scExp) > downsample) scExp = scExp[,sample(ncol(scExp),
                                                        downsample,
                                                        replace = FALSE)]
+    annot = SingleCellExperiment::colData(scExp)
+    if(!color_by %in% colnames(annot)) {
+        annot_feature = as.data.frame(SummarizedExperiment::rowRanges(scExp))
+        annot_feature = annot_feature %>% 
+            tidyr::separate_rows(.data[["Gene"]], sep = ", ") %>% 
+            dplyr::group_by(.data[["Gene"]]) %>%
+            dplyr::slice_min(.data[["distanceToTSS"]])
+        annot_feature = annot_feature %>%
+            dplyr::filter( .data[["distanceToTSS"]] < max_distanceToTSS)
+        
+        if(!color_by %in% annot_feature$Gene) stop(
+            "ChromSCape::plot_reduced_dim_scExp - The gene chosen, ",
+            color_by, ", is not closer than ", max_distanceToTSS, " to any", 
+            "loci. Consider increasing max_distanceToTSS to take in account ",
+            "this gene.")
+        
+        counts = SingleCellExperiment::normcounts(scExp[annot_feature$ID[which(
+            annot_feature$Gene == color_by)],])
+        if(!is.null(counts) & nrow(counts) > 1 ){
+            counts = Matrix::rowSums(counts)
+        }
+        annot[,color_by] = as.numeric(counts)
+
+    }
+    
     plot_df = as.data.frame(
         cbind(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]), 
-              SingleCellExperiment::colData(scExp)))
+              annot))
+    plot_df = plot_df %>% dplyr::mutate("transparency" = transparency) %>%
+        mutate("transparency" = I(.data[["transparency"]]))
     
+    if(!color_by %in% colnames(SingleCellExperiment::colData(scExp))){
+        plot_df = plot_df %>% 
+            dplyr::mutate("transparency"= ifelse(
+                annot[,color_by] == min(annot[,color_by]),0.15,1)) %>%
+            dplyr::mutate("transparency" = I(.data[["transparency"]]))
+    }
+        
     p <- ggplot(plot_df, aes_string(x = select_x, y = select_y)) + 
-        geom_point(alpha = transparency, size = size, aes(
-            color = SingleCellExperiment::colData(scExp)[, color_by])) +
+        geom_point(size = size, aes(alpha = plot_df[,"transparency"],
+                                    color = annot[, color_by])) +
         labs(color = color_by) + 
         theme(
             panel.grid.major = element_blank(),
@@ -188,17 +229,28 @@ plot_reduced_dim_scExp <- function(
             axis.line = element_line(colour = "black"),
             panel.border = element_rect(colour = "black", fill = NA))
     
-    if (is.numeric(SingleCellExperiment::colData(scExp)[,color_by]))
+    if (is.numeric(annot[,color_by]))
     {
-        p <- p + scale_color_gradientn(colours = matlab.like(100))
+        p <- p + scale_color_gradientn(
+            colours = c("grey75",rev(viridis::inferno(100)))) #+
+            #guides(alpha=FALSE)
     } else
     {
-        
-        cols = unique(as.character(
-            SingleCellExperiment::colData(scExp)[,paste0(color_by, "_color")]))
-        names(cols) = unique(as.character(
-            SingleCellExperiment::colData(scExp)[,color_by]))
-        p <- p + scale_color_manual(values = cols)
+        cols = unique(as.character(annot[,paste0(color_by, "_color")]))
+        names(cols) = unique(as.character(annot[,color_by]))
+        p <- p + scale_color_manual(values = cols) #+ guides(alpha=FALSE)
+    }
+    
+    if(annotate_clusters){
+        centroids = as.data.frame(t(sapply(unique(annot$cell_cluster), function(clust){
+            cells = annot$cell_id[which(annot$cell_cluster == clust)]
+            centroid = c(mean(plot_df[cells, select_x]),
+                         mean(plot_df[cells, select_y]))
+            return(centroid)
+        }))) %>% tibble::rownames_to_column("cluster")
+        p <- p + geom_label(data=centroids, aes( x=V1, y=V2, label=cluster),
+                       size=4, label.padding = unit(0.15, "lines"),
+                       label.size = 0.2)  
     }
     return(p)
 }
@@ -226,17 +278,6 @@ warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
         stop(paste0("ChromSCape::plot_reduced_dim_scExp - ", reduced_dim[1],
                     " is not present in object, please run normalize_scExp ",
                     "first."))
-    
-    if (!color_by %in% colnames(SingleCellExperiment::colData(scExp))) 
-        stop(paste0("ChromSCape::plot_reduced_dim_scExp - color_by must be ",
-                    "present in colnames of colData(scExp)."))
-    
-    if (!paste0(color_by, "_color") %in%
-        colnames(SingleCellExperiment::colData(scExp))) 
-        stop(paste0("ChromSCape::plot_reduced_dim_scExp - color_by's color ",
-                    "column must be present in colnames of colData(scExp). ",
-                    "Please run colors_scExp first."))
-    
     if (!select_x %in% 
         colnames(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]))) 
         stop(paste0("ChromSCape::plot_reduced_dim_scExp - select_x must be ",
@@ -246,6 +287,26 @@ warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
         colnames(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]))) 
         stop(paste0("ChromSCape::plot_reduced_dim_scExp - select_y must be",
                     " present in colnames of PCA of scExp."))
+    
+    if (!color_by %in% colnames(SingleCellExperiment::colData(scExp))) {
+        genes = unique(
+            unlist(strsplit(SummarizedExperiment::rowRanges(scExp)$Gene,
+                                split = ", ", fixed=TRUE)))
+        if(!color_by %in% genes){
+            stop("ChromSCape::plot_reduced_dim_scExp - color_by must be a ",
+        "character vector present in colnames of colData(scExp) or be a gene ",
+                        "name present in the rowRanges(scExp) after calling ",
+                        "feature_annotation_scExp() function.")
+        } 
+        return(0)
+    }
+        
+    if (!paste0(color_by, "_color") %in%
+        colnames(SingleCellExperiment::colData(scExp))) 
+        stop(paste0("ChromSCape::plot_reduced_dim_scExp - color_by's color ",
+                    "column must be present in colnames of colData(scExp). ",
+                    "Please run colors_scExp first."))
+    
 }
 
 #' Plot Top/Bottom most contributing features to PCA
