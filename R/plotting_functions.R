@@ -152,6 +152,13 @@ get_color_dataframe_from_input <- function(
 #' @param transparency Alpha parameter, between 0 and 1
 #' @param max_distanceToTSS The maximum distance to TSS to consider a gene 
 #' linked to a region. Used only if "color_by" is a gene name.
+#' @param size Size of the points.
+#' @param annotate_clusters A logical indicating if clusters should be labelled.
+#' The 'cell_cluster' column should be present in metadata.
+#' @param min_quantile The lower threshold to remove outlier cells, 
+#' as quantile of cell embeddings (between 0 and 0.5).
+#' @param max_quantile The upper threshold to remove outlier cells, 
+#' as quantile of cell embeddings (between 0.5 and 1).
 #'  
 #' @return A ggplot geom_point plot of reduced dimension 2D reprensentation 
 #' @export
@@ -173,10 +180,14 @@ plot_reduced_dim_scExp <- function(
     scExp, color_by = "sample_id", reduced_dim = c("PCA", "TSNE", "UMAP"),
     select_x = "Component_1", select_y = "Component_2", downsample = 5000, 
     transparency = 0.6,  size = 1, max_distanceToTSS = 1000,
-    annotate_clusters = "cell_cluster" %in% colnames(colData(scExp)))
+    annotate_clusters = "cell_cluster" %in% colnames(colData(scExp)),
+    min_quantile = 0.05, max_quantile = 0.95)
 {
     warning_plot_reduced_dim_scExp(scExp, color_by , reduced_dim,
-                                   select_x, select_y, downsample, transparency)
+                                   select_x, select_y, downsample, transparency,
+                                   size, max_distanceToTSS,
+                                   annotate_clusters,
+                                   min_quantile, max_quantile)
     if(ncol(scExp) > downsample) scExp = scExp[,sample(ncol(scExp),
                                                        downsample,
                                                        replace = FALSE)]
@@ -210,6 +221,14 @@ plot_reduced_dim_scExp <- function(
               annot))
     plot_df = plot_df %>% dplyr::mutate("transparency" = transparency) %>%
         mutate("transparency" = I(.data[["transparency"]]))
+    plot_df = plot_df %>% 
+        dplyr::filter(.data[[select_x]] > quantile(plot_df[,select_x], min_quantile),
+                      .data[[select_x]] < quantile(plot_df[,select_x], max_quantile)) 
+    plot_df = plot_df %>% 
+        dplyr::filter(.data[[select_y]] > quantile(plot_df[,select_y], min_quantile),
+                      .data[[select_y]] < quantile(plot_df[,select_y], max_quantile)) 
+    annot = annot[match(rownames(plot_df), rownames(annot)),]
+
     
     if(!color_by %in% colnames(SingleCellExperiment::colData(scExp))){
         plot_df = plot_df %>% 
@@ -264,16 +283,27 @@ plot_reduced_dim_scExp <- function(
 #' @param select_y Which variable to select for y axis
 #' @param downsample Number of cells to downsample
 #' @param transparency Alpha parameter, between 0 and 1
-#'
+#' @param size Size of the points.
+#' @param annotate_clusters A logical indicating if clusters should be labelled.
+#' The 'cell_cluster' column should be present in metadata.
+#' @param min_quantile The lower threshold to remove outlier cells, 
+#' as quantile of cell embeddings (between 0 and 0.5).
+#' @param max_quantile The upper threshold to remove outlier cells, 
+#' as quantile of cell embeddings (between 0.5 and 1).
+#' 
 #' @return Warning or errors if the inputs are not correct
 #' 
 warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
                                            select_x, select_y, downsample,
-                                           transparency){
+                                           transparency, size, max_distanceToTSS,
+                                           annotate_clusters,
+                                           min_quantile, max_quantile){
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(color_by),
               is.character(reduced_dim), is.character(select_x),
               is.character(select_y), is.numeric(downsample),
-              is.numeric(transparency))
+              is.numeric(transparency), is.numeric(size),
+              is.logical(annotate_clusters), is.numeric(max_distanceToTSS),
+              is.numeric(min_quantile), is.numeric(max_quantile))
     if (!reduced_dim[1] %in% SingleCellExperiment::reducedDimNames(scExp)) 
         stop(paste0("ChromSCape::plot_reduced_dim_scExp - ", reduced_dim[1],
                     " is not present in object, please run normalize_scExp ",
