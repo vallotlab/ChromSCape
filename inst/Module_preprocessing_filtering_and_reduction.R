@@ -4,7 +4,7 @@ Module_preprocessing_filtering_and_reductionUI <- function(id, label = "Module_p
 }
 
 Module_preprocessing_filtering_and_reduction <- function(
-    input, output, session, raw_dataset_name, min_cov_cell, percentMin,
+    input, output, session, raw_dataset_name, min_cov_cell, n_top_features,
     quant_removal, datamatrix, annot_raw, data_folder, annotation_id,
     exclude_regions, doBatchCorr, batch_sels, run_tsne, subsample_n)
     {
@@ -29,7 +29,18 @@ Module_preprocessing_filtering_and_reduction <- function(
             scExp,
             min_cov_cell = min_cov_cell(),
             quant_removal = quant_removal(),
-            percentMin = percentMin())}))
+            min_count_per_feature = 10)}))
+        gc()
+        
+        ### 2.bis Finding top features ###
+        
+        incProgress(amount = 0.2, detail = paste("Filtering dataset..."))
+        print("Finding top covered features...")
+        print(system.time({ scExp = find_top_features(
+            scExp,
+            n =  n_top_features(),
+            keep_others = FALSE)
+        }))
         gc()
         
         # Filtering based on exclude-regions from bed file, if provided
@@ -40,7 +51,7 @@ Module_preprocessing_filtering_and_reduction <- function(
             gc()
         }
         
-        ### 2.bis Optional subsampling ###
+       ### 2.ter Optional subsampling ###
         if(length(subsample_n())>0){
             print("Doing subsampling")
             scExp = subsample_scExp(scExp, n_cells = subsample_n())
@@ -91,13 +102,13 @@ Module_preprocessing_filtering_and_reduction <- function(
         print(file.path(
             data_folder(), "ChromSCape_analyses", raw_dataset_name(), 
             "Filtering_Normalize_Reduce", paste0(
-                paste(raw_dataset_name(), min_cov_cell(), percentMin(), 
+                paste(raw_dataset_name(), min_cov_cell(), n_top_features(), 
                       quant_removal(), batch_string, sep = "_"), ".qs")))
         qs::qsave(
             scExp, file = file.path(
                 data_folder(), "ChromSCape_analyses", raw_dataset_name(), 
                 "Filtering_Normalize_Reduce", paste0(
-                    paste(raw_dataset_name(), min_cov_cell(), percentMin(), 
+                    paste(raw_dataset_name(), min_cov_cell(), n_top_features(), 
                         quant_removal(), batch_string, sep = "_"), ".qs"))
         )
         
