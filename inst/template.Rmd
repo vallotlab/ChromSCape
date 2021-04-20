@@ -54,7 +54,7 @@ MSIG.classes <- c("c1_positional","c2_curated","c3_motif","c4_computational",
           "c5_GO","c6_oncogenic","c7_immunologic","hallmark")[c(2,5,6,7,8)]
 ```
 
-QC & Dimensionality Reduction
+QC & Reduction
 =====================================
 
 Column {data-width=250}
@@ -98,13 +98,13 @@ Column {data-width=400}
 ### UMAP - sample
 
 ```{r}
-plot_reduced_dim_scExp(scExp_cf, color_by = "sample_id")
+plot_reduced_dim_scExp(scExp_cf, color_by = "sample_id", reduced_dim = "UMAP")
 ```
 
 ### UMAP - total counts
 
 ```{r}
-plot_reduced_dim_scExp(scExp_cf, color_by = "total_counts")
+plot_reduced_dim_scExp(scExp_cf, color_by = "total_counts", reduced_dim = "UMAP")
 ```
 
 
@@ -132,20 +132,26 @@ Column {data-width=250}
 
 ### Number of cluster
 ```{r}
-valueBox(value = length(unique(scExp_cf$cell_cluster)), caption = "Number of clusters", icon ="fa-sitemap")
+if(!is.null(scExp_cf)){
+  valueBox(value = length(unique(scExp_cf$cell_cluster)), caption = "Number of clusters", icon ="fa-sitemap")
+}
 ```
 
 ### Percentage of well correlated cells
 ```{r}
-gauge(100*round(ncol(scExp_cf) / ncol(scExp),1), min = 0, max = 100, 
-          symbol = '%', sectors = gaugeSectors(
-    success = c(80, 100), warning = c(50, 79.99), danger = c(0, 49.999)
-  ))
+if(!is.null(scExp_cf)){
+  gauge(100*round(ncol(scExp_cf) / ncol(scExp),1), min = 0, max = 100, 
+        symbol = '%', sectors = gaugeSectors(
+          success = c(80, 100), warning = c(50, 79.99), danger = c(0, 49.999)
+        ))
+}
 ```
 
 ### Cell affectation
 ```{r}
-num_cell_in_cluster_scExp(scExp_cf)
+if(!is.null(scExp_cf)){
+  num_cell_in_cluster_scExp(scExp_cf)
+}
 ```
 
 
@@ -155,13 +161,21 @@ Column {data-width=450}
 ### Correlation
 
 ```{r}
-plot_heatmap_scExp(scExp_cf)
+if(!is.null(scExp_cf)){
+  if("hc_cor" %in% names(scExp_cf@metadata)){
+    plot_heatmap_scExp(scExp_cf)
+  }
+}
 ```
 
 ### Consensus scores
 
 ```{r}
-plot_cluster_consensus_scExp(scExp_cf)
+if(!is.null(scExp_cf)){
+  if("icl" %in% names(scExp_cf@metadata)){
+    plot_cluster_consensus_scExp(scExp_cf)
+  }
+}
 ```
 
 
@@ -171,13 +185,21 @@ Column {data-width=350}
 ### UMAP - cell cluster
 
 ```{r}
-plot_reduced_dim_scExp(scExp_cf, color_by = "cell_cluster")
+if(!is.null(scExp_cf)){
+  if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf))){
+    plot_reduced_dim_scExp(scExp_cf, color_by = "cell_cluster", reduced_dim = "UMAP")
+  }
+}
 ```
 
 ### Sample intra-correlation
 
 ```{r}
-plot_intra_correlation_scExp(scExp_cf, by = "sample_id")
+if(!is.null(scExp_cf)){
+  if("Cor" %in% SingleCellExperiment::reducedDimNames(scExp_cf)){
+    plot_intra_correlation_scExp(scExp_cf, by = "sample_id")
+  }
+}
 ```
 
 DA & GSA
@@ -188,29 +210,41 @@ Column
 
 ### Number of differential regions
 ```{r}
-valueBox(value = sum(scExp_cf@metadata$diff$summary["differential",]), caption = "Number of differential regons", icon ="fa-cube")
+if(!is.null(scExp_cf)){
+  if("diff" %in% names(scExp_cf@metadata)){
+    valueBox(value = sum(scExp_cf@metadata$diff$summary["differential",]), caption = "Number of differential regons", icon ="fa-cube")
+  }
+}
 ```
 
 ### Number unique gene sets
 ```{r}
-all_paths <- unique(as.character(unlist(sapply(1:length(scExp_cf@metadata$diff$groups), 
-                          function(i) {
-                            all = c()
-                            if(length(scExp_cf@metadata$enr$Overexpressed)>=i) 
-                              all = c(all, scExp_cf@metadata$enr$Overexpressed[[i]]$Gene.Set)
-                            if(length(scExp_cf@metadata$enr$Underexpressed)>=i) 
-                              all = c(all, scExp_cf@metadata$enr$Underexpressed[[i]]$Gene.Set)
-                            if(length(scExp_cf@metadata$enr$Both)>=i) 
-                              all = c(all, scExp_cf@metadata$enr$Both[[i]]$Gene.Set)
-                            return(all)
-                          }))))
-
-valueBox(value = length(all_paths), caption = "Number of unique pathways", icon ="fa-cubes")
+if(!is.null(scExp_cf)){
+  if("diff" %in% names(scExp_cf@metadata) & "enr" %in% names(scExp_cf@metadata)){
+    all_paths <- unique(as.character(unlist(sapply(1:length(scExp_cf@metadata$diff$groups), 
+                                                   function(i) {
+                                                     all = c()
+                                                     if(length(scExp_cf@metadata$enr$Overexpressed)>=i) 
+                                                       all = c(all, scExp_cf@metadata$enr$Overexpressed[[i]]$Gene.Set)
+                                                     if(length(scExp_cf@metadata$enr$Underexpressed)>=i) 
+                                                       all = c(all, scExp_cf@metadata$enr$Underexpressed[[i]]$Gene.Set)
+                                                     if(length(scExp_cf@metadata$enr$Both)>=i) 
+                                                       all = c(all, scExp_cf@metadata$enr$Both[[i]]$Gene.Set)
+                                                     return(all)
+                                                   }))))
+    
+    valueBox(value = length(all_paths), caption = "Number of unique pathways", icon ="fa-cubes")
+  }
+}
 ```
 
 ### Cell affectation
 ```{r}
-num_cell_in_cluster_scExp(scExp_cf)
+if(!is.null(scExp_cf)){
+  if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf))){
+    num_cell_in_cluster_scExp(scExp_cf)
+  }
+}
 ```
 
 Column 
@@ -219,63 +253,65 @@ Column
 ##  Differential Volcano plots 
 
 ```{r, echo = FALSE, eval = TRUE}
-
-
-diff_list = list()
 if(!is.null(scExp_cf)){
-  if(!is.null(scExp_cf@metadata$diff)){
-    
-    
-   for(i in seq_along(scExp_cf@metadata$diff$groups)){
-      
-      diff = scExp_cf@metadata$diff$res[,-grep("Rank|pval|ID|Count",colnames(scExp_cf@metadata$diff$res))]
-      if(nrow(diff)>0){
-        if(!is.null(SummarizedExperiment::rowRanges(scExp_cf)$Gene)){
-          diff = cbind(SummarizedExperiment::rowRanges(scExp_cf)$distanceToTSS, diff)
-          diff = cbind(SummarizedExperiment::rowRanges(scExp_cf)$Gene, diff)
-          colnames(diff)[1:2] = c("Gene","distanceToTSS")
+  if("diff" %in% names(scExp_cf@metadata) & "enr" %in% names(scExp_cf@metadata)){
+    diff_list = list()
+    if(!is.null(scExp_cf)){
+      if(!is.null(scExp_cf@metadata$diff)){
+        
+        
+        for(i in seq_along(scExp_cf@metadata$diff$groups)){
+          
+          diff = scExp_cf@metadata$diff$res[,-grep("Rank|pval|ID|Count",colnames(scExp_cf@metadata$diff$res))]
+          if(nrow(diff)>0){
+            if(!is.null(SummarizedExperiment::rowRanges(scExp_cf)$Gene)){
+              diff = cbind(SummarizedExperiment::rowRanges(scExp_cf)$distanceToTSS, diff)
+              diff = cbind(SummarizedExperiment::rowRanges(scExp_cf)$Gene, diff)
+              colnames(diff)[1:2] = c("Gene","distanceToTSS")
+            }
+            rownames(diff) <- NULL
+            diff = diff[,c("Gene","distanceToTSS", "chr","start","end",
+                           colnames(diff)[grep(scExp_cf@metadata$diff$groups[i],colnames(diff))] )]
+            diff = diff[which(!is.infinite(diff[,grep("cdiff",colnames(diff))])),]
+            diff <- diff[order(diff[,paste0("qval.",scExp_cf@metadata$diff$groups[i])]),]
+            diff[,paste0("qval.",scExp_cf@metadata$diff$groups[i])] = round(diff[,paste0("qval.",scExp_cf@metadata$diff$groups[i])],8)
+            diff[,paste0("cdiff.",scExp_cf@metadata$diff$groups[i])] = round(diff[,paste0("cdiff.",scExp_cf@metadata$diff$groups[i])],4)
+            diff$Gene = substr(diff$Gene,1,20)
+            diff_list[[i]] = diff
+            
+          }
+          # collapse together all lines with newline separator
         }
-        rownames(diff) <- NULL
-        diff = diff[,c("Gene","distanceToTSS", "chr","start","end",
-                       colnames(diff)[grep(scExp_cf@metadata$diff$groups[i],colnames(diff))] )]
-        diff = diff[which(!is.infinite(diff[,grep("cdiff",colnames(diff))])),]
-        diff <- diff[order(diff[,paste0("qval.",scExp_cf@metadata$diff$groups[i])]),]
-        diff[,paste0("qval.",scExp_cf@metadata$diff$groups[i])] = round(diff[,paste0("qval.",scExp_cf@metadata$diff$groups[i])],8)
-        diff[,paste0("cdiff.",scExp_cf@metadata$diff$groups[i])] = round(diff[,paste0("cdiff.",scExp_cf@metadata$diff$groups[i])],4)
-        diff$Gene = substr(diff$Gene,1,20)
-        diff_list[[i]] = diff
-       
+        
       }
-       # collapse together all lines with newline separator
     }
     
+    out_volcano <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
+      
+      a1 <- knitr::knit_expand(text = sprintf("### %s\n", scExp_cf@metadata$diff$groups[i])) 
+      a2 <- knitr::knit_expand(text = "\n```{r fig.width=5, fig.height=5}") # start r chunk
+      a3 <- knitr::knit_expand(text = sprintf("\nplot_differential_volcano_scExp(scExp_cf, cell_cluster = scExp_cf@metadata$diff$groups[%d])", i)) 
+      a4 <- knitr::knit_expand(text = "\n```\n") 
+      
+      paste(a1, a2, a3, a4, collapse = '\n') # collapse together all lines with newline separator
+      
+    })
+    
+    out_table <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
+      
+      a1 <- knitr::knit_expand(text = sprintf("### %s\n", scExp_cf@metadata$diff$groups[i])) 
+      a2 <- knitr::knit_expand(text = "\n```{r}") # start r chunk
+      a3 <- knitr::knit_expand(text = sprintf("\nDT::datatable(diff_list[[%d]][1:min(20,nrow(diff_list[[%d]])),], options = list(pageLength = 5, bPaginate = FALSE,  dom = 'tip'), class = 'display', rownames = FALSE)", i,i)) 
+      a4 <- knitr::knit_expand(text = "\n```\n") 
+      
+      paste(a1, a2, a3, a4, collapse = '\n')
+    })
+    
+    out = list()
+    for(i in seq_along(scExp_cf@metadata$diff$groups)){
+      out = c(out, out_volcano[[i]], out_table[[i]])  
+    }
   }
-}
-
-out_volcano <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
-
-  a1 <- knitr::knit_expand(text = sprintf("### %s\n", scExp_cf@metadata$diff$groups[i])) 
-  a2 <- knitr::knit_expand(text = "\n```{r fig.width=5, fig.height=5}") # start r chunk
-  a3 <- knitr::knit_expand(text = sprintf("\nplot_differential_volcano_scExp(scExp_cf, cell_cluster = scExp_cf@metadata$diff$groups[%d])", i)) 
-  a4 <- knitr::knit_expand(text = "\n```\n") 
-
-  paste(a1, a2, a3, a4, collapse = '\n') # collapse together all lines with newline separator
-
-})
-
-out_table <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
-
- a1 <- knitr::knit_expand(text = sprintf("### %s\n", scExp_cf@metadata$diff$groups[i])) 
-        a2 <- knitr::knit_expand(text = "\n```{r}") # start r chunk
-        a3 <- knitr::knit_expand(text = sprintf("\nDT::datatable(diff_list[[%d]][1:min(20,nrow(diff_list[[%d]])),], options = list(pageLength = 5, bPaginate = FALSE,  dom = 'tip'), class = 'display', rownames = FALSE)", i,i)) 
-        a4 <- knitr::knit_expand(text = "\n```\n") 
-        
-        paste(a1, a2, a3, a4, collapse = '\n')
-})
-
-out = list()
-for(i in seq_along(scExp_cf@metadata$diff$groups)){
-  out = c(out, out_volcano[[i]], out_table[[i]])  
 }
 
 ```
@@ -369,6 +405,54 @@ for(i in seq_along(scExp_cf@metadata$diff$groups)){
 ```
 
 `r paste(knitr::knit(text = paste(out, collapse = '\n')))`
+
+Coverage
+=====================================
+    
+    Column
+-----------------------------------------------------------------------
+    
+    ```{r include=FALSE}
+plot_list = coverage_chr = coverage_start = coverage_end = list()
+coverage_color = setNames(unique(scExp_cf$cell_cluster_color), unique(scExp_cf$cell_cluster))
+
+for(i in seq_along(genes_to_plot)){
+    Gene = genes_to_plot[i]
+    eval(parse(text = paste0("data(", ref_genome, ".GeneTSS)")))
+    gene_annot = eval(parse(text = paste0(ref_genome, ".GeneTSS")))
+    if(grepl(":", Gene) ){
+        coverage_chr[[i]] = gsub(":.*","",Gene)
+        coverage_start[[i]] = as.numeric(gsub(".*:","",gsub("-.*","",Gene)))
+        coverage_end[[i]] = as.numeric(gsub(".*-","",Gene))
+    } else{
+        if(Gene %in% gene_annot$gene){
+            coverage_chr[[i]] = gene_annot$chr[which(gene_annot$gene == Gene)]
+            coverage_start[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] - 25000
+            coverage_end[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] + 25000
+        }
+    }
+    if(length(coverage_chr)>=i && !is.null(coverage_chr[[i]])){
+        plot_coverage_BigWig(coverages, coverage_color, chrom = coverage_chr[[i]], start = coverage_start[[i]], end = coverage_end[[i]], ref = ref_genome)
+        plot_list[[i]] <- grDevices::recordPlot()
+        plot.new() ## clean up device
+    }
+}
+
+
+out_coverage <- lapply(seq_along(genes_to_plot), function(i) {
+    
+    if(length(coverage_chr)>=i && !is.null(coverage_chr[[i]])){
+        a1 <- knitr::knit_expand(text = sprintf("### Coverage - %s \n", genes_to_plot[i]))
+        a2 <- knitr::knit_expand(text = "\n```{r fig.width=15, echo = FALSE, eval = TRUE}") # start r chunk
+        a3 <- knitr::knit_expand(text = sprintf("\nprint(plot_list[[%d]])", i))
+        a4 <- knitr::knit_expand(text = "\n```\n")
+        paste(a1, a2, a3, a4, collapse = '\n')
+    }
+})
+
+```
+
+`r paste(knitr::knit(text = paste(out_coverage, collapse = '\n')))`
 
 
 Copy Number
