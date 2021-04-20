@@ -399,9 +399,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           incProgress(0.2, detail=paste0("Reading ",type_file," files to create matrix. This might take a while."))
           
           if(type_file == "SparseMatrix"){
-            out =  ChromSCape:::raw_counts_to_feature_count_files(
+            out =  ChromSCape:::read_sparse_matrix(
               files_dir_list = selected_sample_folders,
-            file_type = type_file,
             ref = input$annotation)
         } else if(type_file %in% c("scBAM","scBED") & !is.null(input$datafile_folder)) {
 
@@ -619,7 +618,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
 
     callModule(Module_preprocessing_filtering_and_reduction, "Module_preprocessing_filtering_and_reduction", reactive({input$selected_analysis}), reactive({input$min_coverage_cell}),
-               reactive({input$min_cells_window}), reactive({input$quant_removal}), reactive({init$datamatrix}), reactive({init$annot_raw}),
+               reactive({input$n_top_features}), reactive({input$quant_removal}),
+               reactive({init$datamatrix}), reactive({init$annot_raw}),
                reactive({init$data_folder}),reactive({annotationId}), reactive({exclude_regions}) ,reactive({input$do_batch_corr}),
                 reactive({batch_sels}), reactive({input$run_tsne}), reactive({subsample_n}))
     
@@ -632,7 +632,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent({input$selected_analysis  # reset label on actionButtion when new filtering should be filtered
    input$min_coverage_cell
    input$quant_removal
-   input$min_cells_window
+   input$n_top_features
    input$do_batch_corr}, {
    updateActionButton(session, "filter_normalize_reduce", label="Filter, Normalize & Reduce", icon = character(0))
   })
@@ -692,105 +692,33 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   feature_cov_df <- reactive ({
     req(init$datamatrix)
-    dims = ncol(init$datamatrix) * nrow(init$datamatrix)
-    if( is.na(dims) | dims > 1e+08){
-      set.seed(47)
-      # cols = sample(seq_len(ncol(init$datamatrix)), min(1500,ncol(init$datamatrix)), replace = TRUE)
-      row = sample(seq_len(nrow(init$datamatrix)), min(5000,nrow(init$datamatrix)), replace = TRUE)
-      sample_mat = init$datamatrix[row, ]
-    } else{
-      sample_mat = init$datamatrix
-    }
-    sel_above_2 <- (sample_mat >= 2)
-    gc()
-    bina_counts = Matrix::sparseMatrix(i = 1, j = 1, x = 1, 
-                                       dims = dim(sample_mat))
-    bina_counts[1, 1] = 0
-    bina_counts[sel_above_2] <- 1
-    df = data.frame(coverage = sort(unname(Matrix::rowSums(bina_counts)))) 
+    df = data.frame(coverage = sort(unname(Matrix::rowSums(init$datamatrix)),decreasing = TRUE))
+    print(head(df))
+    df = df[which(df$coverage>10),,drop=FALSE]
     df
   })  # used for plotting feature coverage on first page
   
-  percent_cell_threshold =  reactive({
-    req(init$datamatrix)
-    q = round(ncol(init$datamatrix) * as.numeric(input$min_cells_window) * 0.01)
-    q
+  top_feature_min_reads =  reactive({
+    req(feature_cov_df(), input$n_top_features)
+    min_reads = min(feature_cov_df()$coverage[seq_len(input$n_top_features)])
+    print(min_reads)
+    min_reads
   })
   
   feature_cov_plot <- reactive({
     ggplot(feature_cov_df(), aes(x = coverage)) + 
       geom_histogram(color="black", fill="#F2B066", bins = 75) +
       labs(x="Log10(Cells 'ON' per feature)", y = "nFeatures")  + 
-      theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), 
+      theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank(), 
             panel.background=element_blank(), axis.line=element_line(colour="black"),
             panel.border=element_rect(colour="black", fill=NA)) +
-      geom_vline(xintercept = as.numeric(percent_cell_threshold()), color = "#9C36CF") +
+      geom_vline(xintercept = as.numeric(top_feature_min_reads()), color = "#9C36CF") +
       scale_x_log10()
     
   })
   
-  output$feature_coverage <- plotly::renderPlotly( plotly::ggplotly(feature_cov_plot(), 
+  output$feature_coverage <- plotly::renderPlotly(plotly::ggplotly(feature_cov_plot(), 
                                                                  tooltip="Feature", dynamicTicks=TRUE) )
-  
-  # cell_cov_plot_after <- reactive({
-  #   req(scExp())
-  #   df = data.frame(coverage = sort(unname(Matrix::colSums(SingleCellExperiment::count(scExp())))))
-  #   ggplot(df, aes(x = coverage)) + 
-  #     geom_histogram(color="black", fill="steelblue", bins = 75) +
-  #     labs(x="Log10(Reads per cell)", y = "nCells")  + 
-  #     theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), 
-  #           panel.background=element_blank(), axis.line=element_line(colour="black"),
-  #           panel.border=element_rect(colour="black", fill=NA)) +
-  #     geom_vline(xintercept = as.numeric(input$min_coverage_cell), color = "#22AD18") + 
-  #     geom_vline(xintercept = quantile_threshold(), color = "#D61111") +
-  #     scale_x_log10()
-  #   
-  # })
-  # output$cell_coverage_after <- plotly::renderPlotly( plotly::ggplotly(cell_cov_plot_after(), 
-  #                                                                tooltip="Sample", dynamicTicks=TRUE) )
-  # feature_cov_df_after <- reactive ({
-  #   req(scExp())
-  #   if(ncol(scExp()) * nrow(scExp()) > 1e+08){
-  #     set.seed(47)
-  #     # cols = sample(seq_len(ncol(init$datamatrix)), min(1500,ncol(init$datamatrix)), replace = TRUE)
-  #     row = sample(seq_len(nrow(scExp())), min(5000,nrow(scExp())), replace = TRUE)
-  #     sample_mat = SingleCellExperiment::counts(scExp())[row, ]
-  #   } else{
-  #     sample_mat = SingleCellExperiment::counts(scExp())
-  #   }
-  #   sel_above_2 <- (sample_mat >= 2)
-  #   gc()
-  #   bina_counts = Matrix::sparseMatrix(i = 1, j = 1, x = 1, 
-  #                                      dims = dim(sample_mat))
-  #   bina_counts[1, 1] = 0
-  #   bina_counts[sel_above_2] <- 1
-  #   df = data.frame(coverage = sort(unname(Matrix::rowSums(bina_counts)))) 
-  #   df
-  # })
-  # 
-  # feature_cov_plot_after <- reactive({
-  #   ggplot(feature_cov_df_after(), aes(x = coverage)) + 
-  #     geom_histogram(color="black", fill="#F2B066", bins = 75) +
-  #     labs(x="Log10(Cells 'ON' per feature)", y = "nFeatures")  + 
-  #     theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), 
-  #           panel.background=element_blank(), axis.line=element_line(colour="black"),
-  #           panel.border=element_rect(colour="black", fill=NA)) +
-  #     geom_vline(xintercept = as.numeric(percent_cell_threshold()), color = "#9C36CF") +
-  #     scale_x_log10()
-  #   
-  # })
-  # 
-  # output$feature_coverage_after <- plotly::renderPlotly(
-  #   plotly::ggplotly(feature_cov_plot_after(),tooltip="Feature", dynamicTicks=TRUE) )
-  # 
-  # output$cell_feature_coverage_after <- renderUI({
-  #   req(scExp())
-  #   if(!is.null(scExp())){
-  #   shinydashboard::box(title="Select filtered & normalized dataset", width = NULL, status="success", solidHeader=TRUE,
-  #                       column(6,plotOutput("feature_coverage_after")),
-  #                       column(6,plotOutput("cell_coverage_after")))
-  #   }
-  # })
   
   output$num_cell <- function(){
     req(init$annot_raw)
@@ -850,7 +778,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     req(scExp(),  input$pc_select_x)
     if(input$pc_select_x %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
       p = plot_most_contributing_features(scExp(), component = input$pc_select_x,
-                                          n_top_bot = as.numeric(input$n_top_features))
+                                          n_top_bot = as.numeric(input$n_features_contributing))
       p
     }
   })
@@ -872,7 +800,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       if(input$pc_select_x %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
         shinydashboard::box(title="Contribution to PCA", width = NULL, status="success", solidHeader=TRUE,
                             column(12, align="left",
-                                   selectInput("n_top_features", label =  "Top features",
+                                   selectInput("n_features_contributing", label =  "Top features",
                                                choices = 5:100,
                                                multiple = FALSE, selected = 10),
                                    h3(paste0("Most contributing features to '", input$pc_select_x,"' .")),
@@ -1051,7 +979,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     
   })
   output$nclust_UI = renderUI({
-    selectInput("nclust", br("Number of Clusters:"), choices=c(2:input$maxK))
+    selectInput("nclust", br("Number of Clusters:"), choices=c(2:30))
   })
   
   observeEvent({input$choose_cluster},{
@@ -2563,27 +2491,23 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     req(annotFeat_long())
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
+        print("Inside output gene_sel")
         s = selectizeInput(inputId = "gene_sel", label = "Select gene:", choices = NULL)
         most_diff = scExp_cf()@metadata$diff$res %>% dplyr::select(ID,starts_with("qval."))
         most_diff[,"qval"] = Matrix::rowMeans(as.matrix(most_diff[,-1]))
         most_diff = dplyr::left_join(most_diff[order(most_diff$qval),], annotFeat_long(),by = c("ID"))
-        most_diff = most_diff %>% dplyr::filter(!is.na(Gene)) 
+        print("head(most_diff)")
+        print(head(most_diff))
+        most_diff = most_diff %>% dplyr::filter(!is.na(Gene)) %>%
+          dplyr::filter(distanceToTSS < 1000) 
+        
         genes = base::intersect(most_diff$Gene,unique(GencodeGenes()))
+        print("head(genes)")
         print(head(genes))
         updateSelectizeInput(session = session, inputId = "gene_sel",
                              label =  "Select gene:", choices = genes, server = TRUE)
         return(s)
       }
-    }
-  })
-  
-  output$region_sel <- renderUI({
-    req(input$gene_sel, annotFeat_long())
-    subset <- annotFeat_long()[which(annotFeat_long()$Gene==input$gene_sel), ]
-    if(!is.null(subset)){
-      subset <- subset[order(subset$distanceToTSS),]
-      regions <- paste0(subset$ID, " (distanceToTSS to gene TSS: ", subset$distanceToTSS, ")")
-      selectInput("region_sel", "Select associated genomic region:", choices = regions)
     }
   })
   
@@ -2689,30 +2613,27 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   gene_umap_p <- reactive({
-    req(input$gene_sel, input$region_sel)
-    region <- strsplit(input$region_sel, " ")[[1]][1]
-    if(region %in% rownames(scExp_cf())){
-      p <- ggplot(as.data.frame(SingleCellExperiment::reducedDim(scExp_cf(), "UMAP")),
-                  aes(x = Component_1, y = Component_2)) +
-        geom_point(alpha = 0.5, aes(color = SingleCellExperiment::normcounts(scExp_cf())[region, ],
-                                    shape = SummarizedExperiment::colData(scExp_cf())$cell_cluster)) +
-        labs(color="norm. count for region", title = "UMAP", shape="Cluster", x="Component 1", y="Component 2") +
-        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-              panel.background = element_blank(), axis.line = element_line(colour="black"),
-              panel.border = element_rect(colour="black", fill = NA)) +
-        viridis::scale_color_viridis(direction=-1)
-    }
+    req(input$gene_sel)
+    print("gene_umap_p()")
+    print(input$gene_sel)
+    print("input$gene_sel %in% scExp_cf")
+    print(input$gene_sel %in% SummarizedExperiment::rowRanges(scExp_cf())$Gene)
+      p <- plot_reduced_dim_scExp(scExp_cf(), color_by = input$gene_sel,  reduced_dim = "UMAP")
+      print(p)
+      p
   })
   
   output$gene_umap_UI <- renderUI({
-    req(input$gene_sel, input$region_sel)
-    region <- strsplit(input$region_sel, " ")[[1]][1]
-    if(region %in% rownames(scExp_cf())){
-      output$gene_umap_plot <- plotly::renderPlotly({
-          plotly::ggplotly(gene_umap_p(), tooltip="Sample", dynamicTicks = TRUE)
+    req(input$gene_sel)
+      
+      print(gene_umap_p())
+      
+      output$gene_umap_plot <- renderPlot({
+          gene_umap_p()
       })
-      plotly::plotlyOutput("gene_umap_plot")
-    }
+      shiny::plotOutput("gene_umap_plot") %>% 
+        shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+
   })
   
   
