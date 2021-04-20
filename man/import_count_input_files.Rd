@@ -4,16 +4,7 @@
 \alias{import_count_input_files}
 \title{Import and count input files depending on their format}
 \usage{
-import_count_input_files(
-  files_dir_list,
-  file_type,
-  which,
-  ref,
-  feature_file,
-  barcode_file,
-  matrix_file,
-  verbose
-)
+import_count_input_files(files_dir_list, file_type, which, ref, verbose)
 }
 \arguments{
 \item{file_type}{Input file type}
@@ -21,13 +12,6 @@ import_count_input_files(
 \item{which}{A GRanges object of features}
 
 \item{ref}{Reference genome}
-
-\item{feature_file}{A file for containing unique feature genomic locations
-in tab separated format (.bed / .txt / .tsv / .*.gz), e.g. chr, start and end}
-
-\item{barcode_file}{A file containing unique barcode names}
-
-\item{matrix_file}{A file containing indexes of non zero entries}
 
 \item{verbose}{Print ?}
 

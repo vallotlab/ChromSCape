@@ -12,13 +12,16 @@ plot_reduced_dim_scExp(
   select_y = "Component_2",
   downsample = 5000,
   transparency = 0.6,
-  size = 1
+  size = 1,
+  max_distanceToTSS = 1000,
+  annotate_clusters = "cell_cluster" \%in\% colnames(colData(scExp))
 )
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment Object}
 
-\item{color_by}{Feature used for coloration}
+\item{color_by}{Character of eature used for coloration. Can be cell
+metadata ('total_counts', 'sample_id', ...) or a gene name.}
 
 \item{reduced_dim}{Reduced Dimension used for plotting}
 
@@ -29,6 +32,9 @@ plot_reduced_dim_scExp(
 \item{downsample}{Number of cells to downsample}
 
 \item{transparency}{Alpha parameter, between 0 and 1}
+
+\item{max_distanceToTSS}{The maximum distance to TSS to consider a gene
+linked to a region. Used only if "color_by" is a gene name.}
 }
 \value{
 A ggplot geom_point plot of reduced dimension 2D reprensentation
@@ -41,5 +47,6 @@ data("scExp")
 plot_reduced_dim_scExp(scExp, color_by = "sample_id")
 plot_reduced_dim_scExp(scExp, color_by = "total_counts")
 plot_reduced_dim_scExp(scExp, reduced_dim = "UMAP")
+plot_reduced_dim_scExp(scExp, color_by = "CD52",  reduced_dim = "UMAP")
 
 }

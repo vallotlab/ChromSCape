@@ -4,7 +4,7 @@
 \alias{pca_irlba_for_sparseMatrix}
 \title{Run sparse PCA using irlba SVD}
 \usage{
-pca_irlba_for_sparseMatrix(x, n_comp)
+pca_irlba_for_sparseMatrix(x, n_comp, work = 3 * n_comp)
 }
 \arguments{
 \item{x}{A sparse normalized matrix (features x cells)}

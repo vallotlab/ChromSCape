@@ -6,7 +6,7 @@
 \usage{
 reduce_dims_scExp(
   scExp,
-  dimension_reductions = c("PCA", "TSNE", "UMAP"),
+  dimension_reductions = c("PCA", "UMAP"),
   n = 50,
   batch_correction = FALSE,
   batch_list = NULL,

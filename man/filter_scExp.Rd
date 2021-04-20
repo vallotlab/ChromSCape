@@ -8,8 +8,7 @@ filter_scExp(
   scExp,
   min_cov_cell = 1600,
   quant_removal = 95,
-  percentMin = 1,
-  bin_min_count = 2,
+  min_count_per_feature = 10,
   verbose = TRUE
 )
 }
@@ -21,9 +20,7 @@ filter_scExp(
 \item{quant_removal}{Centile of cell counts above which cells are removed.
 (95)}
 
-\item{percentMin}{Minimum percent of cells 'ON' in feature. (1)}
-
-\item{bin_min_count}{Minimum number of counts to define if cell is 'ON'. (2)}
+\item{min_count_per_feature}{Minimum number of reads per feature (10).}
 
 \item{verbose}{(TRUE)}
 }
@@ -41,7 +38,7 @@ scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 scExp. = filter_scExp(scExp)
 
 # No feature filtering (all features are valuable)
-scExp. = filter_scExp(scExp,percentMin=0)
+scExp. = filter_scExp(scExp,min_count_per_feature=30)
 
 # No cell filtering (all features are valuable)
 scExp. = filter_scExp(scExp,min_cov_cell=0,quant_removal=100)
