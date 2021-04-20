@@ -97,6 +97,103 @@ create_sample_name_mat <- function(nb_samples, samples_names){
     return(mat)
 }
 
+
+#' Read in one or multiple sparse matrices (10X format)
+#' 
+#' @description 
+#' Given one or multiple directories, look in each directory for a combination 
+#' of the following files :
+#' - A 'features' file containing unique feature genomic locations 
+#' -in tab separated format ( *_features.bed / .txt / .tsv / .gz), 
+#' e.g. chr, start and end
+#' - A 'barcodes' file containing unique barcode names 
+#' ( _barcode.txt / .tsv / .gz)
+#' - A 'matrix' A file containing indexes of non zero entries 
+#' (_matrix.mtx / .gz)
+#'
+#' @param files_dir_list A named character vector containing the full path 
+#' towards folders. Each folder should contain only the Feature file, the 
+#' Barcode file and the Matrix file (see description). 
+#' @param verbose Print ?
+#' @param ref Reference genome (used to filter non-canonical chromosomes).
+#'
+#' @return Returns a list containing a datamatrix and cell annotation
+#' @export
+#'
+#' @importFrom Matrix readMM
+#' @importFrom GenomicRanges seqnames start end
+#' @importFrom rtracklayer import.bed
+#' @examples
+#' \dontrun{
+#' sample_dirs = c("/path/to/folder1/", "/path/to/folder2/")
+#' names(sample_dirs) = c("sample_1", "sample_2")
+#' out <- read_sparse_matrix(sample_dirs, ref = "hg38")
+#' head(out$datamatrix)
+#' head(out$annot_raw)
+#' }
+#' 
+read_sparse_matrix <- function(files_dir_list,
+                               ref = c("hg38","mm10")[1],
+                               verbose = TRUE
+                              ){
+    
+    feature_file <- barcode_file <- matrix_file <- NULL
+    
+    pattern = ".*features.tsv|.*features.txt|.*features.bed|.*features.*.gz"
+    feature_file = list.files(path = files_dir_list[1], full.names = TRUE,
+                              pattern = pattern)
+    pattern = ".*barcodes.tsv|.*barcodes.txt|.*barcodes.*.gz"
+    barcode_file = list.files(path = files_dir_list[1], full.names = TRUE,
+                              pattern = pattern)
+    pattern = ".*matrix.mtx|.*matrix.*.gz"
+    matrix_file = list.files(path = files_dir_list[1], full.names = TRUE,
+                             pattern = pattern)
+    
+    if (length(c(feature_file, matrix_file, barcode_file)) != 3)
+        stop(paste0(
+            "ChromSCape::raw_counts_to_feature_count_files - For ",
+            "SparseMatrix Count type, the folder must contain exactly two files ",
+            "matching respectively *index.txt, peaks.bed, barcodes.txt"))
+    
+    feature_indexes = list()
+    samples_ids = barcodes = c()
+    for(i in seq_along(files_dir_list)){
+        t1 = system.time({
+            sample_id = names(files_dir_list)[i]
+            mat = Matrix::readMM(matrix_file)
+            barcode = as.character(read.table(barcode_file)[,1])
+            name_cell <- paste0(sample_id, "_", barcode)
+            barcodes <- c(barcodes,barcode)
+            
+            which = rtracklayer::import.bed(feature_file)
+            rownames(mat) = paste0(GenomicRanges::seqnames(which),"_",
+                                   GenomicRanges::start(which),"_",
+                                   GenomicRanges::end(which))
+            colnames(mat) = name_cell
+            feature_indexes[[sample_id]] = mat
+            samples_ids = c(samples_ids, rep(sample_id, length(name_cell)))
+        })
+        if (verbose)
+            message("ChromSCape::raw_counts_to_feature_count_files - ",
+                    "Count matrix ", sample_id ,
+                    " created from Index-Peak-Barcodes files in ",
+                    round(t1[3],3), " sec.")
+    }
+
+    tryCatch({mat <- do.call("cbind", feature_indexes)}, error = function(e){
+        paste0("ChromSCape::read_sparse_matrix - All feature file do not have ",
+               "the same number of features", e)})
+    chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
+    regions_to_remove = which(!as.character(which@seqnames) %in% chr$chr)
+    if(length(regions_to_remove) > 0) mat = mat[-regions_to_remove,]
+    annot_raw = data.frame("barcode" = barcodes,
+                           "cell_id" = colnames(mat),
+                           "sample_id" = samples_ids,
+                           "batch_id" = factor(rep(1, ncol(mat)))
+    )
+    out = list("datamatrix" = mat, "annot_raw" = annot_raw)
+    return(out)
+}
 #' Create a sparse count matrix from various format of input data.
 #'
 #' This function takes three different type of single-cell input: - Single cell
@@ -127,42 +224,22 @@ create_sample_name_mat <- function(nb_samples, samples_names){
 #' @importFrom GenomicRanges GRanges tileGenome width seqnames GRangesList
 #' sort.GenomicRanges
 #' 
-raw_counts_to_feature_count_files <- function(
-    files_dir_list, file_type = c("scBAM", "scBED", "SparseMatrix"),
+raw_counts_to_sparse_matrix <- function(
+    files_dir_list, file_type = c("scBAM", "scBED"),
     peak_file = NULL, n_bins = NULL, bin_width = NULL, geneTSS = NULL,
     aroundTSS = 2500, verbose = TRUE, ref = c("hg38","mm10")[1]) {
     warning_raw_counts_to_feature_count_files(
         files_dir_list, file_type, peak_file, n_bins, bin_width, geneTSS,
         aroundTSS, verbose, ref)
     
-    feature_file <- barcode_file <- matrix_file <- NULL
-    if (file_type == "SparseMatrix") {
-        pattern = ".*features.tsv|.*features.txt|.*features.bed|.*features.*.gz"
-        feature_file = list.files(path = files_dir_list[1], full.names = TRUE,
-                                pattern = pattern)
-        pattern = ".*barcodes.tsv|.*barcodes.txt|.*barcodes.*.gz"
-        barcode_file = list.files(path = files_dir_list[1], full.names = TRUE,
-                                  pattern = pattern)
-        pattern = ".*matrix.mtx|.*matrix.*.gz"
-        matrix_file = list.files(path = files_dir_list[1], full.names = TRUE,
-                                pattern = pattern)
-        
-        if (length(c(feature_file, matrix_file, barcode_file)) != 3)
-            stop(paste0(
-                "ChromSCape::raw_counts_to_feature_count_files - For ",
-                "SparseMatrix Count type, the folder must contain exactly two files ",
-                "matching respectively *index.txt, peaks.bed, barcodes.txt"))
-    }
     which <- define_feature(ref, peak_file, n_bins, bin_width, geneTSS,
-                            aroundTSS)
+                                aroundTSS)
     out <- import_count_input_files(
-        files_dir_list, file_type, which, ref, feature_file, barcode_file,
-        matrix_file, verbose)
+        files_dir_list, file_type, which, ref, verbose)
     mat = list()
     samples_ids = barcodes = c()
     for(i in seq_along(out$feature_indexes)){
         sample_id = names(out$feature_indexes)[i]
-        # which <- out$which[[i]]
         feature_indexes <- out$feature_indexes[[i]]
         name_cells <- paste0(sample_id, "_", out$name_cells[[i]])
         barcodes <- c(barcodes,out$name_cells[[i]])
@@ -304,18 +381,13 @@ define_feature <- function(ref, peak_file, n_bins, bin_width,
 #' @param ref Reference genome
 #' @param verbose Print ?
 #' @param file_type Input file type
-#' @param feature_file A file for containing unique feature genomic locations 
-#' in tab separated format (.bed / .txt / .tsv / .*.gz), e.g. chr, start and end
-#' @param barcode_file A file containing unique barcode names
-#' @param matrix_file A file containing indexes of non zero entries
 #'
 #' @return A list with a GRanges object of feature types (which), the 
 #' feature indexes data.frame containing non-zeroes entries in the count matrix
 #' and the cell names
 #'
 import_count_input_files <- function(files_dir_list, file_type,
-                                    which, ref, feature_file, 
-                                    barcode_file, matrix_file, verbose){
+                                    which, ref, verbose){
     feature_indexes = list()
     name_cells = list()
     for(i in seq_along(files_dir_list)){
@@ -338,21 +410,6 @@ import_count_input_files <- function(files_dir_list, file_type,
                 message("ChromSCape::raw_counts_to_feature_count_files - ",
                         "Count matrix ", sample_id ,"
                         created from BED files in ", t1[3], " sec.")}
-        else if (file_type == "SparseMatrix") {
-            t1 = system.time({
-                l = index_peaks_barcodes_to_matrix_indexes(
-                    feature_file = feature_file, matrix_file = matrix_file,
-                    barcode_file = barcode_file)
-            })
-            which = l[[3]]
-            if (verbose)
-                message("ChromSCape::raw_counts_to_feature_count_files - ",
-                        "Count matrix ", sample_id ,
-                        "created from Index-Peak-Barcodes files in ",
-                        t1[3], " sec.")
-        }
-        feature_indexes[[sample_id]] = l[[1]]
-        name_cells[[sample_id]] = l[[2]]
     }
     
     out <- list("which" = which, "feature_indexes" = feature_indexes,
@@ -449,7 +506,7 @@ index_peaks_barcodes_to_matrix_indexes = function(
              "barcode IDs are not unique, check your file : ",barcode_file)
     }
     feature_indexes = setNames(
-        read.table(matrix_file, sep = "", quote = "")[, seq_len(3)],
+        Matrix::readMM(matrix_file),
         c("feature_index", "barcode_index", "counts")
     )
     
@@ -836,7 +893,8 @@ import_scExp <- function(file_names,
                 path_to_matrix[i], sep = separator, chunk = 1000L)
         }
         gc()
-        datamatrix_single <- check_correct_datamatrix(datamatrix_single)
+        datamatrix_single <- check_correct_datamatrix(datamatrix_single,
+                                                      sample_name)
         gc()
         total_cell <- length(datamatrix_single[1, ])
         annot_single <- data.frame(
@@ -1164,8 +1222,7 @@ remove_chr_M_fun <- function(scExp, verbose){
 #' @param min_cov_cell Minimum counts for each cell. (1600)
 #' @param quant_removal Centile of cell counts above which cells are removed.
 #'   (95)
-#' @param percentMin Minimum percent of cells 'ON' in feature. (1)
-#' @param bin_min_count Minimum number of counts to define if cell is 'ON'. (2)
+#' @param min_count_per_feature Minimum number of reads per feature (10).
 #' @param verbose (TRUE)
 #'
 #' @return Returns a filtered SingleCellExperiment object.
@@ -1178,7 +1235,7 @@ remove_chr_M_fun <- function(scExp, verbose){
 #' scExp. = filter_scExp(scExp)
 #'
 #' # No feature filtering (all features are valuable)
-#' scExp. = filter_scExp(scExp,percentMin=0)
+#' scExp. = filter_scExp(scExp,min_count_per_feature=30)
 #'
 #' # No cell filtering (all features are valuable)
 #' scExp. = filter_scExp(scExp,min_cov_cell=0,quant_removal=100)
@@ -1186,57 +1243,77 @@ remove_chr_M_fun <- function(scExp, verbose){
 #' @importFrom SingleCellExperiment SingleCellExperiment counts colData
 #' @importFrom Matrix colSums rowSums
 filter_scExp =  function (
-    scExp, min_cov_cell = 1600, quant_removal = 95, percentMin = 1,
-    bin_min_count = 2, verbose = TRUE){
+    scExp, min_cov_cell = 1600, quant_removal = 95, min_count_per_feature = 10,
+    verbose = TRUE){
     stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(min_cov_cell),
-            is.numeric(quant_removal), is.numeric(percentMin),
-            is.numeric(bin_min_count), verbose %in% c(FALSE, TRUE))
+            is.numeric(quant_removal),
+            is.numeric(min_count_per_feature), verbose %in% c(FALSE, TRUE))
     if (is.null(scExp)) warning(
         "ChromSCape::filter_scExp - Please specify a  SingleCellExperiment")
-    cellCounts <-
-        Matrix::colSums(SingleCellExperiment::counts(scExp))
+    
+    cellCounts <- Matrix::colSums(SingleCellExperiment::counts(scExp))
     thresh <- stats::quantile(cellCounts, probs = seq(0, 1, 0.01))
-    sel1000 <- (cellCounts > 1000 & cellCounts <= thresh[quant_removal +1])
     sel <- (cellCounts > min_cov_cell & cellCounts <= thresh[quant_removal + 1])
     if (verbose) message(
         "ChromSCape::filter_scExp - ", length(which(sel)), " cells pass the ",
         " threshold of ", min_cov_cell, " minimum reads and are lower than ",
         "the ", quant_removal, "th centile of library size ~= ",
         round(thresh[quant_removal + 1]), " reads.")
-    rm(cellCounts)
-    gc()
-    bina_counts <- SingleCellExperiment::counts(scExp)[, sel1000]
-    gc()
-    sel_above_2 <- (bina_counts >= bin_min_count)
-    gc()
-    bina_counts = Matrix::sparseMatrix(i = 1, j = 1, x = 1, 
-                                    dims = dim(bina_counts))
-    bina_counts[1, 1] = 0
-    bina_counts[sel_above_2] <- 1
-    gc()
-    nCells_in_feature <- Matrix::rowSums(bina_counts)
-    gc()
-    fixedFeature <- which(nCells_in_feature > ((percentMin / 100) *
-                                                (ncol(bina_counts))))
-    if (verbose) message(
-        "ChromSCape::filter_scExp - ", length(fixedFeature)," features pass ",
-        "the threshold of ", percentMin, "% of total cells 'ON', representing ",
-        "a minimum of ", round((percentMin/100)*(ncol(bina_counts)))," cells.")
+    
     scExp <- scExp[, sel]
-    scExp <- scExp[fixedFeature,]
+    counts <- SingleCellExperiment::counts(scExp)
+    sel_feature <- (Matrix::rowSums(counts) >= min_count_per_feature)
+    
+    if (verbose) message(
+        "ChromSCape::filter_scExp - ", length(which(sel_feature))," features pass ",
+        "the threshold of ", min_count_per_feature," count per feature.")
+
+    scExp <- scExp[sel_feature,]
     SummarizedExperiment::colData(scExp)$total_counts = 
         colSums(SingleCellExperiment::counts(scExp))
-    # if(!is.na(ncol(scExp) * nrow(scExp))){
-    #     SummarizedExperiment::colData(scExp)$detected = 
-    #         apply(SingleCellExperiment::counts(scExp), 2,
-    #               function(i) length(which(i>0)))
-    # } else{
-    #     SummarizedExperiment::colData(scExp)$detected = 
-    #         SummarizedExperiment::colData(scExp)$total_counts
-    # }
     return(scExp)
 }
 
+#' Find most covered features
+#'
+#' @description  
+#' Find the top most covered features that will be used for dimensionality 
+#' reduction. Optionally remove non-top features. 
+#'
+#'  @param scExp 
+#' @param n Either an integer indicating the number of top covered regions to 
+#' find or a character vector of the top percentile of features to keep (e.g.
+#' 'q20' to keep top 20% features). 
+#' @param keep_others Logical indicating if non-top regions are to be removed 
+#' from the SCE or not (FALSE). 
+#' @param verbose Print ?
+#' 
+#' @return A SCE with top features
+#' @export
+#'
+#' @examples
+#' scExp_top = find_top_features(scExp, n = 4000, keep_others = FALSE)
+#' 
+find_top_features <- function (scExp, n = 20000, keep_others = TRUE,
+                               verbose = TRUE){
+    n = min(n, nrow(scExp))
+    feature_counts = Matrix::rowSums(counts(scExp))
+    if(is.numeric(n)){
+        feature_counts_top = sort(feature_counts,decreasing = T)[seq_len(n)]   
+    } else{
+        n = as.numeric(gsub("q","",n))
+        feature_counts_top = feature_counts[which(
+            feature_counts>quantile(feature_counts,1-(n/100) ) )]
+    }
+    SummarizedExperiment::rowData(scExp)[,"top_feature"] = FALSE
+    SummarizedExperiment::rowData(scExp)[names(feature_counts_top),
+                                         "top_feature"] = TRUE
+    if(keep_others == FALSE) scExp = scExp[names(feature_counts_top),]
+    if(verbose) message("ChromScape::find_top_features - ", 
+                        length(feature_counts_top), " features kept as ",
+                        " most covered features...")
+    return(scExp)
+}
 
 #' Does SingleCellExperiment has genomic coordinates in features ?
 #'
@@ -1685,7 +1762,7 @@ choose_perplexity <- function(dataset)
 #' scExp = normalize_scExp(scExp)
 #' scExp = reduce_dims_scExp(scExp,dimension_reductions=c("PCA","UMAP"))
 reduce_dims_scExp <-
-    function(scExp, dimension_reductions = c("PCA", "TSNE", "UMAP"), n = 50,
+    function(scExp, dimension_reductions = c("PCA", "UMAP"), n = 50,
             batch_correction = FALSE, batch_list = NULL, verbose = TRUE)
     {
         stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(n),
@@ -1695,7 +1772,8 @@ reduce_dims_scExp <-
                 normalized, running dimensionality reduction on raw counts.")
             mat <- SingleCellExperiment::counts(scExp)
         } else{
-            mat <- SingleCellExperiment::normcounts(scExp)}
+            mat <- SingleCellExperiment::normcounts(scExp)
+            }
         if (batch_correction && !is.list(batch_list)){
             stop("ChromSCape::reduce_dims_scExp - If doing batch correction,
                 batch_list must be a list of the samples IDs of each batch.")}
@@ -1801,14 +1879,23 @@ reduce_dim_batch_correction <- function(scExp, mat, batch_list, n){
 #' @importFrom irlba irlba
 #' @importFrom Matrix colMeans
 #'
-pca_irlba_for_sparseMatrix <- function(x, n_comp)
+pca_irlba_for_sparseMatrix <- function(x, n_comp, work = 3 * n_comp)
 {
     x.means <- Matrix::colMeans(x)
-    svd.0 <- irlba::irlba(x, center = x.means, nv = n_comp)
-    x. <- sweep(x, 2, x.means, "-")
-    pca <- x. %*% svd.0$v
-    
+    svd.0 <- irlba::irlba(x, center = x.means, nv = n_comp, work = work)
+    pca <- svd.0$u
     return(pca)
+}
+
+sweep_sparse <- function(x, margin, stats, fun = "*") {
+    f <- match.fun(fun)
+    if (margin == 1) {
+        idx <- x@i + 1
+    } else {
+        idx <- x@p + 1
+    }
+    x@x <- f(x@x, stats[idx])
+    return(x)
 }
 
 #' Table of cells
