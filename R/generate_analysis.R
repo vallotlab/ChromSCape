@@ -5,11 +5,8 @@
 # scExp = qs::qread( "/media/pacome/LaCie/InstitutCurie/Documents/Data/Tests/Test_ChromSCape/Test_generate_analysis/ChromSCape_analyses/Mouse_ctrl_orga_50kbp_full/Filtering_Normalize_Reduce/Mouse_ctrl_orga_50kbp_full_1300_0.5_95_uncorrected.qs")
 # scExp_cf = qs::qread(file.path(ChromSCape_directory,"Diff_Analysis_Gene_Sets" ,"Mouse_ctrl_orga_50kbp_1300_0.5_95_uncorrected_2_0.1_1_one_vs_rest.qs"))$scExp_cf
 
-analysis_name = "Mouse_ctrl_orga_50k_latest"
-genes_to_plot = genes_to_plot = c("Krt8","Krt5","Tgfb1", "Foxq1", "Cdkn2b", "Cdkn2a", "chr7:15000000-20000000")
-ref_genome = "mm10"
-coverages = sapply(list.files(file.path(ChromSCape_directory,"coverage","Mouse_ctrl_orga_50kbp_1300_0.5_95_uncorrected_k2"),".bw", full.names = T), rtracklayer::import)
-control_samples_CNA = c("C_a3_H3K27me3","C_a4_5_H3K27me3","OJ_m6374_p2_H3K27me3")
+analysis_name = "Test"
+# coverages = sapply(list.files(file.path(ChromSCape_directory,"coverage","Mouse_ctrl_orga_50kbp_1300_0.5_95_uncorrected_k2"),".bw", full.names = T), rtracklayer::import)
 input_data_type = "scBED"
 feature_count_on = "bins"
 feature_count_parameter = 50000
@@ -19,10 +16,10 @@ max_quantile_read_per_cell = 99
 maxK = 8
 n_clust = 6
 output_directory = "/media/pacome/LaCie/InstitutCurie/Documents/Data/Tests/Test_ChromSCape/Test_generate_analysis/"
-input_data_folder = "/media/pacome/LaCie/InstitutCurie/ChromSCape_inputs/mouse_tumor_Brca1_H3K27me3/"
-control_samples_CNA = c("C_a3_H3K27me3","C_a4_5_H3K27me3","OJ_m6374_p2_H3K27me3")
+input_data_folder = "/media/pacome/LaCie/InstitutCurie/ChromSCape_inputs/test_small_scBED/"
+control_samples_CNA = c("C_a3_H3K27me3")
 ref_genome = "mm10"
-doBatchCorr = TRUE
+doBatchCorr = F
 batch_sels = list("control" = c( "C_a3_H3K27me3","C_a4_5_H3K27me3"),
                   "juxta" = c("OJ_m6374_p2_H3K27me3","OT_m6374_p2_H3K27me3"))
 subsample_n = NULL
@@ -35,20 +32,22 @@ enrichment_qval = 0.1
 genes_to_plot = c("Krt8","Krt5","Tgfb1" ,"Foxq1", "Cdkn2b",
                   "Cdkn2a", "chr7:15000000-20000000")
 # generate_analysis(
+#     analysis_name = analysis_name,
 #     input_data_folder = input_data_folder,
 #     output_directory = output_directory,
 #     input_data_type = input_data_type,
 #     feature_count_on = feature_count_on,
 #     feature_count_parameter = feature_count_parameter,
 #     ref_genome = ref_genome,
+#     control_samples_CNA = control_samples_CNA,
 #     min_reads_per_cell = min_reads_per_cell,
 #     max_quantile_read_per_cell = max_quantile_read_per_cell,
 #     min_percent_to_keep_feature = min_percent_to_keep_feature,
 #     maxK = maxK,
 #     n_clust = n_clust,
-#     doBatchCorr = doBatchCorr)
+#     doBatchCorr = doBatchCorr,
 #     batch_sels = batch_sels)
-# )
+
 generate_analysis <- function(input_data_folder,
                   analysis_name = "Analysis_1",
                   output_directory = "./",
@@ -57,6 +56,8 @@ generate_analysis <- function(input_data_folder,
                   feature_count_on = c("bins","geneTSS","peaks")[1],
                   feature_count_parameter = 50000,
                   ref_genome = c("hg38","mm10")[1],
+                  run = c("filter", "CNA","cluster", "peak_call", "coverage", 
+                          "DA", "GSA", "report"),
                   min_reads_per_cell = 1600,
                   max_quantile_read_per_cell = 95,
                   min_percent_to_keep_feature = 0.5,
@@ -117,7 +118,7 @@ generate_analysis <- function(input_data_folder,
            min_percent_to_keep_feature, "_",
            max_quantile_read_per_cell, "_", batch_string)
     
-    
+    time_analysis = system.time({
     #### Select & Import ####
     message("ChromSCape::generate_analysis - Importing datasets ...")
     out <- rawData_to_datamatrix_annot(input_data_folder, input_data_type,
@@ -130,7 +131,21 @@ generate_analysis <- function(input_data_folder,
     qs::qsave(datamatrix, file = file.path(ChromSCape_directory, "datamatrix.qs"))
     qs::qsave(annot_raw, file = file.path(ChromSCape_directory, "annot_raw.qs"))
     
+    # Check that number of cells and features is enough or finish here
+    n_cell = ncol(datamatrix)
+    n_feature = nrow(datamatrix)
+    
+    if( (n_cell < 100) | (n_feature < 300) ){
+        warning("Analyis ", analysis_name, " has stopped after raw data import,",
+                " there were less than 100 cells or 300 features...")
+        return()
+    }
     #### Filter & Normalize ####
+    if(!"filter" %in% run) {
+        message("Finished generating analyis ", analysis_name, ". The analysis ",
+            "is available at ", ChromSCape_directory, "...")
+        return()
+    } 
     message("ChromSCape::generate_analysis - Filtering, normalizing & ",
             "reducing dimensions ...")
     scExp = preprocessing_filtering_and_reduction(
@@ -146,146 +161,182 @@ generate_analysis <- function(input_data_folder,
         batch_sels  = batch_sels
     )
     
+    # Check that number of cells and features is enough or finish here
+    n_cell = ncol(scExp)
+    n_feature = nrow(scExp)
+    
+    if( (n_cell < 100) | (n_feature < 300) ){
+        warning("Analyis ", analysis_name, " has stopped after QC filtering,",
+                " there were less than 100 cells or 300 features...")
+        return()
+    }
+    
     #### Calculate CNA
-    if(!is.null(control_samples_CNA)){
-        scExp_full = create_scExp(datamatrix, annot_raw)
-        scExp_full = scExp_full[,match(scExp$cell_id, scExp_full$cell_id)]
-        scExp_full = calculate_CNA(scExp_full, control_samples = control_samples_CNA,
-                              ref_genome = ref_genome)
-        
-        SingleCellExperiment::reducedDim(scExp,"cytoBand") =
-            SingleCellExperiment::reducedDim(scExp_full,"cytoBand")
-        SingleCellExperiment::reducedDim(scExp,"logRatio_cytoBand") =
-            SingleCellExperiment::reducedDim(scExp_full,"logRatio_cytoBand")
-        SingleCellExperiment::reducedDim(scExp,"gainOrLoss_cytoBand") =
-            SingleCellExperiment::reducedDim(scExp_full,"gainOrLoss_cytoBand")
-        gc()
-        rm(scExp_full)
-        gc()
+    if("CNA" %in% run) {
+        message("ChromSCape::generate_analysis - running Copy Number Variant",
+        " detection of cytobands on unfiltered features...")
+        if(!is.null(control_samples_CNA)){
+            scExp_full = create_scExp(datamatrix, annot_raw)
+            scExp_full = scExp_full[,match(scExp$cell_id, scExp_full$cell_id)]
+            scExp_full = calculate_CNA(scExp_full, control_samples = control_samples_CNA,
+                                       ref_genome = ref_genome)
+            
+            SingleCellExperiment::reducedDim(scExp,"cytoBand") =
+                SingleCellExperiment::reducedDim(scExp_full,"cytoBand")
+            SingleCellExperiment::reducedDim(scExp,"logRatio_cytoBand") =
+                SingleCellExperiment::reducedDim(scExp_full,"logRatio_cytoBand")
+            SingleCellExperiment::reducedDim(scExp,"gainOrLoss_cytoBand") =
+                SingleCellExperiment::reducedDim(scExp_full,"gainOrLoss_cytoBand")
+            gc()
+            rm(scExp_full)
+            gc()
+        }
     }
     qs::qsave(scExp, file = file.path(filt_dir, paste0(prefix, ".qs")))
     
     #### Correlation Filtering & Clustering ####
-    message("ChromSCape::generate_analysis - Correlation Consensus Clustering ...")
-    scExp_cf = filter_correlated_cell_scExp(scExp, random_iter = 50, corr_threshold = corr_threshold,
-                                                     percent_correlation = percent_correlation)
-    
-    scExp_cf = consensus_clustering_scExp(scExp_cf, reps = 100,
-                                        maxK = maxK,
-                                        clusterAlg = "hc",
-                                        prefix = file.path(cor_plot_dir,prefix))
-    
-    ### Choose most robust cluster #####
-    average_consensus_score = scExp_cf@metadata$icl$clusterConsensus %>% 
-        as.data.frame %>% dplyr::group_by(k) %>% summarise(mean = mean(clusterConsensus))
-    average_consensus_score$diff = 0 
-    average_consensus_score$diff[2:(maxK-1)] = average_consensus_score$mean[2:(maxK-1)] - average_consensus_score$mean[1:(maxK-2)]
-    nclust = average_consensus_score$k[which.max(abs(average_consensus_score$diff))-1]
-    
-    if(!is.null(n_clust)) nclust =n_clust
+    if("cluster" %in% run) {
+        message("ChromSCape::generate_analysis - Correlation Consensus Clustering ...")
+        scExp_cf = filter_correlated_cell_scExp(scExp, random_iter = 50, corr_threshold = corr_threshold,
+                                                percent_correlation = percent_correlation)
         
-    message("ChromSCape::generate_analysis - Choosing k = ", nclust, " as the optimal cluster number...")
-    scExp_cf = choose_cluster_scExp(scExp_cf, nclust = nclust, consensus = TRUE)
-    
-    data = list("scExp_cf" = scExp_cf)
-    qs::qsave(data, file = file.path(cor_dir, paste0(prefix,".qs")))
+        # Check that number of cells and features is enough or finish here
+        n_cell = ncol(scExp_cf)
+        if( (n_cell < 100)){
+            warning("Analyis ", analysis_name, " has too few cells after cell ",
+                    "correlation filtering, skipping cell correlation filtering...")
+            scExp_cf = scExp_cf@metadata$Unfiltered
+        }
+        
+        scExp_cf = consensus_clustering_scExp(scExp_cf, reps = 100,
+                                              maxK = maxK,
+                                              clusterAlg = "hc",
+                                              prefix = file.path(cor_plot_dir,prefix))
+        
+        ### Choose most robust cluster #####
+        average_consensus_score = scExp_cf@metadata$icl$clusterConsensus %>% 
+            as.data.frame %>% dplyr::group_by(k) %>% summarise(mean = mean(clusterConsensus))
+        average_consensus_score$diff = 0 
+        average_consensus_score$diff[2:(maxK-1)] = average_consensus_score$mean[2:(maxK-1)] - average_consensus_score$mean[1:(maxK-2)]
+        nclust = average_consensus_score$k[which.max(abs(average_consensus_score$diff))-1]
+        
+        if(!is.null(n_clust)) nclust =n_clust
+        
+        message("ChromSCape::generate_analysis - Choosing k = ", nclust, " as the optimal cluster number...")
+        scExp_cf = choose_cluster_scExp(scExp_cf, nclust = nclust, consensus = TRUE)
+        
+        data = list("scExp_cf" = scExp_cf)
+        qs::qsave(data, file = file.path(cor_dir, paste0(prefix,".qs")))
+    }
     
     #### Coverage #####
-    coverages = NULL
-    if(input_data_type %in% c("scBED")){
-        message("ChromSCape::generate_analysis - Creating pseudo-bulk cluster ",
-                "coverage tracks...")
-        
-        sample_folders = list.dirs(input_data_folder, full.names = T, recursive = F)
-        input_files_coverage = sapply(sample_folders, function(i) list.files(i, full.names = T, pattern = ".bed|.bed.gz"))
-        names(input_files_coverage) = basename(sample_folders)
-        
-        coverage_dir_nclust = file.path(coverage_dir, paste0(prefix, "_k", nclust))
-        if(!dir.exists(coverage_dir_nclust)) dir.create(coverage_dir_nclust)
-        
-        system.time({generate_coverage_tracks(scExp_cf,
-                                              input_files_coverage,
-                                              odir = coverage_dir_nclust,
-                                              ref_genome = ref_genome
-        )
-        })
-        
-        coverages = sapply(list.files(coverage_dir_nclust,".bw", full.names = T), rtracklayer::import)
+    if("coverage" %in% run) {
+        coverages = NULL
+        if(input_data_type %in% c("scBED")){
+            message("ChromSCape::generate_analysis - Creating pseudo-bulk cluster ",
+                    "coverage tracks...")
+            
+            sample_folders = list.dirs(input_data_folder, full.names = T, recursive = F)
+            input_files_coverage = sapply(sample_folders, function(i) list.files(i, full.names = T, pattern = ".bed|.bed.gz"))
+            names(input_files_coverage) = basename(sample_folders)
+            
+            coverage_dir_nclust = file.path(coverage_dir, paste0(prefix, "_k", nclust))
+            if(!dir.exists(coverage_dir_nclust)) dir.create(coverage_dir_nclust)
+            
+            system.time({generate_coverage_tracks(scExp_cf,
+                                                  input_files_coverage,
+                                                  odir = coverage_dir_nclust,
+                                                  ref_genome = ref_genome
+            )
+            })
+            
+            coverages = sapply(list.files(coverage_dir_nclust,".bw", full.names = T), rtracklayer::import)
+        }
     }
     
     #### Peak Calling #####
-    if(input_data_type %in% c("scBED")){
-        message("ChromSCape::generate_analysis - Calling peaks on pseudo-bulk ",
-        "clusters ...")
+    if("peak_call" %in% run) {
+        if(input_data_type %in% c("scBED")){
+            message("ChromSCape::generate_analysis - Calling peaks on pseudo-bulk ",
+                    "clusters ...")
+            
+            sample_folders = list.dirs(input_data_folder, full.names = T, recursive = F)
+            input_files = sapply(sample_folders, function(i) list.files(i, full.names = T, pattern = ".bed|.bed.gz"))
+            names(input_files) = basename(sample_folders)
+            
+            peak_dir_nclust = file.path(peak_dir, paste0(prefix, "_k", nclust))
+            if(!dir.exists(peak_dir_nclust)) dir.create(peak_dir_nclust)
+            
+            scExp_cf = subset_bam_call_peaks(scExp_cf, odir = peak_dir_nclust,
+                                             input = input_files, format = "scBED",
+                                             p.value = 0.05, ref =  ref_genome, 
+                                             peak_distance_to_merge = 10000)
+            refined_annotation = scExp_cf@metadata$refined_annotation
+            qs::qsave(refined_annotation, file = file.path(peak_dir_nclust,
+                                                           "refined_annotation.qs"))
+            
+        }
+    }
+    #### Differential Analysis #####
+    if("DA" %in% run) {
+        message("ChromSCape::generate_analysis - Running one vs rest differential  ",
+                "analysis ...")
         
-        sample_folders = list.dirs(input_data_folder, full.names = T, recursive = F)
-        input_files = sapply(sample_folders, function(i) list.files(i, full.names = T, pattern = ".bed|.bed.gz"))
-        names(input_files) = basename(sample_folders)
-        
-        peak_dir_nclust = file.path(peak_dir, paste0(prefix, "_k", nclust))
-        if(!dir.exists(peak_dir_nclust)) dir.create(peak_dir_nclust)
-        
-        scExp_cf = subset_bam_call_peaks(scExp_cf, odir = peak_dir_nclust,
-                              input = input_files, format = "scBED",
-                              p.value = 0.05, ref =  ref_genome, 
-                              peak_distance_to_merge = 10000)
-        refined_annotation = scExp_cf@metadata$refined_annotation
-        qs::qsave(refined_annotation, file = file.path(peak_dir_nclust,
-                                                       "refined_annotation.qs"))
-        
+        if(doBatchCorr) block = TRUE else block = FALSE
+        scExp_cf = differential_analysis_scExp(scExp = scExp_cf,
+                                               method= "wilcox",
+                                               de_type = "one_vs_rest",
+                                               cdiff.th = logFC.th,
+                                               qval.th = qval.th,
+                                               block = block)
     }
     
-    #### Differential Analysis #####
-    message("ChromSCape::generate_analysis - Running one vs rest differential  ",
-            "analysis ...")
-    
-    if(doBatchCorr) block = TRUE else block = FALSE
-    scExp_cf = differential_analysis_scExp(scExp = scExp_cf,
-                                           method= "wilcox",
-                                           de_type = "one_vs_rest",
-                                           cdiff.th = logFC.th,
-                                           qval.th = qval.th,
-                                           block = block)
     #### Gene Sets Analysis #####
-    message("ChromSCape::generate_analysis - Running Gene Set Analysis ...")
-    
-    if("refined_annotation" %in% names(scExp_cf@metadata)) use_peaks = TRUE else
-        use_peaks = FALSE
-    MSIG.classes <- c("c1_positional","c2_curated","c3_motif","c4_computational",
-          "c5_GO","c6_oncogenic","c7_immunologic","hallmark")
-    scExp_cf = gene_set_enrichment_analysis_scExp(
-        scExp_cf,
-        enrichment_qval = 0.01, qval.th = qval.th,
-        ref = ref_genome,
-        cdiff.th = logFC.th,
-        peak_distance = 1000,
-        use_peaks = use_peaks,
-        GeneSetClasses = MSIG.classes)
-    
-    data = list("scExp_cf" = scExp_cf)
-    qs::qsave(data,
-              file = file.path(da_gsa_dir,
-                               paste0(prefix,"_",nclust,"_",qval.th,"_",
-                                      logFC.th,"_","one_vs_rest",".qs")))
+    if("GSA" %in% run){
+        message("ChromSCape::generate_analysis - Running Gene Set Analysis ...")
+        
+        if("refined_annotation" %in% names(scExp_cf@metadata)) use_peaks = TRUE else
+            use_peaks = FALSE
+        MSIG.classes <- c("c1_positional","c2_curated","c3_motif","c4_computational",
+                          "c5_GO","c6_oncogenic","c7_immunologic","hallmark")
+        scExp_cf = gene_set_enrichment_analysis_scExp(
+            scExp_cf,
+            enrichment_qval = 0.01, qval.th = qval.th,
+            ref = ref_genome,
+            cdiff.th = logFC.th,
+            peak_distance = 1000,
+            use_peaks = use_peaks,
+            GeneSetClasses = MSIG.classes)
+        
+        data = list("scExp_cf" = scExp_cf)
+        qs::qsave(data,
+                  file = file.path(da_gsa_dir,
+                                   paste0(prefix,"_",nclust,"_",qval.th,"_",
+                                          logFC.th,"_","one_vs_rest",".qs")))
+    }
     
     #### Creating HTML report ####
-    message("ChromSCape::generate_analysis - Running Gene Set Analysis ...")
-    
-    rmarkdown::render(
-        input = file.path("/media/pacome/LaCie/InstitutCurie/Documents/GitLab/ChromSCape/inst/template.Rmd"),
-        output_file = file.path(ChromSCape_directory, paste0(analysis_name,"_report.html")),
-        params = list(
-            analysis_name = analysis_name,
-            datamatrix = datamatrix,
-            scExp = scExp,
-            scExp_cf = scExp_cf,
-            genes_to_plot = genes_to_plot,
-            ref_genome = ref_genome,
-            coverages = coverages,
-            control_samples_CNA = control_samples_CNA
-        ))
-    
-    message("Done ! ...")
+    if("report" %in% run){
+        message("ChromSCape::generate_analysis - Running Gene Set Analysis ...")
+        
+        rmarkdown::render(
+            input = file.path("/media/pacome/LaCie/InstitutCurie/Documents/GitLab/ChromSCape/inst/template.Rmd"),
+            output_file = file.path(ChromSCape_directory, paste0(analysis_name,"_report.html")),
+            params = list(
+                analysis_name = analysis_name,
+                datamatrix = datamatrix,
+                scExp = scExp,
+                scExp_cf = scExp_cf,
+                genes_to_plot = genes_to_plot,
+                ref_genome = ref_genome,
+                coverages = coverages,
+                control_samples_CNA = control_samples_CNA
+            ))
+    }
+    })
+    message("ChromSCape::generate_analysis - Done ! ...")
+    message("ChromSCape::generate_analysis - finished complete analysis in ",
+            round(time_analysis[3]/60,2), " minutes...")
     
     out = list("scExp" = scExp, "scExp_cf" = scExp_cf)
     return(out)
@@ -379,9 +430,6 @@ preprocessing_filtering_and_reduction <- function(
     doBatchCorr  = FALSE,
     batch_sels  = NULL)
 {
-    
-    
-    
     
     scExp = create_scExp(datamatrix, annot_raw,
                          remove_zero_cells = TRUE,
