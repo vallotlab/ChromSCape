@@ -9,9 +9,9 @@ analysis_name = "Test"
 # coverages = sapply(list.files(file.path(ChromSCape_directory,"coverage","Mouse_ctrl_orga_50kbp_1300_0.5_95_uncorrected_k2"),".bw", full.names = T), rtracklayer::import)
 input_data_type = "scBED"
 feature_count_on = "bins"
-feature_count_parameter = 50000
-min_reads_per_cell = 1300
-min_percent_to_keep_feature = 0.5
+feature_count_parameter = 200000
+min_reads_per_cell = 1000
+n_top_features = 40000
 max_quantile_read_per_cell = 99
 maxK = 8
 n_clust = 6
@@ -58,9 +58,9 @@ generate_analysis <- function(input_data_folder,
                   ref_genome = c("hg38","mm10")[1],
                   run = c("filter", "CNA","cluster", "peak_call", "coverage", 
                           "DA", "GSA", "report"),
-                  min_reads_per_cell = 1600,
-                  max_quantile_read_per_cell = 95,
-                  min_percent_to_keep_feature = 0.5,
+                  min_reads_per_cell = 1000,
+                  max_quantile_read_per_cell = 99,
+                  n_top_features = 40000,
                   subsample_n = NULL,
                   exclude_regions = NULL,
                   n_clust = NULL,
@@ -86,36 +86,20 @@ generate_analysis <- function(input_data_folder,
               input_data_type %in% c("DenseMatrix", "SparseMatrix", "scBED", "scBAM"),
               ref_genome %in% c("hg38","mm10"), is.numeric(min_reads_per_cell),
               is.numeric(max_quantile_read_per_cell),
-              is.numeric(min_percent_to_keep_feature),
+              is.numeric(n_top_features),
               is.numeric(qval.th),
               is.numeric(logFC.th),
               is.numeric(enrichment_qval)
               )
     
     #### Create Analysis directory ####
-    if(!dir.exists(output_directory)) dir.create(output_directory)
-    ChromSCape_analyses = file.path(output_directory, "ChromSCape_analyses")
-    if(!dir.exists(ChromSCape_analyses)) dir.create(ChromSCape_analyses)
+    ChromSCape_directory <- create_project_folder(output_directory,
+                                                  analysis_name,
+                                                  ref_genome)
     
-    ChromSCape_directory = file.path(ChromSCape_analyses, analysis_name)
-    if(!dir.exists(ChromSCape_directory)) dir.create(ChromSCape_directory)
-    filt_dir <- file.path(ChromSCape_directory,"Filtering_Normalize_Reduce") 
-    dir.create(filt_dir, showWarnings = FALSE)
-    cor_dir <- file.path(ChromSCape_directory, "correlation_clustering")
-    dir.create(cor_dir, showWarnings = FALSE)
-    cor_plot_dir <- file.path(cor_dir,"Plots")
-    dir.create(cor_plot_dir, showWarnings = FALSE)
-    coverage_dir <- file.path(ChromSCape_directory,"coverage")
-    dir.create(coverage_dir, showWarnings = FALSE)
-    peak_dir <- file.path(ChromSCape_directory,"peaks")
-    dir.create(peak_dir, showWarnings = FALSE)
-    da_gsa_dir <- file.path(ChromSCape_directory, "Diff_Analysis_Gene_Sets")
-    dir.create(da_gsa_dir, showWarnings = FALSE)
-    
-    write(ref_genome, file = file.path(ChromSCape_directory, "annotation.txt"))
     batch_string <- if (doBatchCorr) "batchCorrected" else "uncorrected"
     prefix = paste0(analysis_name, "_", min_reads_per_cell, "_",
-           min_percent_to_keep_feature, "_",
+           n_top_features, "_",
            max_quantile_read_per_cell, "_", batch_string)
     
     time_analysis = system.time({
@@ -153,7 +137,7 @@ generate_analysis <- function(input_data_folder,
         annot_raw = annot_raw,
         min_reads_per_cell = min_reads_per_cell,
         max_quantile_read_per_cell = max_quantile_read_per_cell,
-        min_percent_to_keep_feature = min_percent_to_keep_feature,
+        n_top_features = n_top_features,
         subsample_n = subsample_n,
         ref_genome = ref_genome,
         exclude_regions = exclude_regions,
@@ -321,7 +305,7 @@ generate_analysis <- function(input_data_folder,
         
         rmarkdown::render(
             input = file.path("/media/pacome/LaCie/InstitutCurie/Documents/GitLab/ChromSCape/inst/template.Rmd"),
-            output_file = file.path(ChromSCape_directory, paste0(analysis_name,"_report.html")),
+            output_file = file.path(ChromSCape_directory, paste0(analysis_name, "_report.html")),
             params = list(
                 analysis_name = analysis_name,
                 datamatrix = datamatrix,
@@ -373,9 +357,8 @@ rawData_to_datamatrix_annot <- function(input_data_folder,
         }
         
         if(input_data_type == "SparseMatrix"){
-            out =  ChromSCape:::raw_counts_to_feature_count_files(
+            out =  ChromSCape:::read_sparse_matrix(
                 files_dir_list = selected_sample_folders,
-                file_type = input_data_type,
                 ref = ref_genome)
             
         } else if(input_data_type %in% c("scBAM","scBED") &
@@ -385,7 +368,7 @@ rawData_to_datamatrix_annot <- function(input_data_folder,
                 stopifnot(is.double(feature_count_parameter),
                           feature_count_parameter >= 500)
                 
-                out = ChromSCape:::raw_counts_to_feature_count_files(
+                out = ChromSCape:::raw_counts_to_sparse_matrix(
                     files_dir_list = selected_sample_folders,
                     file_type = input_data_type,
                     bin_width = round(feature_count_parameter),
@@ -394,7 +377,7 @@ rawData_to_datamatrix_annot <- function(input_data_folder,
             if(feature_count_on == "peaks"){
                 stopifnot(is.character(feature_count_parameter),
                           file.exists(feature_count_parameter))
-                out = ChromSCape:::raw_counts_to_feature_count_files(
+                out = ChromSCape:::raw_counts_to_sparse_matrix(
                     files_dir_list = selected_sample_folders,
                 file_type = input_data_type,
                 peak_file = as.character(feature_count_parameter),
@@ -403,7 +386,7 @@ rawData_to_datamatrix_annot <- function(input_data_folder,
             if(feature_count_on == "geneTSS"){
                 stopifnot(is.double(feature_count_parameter),
                           feature_count_parameter >= 100)
-                out = ChromSCape:::raw_counts_to_feature_count_files(
+                out = ChromSCape:::raw_counts_to_sparse_matrix(
                     files_dir_list = selected_sample_folders,
                 file_type = input_data_type,
                 geneTSS = TRUE,
@@ -418,12 +401,68 @@ rawData_to_datamatrix_annot <- function(input_data_folder,
     return(out)
 }
 
+#' Create ChromSCape project folder 
+#' 
+#' @description 
+#' Creates a project folder that will be recognizable by ChromSCape Shiny
+#' application. 
+#' 
+#' @param output_directory Path towards the directory to create the
+#'  'ChromSCape_Analyses' folder and the analysis subfolder. If this path 
+#'  already contains the 'ChromSCape_Analyses' folder, will only create the 
+#'  analysis subfolder.
+#' @param analysis_name Name of the analysis. Must only contain alphanumerical
+#' characters or '_'. 
+#' @param ref_genome  Reference genome, either 'hg38' or 'mm10'.
+#'
+#' @return Creates the project folder and returns the root of the project.
+#' 
+#' @export
+#'
+#' @examples
+create_project_folder <- function(output_directory,
+                                  analysis_name = "Analysis_1",
+                                  ref_genome = c("hg38","mm10")[1]){
+    stopifnot(is.character(output_directory), dir.exists(output_directory),
+              is.character(analysis_name), is.character(ref_genome),
+              ref_genome %in% c("hg38","mm10"))
+
+    if(!grepl("^[A-Za-z0-9_]+$", analysis_name))
+        stop("ChromSCape::create_project_folder - The analysis name must ",
+        "contain only alphanumerical characters or '_'.")
+    
+    # Dont create "ChromSCape_analyses" directory if it is created already
+    if(!grepl("ChromSCape_analyses/$|ChromSCape_analyses$", output_directory)) {
+        ChromSCape_analyses = file.path(output_directory, "ChromSCape_analyses")
+        if(!dir.exists(ChromSCape_analyses)) dir.create(ChromSCape_analyses) 
+    } else{
+        ChromSCape_analyses = file.path(output_directory)
+    }
+    
+    ChromSCape_directory = file.path(ChromSCape_analyses, analysis_name)
+    if(!dir.exists(ChromSCape_directory)) dir.create(ChromSCape_directory)
+    filt_dir <- file.path(ChromSCape_directory,"Filtering_Normalize_Reduce") 
+    dir.create(filt_dir, showWarnings = FALSE)
+    cor_dir <- file.path(ChromSCape_directory, "correlation_clustering")
+    dir.create(cor_dir, showWarnings = FALSE)
+    cor_plot_dir <- file.path(cor_dir,"Plots")
+    dir.create(cor_plot_dir, showWarnings = FALSE)
+    coverage_dir <- file.path(ChromSCape_directory,"coverage")
+    dir.create(coverage_dir, showWarnings = FALSE)
+    peak_dir <- file.path(ChromSCape_directory,"peaks")
+    dir.create(peak_dir, showWarnings = FALSE)
+    da_gsa_dir <- file.path(ChromSCape_directory, "Diff_Analysis_Gene_Sets")
+    dir.create(da_gsa_dir, showWarnings = FALSE)
+    
+    write(ref_genome, file = file.path(ChromSCape_directory, "annotation.txt"))
+    return(ChromSCape_directory)
+}
 
 preprocessing_filtering_and_reduction <- function(
     datamatrix, annot_raw,
     min_reads_per_cell = 1600,
     max_quantile_read_per_cell = 95,
-    min_percent_to_keep_feature = 0.5,
+    n_top_features = 40000,
     subsample_n = NULL,
     ref_genome,
     exclude_regions = NULL,
@@ -439,14 +478,17 @@ preprocessing_filtering_and_reduction <- function(
     scExp = filter_scExp(
         scExp,
         min_cov_cell = min_reads_per_cell,
-        quant_removal = max_quantile_read_per_cell,
-        percentMin = min_percent_to_keep_feature)
+        quant_removal = max_quantile_read_per_cell)
     gc()
+    
+    scExp = find_top_features(
+        scExp,
+        n = n_top_features,
+        keep_others = FALSE)
     
     # Filtering based on exclude-regions from bed file, if provided
     if (!is.null(exclude_regions))
     {
-        exclude_regions = import(exclude_regions)
         scExp = exclude_features_scExp(scExp, exclude_regions, by = "region")
         gc()
     }
