@@ -151,7 +151,7 @@ read_sparse_matrix <- function(files_dir_list,
     
     if (length(c(feature_file, matrix_file, barcode_file)) != 3)
         stop(paste0(
-            "ChromSCape::raw_counts_to_feature_count_files - For ",
+            "ChromSCape::read_sparse_matrix - For ",
             "SparseMatrix Count type, the folder must contain exactly two files ",
             "matching respectively *index.txt, peaks.bed, barcodes.txt"))
     
@@ -174,7 +174,7 @@ read_sparse_matrix <- function(files_dir_list,
             samples_ids = c(samples_ids, rep(sample_id, length(name_cell)))
         })
         if (verbose)
-            message("ChromSCape::raw_counts_to_feature_count_files - ",
+            message("ChromSCape::read_sparse_matrix - ",
                     "Count matrix ", sample_id ,
                     " created from Index-Peak-Barcodes files in ",
                     round(t1[3],3), " sec.")
@@ -215,6 +215,7 @@ read_sparse_matrix <- function(files_dir_list,
 #' @param geneTSS Use geneTSS regions for annotation ? (NULL)
 #' @param aroundTSS Space up and downstream of TSS to use (2500)
 #' @param file_type Input file(s) type(s) ('scBED','scBAM','SparseMatrix')
+#' @param progress Progress object for Shiny
 #'
 #' @return A sparse matrix of features x cells
 #'
@@ -225,17 +226,24 @@ read_sparse_matrix <- function(files_dir_list,
 #' sort.GenomicRanges
 #' 
 raw_counts_to_sparse_matrix <- function(
-    files_dir_list, file_type = c("scBAM", "scBED"),
+    files_dir_list, file_type = c("scBED", "scBAM"),
     peak_file = NULL, n_bins = NULL, bin_width = NULL, geneTSS = NULL,
-    aroundTSS = 2500, verbose = TRUE, ref = c("hg38","mm10")[1]) {
-    warning_raw_counts_to_feature_count_files(
+    aroundTSS = 2500, verbose = TRUE, ref = c("hg38","mm10")[1],
+    progress = NULL) {
+    warning_raw_counts_to_sparse_matrix(
         files_dir_list, file_type, peak_file, n_bins, bin_width, geneTSS,
         aroundTSS, verbose, ref)
     
+    if (!is.null(progress)) progress$set(detail = "Defining features...",
+                                         value = 0.1)
     which <- define_feature(ref, peak_file, n_bins, bin_width, geneTSS,
                                 aroundTSS)
+    
     out <- import_count_input_files(
-        files_dir_list, file_type, which, ref, verbose)
+        files_dir_list, file_type, which, ref, verbose, progress)
+    
+    if (!is.null(progress)) progress$set(detail = "Combining matrices...",
+                                         value = 0.05)
     mat = list()
     samples_ids = barcodes = c()
     for(i in seq_along(out$feature_indexes)){
@@ -269,7 +277,7 @@ raw_counts_to_sparse_matrix <- function(
 }
 
 
-#' Warning for raw_counts_to_feature_count_files
+#' Warning for raw_counts_to_sparse_matrix
 #'
 #' @param ref reference genome to use (hg38)
 #' @param verbose Verbose (TRUE)
@@ -283,7 +291,7 @@ raw_counts_to_sparse_matrix <- function(
 #' @param file_type Input file(s) type(s) ('scBED','scBAM','SparseMatrix')
 #'
 #' @return Error or warnings if the input are not correct
-warning_raw_counts_to_feature_count_files <- function(
+warning_raw_counts_to_sparse_matrix <- function(
     files_dir_list, file_type = c("scBAM", "scBED", "SparseMatrix"),
     peak_file = NULL, n_bins = NULL, bin_width = NULL, geneTSS = NULL,
     aroundTSS = 2500, verbose = TRUE, ref = "hg38"){
@@ -291,20 +299,20 @@ warning_raw_counts_to_feature_count_files <- function(
                 ref %in% c("mm10", "hg38"))
         
         if (!is.null(peak_file) && !file.exists(peak_file))
-            stop("ChromSCape::raw_counts_to_feature_count_files - 
+            stop("ChromSCape::raw_counts_to_sparse_matrix - 
             Can't find peak file.")
         
         if (!is.null(n_bins) && !is.numeric(n_bins))
-            stop("ChromSCape::raw_counts_to_feature_count_files - 
+            stop("ChromSCape::raw_counts_to_sparse_matrix - 
             n_bins must be a number.")
         
         if (!is.null(bin_width) && !is.numeric(bin_width))
-            stop("ChromSCape::raw_counts_to_feature_count_files - 
+            stop("ChromSCape::raw_counts_to_sparse_matrix - 
             bin_width must be a number.")
         
         if (!is.null(geneTSS) && !is.logical(geneTSS))
             stop(paste0(
-                "ChromSCape::raw_counts_to_feature_count_files - geneTSS ",
+                "ChromSCape::raw_counts_to_sparse_matrix - geneTSS ",
                 "must be a TRUE or FALSE"))
     }
 
@@ -328,7 +336,7 @@ define_feature <- function(ref, peak_file, n_bins, bin_width,
     chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
     chr <- GenomicRanges::GRanges(chr)
     if (!is.null(peak_file)) {
-        message('ChromSCape::raw_counts_to_feature_count_files - ',
+        message('ChromSCape::define_feature - ',
                 'Reading in peaks file...')
         features <- rtracklayer::import(peak_file, format="bed")
         which <- IRanges::subsetByOverlaps(features,chr)
@@ -338,7 +346,7 @@ define_feature <- function(ref, peak_file, n_bins, bin_width,
                     " duplicated regions from peak file.")
         which = which[!GenomicRanges::duplicated(which)]
     } else if (!is.null(n_bins) | !is.null(bin_width)) {
-        message('ChromSCape::raw_counts_to_feature_count_files - ',
+        message('ChromSCape::define_feature - ',
                 'Counting on genomic bins...')
         if (!is.null(n_bins)) {
             which <- unlist(GenomicRanges::tileGenome(
@@ -382,23 +390,29 @@ define_feature <- function(ref, peak_file, n_bins, bin_width,
 #' @param verbose Print ?
 #' @param file_type Input file type
 #'
-#' @return A list with a GRanges object of feature types (which), the 
+#' @return A list with the 
 #' feature indexes data.frame containing non-zeroes entries in the count matrix
 #' and the cell names
 #'
 import_count_input_files <- function(files_dir_list, file_type,
-                                    which, ref, verbose){
+                                    which, ref, verbose, progress){
     feature_indexes = list()
     name_cells = list()
     for(i in seq_along(files_dir_list)){
         dir = files_dir_list[[i]]
         sample_id = names(files_dir_list)[i]
+        if(!is.null(progress)) progress$inc(
+            detail=paste0("Computing ", sample_id, "...",
+            "\nLook for progress in the console."),
+            amount = 0.6/length(files_dir_list))
+        message("ChromSCape::import_count_input_files - Computing ",
+                sample_id, "...")
         if (file_type == "scBAM") {
             t1 = system.time({
                 l = bams_to_matrix_indexes(dir, which)
             })
             if (verbose)
-                message("ChromSCape::raw_counts_to_feature_count_files - ",
+                message("ChromSCape::raw_counts_to_sparse_matrix - ",
                         "Count matrix ", sample_id ,"created from BAM files in "
                         , t1[3], " sec.\n")
         }
@@ -407,12 +421,17 @@ import_count_input_files <- function(files_dir_list, file_type,
                 l = beds_to_matrix_indexes(dir, which)
             })
             if (verbose)
-                message("ChromSCape::raw_counts_to_feature_count_files - ",
+                message("ChromSCape::raw_counts_to_sparse_matrix - ",
                         "Count matrix ", sample_id ,"
                         created from BED files in ", t1[3], " sec.")}
+        
+        feature_indexes[[i]] = l[[1]]
+        names(feature_indexes)[i] = sample_id
+        name_cells[[i]] = l[[2]]
+        names(name_cells)[i] = sample_id
     }
     
-    out <- list("which" = which, "feature_indexes" = feature_indexes,
+    out <- list("feature_indexes" = feature_indexes,
                 "name_cells" = name_cells)
 
     return(out)
@@ -422,19 +441,23 @@ import_count_input_files <- function(files_dir_list, file_type,
 #'
 #' @param dir A directory containing single cell  BAM files and BAI files
 #' @param which Genomic Range on which to count
-#'
+#' 
 #' @return A list containing a "feature index" data.frame and a 
 #' count vector for non 0 entries, both used to form the sparse matrix
 #'
 #' @importFrom Rsamtools BamFileList indexBam ScanBamParam countBam
 #' @importFrom BiocParallel bplapply
-bams_to_matrix_indexes = function(dir, which) {
+bams_to_matrix_indexes = function(dir, which, progress, n_samp_progress) {
     single_cell_bams = list.files(dir,
                                 full.names = TRUE,
                                 pattern = paste0(".*.bam$"))
     bam_files = Rsamtools::BamFileList(single_cell_bams)
     name_cells = gsub("*.bam$", "", basename(as.character(single_cell_bams)))
     names(bam_files) = name_cells
+    
+    if(!is.null(progress)){
+        n_cells = length(name_cells)
+    }
     
     indexes = list.files(dir,
                         full.names = TRUE,
@@ -451,9 +474,14 @@ bams_to_matrix_indexes = function(dir, which) {
     if (!all.equal(names_index, name_cells))
         stop("Different number of BAM and indexes files. Stopping.")
     param = Rsamtools::ScanBamParam(which = which)
+    
+    BPPARAM = BiocParallel::SnowParam()
+    BiocParallel::bpprogressbar(BPPARAM) <- TRUE
+    # BiocParallel::bptasks(BPPARAM) <- ceiling(length(single_cell_beds) / 
+    #                                 (4*BiocParallel::bpworkers(BPPARAM)))
     system.time({
-        feature_list = BiocParallel::bplapply(
-            names(bam_files), function(bam_name) {
+        feature_list = BiocParallel::bplapply(BPPARAM = BPPARAM,
+            names(bam_files), function(bam_name, bam_files, param) {
                 bam_files[[bam_name]]$index = indexes[[bam_name]]
                 tmp = Rsamtools::countBam(
                     file = bam_files[[bam_name]], param = param)
@@ -462,8 +490,11 @@ bams_to_matrix_indexes = function(dir, which) {
                 sel = which(tmp$records > 0)
                 if (length(sel) > 0)
                     tmp = tmp[sel, c("cell_id", "feature_index", "records")]
+                if(!is.null(progress)) progress$inc(
+                    amount = 0.6/(n_samp_progress*n_cells),
+                    detail = paste0("Counting cell - ", bam_name))
                 tmp
-            })
+            }, bam_files = bam_files, param = param)
     })
     
     feature_indexes = do.call(rbind, feature_list)
@@ -522,6 +553,7 @@ index_peaks_barcodes_to_matrix_indexes = function(
 #' @param which Genomic Range on which to count
 #'
 #' @importFrom BiocParallel bplapply
+#' @importFrom rtracklayer import
 #' @importFrom GenomicRanges GRanges countOverlaps
 #' 
 #' @return A list containing a "feature index" data.frame and a 
@@ -533,15 +565,22 @@ beds_to_matrix_indexes <- function(dir, which) {
     names_cells = gsub(".bed$|.bed.gz$", 
                     "", basename(as.character(single_cell_beds)))
     names(single_cell_beds) = names_cells
+
+    BPPARAM = BiocParallel::SnowParam()
+    BiocParallel::bpprogressbar(BPPARAM) <- TRUE
+    # BiocParallel::bptasks(BPPARAM) <- ceiling(length(single_cell_beds) / 
+    #                                 (4*BiocParallel::bpworkers(BPPARAM)))
+    # 
     system.time({
-        feature_list = BiocParallel::bplapply(
+    feature_list = BiocParallel::bplapply(BPPARAM = BPPARAM,
             names(single_cell_beds),
-            function(bed_name) {
-                bed = import(single_cell_beds[[bed_name]], format = "bed")
+            function(bed_name, single_cell_beds, which) {
+                bed = rtracklayer::import(single_cell_beds[[bed_name]],
+                                          format = "bed")
                 suppressWarnings({
                     tmp = data.frame(
-                        counts = GenomicRanges::countOverlaps(
-                            which, bed, minoverlap = 1))
+                        counts = IRanges::countOverlaps(
+                            which, IRanges::ranges(bed), minoverlap = 1))
                 })
                 tmp$feature_index = as.numeric(rownames(tmp))
                 tmp = tmp[which(tmp$counts > 0), ]
@@ -550,13 +589,15 @@ beds_to_matrix_indexes <- function(dir, which) {
                     tmp = tmp[, c("cell_id", "feature_index", "counts")]
                 } else { tmp = NULL}
                 tmp
-            })
+            }, single_cell_beds = single_cell_beds,
+            which = IRanges::ranges(which))
     })
     gc()
     feature_indexes = do.call(rbind, feature_list)
     feature_indexes$barcode_index = as.numeric(
         as.factor(feature_indexes$cell_id))
     out = list(feature_indexes, names_cells)
+    gc()
     return(out)
 }
 
@@ -841,11 +882,13 @@ generate_count_matrix <- function(cells, features, sparse,
 #' Combine one or multiple matrices together to create a sparse matrix and cell
 #' annotation data.frame.
 #'
-#' @param file_names A character vector of file names towards single cell
+#' @param file_paths A character vector of file names towards single cell
 #' epigenomic matrices (features x cells) (must be .txt / .tsv)
-#' @param path_to_matrix In case matrices are stored in temporary folder,
+#' @param temp_path In case matrices are stored in temporary folder,
 #' a character vector of path towards temporary files. (NULL)
-#'
+#' @param remove_pattern A string pattern to remove from the sample names. Can
+#' be a regexp.
+#' 
 #' @return A list containing:  
 #' * datamatrix: a sparseMatrix of features x cells  
 #' * annot_raw: an annotation of cells as data.frame  
@@ -859,26 +902,31 @@ generate_count_matrix <- function(cells, features, sparse,
 #' row.names = TRUE,col.names = TRUE,quote = FALSE)
 #' write.table(as.matrix(mat2),file=tmp2, sep = "\t",
 #' row.names = TRUE,col.names = TRUE,quote = FALSE)
-#' file_names = c(tmp1,tmp2)
-#' out = import_scExp(file_names)
+#' file_paths = c(tmp1,tmp2)
+#' out = import_scExp(file_paths)
+#' 
 #' @importFrom scater readSparseCounts
 #' @md
-import_scExp <- function(file_names,
-                        path_to_matrix = NULL) {
-    stopifnot(is.character(file_names))
-    if (length(grep("(.tsv$)|(.txt$)|(.csv$)|(.gz$)", file_names)) 
-        < length(file_names))
+import_scExp <- function(file_paths,
+                        remove_pattern = "",
+                        temp_path = NULL) {
+    stopifnot(is.character(file_paths), is.character(""))
+    if (length(grep("(.tsv$)|(.txt$)|(.csv$)|(.gz$)", file_paths)) 
+        < length(file_paths))
         stop(paste0("ChromSCape::import_scExp - Matrix files must be in",
-                    " .txt, .csv or .tsv format."))
-    if (is.null(path_to_matrix)) path_to_matrix = file_names
-    if (FALSE %in% as.logical(lapply(path_to_matrix, file.exists))) 
+                    " .txt, .csv or .tsv or .gz format."))
+    if (is.null(temp_path)) temp_path = file_paths
+    if (FALSE %in% as.logical(lapply(temp_path, file.exists))) 
         stop("ChromSCape::import_scExp - can't find one of the matrix files.")
     datamatrix = annot_raw = NULL
-    for (i in seq_along(file_names)) {
+    for (i in seq_along(file_paths)) {
         sample_name <- gsub('(.tsv$)|(.txt$)|(.csv$)', "", gsub('(.gz$)', '',
-                                               basename(file_names[i])))
-        separator <- separator_count_mat(path_to_matrix[i])
-        format_test = read.table(path_to_matrix[i], header = TRUE,
+                                               basename(file_paths[i])))
+        if(remove_pattern != "") sample_name = gsub(remove_pattern, "",
+                                                    sample_name)
+        
+        separator <- separator_count_mat(temp_path[i])
+        format_test = read.table(temp_path[i], header = TRUE,
                                 sep = separator, nrows = 5)
         separated_chr_start_end = c(
             grep("chr", colnames(format_test)[seq_len(3)]),
@@ -887,10 +935,10 @@ import_scExp <- function(file_names,
         if (length(separated_chr_start_end) > 0 &&
             all.equal(separated_chr_start_end, c(1, 2, 3))) {
             datamatrix_single = read_count_mat_with_separated_chr_start_end(
-                path_to_matrix[i], format_test, separator)
+                temp_path[i], format_test, separator)
         } else{
             datamatrix_single <- scater::readSparseCounts(
-                path_to_matrix[i], sep = separator, chunk = 1000L)
+                temp_path[i], sep = separator, chunk = 1000L)
         }
         gc()
         datamatrix_single <- check_correct_datamatrix(datamatrix_single,
@@ -903,7 +951,7 @@ import_scExp <- function(file_names,
             sample_id = rep(sample_name, total_cell), batch_id = 1)
         colnames(datamatrix_single) <- annot_single$cell_id
         datamatrix <- combine_datamatrix(datamatrix,
-                                        datamatrix_single, file_names, i)
+                                        datamatrix_single, file_paths, i)
         rm(datamatrix_single)
         if (is.null(annot_raw)) annot_raw <- annot_single
         else annot_raw <- rbind(annot_raw, annot_single)
@@ -1400,7 +1448,8 @@ get_genomic_coordinates <- function(scExp)
 #'
 #' @param scExp A SingleCellExperiment object.
 #' @param features_to_exclude A GenomicRanges object or data.frame containing
-#' genomic regions or features to exclude.
+#' genomic regions or features to exclude or path towards a BED file containing
+#' the features to exclude.
 #' @param by Type of features. Either 'region' or 'feature_name'. If 'region',
 #'  will look for genomic coordinates in columns 1-3 (chr,start,stop).
 #' If 'feature_name', will look for a genes in first column. ('region')
@@ -1412,6 +1461,7 @@ get_genomic_coordinates <- function(scExp)
 #' @importFrom GenomicRanges GRanges makeGRangesFromDataFrame findOverlaps
 #'  intersect
 #' @importFrom SummarizedExperiment rowRanges
+#' @importFrom rtracklayer import
 #'
 #' @examples 
 #' 
@@ -1428,9 +1478,15 @@ exclude_features_scExp <-
     function(scExp, features_to_exclude, by = "region", verbose = TRUE){
         stopifnot(is(scExp, "SingleCellExperiment"), is.character(by[1]))
         if(!is(features_to_exclude,"GenomicRanges") & 
-           !is(features_to_exclude,"data.frame")) stop(
-           "ChromSCape::exclude_features_scExp - features_to_exclude must be
+           !is(features_to_exclude,"data.frame")) {
+            if(!file.exists(features_to_exclude)) {
+                stop(
+                "ChromSCape::exclude_features_scExp - features_to_exclude must be
            either GenomicRanges or data.frame containg feature names.")
+            } else {
+                features_to_exclude = rtracklayer::import(exclude_regions)
+            }
+        }
         if (!by[1] %in% c("region", "feature_name")) 
             stop("ChromSCape::exclude_features_scExp - by must be either
             'region' or 'feature_name'")
