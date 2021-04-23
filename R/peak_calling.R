@@ -2,8 +2,9 @@
 
 #' Peak calling on cell clusters
 #' 
+#' @description 
 #' This functions does peak calling on each cell population in order to refine
-#' gene annotation for large bins. For instance, a 50000bp bin might containt
+#' gene annotation for large bins. For instance, a 50000bp bins might contain
 #' the TSS of several genes, while in reality only one or two of these genes are
 #' overlapping the signal (peak). To do so, first in-silico cell sorting is
 #' applied based on previously defined clusters contained in the
@@ -17,7 +18,9 @@
 #' 'cell_cluster' column in it's colData, an output directory where to store
 #' temporary files, the list of BAM files corresponding to each sample and
 #' containing the cell barcode information as a tag (for instance tag CB:Z:xxx,
-#' XB:Z:xxx or else...), the p.value used by MACS2 to distinguish significant
+#' XB:Z:xxx or else...) or single-cell BED files containing the raw reads and 
+#' corresponding to the 'barcode' column metadata,
+#'  the p.value used by MACS2 to distinguish significant
 #' peaks, the reference genome (either hg38 or mm10), the maximal merging
 #' distance in bp and a data.frame containing gene TSS genomic cooridnates of
 #' corresponding genome (if set to NULL, will automatically load geneTSS). The
@@ -33,6 +36,8 @@
 #' macs2' to verify the availability of these programs. Will only work on unix
 #' operating system. Check operating system with 'print(.Platform)'.
 #' 
+#' @details The BED files of the peaks called for each clusters, as well as 
+#' the merged peaks are written in the output directory.
 #'
 #' @param scExp A SingleCellExperiment object
 #' @param odir Output directory where to write temporary files and each
