@@ -353,11 +353,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                               " is already taken by a preexisting analysis. Please
                               choose another name for your analysis."),
                               duration = 5, closeButton = TRUE, type="warning")
-    }else{
-      withProgress(message='Creating new data set...',value = 0, {
+    } else{
+      
+        progress <- shiny::Progress$new(session, min=0, max=1)
+        on.exit(progress$close())
+        progress$set(message='Creating new data set..', value = 0.1)
         
         if(type_file == "DenseMatrix" & !is.null(input$datafile_matrix)){
-          incProgress(0.3, detail="Reading count matrices")
+          
+          progress$inc(detail="Reading count matrices", amount = 0.3)
           if(input$is_combined_mat == TRUE){
             if(length(input$datafile_matrix$name)>1){
               showNotification(paste0("Warning : When checking the 
@@ -367,8 +371,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
               return()
             }
           }
-          tmp_list = import_scExp(file_names = input$datafile_matrix$name,
-                                  path_to_matrix = input$datafile_matrix$datapath)
+          tmp_list = import_scExp(file_paths = input$datafile_matrix$name,
+                                  temp_path = input$datafile_matrix$datapath)
           datamatrix = tmp_list$datamatrix
           if(input$is_combined_mat == TRUE) {
             samples_ids = detect_samples(colnames(datamatrix),
@@ -396,47 +400,51 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                              duration = 5, closeButton = TRUE, type="warning")
             return()
           }
-          incProgress(0.2, detail=paste0("Reading ",type_file," files to create matrix. This might take a while."))
-          
+          progress$inc(detail=paste0("Reading ",type_file,
+                                     " files to create matrix. This might take a while."), amount = 0.1)
           if(type_file == "SparseMatrix"){
             out =  ChromSCape:::read_sparse_matrix(
               files_dir_list = selected_sample_folders,
             ref = input$annotation)
         } else if(type_file %in% c("scBAM","scBED") & !is.null(input$datafile_folder)) {
-
-          if(input$count_on_box == "bin_width") out = ChromSCape:::raw_counts_to_feature_count_files(
+         
+          if(input$count_on_box == "bin_width") out = ChromSCape:::raw_counts_to_sparse_matrix(
             files_dir_list = selected_sample_folders,
             file_type = type_file,
             bin_width = as.numeric(input$bin_width),
-            ref = input$annotation)
+            ref = input$annotation,
+            progress = progress)
           
-          if(input$count_on_box == "n_bins") out = ChromSCape:::raw_counts_to_feature_count_files(
+          if(input$count_on_box == "n_bins") out = ChromSCape:::raw_counts_to_sparse_matrix(
             files_dir_list = selected_sample_folders,
             file_type = type_file,
             n_bins = as.numeric(input$n_bins),
-            ref = input$annotation)
+            ref = input$annotation,
+            progress = progress)
           
-          if(input$count_on_box == "peak_file") out = ChromSCape:::raw_counts_to_feature_count_files(
+          if(input$count_on_box == "peak_file") out = ChromSCape:::raw_counts_to_sparse_matrix(
             files_dir_list = selected_sample_folders,
             file_type = type_file,
             peak_file = as.character(input$peak_file$datapath),
-            ref = input$annotation)
+            ref = input$annotation,
+            progress = progress)
           
-          if(input$count_on_box == "geneTSS")  out = ChromSCape:::raw_counts_to_feature_count_files(
+          if(input$count_on_box == "geneTSS")  out = ChromSCape:::raw_counts_to_sparse_matrix(
             files_dir_list = selected_sample_folders,
             file_type = type_file,
             geneTSS = TRUE,
             aroundTSS = as.numeric(input$aroundTSS),
-            ref = input$annotation)
+            ref = input$annotation,
+            progress = progress)
                   } else {
                     stop("No data folder or data files selected.")
                   }
-          incProgress(0.3, detail=paste0("Finished creating matrix."))
-
+          
           datamatrix = out$datamatrix
           annot_raw = out$annot_raw
         }
-        incProgress(0.4, detail="Saving matrix & annotation...")
+        progress$inc(detail=paste0("Finished creating matrix. Saving..."), amount = 0.1)
+        
         dir.create(file.path(init$data_folder, "ChromSCape_analyses"), showWarnings = FALSE)
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name))
         dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Filtering_Normalize_Reduce"))
@@ -458,9 +466,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
         init$datamatrix <- datamatrix
         init$annot_raw <- annot_raw
-        incProgress(0.1, detail="Import successfully finished! ")
+        progress$inc(detail=paste0("Import successfully finished! "), amount = 0.1)
         updateActionButton(session, "create_analysis", label="Added successfully", icon = icon("check-circle"))
-      })
     }
   })
   
