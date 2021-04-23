@@ -47,7 +47,7 @@ A SingleCellExperiment with refinded annotation
 }
 \description{
 This functions does peak calling on each cell population in order to refine
-gene annotation for large bins. For instance, a 50000bp bin might containt
+gene annotation for large bins. For instance, a 50000bp bins might contain
 the TSS of several genes, while in reality only one or two of these genes are
 overlapping the signal (peak). To do so, first in-silico cell sorting is
 applied based on previously defined clusters contained in the
@@ -56,13 +56,14 @@ pools then splits reads from each cell barcode into 1 BAM file per cell
 cluster (pseudo-bulk). Then MACS2 calls peaks on each cluster. The peaks are
 aggregated and merged if closer to a certain distance
 defined by user (10000bp). Then,
-}
-\details{
+
 This function takes as input a SingleCellExperiment, that must contain a
 'cell_cluster' column in it's colData, an output directory where to store
 temporary files, the list of BAM files corresponding to each sample and
 containing the cell barcode information as a tag (for instance tag CB:Z:xxx,
-XB:Z:xxx or else...), the p.value used by MACS2 to distinguish significant
+XB:Z:xxx or else...) or single-cell BED files containing the raw reads and
+corresponding to the 'barcode' column metadata,
+the p.value used by MACS2 to distinguish significant
 peaks, the reference genome (either hg38 or mm10), the maximal merging
 distance in bp and a data.frame containing gene TSS genomic cooridnates of
 corresponding genome (if set to NULL, will automatically load geneTSS). The
@@ -77,6 +78,10 @@ Note that the user must have MACS2 installed and available in the
 PATH. Users can open command terminal and type 'which
 macs2' to verify the availability of these programs. Will only work on unix
 operating system. Check operating system with 'print(.Platform)'.
+}
+\details{
+The BED files of the peaks called for each clusters, as well as
+the merged peaks are written in the output directory.
 }
 \examples{
 \dontrun{

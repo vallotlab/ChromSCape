@@ -4,13 +4,16 @@
 \alias{import_scExp}
 \title{Read single-cell matrix(ces) into scExp}
 \usage{
-import_scExp(file_names, path_to_matrix = NULL)
+import_scExp(file_paths, remove_pattern = "", temp_path = NULL)
 }
 \arguments{
-\item{file_names}{A character vector of file names towards single cell
+\item{file_paths}{A character vector of file names towards single cell
 epigenomic matrices (features x cells) (must be .txt / .tsv)}
 
-\item{path_to_matrix}{In case matrices are stored in temporary folder,
+\item{remove_pattern}{A string pattern to remove from the sample names. Can
+be a regexp.}
+
+\item{temp_path}{In case matrices are stored in temporary folder,
 a character vector of path towards temporary files. (NULL)}
 }
 \value{
@@ -32,6 +35,7 @@ write.table(as.matrix(mat1),file=tmp1,sep = "\t",
 row.names = TRUE,col.names = TRUE,quote = FALSE)
 write.table(as.matrix(mat2),file=tmp2, sep = "\t",
 row.names = TRUE,col.names = TRUE,quote = FALSE)
-file_names = c(tmp1,tmp2)
-out = import_scExp(file_names)
+file_paths = c(tmp1,tmp2)
+out = import_scExp(file_paths)
+
 }

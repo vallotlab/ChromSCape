@@ -4,7 +4,7 @@
 \alias{find_top_features}
 \title{Find most covered features}
 \usage{
-find_top_features(scExp, n = 20000, keep_others = TRUE)
+find_top_features(scExp, n = 20000, keep_others = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{n}{Either an integer indicating the number of top covered regions to
@@ -13,13 +13,19 @@ find or a character vector of the top percentile of features to keep (e.g.
 
 \item{keep_others}{Logical indicating if non-top regions are to be removed
 from the SCE or not (FALSE).}
+
+\item{verbose}{Print ?}
 }
 \value{
-
+A SCE with top features
 }
 \description{
 Find the top most covered features that will be used for dimensionality
 reduction. Optionally remove non-top features.
 
 @param scExp
+}
+\examples{
+scExp_top = find_top_features(scExp, n = 4000, keep_others = FALSE)
+
 }

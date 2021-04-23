@@ -18,7 +18,7 @@ import_count_input_files(files_dir_list, file_type, which, ref, verbose)
 \item{files_dir}{A named list of directories containing the input files}
 }
 \value{
-A list with a GRanges object of feature types (which), the
+A list with the
 feature indexes data.frame containing non-zeroes entries in the count matrix
 and the cell names
 }

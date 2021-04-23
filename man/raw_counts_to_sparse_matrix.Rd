@@ -6,7 +6,7 @@
 \usage{
 raw_counts_to_sparse_matrix(
   files_dir_list,
-  file_type = c("scBAM", "scBED"),
+  file_type = c("scBED", "scBAM"),
   peak_file = NULL,
   n_bins = NULL,
   bin_width = NULL,

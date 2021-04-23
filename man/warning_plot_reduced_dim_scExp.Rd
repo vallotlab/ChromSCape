@@ -11,7 +11,12 @@ warning_plot_reduced_dim_scExp(
   select_x,
   select_y,
   downsample,
-  transparency
+  transparency,
+  size,
+  max_distanceToTSS,
+  annotate_clusters,
+  min_quantile,
+  max_quantile
 )
 }
 \arguments{
@@ -28,6 +33,17 @@ warning_plot_reduced_dim_scExp(
 \item{downsample}{Number of cells to downsample}
 
 \item{transparency}{Alpha parameter, between 0 and 1}
+
+\item{size}{Size of the points.}
+
+\item{annotate_clusters}{A logical indicating if clusters should be labelled.
+The 'cell_cluster' column should be present in metadata.}
+
+\item{min_quantile}{The lower threshold to remove outlier cells,
+as quantile of cell embeddings (between 0 and 0.5).}
+
+\item{max_quantile}{The upper threshold to remove outlier cells,
+as quantile of cell embeddings (between 0.5 and 1).}
 }
 \value{
 Warning or errors if the inputs are not correct
