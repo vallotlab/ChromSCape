@@ -181,7 +181,7 @@ plot_reduced_dim_scExp <- function(
     select_x = "Component_1", select_y = "Component_2", downsample = 5000, 
     transparency = 0.6,  size = 1, max_distanceToTSS = 1000,
     annotate_clusters = "cell_cluster" %in% colnames(colData(scExp)),
-    min_quantile = 0.05, max_quantile = 0.95)
+    min_quantile = 0.01, max_quantile = 0.99)
 {
     warning_plot_reduced_dim_scExp(scExp, color_by , reduced_dim,
                                    select_x, select_y, downsample, transparency,
