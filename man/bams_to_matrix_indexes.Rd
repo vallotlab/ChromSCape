@@ -4,7 +4,7 @@
 \alias{bams_to_matrix_indexes}
 \title{Count bam files on interval to create count indexes}
 \usage{
-bams_to_matrix_indexes(dir, which)
+bams_to_matrix_indexes(dir, which, progress, n_samp_progress)
 }
 \arguments{
 \item{dir}{A directory containing single cell  BAM files and BAI files}

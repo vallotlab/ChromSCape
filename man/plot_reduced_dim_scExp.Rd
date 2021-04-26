@@ -15,8 +15,8 @@ plot_reduced_dim_scExp(
   size = 1,
   max_distanceToTSS = 1000,
   annotate_clusters = "cell_cluster" \%in\% colnames(colData(scExp)),
-  min_quantile = 0.05,
-  max_quantile = 0.95
+  min_quantile = 0.01,
+  max_quantile = 0.99
 )
 }
 \arguments{

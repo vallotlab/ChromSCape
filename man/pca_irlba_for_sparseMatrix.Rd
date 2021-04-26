@@ -15,5 +15,12 @@ pca_irlba_for_sparseMatrix(x, n_comp, work = 3 * n_comp)
 The rotated data, e.g. the cells x PC column in case of sc data.
 }
 \description{
-Run sparse PCA using irlba SVD
+This function allows to run a PCA using IRLBA Singular Value Decomposition
+in a fast & memory efficient way. The increamental Lanczos bidiagonalisation
+algorithm allows to keep the matrix sparse as the "loci" centering is
+implicit.
+The function then multiplies by the approximate singular values (svd$d) in
+order to get more importance to the first PCs proportionnally to their
+singular values. This step is crucial for downstream approaches, e.g. UMAP or
+T-SNE.
 }

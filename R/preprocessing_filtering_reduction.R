@@ -566,21 +566,21 @@ beds_to_matrix_indexes <- function(dir, which) {
                     "", basename(as.character(single_cell_beds)))
     names(single_cell_beds) = names_cells
 
-    BPPARAM = BiocParallel::SnowParam()
+    BPPARAM = BiocParallel::MulticoreParam()
     BiocParallel::bpprogressbar(BPPARAM) <- TRUE
-    # BiocParallel::bptasks(BPPARAM) <- ceiling(length(single_cell_beds) / 
-    #                                 (4*BiocParallel::bpworkers(BPPARAM)))
-    # 
+    BiocParallel::bptasks(BPPARAM) <- ceiling(length(single_cell_beds) /
+                                    (10*BiocParallel::bpworkers(BPPARAM)))
+
     system.time({
-    feature_list = BiocParallel::bplapply(BPPARAM = BPPARAM,
+    feature_list = BiocParallel::bplapply( BPPARAM = BPPARAM,
             names(single_cell_beds),
             function(bed_name, single_cell_beds, which) {
                 bed = rtracklayer::import(single_cell_beds[[bed_name]],
                                           format = "bed")
                 suppressWarnings({
                     tmp = data.frame(
-                        counts = IRanges::countOverlaps(
-                            which, IRanges::ranges(bed), minoverlap = 1))
+                        counts = GenomicRanges::countOverlaps(
+                            which, bed, minoverlap = 1))
                 })
                 tmp$feature_index = as.numeric(rownames(tmp))
                 tmp = tmp[which(tmp$counts > 0), ]
@@ -590,9 +590,12 @@ beds_to_matrix_indexes <- function(dir, which) {
                 } else { tmp = NULL}
                 tmp
             }, single_cell_beds = single_cell_beds,
-            which = IRanges::ranges(which))
+            which = which)
     })
+    
     gc()
+    message("ChromSCape::import_count_input_files - Merging single-cells into ",
+            "indexes...")
     feature_indexes = do.call(rbind, feature_list)
     feature_indexes$barcode_index = as.numeric(
         as.factor(feature_indexes$cell_id))
@@ -1926,7 +1929,17 @@ reduce_dim_batch_correction <- function(scExp, mat, batch_list, n){
 }
 
 #' Run sparse PCA using irlba SVD
-#'
+#' 
+#' @description 
+#' This function allows to run a PCA using IRLBA Singular Value Decomposition
+#' in a fast & memory efficient way. The increamental Lanczos bidiagonalisation
+#' algorithm allows to keep the matrix sparse as the "loci" centering is 
+#' implicit. 
+#' The function then multiplies by the approximate singular values (svd$d) in 
+#' order to get more importance to the first PCs proportionnally to their 
+#' singular values. This step is crucial for downstream approaches, e.g. UMAP or
+#' T-SNE.
+#' 
 #' @param x A sparse normalized matrix (features x cells)
 #' @param n_comp The number of principal components to keep
 #'
@@ -1939,7 +1952,7 @@ pca_irlba_for_sparseMatrix <- function(x, n_comp, work = 3 * n_comp)
 {
     x.means <- Matrix::colMeans(x)
     svd.0 <- irlba::irlba(x, center = x.means, nv = n_comp, work = work)
-    pca <- svd.0$u
+    pca <- svd.0$u %*% diag(svd.0$d)
     return(pca)
 }
 

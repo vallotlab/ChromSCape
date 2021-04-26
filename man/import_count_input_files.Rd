@@ -4,7 +4,14 @@
 \alias{import_count_input_files}
 \title{Import and count input files depending on their format}
 \usage{
-import_count_input_files(files_dir_list, file_type, which, ref, verbose)
+import_count_input_files(
+  files_dir_list,
+  file_type,
+  which,
+  ref,
+  verbose,
+  progress
+)
 }
 \arguments{
 \item{file_type}{Input file type}

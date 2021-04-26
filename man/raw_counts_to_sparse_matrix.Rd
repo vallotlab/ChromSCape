@@ -13,7 +13,8 @@ raw_counts_to_sparse_matrix(
   geneTSS = NULL,
   aroundTSS = 2500,
   verbose = TRUE,
-  ref = c("hg38", "mm10")[1]
+  ref = c("hg38", "mm10")[1],
+  progress = NULL
 )
 }
 \arguments{
@@ -35,6 +36,8 @@ the files. The names correspond to sample names.}
 \item{verbose}{Verbose (TRUE)}
 
 \item{ref}{reference genome to use (hg38)}
+
+\item{progress}{Progress object for Shiny}
 }
 \value{
 A sparse matrix of features x cells
