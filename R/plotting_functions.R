@@ -188,6 +188,7 @@ plot_reduced_dim_scExp <- function(
                                    size, max_distanceToTSS,
                                    annotate_clusters,
                                    min_quantile, max_quantile)
+    
     if(ncol(scExp) > downsample) scExp = scExp[,sample(ncol(scExp),
                                                        downsample,
                                                        replace = FALSE)]
@@ -214,6 +215,9 @@ plot_reduced_dim_scExp <- function(
         }
         annot[,color_by] = as.numeric(counts)
 
+    } else if(!paste0(color_by,"_color") %in% colnames(annot)){
+        scExp = colors_scExp(scExp, annotCol = color_by)
+        annot = SingleCellExperiment::colData(scExp)
     }
     
     plot_df = as.data.frame(
