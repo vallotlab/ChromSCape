@@ -75,6 +75,9 @@ Imports:
     msigdbr,
     qs,
     Sushi,
-    forcats
+    forcats,
+    Rcpp
 Depends: 
     R (>= 4.0)
+LinkingTo: 
+    Rcpp
