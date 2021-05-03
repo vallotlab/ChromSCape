@@ -12,7 +12,8 @@ DA_custom(
   block,
   ref,
   group,
-  progress = NULL
+  progress = NULL,
+  BPPARAM = BiocParallel::bpparam()
 )
 }
 \arguments{

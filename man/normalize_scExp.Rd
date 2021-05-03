@@ -4,12 +4,15 @@
 \alias{normalize_scExp}
 \title{Normalize counts}
 \usage{
-normalize_scExp(scExp, type = c("RPKM", "CPM", "TPM", "feature_size_only"))
+normalize_scExp(
+  scExp,
+  type = c("CPM", "TFIDF", "RPKM", "TPM", "feature_size_only")
+)
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment object.}
 
-\item{type}{Which normalization to apply. Either 'RPKM', 'CPM', 'TPM' or
+\item{type}{Which normalization to apply. Either 'CPM', 'TFIDF','RPKM', 'TPM' or
 'feature_size_only'. Note that for all normalization by size
 (RPKM, TPM, feature_size_only), the features must have defined
 genomic coordinates.}

@@ -10,7 +10,8 @@ run_pairwise_tests(
   counts,
   feature,
   method,
-  progress = NULL
+  progress = NULL,
+  BPPARAM = BiocParallel::bpparam()
 )
 }
 \arguments{

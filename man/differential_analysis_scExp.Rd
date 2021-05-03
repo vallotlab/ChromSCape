@@ -13,7 +13,8 @@ differential_analysis_scExp(
   block = NULL,
   group = NULL,
   ref = NULL,
-  progress = NULL
+  progress = NULL,
+  BPPARAM = BiocParallel::bpparam()
 )
 }
 \arguments{

@@ -37,7 +37,8 @@ distPearson <- function(m)
 #'    ref_group=ref_group,groups=groups, featureTab=featureTab)
 #' 
 CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL,
-                        groups = NULL, featureTab = NULL, block = NULL)
+                        groups = NULL, featureTab = NULL, block = NULL,
+                        BPPARAM = BiocParallel::bpparam())
 {
     res = featureTab
     for (k in seq_along(groups)){
@@ -45,37 +46,42 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL,
     else refsamp <- ref_group[[k]]
     
     gpsamp <- groups[[k]]
-    annot. <- annot[c(refsamp, gpsamp), c("barcode", "cell_id", "batch_id")]
-    annot.$Condition <- c(rep("ref", length(refsamp)),
-                        rep("gpsamp", length(gpsamp)))
-    cells_cluster = data.frame(cell_id = as.character(colnames(dataMat)))
-    cells_cluster = dplyr::left_join(cells_cluster, annot., by = "cell_id")
+    refidx = match(refsamp,colnames(dataMat))
+    gpidx = match(gpsamp,colnames(dataMat))
     
     if (!is.null(block))
     {
-    log2Datamat = log2(dataMat + 1)
-    testWilc <- scran::pairwiseWilcox(
-        x = log2Datamat, groups = as.factor(as.numeric(
-            as.factor(cells_cluster$Condition))), 
-        block = cells_cluster$batch_id, direction = "any")
-    pval.gpsamp <- testWilc$statistics[[1]]$p.value
+        testWilc <- scran::pairwiseWilcox(
+            dataMat[,c(refidx, gpidx)],
+            groups = as.factor(c(rep(1, length(refidx)),
+                                 rep(2, length(gpidx)))),
+            block = annot.$batch_id[c(refidx, gpidx)],
+            BPPARAM = BPPARAM)
+        pval.gpsamp <- testWilc$statistics[[1]]$p.value
     } else
     {
-    testWilc <- apply(dataMat, 1, function(x) stats::wilcox.test(
-        as.numeric(x[as.character(refsamp)]), 
-        as.numeric(x[as.character(gpsamp)])))
-    pval.gpsamp <- unlist(lapply(testWilc, function(x) x$p.value))
+ 
+        testWilc <- scran::pairwiseWilcox(
+            dataMat[,c(refidx, gpidx)],
+            groups = as.factor(c(rep(1, length(refidx)),
+                                 rep(2, length(gpidx)))),
+            BPPARAM = BPPARAM)
+        pval.gpsamp <- testWilc$statistics[[1]]$p.value
     }
     
     qval.gpsamp <- stats::p.adjust(pval.gpsamp, method = "BH")
-    Count.gpsamp <- apply(dataMat, 1, function(x) mean(
-    x[as.character(gpsamp)]))
-    cdiff.gpsamp <- apply(dataMat, 1, function(x) log(
-    mean(x[as.character(gpsamp)])/mean(x[as.character(refsamp)]), 
-    2))
-    Rank.gpsamp <- rank(qval.gpsamp)
+    Count.gpsamp <- rowMeans(dataMat[,gpidx])
+    Count.refsamp <- rowMeans(dataMat[,refidx])
+    cdiff.gpsamp <- log(Count.gpsamp/Count.refsamp,2)
+    Rank.gpsamp <- rank(qval.gpsamp,ties.method = "first")
     res <- data.frame(res, Rank.gpsamp, Count.gpsamp, cdiff.gpsamp,
                     pval.gpsamp, qval.gpsamp)
+    if(length(which(res$cdiff.gpsamp == Inf))>0)
+        res$cdiff.gpsamp[which(res$cdiff.gpsamp == Inf)] = 
+        max(res$cdiff.gpsamp[is.finite(res$cdiff.gpsamp)])
+    if(length(which(res$cdiff.gpsamp == -Inf))>0) 
+        res$cdiff.gpsamp[which(res$cdiff.gpsamp == -Inf)] = 
+        max(res$cdiff.gpsamp[is.finite(res$cdiff.gpsamp)])
     colnames(res) <- sub("ref", names(
     ref_group)[min(c(k, length(ref_group)))], sub("gpsamp", 
                                                     names(groups)[k],

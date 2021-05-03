@@ -52,13 +52,15 @@
 #' 
 differential_analysis_scExp = function(
     scExp, de_type = "one_vs_rest", method = "wilcox", qval.th = 0.01, 
-    cdiff.th = 1, block = NULL, group = NULL, ref = NULL, progress = NULL)
+    cdiff.th = 1, block = NULL, group = NULL, ref = NULL, progress = NULL,
+    BPPARAM = BiocParallel::bpparam())
 {
     warning_DA(scExp, de_type, method, qval.th, cdiff.th, block,
                group, ref)
     if (!is.null(progress)) progress$set(detail = "Retrieving counts...", value = 0.15)
     if (isFALSE(block)) block = NULL
-    nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
+    if(method != "custom")
+        nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
     if(method == "wilcox"){counts = SingleCellExperiment::normcounts(scExp)
     } else{counts = SingleCellExperiment::counts(scExp)}
     feature <- as.data.frame(SummarizedExperiment::rowRanges(scExp))
@@ -158,7 +160,8 @@ warning_DA <- function(scExp, de_type, method, qval.th, cdiff.th, block,
 #' @return A list of results, groups compared and references
 #'   
 DA_one_vs_rest_fun <- function(affectation,nclust, counts, method, feature,
-                            block, progress = NULL){
+                            block, progress = NULL,
+                            BPPARAM = BiocParallel::bpparam()){
     stopifnot(is.data.frame(affectation),is.integer(nclust),
                 is(counts,"dgCMatrix")|is.matrix(counts), is.character(method),
                 is.data.frame(feature))
@@ -181,7 +184,8 @@ DA_one_vs_rest_fun <- function(affectation,nclust, counts, method, feature,
         detail = paste0("Comparing Group vs Refs"), amount = 0.2)
     if(method == "wilcox"){ res = CompareWilcox(
         dataMat = counts, annot = affectation, ref_group = myrefs, 
-        groups = mygps, featureTab = feature, block = block)
+        groups = mygps, featureTab = feature, block = block,
+        BPPARAM = BPPARAM)
     } else {
         res = CompareedgeRGLM( dataMat = counts, 
                             annot = affectation, ref_group = myrefs,
@@ -266,7 +270,8 @@ DA_pairwise <- function(affectation,nclust, counts,
 #' @return A list of results, groups compared and references
 #'   
 DA_custom <- function(affectation, counts, method, feature,
-                               block, ref, group, progress = NULL){
+                      block, ref, group, progress = NULL,
+                      BPPARAM = BiocParallel::bpparam()){
     stopifnot(is.data.frame(affectation),
               is(counts,"dgCMatrix")|is.matrix(counts), is.character(method),
               is.data.frame(feature), is.data.frame(ref), is.data.frame(group))
@@ -289,7 +294,7 @@ DA_custom <- function(affectation, counts, method, feature,
     if(method == "wilcox"){
         res = CompareWilcox(
         dataMat = counts, annot = affectation, ref_group = myrefs, 
-        groups = mygps, featureTab = feature, block = block)
+        groups = mygps, featureTab = feature, block = block, BPPARAM=BPPARAM)
     } else {
         res = CompareedgeRGLM( dataMat = counts, 
                                annot = affectation, ref_group = myrefs,
@@ -318,7 +323,8 @@ DA_custom <- function(affectation, counts, method, feature,
 #' @return A list containing objects for DA function
 #'
 run_pairwise_tests <- function(affectation, nclust, counts, 
-                            feature, method, progress = NULL){
+                            feature, method, progress = NULL,
+                            BPPARAM = BiocParallel::bpparam()){
     stopifnot(is.data.frame(affectation),is.integer(nclust),
                 is(counts,"dgCMatrix")|is.matrix(counts), is.character(method))
     count_save = data.frame(ID = feature$ID)
@@ -340,7 +346,7 @@ run_pairwise_tests <- function(affectation, nclust, counts,
                 value = 0.15 + (0.85 / ((as.integer(nclust) - 1) * (as.integer(nclust) - 1) )))
             if(method == "wilcox"){ tmp_result = CompareWilcox(
                 dataMat = counts, annot = affectation, ref_group = myrefs, 
-                groups = mygps, featureTab = feature)
+                groups = mygps, featureTab = feature, BPPARAM =BPPARAM)
             } else {
                 tmp_result = CompareedgeRGLM(
                     dataMat = counts, annot = affectation, ref_group = myrefs,

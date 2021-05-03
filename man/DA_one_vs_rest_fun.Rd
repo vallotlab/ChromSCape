@@ -11,7 +11,8 @@ DA_one_vs_rest_fun(
   method,
   feature,
   block,
-  progress = NULL
+  progress = NULL,
+  BPPARAM = BiocParallel::bpparam()
 )
 }
 \arguments{

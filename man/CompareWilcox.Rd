@@ -10,7 +10,8 @@ CompareWilcox(
   ref_group = NULL,
   groups = NULL,
   featureTab = NULL,
-  block = NULL
+  block = NULL,
+  BPPARAM = BiocParallel::bpparam()
 )
 }
 \arguments{
