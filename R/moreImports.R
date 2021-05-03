@@ -20,5 +20,7 @@
 #' @import ggplot2
 #' @importFrom colourpicker updateColourInput colourInput
 #' @importFrom qs qread qload qsave
+#' @importFrom Rcpp evalCpp
+#' @useDynLib ChromSCape
 NULL
 
