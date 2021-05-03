@@ -140,6 +140,7 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                                       sliderInput("quant_removal", shiny::HTML("<p><span style='color: red'>Select the upper percentile of cells to remove (potential doublets):</span></p>"),
                                                                                                    min=90, max=100, value=95, step=0.01),
                                                                                       sliderInput("n_top_features", shiny::HTML("<p><span style='color: #A020F0'>Select number of top covered features to keep:</span></p>"), min=1000, max=200000, value=30000, step=100),
+                                                                                      selectInput("norm_type", "Normalization method: ", choices = c("CPM", "TFIDF"), width = "20%"),
                                                                                       checkboxInput("run_tsne", "Run T-SNE", value= FALSE) %>%
                                                                                           shinyhelper::helper(type = 'markdown', icon ="info-circle",
                                                                                                               content = "run_tsne"),

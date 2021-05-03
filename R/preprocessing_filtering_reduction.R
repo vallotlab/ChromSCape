@@ -1610,6 +1610,36 @@ preprocess_CPM <- function(scExp)
     return(scExp)
 }
 
+
+#' Preprocess scExp - TF-IDF
+#'
+#' @param scExp A SingleCellExperiment Object
+#'
+#' @return A SingleCellExperiment object.
+#' @importFrom GenomicRanges width
+#' @importFrom SummarizedExperiment rowRanges assay
+#' @importFrom SingleCellExperiment counts normcounts
+#' @importFrom Matrix t colSums
+#' @export
+#' @examples 
+#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' scExp = preprocess_TFIDF(scExp)
+#' head(SingleCellExperiment::normcounts(scExp))
+#'
+preprocess_TFIDF <- function(scExp, scale = 10000, log = TRUE)
+{
+        counts = SingleCellExperiment::counts(scExp)
+        n_features <- Matrix::colSums(counts)
+        tf <- Matrix::t(Matrix::t(counts) / n_features)
+        idf <- 1 + ncol(counts) / Matrix::rowSums(counts)
+        normcounts <- Matrix::Diagonal(length(idf), idf) %*% tf
+        if(log) normcounts = log1p(normcounts * scale) else normcounts = 
+            normcounts * scale
+        SummarizedExperiment::assay(scExp, "normcounts",
+                                    withDimnames = FALSE) <- normcounts
+        return(scExp)
+}
+
 #' Preprocess scExp - size only
 #'
 #' @param scExp A SingleCellExperiment Object
@@ -1636,7 +1666,7 @@ preprocess_feature_size_only <- function(scExp)
 #' Normalize counts
 #'
 #' @param scExp A SingleCellExperiment object.
-#' @param type Which normalization to apply. Either 'RPKM', 'CPM', 'TPM' or
+#' @param type Which normalization to apply. Either 'CPM', 'TFIDF','RPKM', 'TPM' or
 #'  'feature_size_only'. Note that for all normalization by size
 #'  (RPKM, TPM, feature_size_only), the features must have defined
 #'  genomic coordinates.
@@ -1651,13 +1681,18 @@ preprocess_feature_size_only <- function(scExp)
 #' head(SingleCellExperiment::normcounts(scExp))
 #'
 normalize_scExp <- function(scExp,
-                            type = c("RPKM", "CPM", "TPM",
+                            type = c("CPM", "TFIDF", "RPKM", "TPM",
                                     "feature_size_only"))
 {
     stopifnot(
-        type[1] %in% c("RPKM", "CPM", "TPM", "feature_size_only"),
+        type[1] %in% c("CPM", "TFIDF", "RPKM", "TPM", "feature_size_only"),
         is(scExp, "SingleCellExperiment")
     )
+    if (class(SingleCellExperiment::counts(scExp)) != "dgCMatrix") {
+        SingleCellExperiment::counts(scExp) <- as(
+            SingleCellExperiment::counts(scExp), "dgCMatrix")
+    }
+    
     if (!has_genomic_coordinates(scExp))
     {
         warning(
@@ -1671,9 +1706,11 @@ normalize_scExp <- function(scExp,
         RPKM = return(preprocess_RPKM(scExp)),
         TPM = return(preprocess_TPM(scExp)),
         feature_size_only = return(preprocess_feature_size_only(scExp)),
-        CPM = return(preprocess_CPM(scExp))
+        CPM = return(preprocess_CPM(scExp)),
+        TFIDF = return(preprocess_TFIDF(scExp))
     )
 }
+
 
 #' Add gene annotations to features
 #'
@@ -1799,7 +1836,9 @@ choose_perplexity <- function(dataset)
 #' @param batch_correction Do batch correction ? (FALSE)
 #' @param batch_list List of characters. Names are batch names, characters are
 #'  sample names.
-#' @param verbose (TRUE)
+#' @param remove_PC1 Remove PC1 before UMAP & T-SNE, as probably correlated to 
+#' library size ? Recommended when using 'TFIDF' normalization method. (FALSE)
+#' @param verbose Print messages ?(TRUE)
 #'
 #' @return A SingleCellExperiment object containing feature spaces. See
 #'  ?reduceDims().
@@ -1822,10 +1861,12 @@ choose_perplexity <- function(dataset)
 #' scExp = reduce_dims_scExp(scExp,dimension_reductions=c("PCA","UMAP"))
 reduce_dims_scExp <-
     function(scExp, dimension_reductions = c("PCA", "UMAP"), n = 50,
-            batch_correction = FALSE, batch_list = NULL, verbose = TRUE)
+            batch_correction = FALSE, batch_list = NULL,
+            remove_PC1 = FALSE, verbose = TRUE)
     {
         stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(n),
-            dimension_reductions[1] %in% c("PCA", "TSNE", "UMAP"))
+            dimension_reductions[1] %in% c("PCA", "TSNE", "UMAP"),
+            is.logical(remove_PC1))
         if (!"normcounts" %in% names(SummarizedExperiment::assays(scExp))){
             warning("ChromSCape::reduce_dims_scExp - The raw counts are not
                 normalized, running dimensionality reduction on raw counts.")
@@ -1849,7 +1890,12 @@ reduce_dims_scExp <-
                                     scale. = FALSE)
                 pca <- pca$x[, seq_len(n)]}}
         pca <- as.data.frame(as.matrix(pca))
-        colnames(pca) <- paste0("Component_", seq_len(n))
+        colnames(pca) <- paste0("Component_", seq_len(ncol(pca)))
+        if(remove_PC1) {
+            pca <- pca[,2:n]
+            if(verbose) message("ChromSCape::reduce_dims_scExp - removing ",
+                                "PC1... (probably correlated to library size)")
+        }
         rownames(pca) <- colnames(scExp)
         if ("TSNE" %in% dimension_reductions){
             tsne <- Rtsne::Rtsne(pca, dims = 2, pca = FALSE, theta = 0,

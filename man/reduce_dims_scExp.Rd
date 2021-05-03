@@ -10,6 +10,7 @@ reduce_dims_scExp(
   n = 50,
   batch_correction = FALSE,
   batch_list = NULL,
+  remove_PC1 = FALSE,
   verbose = TRUE
 )
 }
@@ -26,7 +27,10 @@ reduce_dims_scExp(
 \item{batch_list}{List of characters. Names are batch names, characters are
 sample names.}
 
-\item{verbose}{(TRUE)}
+\item{remove_PC1}{Remove PC1 before UMAP & T-SNE, as probably correlated to
+library size ? Recommended when using 'TFIDF' normalization method. (FALSE)}
+
+\item{verbose}{Print messages ?(TRUE)}
 }
 \value{
 A SingleCellExperiment object containing feature spaces. See

@@ -6,7 +6,7 @@ Module_preprocessing_filtering_and_reductionUI <- function(id, label = "Module_p
 Module_preprocessing_filtering_and_reduction <- function(
     input, output, session, raw_dataset_name, min_cov_cell, n_top_features,
     quant_removal, datamatrix, annot_raw, data_folder, annotation_id,
-    exclude_regions, doBatchCorr, batch_sels, run_tsne, subsample_n)
+    norm_type, exclude_regions, doBatchCorr, batch_sels, run_tsne, subsample_n)
     {
     withProgress(message = "Processing data set...", value = 0, {
         
@@ -62,8 +62,9 @@ Module_preprocessing_filtering_and_reduction <- function(
         ### 3. Normalizing ###
         
         incProgress(amount = 0.1, detail = paste("Normalization..."))
-        print("Normalize....")
-        print(system.time({scExp = normalize_scExp(scExp, type = "CPM")}))
+        print(paste0("Normalizing with method ",norm_type(),"..."))
+        print(system.time({
+            scExp = normalize_scExp(scExp, type = as.character(norm_type()))}))
         gc()
         
         ### 4. Feature annotation ###
@@ -81,19 +82,27 @@ Module_preprocessing_filtering_and_reduction <- function(
             "Performing Dimensionality Reduction..."))
         if(run_tsne()) methods = c("PCA","TSNE","UMAP") else 
             methods = c("PCA","UMAP")
-        print(system.time({scExp = reduce_dims_scExp(
-            scExp, dimension_reductions = methods,
-            batch_correction = doBatchCorr(), batch_list = batch_sels(), 
-            verbose = FALSE)}))
+        remove_PC1 = ifelse(norm_type() == "TFIDF", TRUE, FALSE)
+        print(system.time({
+            scExp = reduce_dims_scExp(
+                scExp = scExp,
+                n = 50,
+                dimension_reductions = methods,
+                batch_correction = doBatchCorr(),
+                batch_list = batch_sels(),
+                remove_PC1 = remove_PC1,
+                verbose = FALSE)
+        }))
         gc()
         
         ### 7. Add default colors ###
-        print("Add colors ...")
+        print("Adding colors ...")
         if(doBatchCorr()){ annotCol. = c("sample_id","total_counts", "batch_name")} 
         else{annotCol. = c("sample_id","total_counts")}
         print(system.time({scExp = colors_scExp(scExp, annotCol.)}))
         
         ### 8. Running hierarchical clustering ###
+        print("Running correlation & hierarchical clustering...")
         print(system.time(
             {scExp = correlation_and_hierarchical_clust_scExp(scExp)}))
         

@@ -627,7 +627,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     callModule(Module_preprocessing_filtering_and_reduction, "Module_preprocessing_filtering_and_reduction", reactive({input$selected_analysis}), reactive({input$min_coverage_cell}),
                reactive({input$n_top_features}), reactive({input$quant_removal}),
                reactive({init$datamatrix}), reactive({init$annot_raw}),
-               reactive({init$data_folder}),reactive({annotationId}), reactive({exclude_regions}) ,reactive({input$do_batch_corr}),
+               reactive({init$data_folder}),reactive({annotationId}), reactive({input$norm_type}), reactive({exclude_regions}) ,reactive({input$do_batch_corr}),
                 reactive({batch_sels}), reactive({input$run_tsne}), reactive({subsample_n}))
     
     init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
@@ -765,8 +765,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   # 2. PCA
   ###############################################################
   
-  output$pc_select_x <- renderUI({ selectInput("pc_select_x", "X",choices=paste0("Component_", c(1:15)), selected="Component_1") })
-  output$pc_select_y <- renderUI({ selectInput("pc_select_y", "Y",choices=paste0("Component_", c(1:15)), selected="Component_2") })
+  output$pc_select_x <- renderUI({ selectInput("pc_select_x", "X",choices=colnames(SingleCellExperiment::reducedDim(scExp(),"PCA"))) })
+  output$pc_select_y <- renderUI({ selectInput("pc_select_y", "Y",choices=colnames(SingleCellExperiment::reducedDim(scExp(),"PCA")),
+                                               selected = colnames(SingleCellExperiment::reducedDim(scExp(),"PCA"))[2]) })
 
   pca_plot <- reactive({
     req(scExp(), annotCol(), input$pc_select_x,input$pc_select_y,  input$color_by)
