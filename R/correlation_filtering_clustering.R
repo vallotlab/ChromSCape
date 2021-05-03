@@ -25,14 +25,15 @@
 #'
 #' @importFrom SingleCellExperiment reducedDim
 #' @importFrom Matrix t
-#' @importFrom stats cor hclust as.dist
+#' @importFrom stats hclust as.dist
+#' @importFrom coop cor
 #'
 #' @examples
 #' data("scExp")
 #' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
 #'
 correlation_and_hierarchical_clust_scExp <- function(
-    scExp,correlation = "pearson", hc_linkage = "ward.D"){
+    scExp, correlation = "pearson", hc_linkage = "ward.D"){
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(correlation),
             is.character(hc_linkage))
     
@@ -43,13 +44,13 @@ correlation_and_hierarchical_clust_scExp <- function(
     
     pca = SingleCellExperiment::reducedDim(scExp, "PCA")
     pca_t <- Matrix::t(pca)
-    cor_mat = stats::cor(pca_t, method = correlation)
+    cor_mat = coop::pcor(pca_t, inplace = TRUE)
     
-    hc_cor = stats::hclust(stats::as.dist(1 - cor_mat), method = hc_linkage)
+    hc_cor = stats::hclust(as_dist(1 - cor_mat), method = hc_linkage)
     hc_cor$labels = rep("", length(hc_cor$labels))
     
     scExp@metadata$hc_cor = hc_cor
-    SingleCellExperiment::reducedDim(scExp, "Cor") = as.matrix(cor_mat)
+    SingleCellExperiment::reducedDim(scExp, "Cor") = as(cor_mat, "dspMatrix")
     
     return(scExp)
 }
@@ -72,7 +73,9 @@ correlation_and_hierarchical_clust_scExp <- function(
 #' @param percent_correlation Percentage of the cells that any cell must be
 #'   'correlated' to in order to not be filtered. (1)
 #' @param run_tsne Re-run tsne ? (FALSE)
-#' @param verbose (TRUE)
+#' @param downsample Number of cells to calculate correlation filtering 
+#' threshold ? (2500)
+#' @param verbose Print messages ?  (TRUE)
 #'
 #' @return Returns a SingleCellExperiment object without lowly correlated cells.
 #'   The calculated correlation score limit threshold is saved in metadata.
@@ -89,49 +92,64 @@ correlation_and_hierarchical_clust_scExp <- function(
 #' scExp_cf = filter_correlated_cell_scExp(scExp,
 #' corr_threshold = 99, percent_correlation = 1)
 #' dim(scExp_cf)
-filter_correlated_cell_scExp <- function(scExp, random_iter = 50,
+filter_correlated_cell_scExp <- function(scExp, random_iter = 5,
     corr_threshold = 99, percent_correlation = 1, run_tsne =FALSE,
-    verbose = FALSE){
+    downsample = 2500, verbose = TRUE, BPPARAM = BiocParallel::bpparam()){
     warning_filter_correlated_cell_scExp(
         scExp, random_iter,corr_threshold, percent_correlation, run_tsne,
-        verbose)
-    scExp@metadata$Unfiltered <- scExp
+        downsample, verbose)
+    if(ncol(scExp) < 5000) scExp@metadata$Unfiltered <- scExp
     pca_t = Matrix::t(SingleCellExperiment::reducedDim(scExp, "PCA"))
     correlation_values <- vector(length = random_iter)
     corChIP <- SingleCellExperiment::reducedDim(scExp, "Cor")
     limitC <- 0
+    downsample = min(downsample, ncol(pca_t)) 
+    if(verbose) message("ChromSCape::filter_correlated_cell_scExp - ",
+    "Calculating correlation threshold using random matrix values...")
     for (i in seq_len(random_iter)) {
-        random_mat <- matrix(sample(pca_t), nrow = dim(pca_t)[1])
+        random_mat <- matrix(
+            sample(pca_t[,sample(seq_len(ncol(pca_t)),
+                                 size = downsample)]), nrow = dim(pca_t)[1])
         threshold <-
-            quantile(stats::cor(random_mat), probs = seq(0, 1, 0.01))
+            quantile(coop::pcor(x = random_mat, inplace = TRUE), probs = seq(0, 1, 0.01))
         limitC <- threshold[corr_threshold + 1]
-        correlation_values[i] = limitC}
+        correlation_values[i] = limitC
+    }
     limitC_mean = mean(correlation_values, na.rm = TRUE)
-    selection_cor_filtered <- (apply(corChIP, 1, function(x)
-            length(which(x > limitC_mean)))) >
-        (percent_correlation * 0.01) * dim(corChIP)[1]
+    rm(pca_t, random_mat)
+    gc()
+    if(verbose) message("ChromSCape::filter_correlated_cell_scExp - ",
+                        "Filtering low correlated cells...")
+    selection_cor_filtered =  unlist(DelayedArray::blockApply(
+        corChIP, grid = DelayedArray::colAutoGrid(corChIP),
+        BPPARAM = BPPARAM, verbose = FALSE, 
+        function(X) apply(X, 2, function(x) length(which(x > limitC_mean)))
+    ))
+    gc()
+    selection_cor_filtered = selection_cor_filtered > 
+        (percent_correlation * 0.01) * nrow(corChIP)
+    
     scExp <- scExp[, selection_cor_filtered]
-    tab = as.data.frame(SingleCellExperiment::reducedDim(
-        scExp,"Cor"))[, selection_cor_filtered]
-    SingleCellExperiment::reducedDim(scExp, "Cor") = tab
+    gc()
+    SingleCellExperiment::reducedDim(scExp, "Cor") = 
+        as(corChIP[selection_cor_filtered, selection_cor_filtered], "dspMatrix")
+    gc()
     if(run_tsne){
         scExp <- run_tsne_scExp(scExp, verbose)
     }
-    config = umap::umap.defaults
-    config$metric = "cosine"
-    umap = umap::umap(SingleCellExperiment::reducedDim(scExp, "PCA"),
-        config = config, method = "naive")
-    umap = as.data.frame(umap$layout)
-    colnames(umap) = c("Component_1", "Component_2")
-    SingleCellExperiment::reducedDim(scExp, "UMAP") = umap
-    hc_cor_cor_filtered <- stats::hclust(
-        stats::as.dist(1 - SingleCellExperiment::reducedDim(
-            scExp,"Cor")),method = "ward.D")
-    hc_cor_cor_filtered$labels = rep("", length(hc_cor_cor_filtered$labels))
+
+    if(verbose) message("ChromSCape::filter_correlated_cell_scExp - ",
+                        "Re-calculating hierarchical clustering...")
+    d = as_dist(mat = 1 - as.matrix(SingleCellExperiment::reducedDim(scExp,"Cor")))
+    gc()
+    hc_cor_cor_filtered <- stats::hclust(d, method = "ward.D")
+    gc()
+    hc_cor_cor_filtered$labels = rep("", ncol(scExp))
     scExp@metadata$hc_cor = hc_cor_cor_filtered
     scExp@metadata$limitC = limitC_mean #specific to filtered scExp
     return(scExp)
-    }
+}
+
 
 #' warning_filter_correlated_cell_scExp
 #'
@@ -144,14 +162,17 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 50,
 #' @param percent_correlation Percentage of the cells that any cell must be
 #'   'correlated' to in order to not be filtered. (1)
 #' @param run_tsne Re-run tsne ? (FALSE)
+#' @param downsample Number of cells to calculate correlation filtering 
+#' threshold ? (2500)
 #' @param verbose (TRUE)
 #'
 #' @return Warnings or Errors if the input are not correct
 warning_filter_correlated_cell_scExp <- function(
     scExp, random_iter,corr_threshold, percent_correlation, run_tsne,
-    verbose){
+    downsample, verbose){
     stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(random_iter),
-            is.numeric(corr_threshold), is.numeric(percent_correlation))
+            is.numeric(corr_threshold), is.numeric(percent_correlation),
+            is.numeric(downsample))
     if (is.null(SingleCellExperiment::reducedDim(scExp, "Cor")))
         stop("ChromSCape::filter_correlated_cell_scExp - 
                 No correlation, run correlation_and_hierarchical_clust_scExp")

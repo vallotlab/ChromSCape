@@ -953,6 +953,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(input$tabs, 
                {
                if(input$tabs == "cons_clustering"){
+                 gc()
                  file = file.path(init$data_folder, "ChromSCape_analyses",
                                   analysis_name(), "correlation_clustering",
                                   paste0(selected_filtered_dataset(),".qs"))
@@ -1047,21 +1048,35 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
   })
   
-  correlation_values <- reactiveValues(limitC=vector(length=500))
-  corChIP <- reactive({ SingleCellExperiment::reducedDim(scExp(),"Cor") })
-  z <- reactive({ matrix(sample(t(SingleCellExperiment::reducedDim(scExp(),"PCA"))), nrow=ncol(SingleCellExperiment::reducedDim(scExp(),"PCA"))) })
-  thresh2 <- reactive({quantile(cor(z()), probs=seq(0,1,0.01))})
-  limitC <- reactive({thresh2()[input$corr_threshold+1]})
+  sample_cf <- reactive({
+    sample(seq_len(ncol(scExp())), min(2000,ncol(scExp())), replace = FALSE)
+  })
+  corChIP <- reactive({
+    SingleCellExperiment::reducedDim(scExp(),"Cor")[sample_cf(),sample_cf()] 
+    })
   
+  z <- reactive({ 
+    z = coop::pcor(t(SingleCellExperiment::reducedDim(scExp(),"PCA")[sample_cf(),]), inplace = TRUE)
+    diag(z) <- NA
+    z = z[which(!is.na(z))]
+  })
+  
+  thresh2 <- reactive({
+    quantile(z(), probs=seq(0,1,0.01))
+  })
+  
+  limitC <- reactive({
+    thresh2()[input$corr_threshold+1]
+  })
   
   cell_cor_hist <- reactive({
     req(scExp())
     hist(corChIP(), prob=TRUE, col=alpha("steelblue", 0.8), breaks=50, ylim=c(0,4), main="Distribution of cell to cell correlation scores", xlab="Pearson Corr Scores")
     lines(density(corChIP()), col="blue", lwd=2)
-    lines(density(cor(z())), col="black", lwd=2)
+    lines(density(z()), col="black", lwd=2)
     abline(v=limitC(), lwd=2, col="red", lty=2)
-    legend("topleft", legend=c("dataset", "randomized data", "correlation threshold"), col=c("blue", "black", "red"), lty=c(1, 1, 2), cex=0.8)
-    
+    legend("topleft", legend=c("dataset", "randomized data", "correlation threshold"),
+           col=c("blue", "black", "red"), lty=c(1, 1, 2), cex=0.8)
   })
   
   output$cell_cor_hist_plot <- renderPlot(cell_cor_hist())
@@ -1072,7 +1087,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       grDevices::png(file, width=2000, height=1400, res=300)
       hist(corChIP(), prob=TRUE, col=alpha("steelblue", 0.8), breaks=50, ylim=c(0,4),cex=0.4, main="Distribution of cell to cell correlation scores", xlab="Pearson Corr Scores")
       lines(density(corChIP()), col="blue", lwd=2)
-      lines(density(cor(z())), col="black", lwd=2)
+      lines(density(z()), col="black", lwd=2)
       abline(v=limitC(), lwd=2, col="red", lty=2)
       legend("topleft", legend=c("dataset", "randomized data", "correlation threshold"), col=c("blue", "black", "red"), lty=c(1, 1, 2), cex=0.8)
       grDevices::dev.off()

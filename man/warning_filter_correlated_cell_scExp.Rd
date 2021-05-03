@@ -10,6 +10,7 @@ warning_filter_correlated_cell_scExp(
   corr_threshold,
   percent_correlation,
   run_tsne,
+  downsample,
   verbose
 )
 }
@@ -27,6 +28,9 @@ is considered to be 'correlated' with another cell. (99)}
 'correlated' to in order to not be filtered. (1)}
 
 \item{run_tsne}{Re-run tsne ? (FALSE)}
+
+\item{downsample}{Number of cells to calculate correlation filtering
+threshold ? (2500)}
 
 \item{verbose}{(TRUE)}
 }

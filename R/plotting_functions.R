@@ -332,15 +332,7 @@ warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
                         "name present in the rowRanges(scExp) after calling ",
                         "feature_annotation_scExp() function.")
         } 
-        return(0)
     }
-        
-    if (!paste0(color_by, "_color") %in%
-        colnames(SingleCellExperiment::colData(scExp))) 
-        stop(paste0("ChromSCape::plot_reduced_dim_scExp - color_by's color ",
-                    "column must be present in colnames of colData(scExp). ",
-                    "Please run colors_scExp first."))
-    
 }
 
 #' Plot Top/Bottom most contributing features to PCA
@@ -504,8 +496,8 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
         scExp = scExp[,samp]
         SingleCellExperiment::reducedDim(scExp, "Cor") = 
             SingleCellExperiment::reducedDim(scExp, "Cor")[,samp]
-        cor_mat = SingleCellExperiment::reducedDim(scExp, "Cor")
-        hc_cor = stats::hclust(stats::as.dist(1 - cor_mat), method = hc_linkage)
+        cor_mat = as.matrix(SingleCellExperiment::reducedDim(scExp, "Cor"))
+        hc_cor = stats::hclust(as_dist(1 - cor_mat), method = hc_linkage)
         hc_cor$labels = rep("",length(hc_cor$labels))
         scExp@metadata[[name_hc]] = hc_cor
     }
@@ -524,7 +516,7 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
     
     return(
         hclustAnnotHeatmapPlot(
-            x = SingleCellExperiment::reducedDim(scExp, "Cor")[
+            x = as.matrix(SingleCellExperiment::reducedDim(scExp, "Cor"))[
                 scExp@metadata[[name_hc]]$order, 
                 scExp@metadata[[name_hc]]$order], hc = scExp@metadata[[name_hc]],
             hmColors = corColors,
