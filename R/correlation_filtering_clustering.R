@@ -26,7 +26,7 @@
 #' @importFrom SingleCellExperiment reducedDim
 #' @importFrom Matrix t
 #' @importFrom stats hclust as.dist
-#' @importFrom coop cor
+#' @importFrom coop pcor
 #'
 #' @examples
 #' data("scExp")
@@ -47,7 +47,7 @@ correlation_and_hierarchical_clust_scExp <- function(
     cor_mat = coop::pcor(pca_t, inplace = TRUE)
     
     hc_cor = stats::hclust(as_dist(1 - cor_mat), method = hc_linkage)
-    hc_cor$labels = rep("", length(hc_cor$labels))
+    hc_cor$labels = rep("", ncol(scExp))
     
     scExp@metadata$hc_cor = hc_cor
     SingleCellExperiment::reducedDim(scExp, "Cor") = as(cor_mat, "dspMatrix")
