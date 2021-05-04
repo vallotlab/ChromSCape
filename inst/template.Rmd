@@ -12,6 +12,7 @@ output:
 params:
   analysis_name: ""
   datamatrix: ""
+  run: ""
   scExp: ""
   scExp_cf: ""
   genes_to_plot: ""
@@ -63,18 +64,18 @@ Column {data-width=250}
 ### Cells
 
 ```{r}
-valueBox(value = ncol(datamatrix), caption = "Number of cells", icon ="fa-circle")
+flexdashboard::valueBox(value = ncol(datamatrix), caption = "Number of cells", icon ="fa-circle")
 ```
 
 ### Cells after filterings
 ```{r}
-valueBox(value = ncol(scExp), caption = "Number of cells after filtering", icon ="fa-circle-notch")
+if("filter" %in% run) flexdashboard::valueBox(value = ncol(scExp), caption = "Number of cells after filtering", icon ="fa-circle-notch")
 ```
 
 ### Percentage of features passing filtering
 ```{r}
-gauge(100*round(nrow(scExp)/ nrow(datamatrix),3), min = 0, max = 100, 
-          symbol = '%', sectors = gaugeSectors(
+if("filter" %in% run) flexdashboard::gauge(100*round(nrow(scExp)/ nrow(datamatrix),3), min = 0, max = 100, 
+          symbol = '%', sectors = flexdashboard::gaugeSectors(
     success = c(20, 100), warning = c(5, 19.99), danger = c(0, 4.999)
   ))
 ```
@@ -98,13 +99,13 @@ Column {data-width=400}
 ### UMAP - sample
 
 ```{r}
-plot_reduced_dim_scExp(scExp_cf, color_by = "sample_id", reduced_dim = "UMAP")
+if(any(c("cluster","DA") %in% run)) plot_reduced_dim_scExp(scExp_cf, color_by = "sample_id", reduced_dim = "UMAP")
 ```
 
 ### UMAP - total counts
 
 ```{r}
-plot_reduced_dim_scExp(scExp_cf, color_by = "total_counts", reduced_dim = "UMAP")
+if(any(c("cluster","DA") %in% run)) plot_reduced_dim_scExp(scExp_cf, color_by = "total_counts", reduced_dim = "UMAP")
 ```
 
 
@@ -115,13 +116,13 @@ Column {data-width=400}
 ### Most contributing features
 
 ```{r}
-plot_most_contributing_features(scExp)
+if(any(c("filter") %in% run)) plot_most_contributing_features(scExp)
 ```
 
 ### Most contributing chromosomes
 
 ```{r}
-plot_pie_most_contributing_chr(scExp)
+if(any(c("filter") %in% run)) plot_pie_most_contributing_chr(scExp)
 ```
 
 Correlation Clustering
@@ -132,26 +133,22 @@ Column {data-width=250}
 
 ### Number of cluster
 ```{r}
-if(!is.null(scExp_cf)){
-  valueBox(value = length(unique(scExp_cf$cell_cluster)), caption = "Number of clusters", icon ="fa-sitemap")
-}
+if(any(c("cluster", "DA") %in% run)) flexdashboard::valueBox(value = length(unique(scExp_cf$cell_cluster)), caption = "Number of clusters", icon ="fa-sitemap")
 ```
 
 ### Percentage of well correlated cells
 ```{r}
-if(!is.null(scExp_cf)){
-  gauge(100*round(ncol(scExp_cf) / ncol(scExp),1), min = 0, max = 100, 
-        symbol = '%', sectors = gaugeSectors(
+if(any(c("cluster", "DA") %in% run)) 
+  flexdashboard::gauge(100*round(ncol(scExp_cf) / ncol(scExp),1), min = 0, max = 100, 
+        symbol = '%', sectors = flexdashboard::gaugeSectors(
           success = c(80, 100), warning = c(50, 79.99), danger = c(0, 49.999)
         ))
-}
+
 ```
 
 ### Cell affectation
 ```{r}
-if(!is.null(scExp_cf)){
-  num_cell_in_cluster_scExp(scExp_cf)
-}
+if(any(c("cluster", "DA") %in% run)) num_cell_in_cluster_scExp(scExp_cf)
 ```
 
 
@@ -161,7 +158,7 @@ Column {data-width=450}
 ### Correlation
 
 ```{r}
-if(!is.null(scExp_cf)){
+if(any(c("cluster", "DA") %in% run)){
   if("hc_cor" %in% names(scExp_cf@metadata)){
     plot_heatmap_scExp(scExp_cf)
   }
@@ -171,7 +168,7 @@ if(!is.null(scExp_cf)){
 ### Consensus scores
 
 ```{r}
-if(!is.null(scExp_cf)){
+if(any(c("cluster", "DA") %in% run)){
   if("icl" %in% names(scExp_cf@metadata)){
     plot_cluster_consensus_scExp(scExp_cf)
   }
@@ -185,7 +182,7 @@ Column {data-width=350}
 ### UMAP - cell cluster
 
 ```{r}
-if(!is.null(scExp_cf)){
+if(any(c("cluster", "DA") %in% run)){
   if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf))){
     plot_reduced_dim_scExp(scExp_cf, color_by = "cell_cluster", reduced_dim = "UMAP")
   }
@@ -195,7 +192,7 @@ if(!is.null(scExp_cf)){
 ### Sample intra-correlation
 
 ```{r}
-if(!is.null(scExp_cf)){
+if(any(c("cluster", "DA") %in% run)){
   if("Cor" %in% SingleCellExperiment::reducedDimNames(scExp_cf)){
     plot_intra_correlation_scExp(scExp_cf, by = "sample_id")
   }
@@ -210,16 +207,16 @@ Column
 
 ### Number of differential regions
 ```{r}
-if(!is.null(scExp_cf)){
+if(any(c("DA") %in% run)){
   if("diff" %in% names(scExp_cf@metadata)){
-    valueBox(value = sum(scExp_cf@metadata$diff$summary["differential",]), caption = "Number of differential regons", icon ="fa-cube")
+    flexdashboard::valueBox(value = sum(scExp_cf@metadata$diff$summary["differential",]), caption = "Number of differential regons", icon ="fa-cube")
   }
 }
 ```
 
 ### Number unique gene sets
 ```{r}
-if(!is.null(scExp_cf)){
+if(any(c("DA") %in% run)){
   if("diff" %in% names(scExp_cf@metadata) & "enr" %in% names(scExp_cf@metadata)){
     all_paths <- unique(as.character(unlist(sapply(1:length(scExp_cf@metadata$diff$groups), 
                                                    function(i) {
@@ -233,14 +230,14 @@ if(!is.null(scExp_cf)){
                                                      return(all)
                                                    }))))
     
-    valueBox(value = length(all_paths), caption = "Number of unique pathways", icon ="fa-cubes")
+    flexdashboard::valueBox(value = length(all_paths), caption = "Number of unique pathways", icon ="fa-cubes")
   }
 }
 ```
 
 ### Cell affectation
 ```{r}
-if(!is.null(scExp_cf)){
+if(any(c("cluster", "DA") %in% run)){
   if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf))){
     num_cell_in_cluster_scExp(scExp_cf)
   }
@@ -253,7 +250,7 @@ Column
 ##  Differential Volcano plots 
 
 ```{r, echo = FALSE, eval = TRUE}
-if(!is.null(scExp_cf)){
+if(any(c("DA") %in% run)){
   if("diff" %in% names(scExp_cf@metadata) & "enr" %in% names(scExp_cf@metadata)){
     diff_list = list()
     if(!is.null(scExp_cf)){
@@ -328,80 +325,80 @@ options(DT.options = list(scrollY="300px",scrollX="300px", pageLength = 10, auto
 
 
 gsa_over = gsa_under = list()
-if(!is.null(scExp_cf)){
-    if(!is.null(scExp_cf@metadata$enr)){
-        
-        for(i in seq_along(scExp_cf@metadata$diff$groups)){
-            if(length(scExp_cf@metadata$enr$Overexpressed)>=i){
-                if(!is.null(scExp_cf@metadata$enr$Overexpressed[[i]])){
-                    over_tab = table_enriched_genes_scExp(scExp_cf, set = 'Overexpressed',  group = paste0('C',i), enr_class_sel = MSIG.classes)
-                    colnames(over_tab)[3] = "N_genes"
-                    colnames(over_tab)[6] = "Genes"
-                    over_tab$p.value =   round(over_tab$p.value,7)
-                    over_tab$adj.p.value =   round(over_tab$adj.p.value,7)
-                    over_tab$Gene_set = ifelse(nchar(over_tab$Gene_set)>25, paste0(substr(over_tab$Gene_set,1,25),"..."), over_tab$Gene_set)
-                    over_tab$Genes = ifelse(nchar(over_tab$Genes)>20, paste0(substr(over_tab$Genes,1,20),"..."), over_tab$Genes)
-                    gsa_over[[i]] = over_tab
-                }
-            }
-            if(length(scExp_cf@metadata$enr$Underexpressed)>=i){
-                if(!is.null(scExp_cf@metadata$enr$Underexpressed[[i]])){
-                    under_tab = table_enriched_genes_scExp(scExp_cf, set = 'Underexpressed',  group = paste0('C',i), enr_class_sel = MSIG.classes)
-                    colnames(under_tab)[3] = "N_genes"
-                    colnames(under_tab)[6] = "Genes"
-                    under_tab$p.value =   round(under_tab$p.value,7)
-                    under_tab$adj.p.value =   round(under_tab$adj.p.value,7)
-                    under_tab$Gene_set = ifelse(nchar(under_tab$Gene_set)>25, paste0(substr(under_tab$Gene_set,1,25),"..."), under_tab$Gene_set)
-                    under_tab$Genes = ifelse(nchar(under_tab$Genes)>20, paste0(substr(under_tab$Genes,1,20),"..."), under_tab$Genes)
-                    gsa_under[[i]] = under_tab
-                }
-            }
+if(any(c("GSA") %in% run)){
+  if(!is.null(scExp_cf@metadata$enr)){
+    
+    for(i in seq_along(scExp_cf@metadata$diff$groups)){
+      if(length(scExp_cf@metadata$enr$Overexpressed)>=i){
+        if(!is.null(scExp_cf@metadata$enr$Overexpressed[[i]])){
+          over_tab = table_enriched_genes_scExp(scExp_cf, set = 'Overexpressed',  group = paste0('C',i), enr_class_sel = MSIG.classes)
+          colnames(over_tab)[3] = "N_genes"
+          colnames(over_tab)[6] = "Genes"
+          over_tab$p.value =   round(over_tab$p.value,7)
+          over_tab$adj.p.value =   round(over_tab$adj.p.value,7)
+          over_tab$Gene_set = ifelse(nchar(over_tab$Gene_set)>25, paste0(substr(over_tab$Gene_set,1,25),"..."), over_tab$Gene_set)
+          over_tab$Genes = ifelse(nchar(over_tab$Genes)>20, paste0(substr(over_tab$Genes,1,20),"..."), over_tab$Genes)
+          gsa_over[[i]] = over_tab
         }
-    }
-}
-
-out_gsa_table_up <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
-  if(!is.null(scExp_cf@metadata$enr)){
-    if(length(scExp_cf@metadata$enr$Overexpressed)>=i){
-      if(!is.null(scExp_cf@metadata$enr$Overexpressed[[i]])){
-          if(nrow(gsa_over[[i]])>0){
-                      a1 <- knitr::knit_expand(text = sprintf("### Gene sets associated with enriched mark - %s \n", scExp_cf@metadata$diff$groups[i])) 
-        a2 <- knitr::knit_expand(text = "\n```{r}") # start r chunk
-        a3 <- knitr::knit_expand(text = sprintf("\nDT::datatable(gsa_over[[%d]], options = list(pageLength = 10,  dom = 'tip', bPaginate = FALSE), class = 'display', rownames = FALSE)", i))
-        a4 <- knitr::knit_expand(text = "\n```\n") 
-        
-        paste(a1, a2, a3, a4, collapse = '\n')
-          }
-
       }
-      
-    }
-  }
-})
-
-out_gsa_table_dn <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
-  if(!is.null(scExp_cf@metadata$enr)){
-    if(length(scExp_cf@metadata$enr$Underexpressed)>=i){
-      if(!is.null(scExp_cf@metadata$enr$Underexpressed[[i]])){
-          if(nrow(gsa_under[[i]])>0){
-        a1 <- knitr::knit_expand(text = sprintf("### Gene sets associated with depleted mark - %s \n", scExp_cf@metadata$diff$groups[i])) 
-        a2 <- knitr::knit_expand(text = "\n```{r}") # start r chunk
-        a3 <- knitr::knit_expand(text = sprintf("\nDT::datatable(gsa_over[[%d]], options = list(pageLength = 10,  dom = 'tip', bPaginate = FALSE), class = 'display', rownames = FALSE)", i))
-        a4 <- knitr::knit_expand(text = "\n```\n") 
-        
-        paste(a1, a2, a3, a4, collapse = '\n')
-          }
+      if(length(scExp_cf@metadata$enr$Underexpressed)>=i){
+        if(!is.null(scExp_cf@metadata$enr$Underexpressed[[i]])){
+          under_tab = table_enriched_genes_scExp(scExp_cf, set = 'Underexpressed',  group = paste0('C',i), enr_class_sel = MSIG.classes)
+          colnames(under_tab)[3] = "N_genes"
+          colnames(under_tab)[6] = "Genes"
+          under_tab$p.value =   round(under_tab$p.value,7)
+          under_tab$adj.p.value =   round(under_tab$adj.p.value,7)
+          under_tab$Gene_set = ifelse(nchar(under_tab$Gene_set)>25, paste0(substr(under_tab$Gene_set,1,25),"..."), under_tab$Gene_set)
+          under_tab$Genes = ifelse(nchar(under_tab$Genes)>20, paste0(substr(under_tab$Genes,1,20),"..."), under_tab$Genes)
+          gsa_under[[i]] = under_tab
+        }
       }
     }
   }
-})
-
-out = list()
-for(i in seq_along(scExp_cf@metadata$diff$groups)){
   
-  out = c(out, out_gsa_table_up[[i]], out_gsa_table_dn[[i]])  
+  out_gsa_table_up <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
+    if(!is.null(scExp_cf@metadata$enr)){
+      if(length(scExp_cf@metadata$enr$Overexpressed)>=i){
+        if(!is.null(scExp_cf@metadata$enr$Overexpressed[[i]])){
+          if(nrow(gsa_over[[i]])>0){
+            a1 <- knitr::knit_expand(text = sprintf("### Gene sets associated with enriched mark - %s \n", scExp_cf@metadata$diff$groups[i])) 
+            a2 <- knitr::knit_expand(text = "\n```{r}") # start r chunk
+            a3 <- knitr::knit_expand(text = sprintf("\nDT::datatable(gsa_over[[%d]], options = list(pageLength = 10,  dom = 'tip', bPaginate = FALSE), class = 'display', rownames = FALSE)", i))
+            a4 <- knitr::knit_expand(text = "\n```\n") 
+            
+            paste(a1, a2, a3, a4, collapse = '\n')
+          }
+          
+        }
+        
+      }
+    }
+  })
+  
+  out_gsa_table_dn <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
+    if(!is.null(scExp_cf@metadata$enr)){
+      if(length(scExp_cf@metadata$enr$Underexpressed)>=i){
+        if(!is.null(scExp_cf@metadata$enr$Underexpressed[[i]])){
+          if(nrow(gsa_under[[i]])>0){
+            a1 <- knitr::knit_expand(text = sprintf("### Gene sets associated with depleted mark - %s \n", scExp_cf@metadata$diff$groups[i])) 
+            a2 <- knitr::knit_expand(text = "\n```{r}") # start r chunk
+            a3 <- knitr::knit_expand(text = sprintf("\nDT::datatable(gsa_over[[%d]], options = list(pageLength = 10,  dom = 'tip', bPaginate = FALSE), class = 'display', rownames = FALSE)", i))
+            a4 <- knitr::knit_expand(text = "\n```\n") 
+            
+            paste(a1, a2, a3, a4, collapse = '\n')
+          }
+        }
+      }
+    }
+  })
+  
+  out = list()
+  for(i in seq_along(scExp_cf@metadata$diff$groups)){
+    
+    out = c(out, out_gsa_table_up[[i]], out_gsa_table_dn[[i]])  
+  }
+  
 }
-
 ```
 
 `r paste(knitr::knit(text = paste(out, collapse = '\n')))`
@@ -413,42 +410,44 @@ Coverage
 -----------------------------------------------------------------------
     
     ```{r include=FALSE}
-plot_list = coverage_chr = coverage_start = coverage_end = list()
-coverage_color = setNames(unique(scExp_cf$cell_cluster_color), unique(scExp_cf$cell_cluster))
-
-for(i in seq_along(genes_to_plot)){
+if(any(c("coverage") %in% run)){    
+  plot_list = coverage_chr = coverage_start = coverage_end = list()
+  coverage_color = setNames(unique(scExp_cf$cell_cluster_color), unique(scExp_cf$cell_cluster))
+  
+  for(i in seq_along(genes_to_plot)){
     Gene = genes_to_plot[i]
     eval(parse(text = paste0("data(", ref_genome, ".GeneTSS)")))
     gene_annot = eval(parse(text = paste0(ref_genome, ".GeneTSS")))
     if(grepl(":", Gene) ){
-        coverage_chr[[i]] = gsub(":.*","",Gene)
-        coverage_start[[i]] = as.numeric(gsub(".*:","",gsub("-.*","",Gene)))
-        coverage_end[[i]] = as.numeric(gsub(".*-","",Gene))
+      coverage_chr[[i]] = gsub(":.*","",Gene)
+      coverage_start[[i]] = as.numeric(gsub(".*:","",gsub("-.*","",Gene)))
+      coverage_end[[i]] = as.numeric(gsub(".*-","",Gene))
     } else{
-        if(Gene %in% gene_annot$gene){
-            coverage_chr[[i]] = gene_annot$chr[which(gene_annot$gene == Gene)]
-            coverage_start[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] - 25000
-            coverage_end[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] + 25000
-        }
+      if(Gene %in% gene_annot$gene){
+        coverage_chr[[i]] = gene_annot$chr[which(gene_annot$gene == Gene)]
+        coverage_start[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] - 25000
+        coverage_end[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] + 25000
+      }
     }
     if(length(coverage_chr)>=i && !is.null(coverage_chr[[i]])){
-        plot_coverage_BigWig(coverages, coverage_color, chrom = coverage_chr[[i]], start = coverage_start[[i]], end = coverage_end[[i]], ref = ref_genome)
-        plot_list[[i]] <- grDevices::recordPlot()
-        plot.new() ## clean up device
+      plot_coverage_BigWig(coverages, coverage_color, chrom = coverage_chr[[i]], start = coverage_start[[i]], end = coverage_end[[i]], ref = ref_genome)
+      plot_list[[i]] <- grDevices::recordPlot()
+      plot.new() ## clean up device
     }
-}
-
-
-out_coverage <- lapply(seq_along(genes_to_plot), function(i) {
+  }
+  
+  
+  out_coverage <- lapply(seq_along(genes_to_plot), function(i) {
     
     if(length(coverage_chr)>=i && !is.null(coverage_chr[[i]])){
-        a1 <- knitr::knit_expand(text = sprintf("### Coverage - %s \n", genes_to_plot[i]))
-        a2 <- knitr::knit_expand(text = "\n```{r fig.width=15, echo = FALSE, eval = TRUE}") # start r chunk
-        a3 <- knitr::knit_expand(text = sprintf("\nprint(plot_list[[%d]])", i))
-        a4 <- knitr::knit_expand(text = "\n```\n")
-        paste(a1, a2, a3, a4, collapse = '\n')
+      a1 <- knitr::knit_expand(text = sprintf("### Coverage - %s \n", genes_to_plot[i]))
+      a2 <- knitr::knit_expand(text = "\n```{r fig.width=15, echo = FALSE, eval = TRUE}") # start r chunk
+      a3 <- knitr::knit_expand(text = sprintf("\nprint(plot_list[[%d]])", i))
+      a4 <- knitr::knit_expand(text = "\n```\n")
+      paste(a1, a2, a3, a4, collapse = '\n')
     }
-})
+  })
+}
 
 ```
 
@@ -465,20 +464,28 @@ Column {data-width=250}
 ### Percentage of copy number gains in non-controls
 
 ```{r}
-gain_or_loss_cytoBand = reducedDim(scExp, "gainOrLoss_cytoBand")
-gain_or_loss_cytoBand = gain_or_loss_cytoBand[which(!scExp$sample_id %in% control_samples_CNA),]
-percent_gol = round(100 * sum(abs(gain_or_loss_cytoBand[gain_or_loss_cytoBand==1])) / (ncol(gain_or_loss_cytoBand) * nrow(gain_or_loss_cytoBand)),3)
-valueBox(value = percent_gol, caption = "% of copy number gains in non-controls", icon ="fa-chevron-circle-up",  color = "danger")
+if(any(c("CNA") %in% run)){
+  if(!is.null(control_samples_CNA)){
+    gain_or_loss_cytoBand = reducedDim(scExp, "gainOrLoss_cytoBand")
+    gain_or_loss_cytoBand = gain_or_loss_cytoBand[which(!scExp$sample_id %in% control_samples_CNA),]
+    percent_gol = round(100 * sum(abs(gain_or_loss_cytoBand[gain_or_loss_cytoBand==1])) / (ncol(gain_or_loss_cytoBand) * nrow(gain_or_loss_cytoBand)),3)
+    flexdashboard::valueBox(value = percent_gol, caption = "% of copy number gains in non-controls", icon ="fa-chevron-circle-up",  color = "danger")
+  }
+}
 ```
 
 
 ### Percentage of copy number loss in non-controls
 
 ```{r}
-gain_or_loss_cytoBand = reducedDim(scExp, "gainOrLoss_cytoBand")
-gain_or_loss_cytoBand = gain_or_loss_cytoBand[which(!scExp$sample_id %in% control_samples_CNA),]
-percent_gol = round(100 * sum(abs(gain_or_loss_cytoBand[gain_or_loss_cytoBand==-1])) / (ncol(gain_or_loss_cytoBand) * nrow(gain_or_loss_cytoBand)),3)
-valueBox(value = percent_gol, caption = "% of copy number loss in non-controls", icon ="fa-chevron-circle-down", color = "success")
+if(any(c("CNA") %in% run)){
+  if(!is.null(control_samples_CNA)){
+    gain_or_loss_cytoBand = reducedDim(scExp, "gainOrLoss_cytoBand")
+    gain_or_loss_cytoBand = gain_or_loss_cytoBand[which(!scExp$sample_id %in% control_samples_CNA),]
+    percent_gol = round(100 * sum(abs(gain_or_loss_cytoBand[gain_or_loss_cytoBand==-1])) / (ncol(gain_or_loss_cytoBand) * nrow(gain_or_loss_cytoBand)),3)
+    flexdashboard::valueBox(value = percent_gol, caption = "% of copy number loss in non-controls", icon ="fa-chevron-circle-down", color = "success")
+  }
+}
 ```
 
 Column {data-width=400}
@@ -487,7 +494,11 @@ Column {data-width=400}
 ###  Gain or Loss barplots of top 20 most variable cytoBands 
 
 ```{r, echo = FALSE, eval = TRUE}
-plot_gain_or_loss_barplots(scExp, cells = scExp$cell_id[which(!scExp$sample_id %in% control_samples_CNA)])
+if(any(c("CNA") %in% run)){
+  if(!is.null(control_samples_CNA)){
+    plot_gain_or_loss_barplots(scExp, cells = scExp$cell_id[which(!scExp$sample_id %in% control_samples_CNA)])
+  }
+}
 ```
 
 
@@ -498,14 +509,20 @@ Column {data-width=400}
 ###  UMAPs of top 1 most variable cytoBands
 
 ```{r, echo = FALSE, eval = TRUE}
-top_variable_cyto = get_most_variable_cyto(scExp, top = 4)
-plot_reduced_dim_scExp_CNA(scExp, top_variable_cyto$cytoBand[1])
+if(any(c("CNA") %in% run)){
+    top_variable_cyto = get_most_variable_cyto(scExp, top = 4)
+    plot_reduced_dim_scExp_CNA(scExp, top_variable_cyto$cytoBand[1])
+}
 ```
 
 ###  UMAPs of top 2 most variable cytoBands
 
 ```{r, echo = FALSE, eval = TRUE}
-plot_reduced_dim_scExp_CNA(scExp, top_variable_cyto$cytoBand[2])
+if(any(c("CNA") %in% run)){
+  if(!is.null(control_samples_CNA)){
+    plot_reduced_dim_scExp_CNA(scExp, top_variable_cyto$cytoBand[2])
+  }
+}
 ```
 
 
