@@ -28,3 +28,8 @@ Creates the project folder and returns the root of the project.
 Creates a project folder that will be recognizable by ChromSCape Shiny
 application.
 }
+\examples{
+dir = tempdir()  
+create_project_folder(dir)
+list.dirs(dir)
+}
