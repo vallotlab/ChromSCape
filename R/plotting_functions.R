@@ -14,7 +14,7 @@
 #' @export
 #'
 #' 
-#' @import ggplot2
+#' @importFrom  ggplot2 ggplot
 #' @importFrom Matrix colSums
 #' @importFrom SummarizedExperiment assayNames
 #' 
@@ -163,10 +163,12 @@ get_color_dataframe_from_input <- function(
 #' @return A ggplot geom_point plot of reduced dimension 2D reprensentation 
 #' @export
 #'
-#' @import SingleCellExperiment
-#' @import ggplot2
-#' @import dplyr
-#' @import tidyr
+#' @importFrom SingleCellExperiment colData reducedDim normcounts
+#' @importFrom ggplot2 ggplot geom_point labs theme element_blank element_line
+#' element_rect scale_color_gradientn geom_label aes
+#' @importFrom dplyr group_by filter slice_min mutate 
+#' @importFrom tidyr separate_rows
+#' @importFrom tibble rownames_to_column
 #' @importFrom colorRamps matlab.like
 #' 
 #' @examples
@@ -224,7 +226,7 @@ plot_reduced_dim_scExp <- function(
         cbind(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]), 
               annot))
     plot_df = plot_df %>% dplyr::mutate("transparency" = transparency) %>%
-        mutate("transparency" = I(.data[["transparency"]]))
+        dplyr::mutate("transparency" = base::I(.data[["transparency"]]))
     plot_df = plot_df %>% 
         dplyr::filter(.data[[select_x]] > quantile(plot_df[,select_x], min_quantile),
                       .data[[select_x]] < quantile(plot_df[,select_x], max_quantile)) 
@@ -498,7 +500,7 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
             SingleCellExperiment::reducedDim(scExp, "Cor")[,samp]
         cor_mat = as.matrix(SingleCellExperiment::reducedDim(scExp, "Cor"))
         hc_cor = stats::hclust(as_dist(1 - cor_mat), method = hc_linkage)
-        hc_cor$labels = rep("",length(hc_cor$labels))
+        hc_cor$labels = rep("",ncol(scExp))
         scExp@metadata[[name_hc]] = hc_cor
     }
     
@@ -895,7 +897,8 @@ col2hex <- function(cname)
 #'
 #' @return The consensus score for each cluster for each k as a barplot
 #' @importFrom dplyr as_tibble
-#' @import ggplot2
+#' @importFrom ggplot2 ggplot geom_bar facet_grid scale_fill_manual 
+#' element_blank theme_minimal theme position_dodge ylab
 #' 
 #' @export
 #'
