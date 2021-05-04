@@ -913,7 +913,7 @@ generate_count_matrix <- function(cells, features, sparse,
 import_scExp <- function(file_paths,
                         remove_pattern = "",
                         temp_path = NULL) {
-    stopifnot(is.character(file_paths), is.character(""))
+    stopifnot(is.character(file_paths))
     if (length(grep("(.tsv$)|(.txt$)|(.csv$)|(.gz$)", file_paths)) 
         < length(file_paths))
         stop(paste0("ChromSCape::import_scExp - Matrix files must be in",
@@ -974,7 +974,6 @@ import_scExp <- function(file_paths,
 #'
 #' @return A character separator
 #'
-
 separator_count_mat <- function(path_to_matrix){
     format_test = as.character(
         read.table(path_to_matrix, header = TRUE, sep = "\t", nrows = 5)[4, ])
@@ -1044,7 +1043,7 @@ read_count_mat_with_separated_chr_start_end <- function(
 #'
 check_correct_datamatrix <- function(datamatrix_single,sample_name=""){
     matchingRN <-
-        grep("[[:alnum:]]+(:|_)[[:digit:]]+(-|_)[[:digit:]]+",
+        grep("[[:alnum:]]+(:|_|-)[[:digit:]]+(-|_)[[:digit:]]+",
             rownames(datamatrix_single)) # check rowname format
     if (length(matchingRN) < length(rownames(datamatrix_single))) {
         warning(paste0(
@@ -1085,7 +1084,7 @@ check_correct_datamatrix <- function(datamatrix_single,sample_name=""){
     if (length(grep("chr", rownames(datamatrix_single)[seq_len(10)], 
                     perl = TRUE)) >= 9) {
         rownames(datamatrix_single) <-
-            gsub(":", "_", rownames(datamatrix_single))
+            gsub(":|-", "_", rownames(datamatrix_single))
         rownames(datamatrix_single) <-
             gsub("-", "_", rownames(datamatrix_single))
     }
