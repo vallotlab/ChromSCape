@@ -859,6 +859,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           column(6 , br(), actionButton("col_reset", "Default colours", icon = icon("undo")),
                  br(), br(), actionButton("save_color", "Save colors & apply to all", icon = icon("save")),
                  br(), br(), actionButton("save_plots_PCA", "Save HQ plots", icon = icon("fa-picture-o"))))
+    } else{
+      shinydashboard::box(title = tagList("Color settings ",shiny::icon("palette")),
+                          width = NULL, status = "success", solidHeader = TRUE,
+                          column(6 ,br(), br(), actionButton("save_plots_PCA", "Save HQ plots", icon = icon("fa-picture-o"))))
     }
   })
   
@@ -923,6 +927,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     print(plot_reduced_dim_scExp(scExp(), input$color_by, "UMAP") + theme(text = element_blank(), legend.position = "none"))
     if("t-SNE" %in% names(scExp()@metadata)) print(tsne_plot()  + theme(text = element_blank(),legend.position = "none"))
     dev.off()
+    shiny::showNotification(paste0("Plots saved in '",plot_dir(),"' !"),
+                            duration = 15, closeButton = TRUE, type="message")
     updateActionButton(session = session, inputId = "save_plots_PCA", label = "Save HQ plots", icon = icon("check-circle"))
     })
   
@@ -1049,17 +1055,20 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   sample_cf <- reactive({
-    sample(seq_len(ncol(scExp())), min(2000,ncol(scExp())), replace = FALSE)
+    sample(seq_len(ncol(scExp_cf())), min(2000,ncol(scExp_cf())), replace = FALSE)
   })
   corChIP <- reactive({
-    SingleCellExperiment::reducedDim(scExp(),"Cor")[sample_cf(),sample_cf()] 
+    as.matrix(SingleCellExperiment::reducedDim(scExp_cf(),"Cor")[sample_cf(),sample_cf()])
     })
   
   z <- reactive({ 
-    z = coop::pcor(t(SingleCellExperiment::reducedDim(scExp(),"PCA")[sample_cf(),]), inplace = TRUE)
+    pca = SingleCellExperiment::reducedDim(scExp_cf(),"PCA")[sample_cf(),]
+    random_pca = matrix(data = sample(as.numeric(as.matrix(pca))), nrow = nrow(pca), ncol = ncol(pca))
+    z = coop::pcor(t(random_pca), inplace = TRUE)
     diag(z) <- NA
     z = z[which(!is.na(z))]
-  })
+    z
+    })
   
   thresh2 <- reactive({
     quantile(z(), probs=seq(0,1,0.01))
@@ -1303,6 +1312,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     print(plot_intra_correlation_scExp(scExp_cf(), by = input$violin_color,
                                        jitter_by = jitter_col) + theme(legend.position = "none"))
     dev.off()
+    shiny::showNotification(paste0("Plots saved in '",plot_dir(),"' !"),
+                            duration = 15, closeButton = TRUE, type="message")
+    
     updateActionButton(session = session, inputId = "save_plots_COR", label = "Save HQ plots", icon = icon("check-circle"))
   })
 #   
@@ -1430,6 +1442,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     print(umap_p_cf() + theme(text = element_blank(), legend.position = "none"))
     plot_heatmap_scExp(isolate(scExp_cf()))
     dev.off()
+    shiny::showNotification(paste0("Plots saved in '",plot_dir(),"' !"),
+                            duration = 15, closeButton = TRUE, type="message")
     updateActionButton(session = session, inputId = "save_plots_COR", label = "Save HQ plots", icon = icon("check-circle"))
   })
   
@@ -1745,6 +1759,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       end =  as.numeric(input$cov_end),
       ref = annotation_id())
     dev.off()
+    
+    shiny::showNotification(paste0("Plots saved in '",plot_dir(),"' !"),
+                            duration = 15, closeButton = TRUE, type="message")
+    
     updateActionButton(session = session, inputId = "save_plots_coverage", label = "Save HQ plots", icon = icon("check-circle"))
   })
   
@@ -1849,7 +1867,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   observeEvent(input$do_pc, {
-    req(bam_or_bed(), scExp_cf(), input$bed_selection)
+    req(scExp_cf())
+    if(is.null(input$pc_folder) | length(input$pc_folder)==0 | length(input$bed_selection)==0){
+      shiny::showNotification(paste0("Please select a valid folder for ",
+                                     "the raw data before running peak_calling..."),
+                              duration = 10, closeButton = TRUE, type="warning")
+      return()
+    }
+    
+    
     progress <- shiny::Progress$new(session, min=0, max=1)
     on.exit(progress$close())
     progress$set(message='Performing peak calling and coverage...', value = 0.0)
@@ -2285,6 +2311,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     plot_differential_volcano_scExp(scExp_cf(),cell_cluster = input$gpsamp,
                                     cdiff.th = input$cdiff.th, qval.th = input$qval.th)
     dev.off()
+    shiny::showNotification(paste0("Plots saved in '",plot_dir(),"' !"),
+                            duration = 15, closeButton = TRUE, type="message")
     updateActionButton(session = session, inputId = "save_plots_DA", label = "Save HQ plots", icon = icon("check-circle"))
   })
   
@@ -2541,6 +2569,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     pdf(file.path(plot_dir(), paste0("UMAP_", input$gene_sel,".pdf")))
     if(!is.null(pathways_mat())) print(pathways_umap_p())
     dev.off()
+    shiny::showNotification(paste0("Plots saved in '",plot_dir(),"' !"),
+                            duration = 15, closeButton = TRUE, type="message")
     updateActionButton(session = session, inputId = "save_plot_GSA", label = "Save HQ plots", icon = icon("check-circle"))
   })
   
