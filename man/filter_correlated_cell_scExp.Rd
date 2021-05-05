@@ -9,7 +9,6 @@ filter_correlated_cell_scExp(
   random_iter = 5,
   corr_threshold = 99,
   percent_correlation = 1,
-  run_tsne = FALSE,
   downsample = 2500,
   verbose = TRUE,
   BPPARAM = BiocParallel::bpparam()
@@ -28,12 +27,12 @@ is considered to be 'correlated' with another cell. (99)}
 \item{percent_correlation}{Percentage of the cells that any cell must be
 'correlated' to in order to not be filtered. (1)}
 
-\item{run_tsne}{Re-run tsne ? (FALSE)}
-
 \item{downsample}{Number of cells to calculate correlation filtering
 threshold ? (2500)}
 
 \item{verbose}{Print messages ?  (TRUE)}
+
+\item{run_tsne}{Re-run tsne ? (FALSE)}
 }
 \value{
 Returns a SingleCellExperiment object without lowly correlated cells.

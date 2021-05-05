@@ -378,6 +378,7 @@ define_feature <- function(ref, peak_file, n_bins, bin_width,
                                 geneTSS_df$end + aroundTSS)
         geneTSS_df$strand = NULL
         which = GenomicRanges::GRanges(geneTSS_df)
+        which = which[!GenomicRanges::duplicated(which)]
     }
     return(which)
 }
@@ -1143,6 +1144,8 @@ combine_datamatrix <- function(datamatrix, datamatrix_single,
 #' @param remove_zero_features remove cells with zero counts ? (TRUE)
 #' @param remove_non_canonical remove non canonical chromosomes ?(TRUE)
 #' @param remove_chr_M remove chromosomes M ? (TRUE)
+#' @param mainExpName Name of the mainExpName e.g. 'bins', 'peaks'... 
+#' ("default")
 #' @param verbose (TRUE)
 #'
 #' @return Returns a SingleCellExperiment object.
@@ -1159,7 +1162,8 @@ combine_datamatrix <- function(datamatrix, datamatrix_single,
 #' 
 create_scExp <- function(
     datamatrix, annot, remove_zero_cells = TRUE, remove_zero_features = TRUE,
-    remove_non_canonical = TRUE, remove_chr_M = TRUE, verbose = TRUE)
+    remove_non_canonical = TRUE, remove_chr_M = TRUE, mainExpName = "main",
+    verbose = TRUE)
 {
     stopifnot(is.data.frame(annot), remove_zero_cells %in% c(TRUE, FALSE),
             remove_zero_features %in% c(TRUE, FALSE))
@@ -1209,6 +1213,7 @@ create_scExp <- function(
     #     SummarizedExperiment::colData(scExp)$detected = 
     #         SummarizedExperiment::colData(scExp)$total_counts
     # }
+    SingleCellExperiment::mainExpName(scExp) <- mainExpName
     return(scExp)
 }
 

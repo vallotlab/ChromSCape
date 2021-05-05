@@ -2,9 +2,12 @@ library(shiny)
 library(shinyjs)
 library(dplyr)
 
-shinyUI(shinydashboard::dashboardPage(skin='green',
-                            shinydashboard::dashboardHeader(title = "ChromSCape"),
-                            shinydashboard::dashboardSidebar(
+shinyUI(shinydashboardPlus::dashboardPage(skin='green',
+                            shinydashboardPlus::dashboardHeader(
+                                title = "ChromSCape",
+                                leftUi =     tagList(uiOutput("dropdown_feature_select_ui"))
+                                ),
+                            shinydashboardPlus::dashboardSidebar(
                               shinydashboard::sidebarUserPanel("Institut Curie - Vallot Lab",
                                                subtitle = a(href = "#", icon("circle", class = "text-success"), "Online"),
                                                image = "curie.jpg"
@@ -94,11 +97,13 @@ shinyUI(shinydashboard::dashboardPage(skin='green',
                                                                       uiOutput("input_data_ui")),
                                                                       column(12,
                                                                       uiOutput("advanced_data_input")),
-                                                                      column(12,actionButton("create_analysis", "Create analysis"))))
+                                                                      column(3, actionButton("create_analysis", "Create analysis")),
+                                                                      column(4, uiOutput("add_to_current_analysis_checkbox_UI"))
+                                                                      ))
                                     ),
                                     column(6,
                                            column(11, align="left",
-                                                  shinydashboard::box(title="Load previous analysis", width = NULL, status="success", solidHeader=TRUE,
+                                                  shinydashboard::box(title="Current analysis", width = NULL, status="success", solidHeader=TRUE,
                                                                       column(12, align="left",
                                                                              uiOutput("selected_analysis")
                                                                       )),

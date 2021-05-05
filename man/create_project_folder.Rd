@@ -30,6 +30,7 @@ application.
 }
 \examples{
 dir = tempdir()  
-create_project_folder(dir)
-list.dirs(dir)
+create_project_folder(output_directory = dir,
+ analysis_name = "Analysis_1")
+list.dirs(file.path(dir))
 }

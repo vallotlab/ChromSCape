@@ -1,3 +1,68 @@
+
+#' Get experiment names from a SingleCellExperiment
+#'
+#' @param scExp A SingleCellExperiment with named mainExp and altExps.
+#'
+#' @return Character vector of unique experiment names
+#' @importFrom SingleCellExperiment mainExpName altExpNames
+#' @export
+#'
+#' @examples
+#' getExperimentNames(scExp)
+#' 
+getExperimentNames<- function(scExp){
+    return(unique(c(SingleCellExperiment::mainExpName(scExp),
+                    SingleCellExperiment::altExpNames(scExp))))
+}
+
+#' Get Main experiment of a SingleCellExperiment
+#'
+#' @param scExp A SingleCellExperiment with named mainExp and altExps.
+#'
+#' @return The swapped SingleCellExperiment towards "main" experiment
+#' @export
+#' @importFrom SingleCellExperiment mainExpName altExpNames
+#' @examples
+#' getMainExperiment(scExp)
+#' 
+getMainExperiment  <- function(scExp){
+    if(SingleCellExperiment::mainExpName(scExp) == "main"){
+        return(scExp) 
+    } else if("main" %in% SingleCellExperiment::altExpNames(scExp)){
+        return(swapAltExp_sameColData(scExp, "main"))
+    } else{
+        return(scExp)
+    }
+}
+
+
+#' Swap main & alternative Experiments, with fixed colData
+#'
+#' @param scExp A SingleCellExperiment
+#' @param alt Name of the alternative experiment
+#'
+#' @return A swapped SingleCellExperiment with the exact same colData.
+#' @export
+#' @importFrom SingleCellExperiment mainExpName altExpNames swapAltExp
+#' @importFrom SummarizedExperiment colData
+#' @examples
+#' swapAltExp_sameColData(scExp, "peaks")
+#' 
+swapAltExp_sameColData <- function(scExp, alt){
+    if(alt %in% SingleCellExperiment::altExpNames(scExp)){ 
+        cd = SummarizedExperiment::colData(scExp)
+        SummarizedExperiment::colData(scExp) = NULL
+        scExp = SingleCellExperiment::swapAltExp(
+            scExp, alt, SingleCellExperiment::mainExpName(scExp),
+            withColData = FALSE)
+        SummarizedExperiment::colData(scExp) = cd
+    } else {
+        warning("ChromSCape::swapAltExp_sameColData - ", alt, " not in ",
+                "altExpNames(scExp), returning unchanged scExp.")
+    }
+    return(scExp)
+}
+
 #' distPearson
 #'
 #' @param m A matrix

@@ -93,7 +93,7 @@ correlation_and_hierarchical_clust_scExp <- function(
 #' corr_threshold = 99, percent_correlation = 1)
 #' dim(scExp_cf)
 filter_correlated_cell_scExp <- function(scExp, random_iter = 5,
-    corr_threshold = 99, percent_correlation = 1, run_tsne =FALSE,
+    corr_threshold = 99, percent_correlation = 1,
     downsample = 2500, verbose = TRUE, BPPARAM = BiocParallel::bpparam()){
     warning_filter_correlated_cell_scExp(
         scExp, random_iter,corr_threshold, percent_correlation, run_tsne,
@@ -132,11 +132,8 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 5,
     scExp <- scExp[, selection_cor_filtered]
     gc()
     SingleCellExperiment::reducedDim(scExp, "Cor") = 
-        as(corChIP[selection_cor_filtered, selection_cor_filtered], "dspMatrix")
+        as(SingleCellExperiment::reducedDim(scExp, "Cor")[,selection_cor_filtered], "dspMatrix")
     gc()
-    if(run_tsne){
-        scExp <- run_tsne_scExp(scExp, verbose)
-    }
 
     if(verbose) message("ChromSCape::filter_correlated_cell_scExp - ",
                         "Re-calculating hierarchical clustering...")
@@ -146,6 +143,21 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 5,
     gc()
     hc_cor_cor_filtered$labels = rep("", ncol(scExp))
     scExp@metadata$hc_cor = hc_cor_cor_filtered
+    gc()
+    
+    for(alt in SingleCellExperiment::altExpNames(scExp)){
+        SingleCellExperiment::reducedDim(SingleCellExperiment::altExp(scExp, alt), "Cor") = 
+            as(SingleCellExperiment::reducedDim(SingleCellExperiment::altExp(scExp, alt), "Cor")[,selection_cor_filtered], "dspMatrix")
+        d = as_dist(mat = 1 - as.matrix(SingleCellExperiment::reducedDim(SingleCellExperiment::altExp(scExp, alt),"Cor")))
+        gc()
+        hc_cor_cor_filtered <- stats::hclust(d, method = "ward.D")
+        gc()
+        hc_cor_cor_filtered$labels = rep("", ncol(SingleCellExperiment::altExp(scExp, alt)))
+        SingleCellExperiment::altExp(scExp, alt)@metadata$hc_cor = hc_cor_cor_filtered
+        SingleCellExperiment::altExp(scExp, alt)@metadata$limitC = limitC_mean
+    }
+    gc()
+    
     scExp@metadata$limitC = limitC_mean #specific to filtered scExp
     return(scExp)
 }
@@ -578,8 +590,16 @@ choose_cluster_scExp <- function(scExp, nclust = 3, consensus = TRUE,
     cell_clusters_list <-
         lapply(unique(cell_clusters), function(z)
             names(which(cell_clusters ==z)))
-    scExp = colors_scExp(scExp = scExp, annotCol = "cell_cluster",
-                        color_by = "cell_cluster", color_df = NULL)
+    
+    SummarizedExperiment::colData(scExp)[,
+        paste0("cluster_",SingleCellExperiment::mainExpName(scExp))] =
+        paste("C", cell_clusters, sep = "")
+    
+    scExp = colors_scExp(
+        scExp = scExp,
+        annotCol = c("cell_cluster",
+                     paste0("cluster_",SingleCellExperiment::mainExpName(scExp)
+                            )))
     return(scExp)
 }
 

@@ -12,6 +12,7 @@ create_scExp(
   remove_zero_features = TRUE,
   remove_non_canonical = TRUE,
   remove_chr_M = TRUE,
+  mainExpName = "main",
   verbose = TRUE
 )
 }
@@ -29,6 +30,9 @@ same number of rows as the number of columns in datamatrix.}
 \item{remove_non_canonical}{remove non canonical chromosomes ?(TRUE)}
 
 \item{remove_chr_M}{remove chromosomes M ? (TRUE)}
+
+\item{mainExpName}{Name of the mainExpName e.g. 'bins', 'peaks'...
+("default")}
 
 \item{verbose}{(TRUE)}
 }

@@ -58,39 +58,37 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     print(init$available_reduced_datasets)
   })
   annotCol <- reactive({
-    if("batch_name" %in% colnames(SummarizedExperiment::colData(scExp()))){
-      c("sample_id","total_counts","batch_name")} else{
-        c("sample_id","total_counts")
+    req(scExp())
+    counts_cols = paste0("counts_", getExperimentNames(scExp()))
+    if("batch_name" %in% colnames(SummarizedExperiment::colData(scExp())))
+      {
+      c("sample_id",counts_cols,"batch_name")
+      } else{
+        c("sample_id",counts_cols)
     }
     })
   output$feature_color <- renderUI({selectInput("color_by", "Color by", choices=annotCol())})
   
   observeEvent({
     analysis_name()
-    input$selected_DA_GSA_dataset
-    input$selected_reduced_dataset
+    input$feature_select
     }, { # application header (tells you which data set is selected)
     req(analysis_name())
-      header <- paste0('<b>Analysis : ', analysis_name(), ' </b>')
-      if(!is.null(input$selected_DA_GSA_dataset)){
-        if(input$tabs %in% c("diff_analysis","enrich_analysis")){
-          pattern = paste0(input$selected_reduced_dataset, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_")
-          
-          suffix = gsub(pattern,"", input$selected_DA_GSA_dataset)
-          header <- paste0('<b>Analysis : ', analysis_name(), ' - k = ', input$nclust, ' - ', suffix, ' </b>')
-        }
-      } 
+      header <- paste0('<b>Analysis : ', analysis_name(), ' - ',input$feature_select,' </b>')
       shinyjs::html("pageHeader", header) 
   })
   
   
   get.available.reduced.datasets <- function(selected_analysis){
-    print("get.available.reduced.datasets")
-    print(list.files(path = file.path(init$data_folder, "ChromSCape_analyses", selected_analysis,"Filtering_Normalize_Reduce"), full.names = FALSE, recursive = TRUE,
-                     pattern="[[:print:]]+_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_(uncorrected|batchCorrected).qs"))
     list.files(path = file.path(init$data_folder, "ChromSCape_analyses", selected_analysis,"Filtering_Normalize_Reduce"), full.names = FALSE, recursive = TRUE,
                pattern="[[:print:]]+_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_(uncorrected|batchCorrected).qs")
     
+  }
+  get.available.alternative.datasets <- function(selected_analysis){
+    gsub(".qs$","",gsub("^datamatrix_","",list.files(path = file.path(init$data_folder, "ChromSCape_analyses", selected_analysis),
+                                                  full.names = FALSE, recursive = FALSE,
+                                                  pattern="datamatrix_.*.qs")
+                        ))
   }
   
   able_disable_tab <- function(variables_to_check, tab_id) {
@@ -261,6 +259,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
          } else { showHelpSC(TRUE)}
   })
   
+
   output$rawcount_data_input <- renderUI({
    if(input$data_choice_box != "DenseMatrix"){
     column(12,
@@ -340,15 +339,83 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
   
+  output$add_to_current_analysis_checkbox_UI <- renderUI({
+    req(input$selected_analysis)
+    if(!is.null(input$selected_analysis) & length(input$selected_analysis) > 0){
+      checkboxInput(inputId = "add_to_current_analysis", value = FALSE,
+                    label = "Add to current analysis") %>%
+        shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                            content = "add_to_current_analysis", size = "l")
+    }
+  })
+  
+  add_to_current_analysis_Modal <- function(failed = FALSE) {
+    modalDialog(title = "Additional feature layer on the same cells",
+                size = "l",
+      HTML(paste0('You are about to add another layer of features in the analysis <b>"', analysis_name(),
+           '"</b> that contains <b>',ncol(init$datamatrix), '</b> cells (barcodes: <b>',
+           paste0(head(init$annot_raw$barcode,2),collapse = ", "),
+                 '...)</b> and <b>',length(unique(init$annot_raw$sample_id)),'</b> samples (samples: <b>',
+            paste0(head(init$annot_raw$sample_id,2),collapse = ", "), '</b>...).'),
+           '<br> The data you have selected <b> must have the same cell barcodes an sample names</b> as in the current',
+           ' analysis. '),
+      br(), br(),
+      span('Choose a name corresponding to the feature you are counting on, ',
+           'e.g. "bins_50k", "peaks", "genebodies"...'),
+      br(),br(),
+      textInput("alt_name", "Name of the features",
+                placeholder = 'Try "bins_50k" or "peaks"'
+      ),
+      
+      if (failed)
+        div(tags$b("Name must not contains non-alphanumerical characters except '_', be different than 'main' and must not be empty and be shorter than 25 characters.", style = "color: red;")),
+      
+      footer = tagList(
+        actionButton("add_to_current_analysis_Modal_cancel", "Cancel"),
+        actionButton("add_to_current_analysis_Modal_ok", "OK")
+      )
+    )
+  }
+  
+  alt_name <- reactiveVal("")
+  
+  observeEvent(input$add_to_current_analysis_Modal_ok, {
+    # Check that data object exists and is data frame.
+    if (!is.null(input$alt_name) && nchar(input$alt_name) > 0 && nchar(input$alt_name) < 15
+        && !grepl("[[:punct:]]",gsub("_","",input$alt_name)) && input$alt_name!="main") {
+      alt_name(input$alt_name)
+      updateActionButton(session, "create_analysis", label="Create Analysis", icon = NULL)
+      removeModal()
+    } else {
+      showModal(add_to_current_analysis_Modal(failed = TRUE))
+    }
+  })
+  
+  observeEvent(input$add_to_current_analysis_Modal_cancel, {
+    # Check that data object exists and is data frame.
+    alt_name("")
+    updateCheckboxInput(inputId = "add_to_current_analysis", value = FALSE)
+    removeModal()
+  })
+  
+  observeEvent(input$add_to_current_analysis,{
+    if(input$add_to_current_analysis){
+      print("Creating analysis - add_to_current_analysis_Modal")
+      showModal(add_to_current_analysis_Modal())
+      print("Creating analysis - finished modal")
+    }
+  })
   
   observeEvent(input$create_analysis, {  # save new dataset
     req(input$new_analysis_name, input$annotation)
-    if(is.null(input$datafile_folder) & is.null(input$datafile_matrix)) return()
     
+    if(is.null(input$datafile_folder) && is.null(input$datafile_matrix)) return()
+      
     datamatrix <- NULL
     annot_raw <- NULL
     type_file = as.character(input$data_choice_box)
-    if(dir.exists(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name))){
+    if(!input$add_to_current_analysis && 
+       dir.exists(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name))){
       showNotification(paste0("Warning : The name : '",input$new_analysis_name,
                               " is already taken by a preexisting analysis. Please
                               choose another name for your analysis."),
@@ -357,7 +424,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       
         progress <- shiny::Progress$new(session, min=0, max=1)
         on.exit(progress$close())
-        progress$set(message='Creating new data set..', value = 0.1)
+        if(input$add_to_current_analysis) 
+          progress$set(message=paste0('Adding new feature : ',alt_name(),"..."), value = 0.1) else
+          progress$set(message='Creating new data set..', value = 0.1)
         
         if(type_file == "DenseMatrix" & !is.null(input$datafile_matrix)){
           
@@ -446,35 +515,80 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         progress$inc(detail=paste0("Finished creating matrix. Saving..."), amount = 0.1)
         
         dir.create(file.path(init$data_folder, "ChromSCape_analyses"), showWarnings = FALSE)
-        dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name))
-        dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Filtering_Normalize_Reduce"))
-        dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "correlation_clustering"))
-        dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "correlation_clustering","Plots"))
-        dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Diff_Analysis_Gene_Sets"))
-        dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Plots"))
-        write.table(input$annotation, file.path(init$data_folder, 'ChromSCape_analyses', input$new_analysis_name, 'annotation.txt'), row.names = FALSE, col.names = FALSE, quote = FALSE)
+        if(!input$add_to_current_analysis){
+          dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name))
+          dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Filtering_Normalize_Reduce"))
+          dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "correlation_clustering"))
+          dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "correlation_clustering","Plots"))
+          dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Diff_Analysis_Gene_Sets"))
+          dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Plots"))
+          write.table(input$annotation, file.path(init$data_folder, 'ChromSCape_analyses', input$new_analysis_name, 'annotation.txt'), row.names = FALSE, col.names = FALSE, quote = FALSE)
+        }
         
-        qs::qsave(datamatrix, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "datamatrix.qs"))
-        qs::qsave(annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "annot_raw.qs"))
+        if(input$add_to_current_analysis){
+          qs::qsave(datamatrix, file = file.path(init$data_folder, 
+                                                 "ChromSCape_analyses", input$selected_analysis,
+                                                 paste0("datamatrix_",alt_name(),".qs")))
+          updateRadioButtons(
+            inputId = "feature_select",
+            choices = c("main", get.available.alternative.datasets(input$selected_analysis))
+          )
+          alt_name("")
+          updateCheckboxInput(inputId = "add_to_current_analysis", value = FALSE)
+        } else{
+          qs::qsave(datamatrix, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "datamatrix.qs"))
+          qs::qsave(annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "annot_raw.qs"))
+          init$available_analyses <- list.dirs(path = file.path(init$data_folder, "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE)
+          updateSelectInput(session = session, inputId = "selected_analysis",
+                            label =  "Select an Analysis:",
+                            choices = init$available_analyses,
+                            selected =  input$new_analysis_name)
+          
+          init$datamatrix <- datamatrix
+          init$annot_raw <- annot_raw
+          
+        }
         
-        init$available_analyses <- list.dirs(path = file.path(init$data_folder, "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE)
-
-        updateSelectInput(session = session, inputId = "selected_analysis",
-                          label =  "Select an Analysis:",
-                          choices = init$available_analyses,
-                          selected =  input$new_analysis_name)
-
-        init$datamatrix <- datamatrix
-        init$annot_raw <- annot_raw
         progress$inc(detail=paste0("Import successfully finished! "), amount = 0.1)
         updateActionButton(session, "create_analysis", label="Added successfully", icon = icon("check-circle"))
     }
   })
   
-  observeEvent(input$selected_analysis, {  # load precompiled dataset and update coverage plot
+  output$dropdown_feature_select_ui <- renderUI({
+    req(input$selected_analysis)
     if(!is.null(input$selected_analysis) & input$selected_analysis != ""){
-      init$datamatrix <- qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "datamatrix.qs"))
-      init$annot_raw <-  qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "annot_raw.qs"))
+      print(get.available.alternative.datasets(input$selected_analysis))
+          shinydashboardPlus::dropdownBlock(
+            id = "feature_select_dropdown",
+            title = shiny::HTML("<span style='color: white'><b>Features</b></span>"),
+            icon = shiny::HTML(paste0("<span style='color: white'>",icon("circle"),"</span>")),
+            radioButtons(
+              inputId = "feature_select",
+              label = "Select a feature",
+              choices = c("main", get.available.alternative.datasets(input$selected_analysis))
+            ))
+        }
+  })
+  
+  is_main <- reactive({
+    req(input$selected_analysis, input$feature_select)
+    ifelse(input$feature_select == "main", TRUE, FALSE)
+  })
+  
+  observeEvent({input$selected_analysis
+               input$feature_select}, {  # load precompiled dataset and update coverage plot
+    req(input$selected_analysis)
+    if(!is.null(input$selected_analysis) && input$selected_analysis != ""){
+      print("input$feature_select")
+      print(input$feature_select)
+      if(input$feature_select != "main"){
+        init$datamatrix <- qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis,
+                                               paste0("datamatrix_",input$feature_select,".qs")))
+      } else{
+        init$datamatrix <- qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "datamatrix.qs"))
+        init$annot_raw <-  qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "annot_raw.qs"))
+      }
+      
     }
   })
   
@@ -569,10 +683,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   # 2. Filter and Normalize dataset
   ###############################################################
   
+  
   output$selected_reduced_dataset <- renderUI({ 
     selectInput("selected_reduced_dataset", "Select filtered & normalized set :",
                 choices = reduced_datasets()) 
     })
+  
+  
   output$red_data_selection_info <- renderText({"The selected data set is automatically loaded and will be used for all subsequent analysis. 
     If you try different filtering parameters for one analysis, you can select the results using each parameter set here."})
   output$red_data_selection_format <- renderText({"The name of the filtered & normalized 
@@ -623,17 +740,43 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     else {
       exclude_regions <- NULL
     }
-
-    callModule(Module_preprocessing_filtering_and_reduction, "Module_preprocessing_filtering_and_reduction", reactive({input$selected_analysis}), reactive({input$min_coverage_cell}),
-               reactive({input$n_top_features}), reactive({input$quant_removal}),
+    main_scExp = NULL
+    prefix = NULL
+    print("callModule callModule callModule")
+    print(input$feature_select)
+    if(input$feature_select != "main" && !is.null(scExp())){
+      main_scExp = getMainExperiment(scExp())
+      prefix = input$selected_reduced_dataset
+    }
+    callModule(Module_preprocessing_filtering_and_reduction, "Module_preprocessing_filtering_and_reduction",
+               reactive({input$selected_analysis}),
+               reactive({input$feature_select}), reactive({main_scExp}), reactive({prefix}),
+               reactive({input$min_coverage_cell}), reactive({input$n_top_features}), reactive({input$quant_removal}),
                reactive({init$datamatrix}), reactive({init$annot_raw}),
-               reactive({init$data_folder}),reactive({annotationId}), reactive({input$norm_type}), reactive({exclude_regions}) ,reactive({input$do_batch_corr}),
-                reactive({batch_sels}), reactive({input$run_tsne}), reactive({subsample_n}))
-    
-    init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
-
+               reactive({init$data_folder}),reactive({annotationId}),
+               reactive({input$norm_type}), reactive({exclude_regions}),
+               reactive({input$do_batch_corr}), reactive({batch_sels}),
+               reactive({input$run_tsne}), reactive({subsample_n}))
+  
+    if(input$feature_select != "main" && !is.null(scExp())){
+      file_index <- match(c(input$selected_reduced_dataset), reduced_datasets())
+      filename_sel <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),"Filtering_Normalize_Reduce",init$available_reduced_datasets[file_index])
+      
+      t1 = system.time({
+        scExp. = qs::qread(filename_sel)
+        if(is.reactive(scExp.)) {
+          scExp. = isolate(scExp.())
+        }
+        scExp(scExp.) # retrieve filtered scExp
+        rm(scExp.)
+        gc()
+      })
+      cat("Loaded reduced data in ",t1[3]," secs\n")  
+      scExp(swapAltExp_sameColData(scExp(), input$feature_select))
+    } else {
+      init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
+    }
     updateActionButton(session, "filter_normalize_reduce", label="Processed and saved successfully", icon = icon("check-circle"))
-    
   })
 
   observeEvent({input$selected_analysis  # reset label on actionButtion when new filtering should be filtered
@@ -643,7 +786,18 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
    input$do_batch_corr}, {
    updateActionButton(session, "filter_normalize_reduce", label="Filter, Normalize & Reduce", icon = character(0))
   })
-  
+
+  observeEvent(input$feature_select,{
+    req(scExp())
+    if(input$feature_select %in% SingleCellExperiment::altExpNames(scExp())){
+      shiny::showNotification(paste0("Switching to ", input$feature_select," !"), duration = 10, closeButton = TRUE, type="message")
+      scExp(swapAltExp_sameColData(scExp(), input$feature_select))
+    } else{
+      shiny::showNotification(paste0("The features ", input$feature_select," were not processed yet.",
+      " Please please run 'Filter and Normalize' first."), duration = 10, closeButton = TRUE, type="message")
+    }
+  })
+
   observeEvent(input$selected_reduced_dataset, { # load reduced data set to work with on next pages
     req(input$selected_reduced_dataset)
     
@@ -765,19 +919,25 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   # 2. PCA
   ###############################################################
   
-  output$pc_select_x <- renderUI({ selectInput("pc_select_x", "X",choices=colnames(SingleCellExperiment::reducedDim(scExp(),"PCA"))) })
-  output$pc_select_y <- renderUI({ selectInput("pc_select_y", "Y",choices=colnames(SingleCellExperiment::reducedDim(scExp(),"PCA")),
+  output$pc_select_x <- renderUI({
+    req(scExp())
+    selectInput("pc_select_x", "X",choices=colnames(SingleCellExperiment::reducedDim(scExp(),"PCA"))) })
+  output$pc_select_y <- renderUI({
+    req(scExp())
+    selectInput("pc_select_y", "Y",choices=colnames(SingleCellExperiment::reducedDim(scExp(),"PCA")),
                                                selected = colnames(SingleCellExperiment::reducedDim(scExp(),"PCA"))[2]) })
 
   pca_plot <- reactive({
     req(scExp(), annotCol(), input$pc_select_x,input$pc_select_y,  input$color_by)
     if(input$color_by %in% colnames(SingleCellExperiment::colData(scExp())) ){
-    p = plot_reduced_dim_scExp(scExp(),input$color_by, "PCA",
-                               select_x = input$pc_select_x,
-                               select_y = input$pc_select_y
-    )
-    unlocked$list$pca=TRUE
-    p
+      if(input$pc_select_x  %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
+        p = plot_reduced_dim_scExp(scExp(),input$color_by, "PCA",
+                                   select_x = input$pc_select_x,
+                                   select_y = input$pc_select_y
+        )
+        unlocked$list$pca=TRUE
+        p
+      }
     }
   })
   output$pca_plot <- renderPlot(pca_plot())
@@ -852,7 +1012,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$color_box <- renderUI({
     req(input$color_by)
-    if(input$color_by != 'total_counts'){
+    if(!grepl("counts",input$color_by)){
       shinydashboard::box(title = tagList("Color settings ",shiny::icon("palette")),
                           width = NULL, status = "success", solidHeader = TRUE,
           column(6, htmlOutput("color_picker")),
@@ -876,7 +1036,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$color_picker <- renderUI({
     #Color picker
-    if(input$color_by != "total_counts"){
+    if(!grepl("counts",input$color_by)){
       if(input$color_by %in% colnames(SingleCellExperiment::colData(scExp())) ){
       colsModif <- SummarizedExperiment::colData(scExp())[,c(input$color_by,paste0(input$color_by,"_color"))] %>% unique()
       lapply(seq_along(levels_selected()), function(i) {
@@ -894,7 +1054,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     color_df = ChromSCape:::get_color_dataframe_from_input(input,levels_selected(),input$color_by)
 
     scExp. = colors_scExp(scExp(),annotCol = input$color_by,color_by = input$color_by, color_df = color_df)
-    scExp(scExp.)
+    scExp(getMainExperiment(scExp.))
     
     qs::qsave(scExp, file = file.path(init$data_folder, "ChromSCape_analyses",
                                    analysis_name(), "Filtering_Normalize_Reduce",
@@ -907,7 +1067,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   levels_selected <- reactive({
     req(scExp(),input$color_by)
-    if(input$color_by != "total_counts") 
+    if(!grepl("counts",input$color_by)) 
       levels_selected = SummarizedExperiment::colData(scExp())[,input$color_by] %>% unique() %>% as.vector()
     else NULL
   })
@@ -946,13 +1106,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   annotCol_cf <- reactive({
     req(scExp_cf())
     cols = c("sample_id")
-    if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
-      cols = c(cols,"cell_cluster")
+    counts_cols = paste0("counts_", getExperimentNames(scExp()))
+    cluster_cols = paste0("cluster_", getExperimentNames(scExp()))
+    if(cluster_cols %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
+      cols = c(cols, cluster_cols)
       } 
     if("batch_name" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
       cols = c(cols,"batch_name")
       } 
-    cols = c(cols, "total_counts")
+    cols = c(cols, counts_cols)
     cols
   })
   
@@ -997,6 +1159,18 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     selectInput("nclust", br("Number of Clusters:"), choices=c(2:30))
   })
   
+  observeEvent(input$feature_select,{
+    req(scExp_cf())
+    
+    if(input$feature_select %in% SingleCellExperiment::altExpNames(scExp_cf())){
+      shiny::showNotification(paste0("Switching to ", input$feature_select," !"), duration = 10, closeButton = TRUE, type="message")
+      scExp_cf(swapAltExp_sameColData(scExp_cf(), input$feature_select))
+    } else{
+      shiny::showNotification(paste0("The features ", input$feature_select," were not processed yet.",
+                                     " Please please run 'Filter and Normalize' first."), duration = 10, closeButton = TRUE, type="message")
+    }
+  })
+  
   observeEvent({input$choose_cluster},{
     
                  req(input$nclust, scExp_cf())
@@ -1010,7 +1184,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                     analysis_name(), "correlation_clustering",
                                     paste0(selected_filtered_dataset(),".qs"))
                    if(!file.exists(file)){
-                     data = list("scExp_cf" = scExp_cf())
+                     data = list("scExp_cf" = getMainExperiment(scExp_cf()))
                      qs::qsave(data,file=file )
                      rm(data)
                      gc()
@@ -1024,10 +1198,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                      scExp_cf(scExp_cf.)
                      rm(scExp_cf.)
                    } else{
-                     print("Resetting refined annotation")
-
-                     # Reset any refined annotation found with other nclust
+                     
                      if("refined_annotation" %in% names(scExp_cf()@metadata)){
+                       # Reset any refined annotation found with other nclust
+                       print("Resetting refined annotation")
                        scExp_cf. = scExp_cf()
                        scExp_cf.@metadata[["refined_annotation"]] <- NULL
                        scExp_cf(scExp_cf.)
@@ -1041,9 +1215,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     input$choose_cluster
   }, { # application header (tells you which data set is selected)
     req(analysis_name(), input$nclust)
-    header <- paste0('<b>Analysis : ', analysis_name(), ' - k = ', input$nclust, ' </b>')
+    header <- paste0('<b>Analysis : ', analysis_name(), ' - ',input$feature_select, ' - k = ', input$nclust, ' </b>')
     shinyjs::html("pageHeader", header) 
   })
+  
   
   output$download_cor_clust_plot <- downloadHandler(
     filename=function(){ paste0("correlation_clustering_", input$selected_reduced_dataset, ".png")},
@@ -1110,7 +1285,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust), consensus = cluster_type()))
       gc()
       incProgress(amount=0.2, detail=paste("Saving"))
-      data = list("scExp_cf" = scExp_cf())
+      data = list("scExp_cf" = getMainExperiment(scExp_cf()))
       qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
                                               paste0(input$selected_reduced_dataset, ".qs")))
       incProgress(amount=0.2, detail=paste("Finished"))
@@ -1201,7 +1376,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                           prefix = plotting_directory()))
       gc()
       progress$set(value = 0.7)
-      data = list("scExp_cf" = scExp_cf())
+      data = list("scExp_cf" = getMainExperiment(scExp_cf()))
       qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
                                   paste0(input$selected_reduced_dataset, ".qs")))
       rm(data)
@@ -1240,10 +1415,14 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$do_annotated_heatmap_plot,
                {
+                 print("Doing annotated heatmap")
+                 print(scExp_cf())
+                 print(input$feature_select)
+                 print(input$nclust)
+                 
                  if(input$nclust != ""){
                    output$annotated_heatmap_UI <- renderUI({
-                     
-                     output$annotated_heatmap_plot = renderPlot(plot_heatmap_scExp(isolate(scExp_cf())))
+                     output$annotated_heatmap_plot = renderPlot(plot_heatmap_scExp(scExp_cf()))
                      plotOutput("annotated_heatmap_plot",width = 500,height = 500) %>%
                        shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
                  })
@@ -1253,7 +1432,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$violin_color <- renderUI({
     req(annotCol_cf())
-    selectInput("violin_color","Color by", choices=annotCol_cf()[-which(annotCol_cf() == "total_counts")])
+    selectInput("violin_color","Color by", choices=annotCol_cf()[-grep("counts", annotCol_cf())])
   })
   
   output$jitter_color <- renderUI({
@@ -1413,7 +1592,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   levels_selected_cf <- reactive({
     req(scExp_cf(),input$color_by_cf)
-    if(input$color_by_cf != "total_counts") levels_selected_cf =
+    if( !grepl("counts",input$color_by_cf) ) levels_selected_cf =
       SummarizedExperiment::colData(scExp_cf())[,input$color_by_cf] %>%
       unique() %>% as.vector() else NULL
   })
@@ -1451,7 +1630,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     req(input$color_by_cf)
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
-        if(input$color_by_cf != 'total_counts'){
+        if(!grepl("counts",input$color_by_cf)){
           shinydashboard::box(title=tagList("Color settings ",shiny::icon("palette")), width = NULL, status = "success", solidHeader = TRUE,
                               column(6, htmlOutput("color_picker_cf")),
                               column(4 , br(), actionButton("col_reset_cf", "Default colours", icon = icon("undo")),
@@ -1947,51 +2126,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       updateActionButton(session, "do_pc", label="Start", icon = character(0))
   })
   
-  
-  
- 
-  # available_pc_plots <- reactive({
-  #   fe <- sapply(c(1:input$pc_k_selection), function(i){file.exists(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$pc_k_selection), paste0("C", i, "_model.r")))})
-  #   which(fe==TRUE)
-  # })
-
-  # output$pc_plot_box <- renderUI({
-  #   if(has_available_pc()){
-  #     shinydashboard::box(title="Peak calling visualization", width = NULL, status="success", solidHeader = TRUE,
-  #         column(8, align="left", selectInput("pc_cluster","Select cluster (only those shown for which plots are available):", choices = paste0("C", available_pc_plots()))),
-  #         column(12, align="left",
-  #                plotOutput("peak_model_plot", height = 500, width = 500),
-  #                plotOutput("cross_corr_plot", height = 500, width = 500)))
-  #   }
-  # })
-  # 
-  # pc_data_p <- reactive({ req(has_available_pc()); as.numeric(unlist(read.table(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$pc_k_selection), paste0(input$pc_cluster, "_data_p.txt"))))) })
-  # pc_data_m <- reactive({ req(has_available_pc()); as.numeric(unlist(read.table(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$pc_k_selection), paste0(input$pc_cluster, "_data_m.txt"))))) })
-  # pc_data_xcorr <- reactive({ req(has_available_pc()); as.numeric(unlist(read.table(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$pc_k_selection), paste0(input$pc_cluster, "_data_xcorr.txt"))))) })
-  # pc_data_ycorr <- reactive({ req(has_available_pc()); as.numeric(unlist(read.table(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$pc_k_selection), paste0(input$pc_cluster, "_data_ycorr.txt"))))) })
-  # peak_model_p <- reactive({
-  #   req(has_available_pc())
-  #   x <- seq.int((length(pc_data_p())-1)/2*-1,(length(pc_data_p())-1)/2)
-  #   plot(x,pc_data_p(),type='l',col = c('red'),main='Peak Model',xlab='Distance to the middle',ylab='Percentage')
-  #   lines(x,pc_data_m(),col = c('blue'))
-  #   legend('topleft',c('forward tags','reverse tags'),lty = c(1,1,1),col = c('red','blue'))
-  # })
-  # output$peak_model_plot <- renderPlot(peak_model_p())
-  # cross_corr_p <- reactive({
-  #   req(has_available_pc())
-  #   altd  <- c(297)
-  #   plot(pc_data_xcorr(),pc_data_ycorr(),type='l',col = c('black'),main='Cross-Correlation',xlab='Lag between + and - tags',ylab='Correlation')
-  #   abline(v = altd,lty = 2,col = c('red'))
-  #   legend('topleft','alternative lag(s)',lty = 2,col='red')
-  #   legend('topright','alt lag(s) : 297',bty='n')
-  # })
-  # output$cross_corr_plot <- renderPlot(cross_corr_p())
-  
-  
   ###############################################################
   # 6. Differential analysis
   ###############################################################
-
+    
   get.available.DA_GSEA.datasets <- function(name, preproc){
     l = list.files(path = file.path(init$data_folder, "ChromSCape_analyses", name, "Diff_Analysis_Gene_Sets"),
                full.names = FALSE, recursive = FALSE, pattern = paste0(preproc, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_"))
@@ -2010,6 +2148,20 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$selected_DA_GSA_dataset <- renderUI({ 
     selectInput("selected_DA_GSA_dataset", "Select set with Differential Analysis:",
                 choices = DA_GSA_datasets()) 
+  })
+  
+  observeEvent({
+    input$selected_DA_GSA_dataset
+  }, { # application header (tells you which data set is selected)
+    req(analysis_name(), scExp_cf(), input$selected_DA_GSA_dataset)
+    if(!is.null(input$selected_DA_GSA_dataset)){
+      if(input$tabs %in% c("diff_analysis","enrich_analysis")){
+        pattern = paste0(input$selected_reduced_dataset, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_")
+        suffix = gsub(pattern,"", input$selected_DA_GSA_dataset)
+        header <- paste0('<b>Analysis : ', analysis_name(), ' - ',input$feature_select, ' - k = ', length(unique(scExp_cf()$cell_cluster)), ' - ', suffix, ' </b>')
+        shinyjs::html("pageHeader", header) 
+      }
+    }
   })
   
   observeEvent(input$selected_DA_GSA_dataset, { # load reduced data set to work with on next pages
@@ -2189,7 +2341,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                            ref = ref,
                                            progress = progress)) 
       gc()
-      data = list("scExp_cf" = scExp_cf())
+      data = list("scExp_cf" = getMainExperiment(scExp_cf()))
       DA_GSA_suffix = input$de_type
       if(input$de_type == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
                                                            gsub("[^[:alnum:]|_]","",input$name_ref))
@@ -2438,7 +2590,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                                 GeneSetClasses = MSIG.classes(),progress = progress))
     gc()
     progress$inc(detail='Finished Gene Set Analysis - Saving...', amount = 0.0)
-    data = list("scExp_cf" = scExp_cf() )
+    data = list("scExp_cf" = getMainExperiment(scExp_cf()) )
 
     qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                                      paste0(input$selected_DA_GSA_dataset, ".qs")))
@@ -2715,7 +2867,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     unlink(file.path(".", "*.csv"))
     
     if(!is.null(scExp()) & !is.null(input$selected_reduced_dataset)){
-      scExp = isolate(scExp())
+      scExp = isolate(getMainExperiment(scExp()))
       qs::qsave(scExp, file = file.path(init$data_folder, "ChromSCape_analyses",
                                    analysis_name(), "Filtering_Normalize_Reduce",
                                    paste0(input$selected_reduced_dataset,".qs")))
@@ -2723,7 +2875,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
     if(!is.null(scExp_cf()) & !is.null(selected_filtered_dataset())){
       data = list()
-      data$scExp_cf = isolate(scExp_cf())
+      data$scExp_cf = isolate(getMainExperiment(scExp_cf()))
       
       if("consclust" %in% names(scExp_cf()@metadata)){
         if("diff" %in% names(scExp_cf()@metadata)){
@@ -2739,6 +2891,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                          paste0(selected_filtered_dataset(), 
                                  ".qs"))
         }
+        scExp = getMainExperiment(scExp)
         qs::qsave(scExp, file = dir)
       } 
       
