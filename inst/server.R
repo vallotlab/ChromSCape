@@ -187,7 +187,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(input$data_choice_box == "DenseMatrix"){
       column(12, br(),fileInput("datafile_matrix", "Upload all data matrices (.tsv / .gz) :",
                 multiple=TRUE, accept=c("text", "text/plain", ".txt", ".tsv", ".csv", ".gz")),
-             checkboxInput("is_combined_mat", "Single Multi-sample count matrix ?",value = FALSE),
+             checkboxInput("is_combined_mat", "Single Multi-sample dense matrix ?",value = FALSE),
              uiOutput("nb_samples_mat")
              )
       
@@ -200,10 +200,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                         title =  paste0("Select a directory containing your ",
                                                         input$data_choice_box," files."),
                                         icon = icon("folder-open")),
-             checkboxInput("is_combined_mat", "Single Multi-sample count matrix ?",value = FALSE),
+             checkboxInput("is_combined_mat", "Single Multi-sample dense matrix ?",value = FALSE),
              uiOutput("nb_samples_mat")
       )
-    }else if(input$data_choice_box == "scBAM" | input$data_choice_box == "scBED"){
+    }else if(input$data_choice_box == "FragmentFile" | input$data_choice_box == "scBAM" | input$data_choice_box == "scBED"){
       column(12,
              br(),
              HTML(paste0("<b>Upload folder (", input$data_choice_box,")</b><br>")),
@@ -267,15 +267,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                column(6, 
                                       radioButtons("count_on_box", label = "Select a count method",
                                             choices = list("Count on bins (width)"="bin_width",
-                                                           "Count on bins (number of bins)" = "n_bins",
                                                            "Count on peaks (must provide a .bed file)" = "peak_file",
-                                                           "Count around gene TSS" = "geneTSS"))
+                                                           "Count on genes (body + promoter)" = "genebody"))
                                ),
                                column(6,
                                       uiOutput("bin_width"),
-                                      uiOutput("n_bins"),
                                       uiOutput("peak_file"),
-                                      uiOutput("aroundTSS"))
+                                      uiOutput("extendPromoter"))
            )
     )
    }
@@ -283,7 +281,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$advanced_data_input <- renderUI({
     if(input$data_choice_box != "DenseMatrix"){
-      if(input$data_choice_box == "SparseMatrix"){
+      if(input$data_choice_box == "SparseMatrix" | input$data_choice_box == "FeatureFile"){
         column(12, uiOutput("datafile_folder_upload_UI"))
       } else{
         column(12, uiOutput("rawcount_data_input"),
@@ -295,20 +293,17 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$nb_samples_mat <- renderUI({ if(input$is_combined_mat == TRUE){
     selectInput(inputId = "nb_samples_to_find",label = "Number of samples:",
-                choices = 1:100,selected = 1,multiple = FALSE)
+                choices = 1:100, selected = 1, multiple = FALSE)
   }})
   
   output$bin_width <- renderUI({ if(input$count_on_box == "bin_width"){
     textInput("bin_width", label = "Width of bins to count on (in bp) :",value = 50000)
   }})
-  output$n_bins <- renderUI({ if(input$count_on_box == "n_bins" ){
-    textInput("n_bins", label = "Number of bins to count on :", value = 10000)
-  }})
   output$peak_file <- renderUI({ if(input$count_on_box == "peak_file"){
     fileInput("peak_file", ".bed file containing the peaks to count on:", multiple = FALSE, accept = c(".bed",".txt"))
   }})
-  output$aroundTSS <- renderUI({ if(input$count_on_box == "geneTSS" ){
-    textInput("aroundTSS", label = "Distance Up/Downstream of TSS(bp):", value = 2500)
+  output$extendPromoter <- renderUI({ if(input$count_on_box == "genebody" ){
+    textInput("extendPromoter", label = "Distance Up/Downstream of TSS(bp):", value = 2500)
   }})
 
   shinyFiles::shinyDirChoose(input, "datafile_folder", roots = volumes, session = 
@@ -349,7 +344,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
   })
   
-  add_to_current_analysis_Modal <- function(failed = FALSE) {
+  add_to_current_analysis_Modal <- function(failed = FALSE){
     modalDialog(title = "Additional feature layer on the same cells",
                 size = "l",
       HTML(paste0('You are about to add another layer of features in the analysis <b>"', analysis_name(),
@@ -382,9 +377,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(input$add_to_current_analysis_Modal_ok, {
     # Check that data object exists and is data frame.
     if (!is.null(input$alt_name) && nchar(input$alt_name) > 0 && nchar(input$alt_name) < 15
-        && !grepl("[[:punct:]]",gsub("_","",input$alt_name)) && input$alt_name!="main") {
+        && !grepl("[[:punct:]]", gsub("_","",input$alt_name)) && input$alt_name!="main") {
       alt_name(input$alt_name)
-      updateActionButton(session, "create_analysis", label="Create Analysis", icon = NULL)
+      updateActionButton(session, "create_analysis", label= "Create Analysis", icon = NULL)
       removeModal()
     } else {
       showModal(add_to_current_analysis_Modal(failed = TRUE))
@@ -425,17 +420,17 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         progress <- shiny::Progress$new(session, min=0, max=1)
         on.exit(progress$close())
         if(input$add_to_current_analysis) 
-          progress$set(message=paste0('Adding new feature : ',alt_name(),"..."), value = 0.1) else
+          progress$set(message=paste0('Adding new feature : ', alt_name(), "..."), value = 0.1) else
           progress$set(message='Creating new data set..', value = 0.1)
         
         if(type_file == "DenseMatrix" & !is.null(input$datafile_matrix)){
           
-          progress$inc(detail="Reading count matrices", amount = 0.3)
+          progress$inc(detail="Reading Dense Matrices", amount = 0.3)
           if(input$is_combined_mat == TRUE){
             if(length(input$datafile_matrix$name)>1){
               showNotification(paste0("Warning : When checking the 
                                       'The matrix contains multiple samples ?' button,
-                                      you have to input a single count matrix."),
+                                      you have to input a single Dense Matrix."),
                                duration = 5, closeButton = TRUE, type="warning")
               return()
             }
@@ -456,6 +451,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           send_warning = FALSE
           if(type_file == "scBAM") if(length(list.files(selected_sample_folders[1],pattern = "*.bam$"))==0) send_warning = TRUE
           if(type_file == "scBED") if(length(list.files(selected_sample_folders[1],pattern = "*.bed$|.*.bed.gz"))==0) send_warning = TRUE
+          if(type_file == "FragmentFile") if(length(list.files(selected_sample_folders[1],pattern = "*.tsv|.*.tsv.gz"))==0) send_warning = TRUE
+          if(type_file == "FragmentFile") if(!requireNamespace("data.table", quietly=TRUE)){
+            showNotification(paste0("Warning : In order to read in Fragment Files, you must install Signac Package first.",
+                                    "Run install.packages('Signac') in console. "), duration = 20, closeButton = TRUE, type="error")
+          }
           if(type_file == "SparseMatrix") {
             combin = expand.grid(c(".*features", ".*barcodes", ".*matrix"), c(".mtx",".tsv",".txt",".bed",".*.gz"))[-c(1,2,6,9,11,12),]
             pattern = paste(combin$Var1,combin$Var2, sep="", collapse = "|")
@@ -475,19 +475,12 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
             out =  ChromSCape:::read_sparse_matrix(
               files_dir_list = selected_sample_folders,
             ref = input$annotation)
-        } else if(type_file %in% c("scBAM","scBED") & !is.null(input$datafile_folder)) {
+        } else if(type_file %in% c("FragmentFile","scBAM","scBED") & !is.null(input$datafile_folder)) {
          
           if(input$count_on_box == "bin_width") out = ChromSCape:::raw_counts_to_sparse_matrix(
             files_dir_list = selected_sample_folders,
             file_type = type_file,
             bin_width = as.numeric(input$bin_width),
-            ref = input$annotation,
-            progress = progress)
-          
-          if(input$count_on_box == "n_bins") out = ChromSCape:::raw_counts_to_sparse_matrix(
-            files_dir_list = selected_sample_folders,
-            file_type = type_file,
-            n_bins = as.numeric(input$n_bins),
             ref = input$annotation,
             progress = progress)
           
@@ -498,11 +491,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
             ref = input$annotation,
             progress = progress)
           
-          if(input$count_on_box == "geneTSS")  out = ChromSCape:::raw_counts_to_sparse_matrix(
+          if(input$count_on_box == "genebody")  out = ChromSCape:::raw_counts_to_sparse_matrix(
             files_dir_list = selected_sample_folders,
             file_type = type_file,
-            geneTSS = TRUE,
-            aroundTSS = as.numeric(input$aroundTSS),
+            genebody = TRUE,
+            extendPromoter = as.numeric(input$extendPromoter),
             ref = input$annotation,
             progress = progress)
                   } else {
@@ -522,7 +515,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "correlation_clustering","Plots"))
           dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Diff_Analysis_Gene_Sets"))
           dir.create(file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "Plots"))
-          write.table(input$annotation, file.path(init$data_folder, 'ChromSCape_analyses', input$new_analysis_name, 'annotation.txt'), row.names = FALSE, col.names = FALSE, quote = FALSE)
+          write.table(input$annotation, file.path(init$data_folder, 'ChromSCape_analyses', input$new_analysis_name, 'annotation.txt'),
+                      row.names = FALSE, col.names = FALSE, quote = FALSE)
         }
         
         if(input$add_to_current_analysis){
@@ -582,8 +576,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       print("input$feature_select")
       print(input$feature_select)
       if(input$feature_select != "main"){
-        init$datamatrix <- qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis,
-                                               paste0("datamatrix_",input$feature_select,".qs")))
+        if(input$feature_select %in% get.available.alternative.datasets(input$selected_analysis)) {
+          init$datamatrix <- qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis,
+                                                 paste0("datamatrix_",input$feature_select,".qs")))
+        } else{
+          updateRadioButtons(
+            inputId = "feature_select",
+            choices = c("main", get.available.alternative.datasets(input$selected_analysis))
+          )
+        }
       } else{
         init$datamatrix <- qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "datamatrix.qs"))
         init$annot_raw <-  qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "annot_raw.qs"))
@@ -742,11 +743,16 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     }
     main_scExp = NULL
     prefix = NULL
-    print("callModule callModule callModule")
-    print(input$feature_select)
-    if(input$feature_select != "main" && !is.null(scExp())){
-      main_scExp = getMainExperiment(scExp())
-      prefix = input$selected_reduced_dataset
+    if(input$feature_select != "main"){
+      if(!is.null(scExp())){
+        main_scExp = getMainExperiment(scExp())
+        prefix = input$selected_reduced_dataset
+      } else{
+        shiny::showNotification(
+          "Please run Filter, Normalize & Reduce on the 'main' features first. (Switch features)",
+            duration = 15, closeButton = TRUE, type="error")
+        return(0)
+      }
     }
     callModule(Module_preprocessing_filtering_and_reduction, "Module_preprocessing_filtering_and_reduction",
                reactive({input$selected_analysis}),
@@ -1106,10 +1112,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   annotCol_cf <- reactive({
     req(scExp_cf())
     cols = c("sample_id")
-    counts_cols = paste0("counts_", getExperimentNames(scExp()))
-    cluster_cols = paste0("cluster_", getExperimentNames(scExp()))
-    if(cluster_cols %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
-      cols = c(cols, cluster_cols)
+    counts_cols = paste0("counts_", getExperimentNames(scExp_cf()))
+    cluster_cols = paste0("cluster_", getExperimentNames(scExp_cf()))
+    if(any(cluster_cols %in% colnames(SummarizedExperiment::colData(scExp_cf())))){
+      cols = c(cols, cluster_cols[which(cluster_cols %in% colnames(SummarizedExperiment::colData(scExp_cf())))])
       } 
     if("batch_name" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
       cols = c(cols,"batch_name")
@@ -1297,7 +1303,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   observeEvent({input$reset_corr_cells  # reset label on actionButtion when new filtering should be filtered
-    input$percent_correlation}, {
+      }, {
       req(scExp_cf())
       
       if("Unfiltered" %in% names(scExp_cf()@metadata)){
@@ -1306,7 +1312,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         scExp_cf(scExp_cf()@metadata$Unfiltered)
         updateActionButton(session, "reset_corr_cells", label="Resetted", icon = icon("check-circle"))
       } else {
-        shiny::showNotification(paste0("Alrready original cells ..."),
+        shiny::showNotification(paste0("Already original cells ..."),
                                 duration = 5, closeButton = TRUE, type="warning")
       }
           
@@ -1496,43 +1502,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     
     updateActionButton(session = session, inputId = "save_plots_COR", label = "Save HQ plots", icon = icon("check-circle"))
   })
-#   
-# output$cons_clust_anno_plot <- renderPlot({
-#   if(! is.null(scExp_cf())){
-#     if("ConsensusAssociation" %in% names(scExp_cf()@metadata)){
-#       colors <- SummarizedExperiment::colData(scExp_cf())[scExp_cf()@metadata$hc_consensus_association$order,"cell_cluster_color"]
-#       heatmap(SingleCellExperiment::reducedDim(scExp_cf(),"ConsensusAssociation")[scExp_cf()@metadata$hc_consensus_association$order,],
-#               Colv = as.dendrogram(scExp_cf()@metadata$hc_consensus_association),
-#               Rowv = NA, symm = FALSE, scale="none", col = grDevices::colorRampPalette(c("white", "blue"))(100),
-#               na.rm = TRUE, labRow = FALSE, labCol = FALSE, mar = c(5, 5), main = paste("consensus matrix k=", input$nclust, sep=""),
-#               ColSideCol = colors)
-#     }
-#   }
-#     })
-#   
-# output$anno_cc_box <- renderUI({
-#   if(! is.null(scExp_cf())){
-#     if("ConsensusAssociation" %in% names(scExp_cf()@metadata)){
-#       shinydashboard::box(title="Annotated consensus clustering", width = NULL, status="success", solidHeader = TRUE,
-#           column(12, align="left", plotOutput("cons_clust_anno_plot", height = 500, width = 500),
-#                  downloadButton("download_anno_cc_plot", "Download image")))
-#     }
-#   }
-#   })
-#   
-#   output$download_anno_cc_plot <- downloadHandler(
-#     filename = function(){ paste0("consensus_clustering_k", input$nclust, "_", selected_filtered_dataset(), ".png")},
-#     content = function(file){
-#       grDevices::png(file, width = 1200, height = 800, res = 300)
-#       colors <- SummarizedExperiment::colData(scExp_cf())[scExp_cf()@metadata$hc_consensus_association$order,"cell_cluster_color"]
-#       heatmap(SingleCellExperiment::reducedDim(scExp_cf(),"ConsensusAssociation")[scExp_cf()@metadata$hc_consensus_association$order,],
-#               Colv = as.dendrogram(scExp_cf()@metadata$hc_consensus_association),
-#               Rowv = NA, symm = FALSE, scale="none", col = colorRampPalette(c("white", "blue"))(100),
-#               na.rm = TRUE, labRow = FALSE, labCol = FALSE, mar = c(5, 5), main = paste("consensus matrix k=", input$nclust, sep=""),
-#               ColSideCol = colors)
-#       grDevices::dev.off()
-#   })
-#   
+
   output$contingency_table_cluster <- renderUI({
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
@@ -1576,7 +1546,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   })
   
   umap_p_cf <- reactive({
-    req(scExp_cf(), annotCol(), input$color_by_cf)
+    req(scExp_cf(), annotCol_cf(), input$color_by_cf)
     if(input$color_by_cf %in% colnames(SingleCellExperiment::colData(scExp_cf())) ){
       p = plot_reduced_dim_scExp(scExp_cf(),input$color_by_cf, "UMAP",
                                  select_x = "Component_1",
@@ -1600,11 +1570,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$UMAP_box <- renderUI({
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf())) ){
-        shinydashboard::box(title="UMAP vizualisation 2", width = NULL, status="success", solidHeader = TRUE,
+        shinydashboard::box(title="UMAP", width = NULL, status="success", solidHeader = TRUE,
                             column(4, align="left",
                                    selectInput("color_by_cf", "Color by",
-                                               selected = "cell_cluster",
-                                               choices = c(annotCol(),'cell_cluster'))),
+                                               selected = annotCol_cf()[max(grep("cluster",annotCol_cf())[1],1)],
+                                               choices = annotCol_cf())),
                             column(3, align = "left", actionButton(inputId = "save_plots_COR",
                                                                    label = "Save HQ plots",
                                                                    icon = icon("fa-picture-o"))),
@@ -1631,7 +1601,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
         if(!grepl("counts",input$color_by_cf)){
-          shinydashboard::box(title=tagList("Color settings ",shiny::icon("palette")), width = NULL, status = "success", solidHeader = TRUE,
+          shinydashboard::box(title=tagList("Color settings ", shiny::icon("palette")),collapsible = T, collapsed = T,
+                              width = NULL, status = "success", solidHeader = TRUE,
                               column(6, htmlOutput("color_picker_cf")),
                               column(4 , br(), actionButton("col_reset_cf", "Default colours", icon = icon("undo")),
                                      br(), br(), actionButton("save_color_cf",
@@ -1840,8 +1811,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     req(annotation_id())
     print("Inside GenePool reactive ...")
     eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
-    GenePool = unique(eval(parse(text = paste0("", annotation_id(), ".GeneTSS$gene"))))
-    print("Inside GenePool reactive2 ...")
+    GenePool = unique(eval(parse(text = paste0("", annotation_id(), ".GeneTSS$Gene"))))
     c("Enter Gene...", GenePool)
   })
   
@@ -1890,9 +1860,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       
       eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
       gene_annot = eval(parse(text = paste0(annotation_id(), ".GeneTSS")))
-      updateSelectInput(session, "cov_chr", selected = gene_annot$chr[which(gene_annot$gene == input$select_cov_gene)])
-      updateSelectInput(session, "cov_start", selected = gene_annot$start[which(gene_annot$gene == input$select_cov_gene)] - 25000)
-      updateSelectInput(session, "cov_end", selected = gene_annot$end[which(gene_annot$gene == input$select_cov_gene)] + 25000)
+      updateSelectInput(session, "cov_chr", selected = gene_annot$chr[which(gene_annot$Gene == input$select_cov_gene)])
+      updateSelectInput(session, "cov_start", selected = gene_annot$start[which(gene_annot$Gene == input$select_cov_gene)] - 25000)
+      updateSelectInput(session, "cov_end", selected = gene_annot$end[which(gene_annot$Gene == input$select_cov_gene)] + 25000)
       updateSelectInput(session, "select_cov_gene", selected = "Enter Gene...")
     }
     label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
@@ -2222,7 +2192,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   #   paste("Selected top", sel_cells, "cells out of", total_cells)
   # })
   # 
-  observeEvent(c(input$qval.th, input$tabs, input$cdiff.th, input$de_type, selected_filtered_dataset()), priority = 10,{
+  observeEvent(c(input$tabs, selected_filtered_dataset()), priority = 10,{
     if(input$tabs == "diff_analysis"){
       req(input$selected_DA_GSA_dataset)
       if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$cdiff.th) &
@@ -2230,8 +2200,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         
         filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                               paste0(input$selected_DA_GSA_dataset, ".qs"))
-        print(paste0("Loading ", filename, " for GSA..."))
         if(file.exists(filename)){
+          print(paste0("Loading ", filename, " for GSA..."))
           data = qs::qread(filename)
           scExp_cf(data$scExp_cf)
           rm(data)
@@ -2573,7 +2543,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       myData = new.env()
       eval(parse(text = paste0("data(",annotation_id(),".GeneTSS, envir = myData)")))
       as.character(unique(
-        eval(parse(text = paste0("myData$",annotation_id(),".GeneTSS$gene")))
+        eval(parse(text = paste0("myData$",annotation_id(),".GeneTSS$Gene")))
       ))
     }
   })

@@ -530,7 +530,7 @@ load_MSIGdb <- function(ref, GeneSetClasses){
         ref, " genes from Gencode."))
     eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
     GenePool = eval(parse(text = paste0("", ref, ".GeneTSS")))
-    GenePool = unique(as.character(GenePool[, "gene"]))
+    GenePool = unique(as.character(GenePool[, "Gene"]))
     
     database_MSIG <- list("GeneSets" = GeneSets,
                         "GeneSetsDf" = GeneSetsDf,

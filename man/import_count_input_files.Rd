@@ -16,8 +16,6 @@ import_count_input_files(
 \arguments{
 \item{file_type}{Input file type}
 
-\item{which}{A GRanges object of features}
-
 \item{ref}{Reference genome}
 
 \item{verbose}{Print ?}

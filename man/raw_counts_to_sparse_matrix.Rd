@@ -3,15 +3,19 @@
 \name{raw_counts_to_sparse_matrix}
 \alias{raw_counts_to_sparse_matrix}
 \title{Create a sparse count matrix from various format of input data.}
+\source{
+
+}
 \usage{
 raw_counts_to_sparse_matrix(
   files_dir_list,
-  file_type = c("scBED", "scBAM"),
+  file_type = c("scBED", "scBAM", "FragmentFile"),
+  use_Signac = TRUE,
   peak_file = NULL,
   n_bins = NULL,
   bin_width = NULL,
-  geneTSS = NULL,
-  aroundTSS = 2500,
+  genebody = NULL,
+  extendPromoter = 2500,
   verbose = TRUE,
   ref = c("hg38", "mm10")[1],
   progress = NULL
@@ -21,7 +25,10 @@ raw_counts_to_sparse_matrix(
 \item{files_dir_list}{A named character vector of directories containing
 the files. The names correspond to sample names.}
 
-\item{file_type}{Input file(s) type(s) ('scBED','scBAM','SparseMatrix')}
+\item{file_type}{Input file(s) type(s) ('scBED','scBAM','FragmentFile')}
+
+\item{use_Signac}{Use Signac wrapper function 'FeatureMatrix' if the Signac
+package is installed (TRUE).}
 
 \item{peak_file}{A file containing genomic location of peaks (NULL)}
 
@@ -29,9 +36,10 @@ the files. The names correspond to sample names.}
 
 \item{bin_width}{The size of bins to tile the genome (NULL)}
 
-\item{geneTSS}{Use geneTSS regions for annotation ? (NULL)}
+\item{genebody}{Count on genes (body + promoter) ? (NULL)}
 
-\item{aroundTSS}{Space up and downstream of TSS to use (2500)}
+\item{extendPromoter}{If counting on genes, number of base pairs to extend up or
+downstream of TSS (2500).}
 
 \item{verbose}{Verbose (TRUE)}
 
@@ -52,4 +60,8 @@ sparse matrix.)
 \details{
 This functions re-counts signal on either fixed genomic bins, a set of
 user-defined peaks or around the TSS of genes.
+}
+\references{
+Stuart el al.,  Multimodal single-cell chromatin analysis with
+Signac bioRxiv \url{https://doi.org/10.1101/2020.11.09.373613}
 }

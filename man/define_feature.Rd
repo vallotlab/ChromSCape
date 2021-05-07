@@ -4,25 +4,34 @@
 \alias{define_feature}
 \title{Define the features on which reads will be counted}
 \usage{
-define_feature(ref, peak_file, n_bins, bin_width, geneTSS, aroundTSS)
+define_feature(
+  ref = c("hg38", "mm10")[1],
+  peak_file = NULL,
+  bin_width = NULL,
+  genebody = NULL,
+  extendPromoter = 2500
+)
 }
 \arguments{
 \item{ref}{Reference genome}
 
 \item{peak_file}{A bed file if counting on peaks}
 
-\item{n_bins}{A number of bins if divinding genome into fixed number of bins}
-
 \item{bin_width}{A number of bins if divinding genome into fixed width bins}
 
-\item{geneTSS}{A logical indicating if feature should be counted around genes
-TSS instead}
+\item{genebody}{A logical indicating if feature should be counted in
+genebodies and promoter}
 
-\item{aroundTSS}{Region to take in account around genes TSS}
+\item{extendPromoter}{Extension length before TSS (2500).}
 }
 \value{
 A GRanges object
 }
 \description{
 Define the features on which reads will be counted
+}
+\examples{
+gr_bins = define_feature("hg38", bin_width = 50000)
+gr_genes = define_feature("hg38", genebody = TRUE, extendPromoter = 5000)
+
 }

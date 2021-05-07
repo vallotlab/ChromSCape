@@ -10,8 +10,8 @@ warning_raw_counts_to_sparse_matrix(
   peak_file = NULL,
   n_bins = NULL,
   bin_width = NULL,
-  geneTSS = NULL,
-  aroundTSS = 2500,
+  genebody = NULL,
+  extendPromoter = 2500,
   verbose = TRUE,
   ref = "hg38"
 )
@@ -28,9 +28,10 @@ the raw files}
 
 \item{bin_width}{The size of bins to tile the genome (NULL)}
 
-\item{geneTSS}{Use geneTSS regions for annotation ? (NULL)}
+\item{genebody}{Count on genes (body + promoter) ? (NULL)}
 
-\item{aroundTSS}{Space up and downstream of TSS to use (2500)}
+\item{extendPromoter}{If counting on genes, number of base pairs to extend up or
+downstream of TSS (2500).}
 
 \item{verbose}{Verbose (TRUE)}
 

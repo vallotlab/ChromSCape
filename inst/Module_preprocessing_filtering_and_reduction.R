@@ -83,12 +83,16 @@ Module_preprocessing_filtering_and_reduction <- function(
         gc()
         
         ### 4. Feature annotation ###
-        
-        incProgress(amount = 0.3, detail = paste("Feature annotation..."))
-        print("Feature annotation...")
-        print(system.time(
-            {scExp = feature_annotation_scExp(scExp, ref = annotation_id())}))
-        gc()
+        if(!"Gene" %in% colnames(SummarizedExperiment::rowData(scExp)) | 
+           !"distanceToTSS" %in% colnames(SummarizedExperiment::rowData(scExp))){
+            incProgress(amount = 0.3, detail = paste("Feature annotation..."))
+            print("Feature annotation...")
+            print(system.time(
+                {scExp = feature_annotation_scExp(scExp, ref = annotation_id())}))
+            gc()
+        } else{
+            incProgress(amount = 0.3, detail = paste("Genes detected, skipping feature annotation..."))
+        }
         
         # Original PCA
         print("Running Dimensionality Reduction...")
@@ -158,6 +162,12 @@ Module_preprocessing_filtering_and_reduction <- function(
             main_scExp = main_scExp()
             SingleCellExperiment::altExp(main_scExp, feature_select()) <- scExp
             scExp = main_scExp
+            
+            # If the feature_select has previously been counted, remove additional column
+            already_present = grepl(paste0("counts_",feature_select()),
+                                    colnames(SummarizedExperiment::colData(scExp)))
+            if(any(already_present)) SummarizedExperiment::colData(scExp) =
+               SummarizedExperiment::colData(scExp)[,!already_present]
             SummarizedExperiment::colData(scExp) = cbind(SummarizedExperiment::colData(scExp), colData_altExp)
             SummarizedExperiment::colData(SingleCellExperiment::altExp(scExp, feature_select())) = NULL
             qs::qsave(

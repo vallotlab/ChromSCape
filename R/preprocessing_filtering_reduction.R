@@ -194,6 +194,7 @@ read_sparse_matrix <- function(files_dir_list,
     out = list("datamatrix" = mat, "annot_raw" = annot_raw)
     return(out)
 }
+
 #' Create a sparse count matrix from various format of input data.
 #'
 #' This function takes three different type of single-cell input: - Single cell
@@ -207,72 +208,87 @@ read_sparse_matrix <- function(files_dir_list,
 #'
 #' @param ref reference genome to use (hg38)
 #' @param verbose Verbose (TRUE)
+#' @param use_Signac Use Signac wrapper function 'FeatureMatrix' if the Signac
+#' package is installed (TRUE).
 #' @param files_dir_list A named character vector of directories containing
 #'  the files. The names correspond to sample names.
 #' @param peak_file A file containing genomic location of peaks (NULL)
 #' @param n_bins The number of bins to tile the genome (NULL)
 #' @param bin_width The size of bins to tile the genome (NULL)
-#' @param geneTSS Use geneTSS regions for annotation ? (NULL)
-#' @param aroundTSS Space up and downstream of TSS to use (2500)
-#' @param file_type Input file(s) type(s) ('scBED','scBAM','SparseMatrix')
+#' @param genebody Count on genes (body + promoter) ? (NULL)
+#' @param extendPromoter If counting on genes, number of base pairs to extend up or
+#'  downstream of TSS (2500).
+#' @param file_type Input file(s) type(s) ('scBED','scBAM','FragmentFile')
 #' @param progress Progress object for Shiny
 #'
 #' @return A sparse matrix of features x cells
-#'
-#'
+#' @source 
+#' @references Stuart el al.,  Multimodal single-cell chromatin analysis with 
+#' Signac bioRxiv \url{https://doi.org/10.1101/2020.11.09.373613}
 #' @importFrom IRanges IRanges
 #' @importFrom parallel detectCores mclapply
 #' @importFrom GenomicRanges GRanges tileGenome width seqnames GRangesList
 #' sort.GenomicRanges
 #' 
 raw_counts_to_sparse_matrix <- function(
-    files_dir_list, file_type = c("scBED", "scBAM"),
-    peak_file = NULL, n_bins = NULL, bin_width = NULL, geneTSS = NULL,
-    aroundTSS = 2500, verbose = TRUE, ref = c("hg38","mm10")[1],
+    files_dir_list, file_type = c("scBED", "scBAM", "FragmentFile"), use_Signac = TRUE,
+    peak_file = NULL, n_bins = NULL, bin_width = NULL, genebody = NULL,
+    extendPromoter = 2500, verbose = TRUE, ref = c("hg38","mm10")[1],
     progress = NULL) {
     warning_raw_counts_to_sparse_matrix(
-        files_dir_list, file_type, peak_file, n_bins, bin_width, geneTSS,
-        aroundTSS, verbose, ref)
+        files_dir_list, file_type, peak_file, n_bins, bin_width, genebody,
+        extendPromoter, verbose, ref)
     
     if (!is.null(progress)) progress$set(detail = "Defining features...",
                                          value = 0.1)
-    which <- define_feature(ref, peak_file, n_bins, bin_width, geneTSS,
-                                aroundTSS)
+    which <- define_feature(ref, peak_file, bin_width, genebody,
+                            extendPromoter)
     
-    out <- import_count_input_files(
-        files_dir_list, file_type, which, ref, verbose, progress)
-    
-    if (!is.null(progress)) progress$set(detail = "Combining matrices...",
-                                         value = 0.05)
-    mat = list()
-    samples_ids = barcodes = c()
-    for(i in seq_along(out$feature_indexes)){
-        sample_id = names(out$feature_indexes)[i]
-        feature_indexes <- out$feature_indexes[[i]]
-        name_cells <- paste0(sample_id, "_", out$name_cells[[i]])
-        barcodes <- c(barcodes,out$name_cells[[i]])
-        samples_ids = c(samples_ids, rep(sample_id, length(name_cells)))
+    if(use_Signac && requireNamespace("Signac", quietly=TRUE) && file_type == "FragmentFile"){
+        out <- wrapper_Signac_FeatureMatrix(files_dir_list, which, ref,
+                                     verbose, progress)
+    } else {
+        out <- import_count_input_files(
+            files_dir_list, file_type, which, ref, verbose, progress)
         
-    mat[[sample_id]] = Matrix::sparseMatrix(
-        i = as.numeric(feature_indexes$feature_index),
-        j = feature_indexes$barcode_index,
-        x = feature_indexes$counts,
-        dims = c(length(which), length(name_cells)),
-        dimnames = list(
-            rows = gsub(":|-", "_", as.character(which)),
-            cols = name_cells
-        ))
+        if (!is.null(progress)) progress$set(detail = "Combining matrices...",
+                                             value = 0.05)
+        mat = list()
+        samples_ids = barcodes = c()
+        for(i in seq_along(out$feature_indexes)){
+            sample_id = names(out$feature_indexes)[i]
+            feature_indexes <- out$feature_indexes[[i]]
+            name_cells <- paste0(sample_id, "_", out$name_cells[[i]])
+            barcodes <- c(barcodes,out$name_cells[[i]])
+            samples_ids = c(samples_ids, rep(sample_id, length(name_cells)))
+            
+            mat[[sample_id]] = Matrix::sparseMatrix(
+                i = as.numeric(feature_indexes$feature_index),
+                j = feature_indexes$barcode_index,
+                x = feature_indexes$counts,
+                dims = c(length(which), length(name_cells)),
+                dimnames = list(
+                    rows = gsub(":|-", "_", as.character(which)),
+                    cols = name_cells
+                ))
+        }
+        mat <- do.call("cbind", mat)
+        
+        # If Gene information is present in metadata, add it to the rownames
+        is_gene = ifelse("Gene" %in% colnames(GenomicRanges::elementMetadata(which)),
+                         TRUE, FALSE)
+        if(is_gene) rownames(mat) = paste0(which$Gene,":",rownames(mat))
+        
+        chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
+        mat = mat[which(as.character(which@seqnames) %in% chr$chr),]
+        
+        annot_raw = data.frame(barcode = barcodes,
+                               cell_id = colnames(mat),
+                               sample_id = samples_ids,
+                               batch_id = factor(rep(1, ncol(mat)))
+        )
+        out = list("datamatrix" = mat, "annot_raw" = annot_raw)
     }
-    mat <- do.call("cbind", mat)
-    chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
-    regions_to_remove = which(!as.character(which@seqnames) %in% chr$chr)
-    if(length(regions_to_remove) > 0) mat = mat[-regions_to_remove,]
-    annot_raw = data.frame(barcode = barcodes,
-                           cell_id = colnames(mat),
-                           sample_id = samples_ids,
-                           batch_id = factor(rep(1, ncol(mat)))
-    )
-    out = list("datamatrix" = mat, "annot_raw" = annot_raw)
     return(out)
 }
 
@@ -286,16 +302,17 @@ raw_counts_to_sparse_matrix <- function(
 #' @param peak_file A file containing genomic location of peaks (NULL)
 #' @param n_bins The number of bins to tile the genome (NULL)
 #' @param bin_width The size of bins to tile the genome (NULL)
-#' @param geneTSS Use geneTSS regions for annotation ? (NULL)
-#' @param aroundTSS Space up and downstream of TSS to use (2500)
+#' @param genebody Count on genes (body + promoter) ? (NULL)
+#' @param extendPromoter If counting on genes, number of base pairs to extend up or
+#'  downstream of TSS (2500).
 #' @param file_type Input file(s) type(s) ('scBED','scBAM','SparseMatrix')
 #'
 #' @return Error or warnings if the input are not correct
 warning_raw_counts_to_sparse_matrix <- function(
     files_dir_list, file_type = c("scBAM", "scBED", "SparseMatrix"),
-    peak_file = NULL, n_bins = NULL, bin_width = NULL, geneTSS = NULL,
-    aroundTSS = 2500, verbose = TRUE, ref = "hg38"){
-        stopifnot(dir.exists(files_dir_list), is.numeric(aroundTSS),
+    peak_file = NULL, n_bins = NULL, bin_width = NULL, genebody = NULL,
+    extendPromoter = 2500, verbose = TRUE, ref = "hg38"){
+        stopifnot(dir.exists(files_dir_list), is.numeric(extendPromoter),
                 ref %in% c("mm10", "hg38"))
         
         if (!is.null(peak_file) && !file.exists(peak_file))
@@ -310,9 +327,9 @@ warning_raw_counts_to_sparse_matrix <- function(
             stop("ChromSCape::raw_counts_to_sparse_matrix - 
             bin_width must be a number.")
         
-        if (!is.null(geneTSS) && !is.logical(geneTSS))
+        if (!is.null(genebody) && !is.logical(genebody))
             stop(paste0(
-                "ChromSCape::raw_counts_to_sparse_matrix - geneTSS ",
+                "ChromSCape::raw_counts_to_sparse_matrix - genebody ",
                 "must be a TRUE or FALSE"))
     }
 
@@ -320,19 +337,25 @@ warning_raw_counts_to_sparse_matrix <- function(
 #'
 #' @param ref Reference genome
 #' @param peak_file A bed file if counting on peaks
-#' @param n_bins A number of bins if divinding genome into fixed number of bins
 #' @param bin_width A number of bins if divinding genome into fixed width bins
-#' @param geneTSS A logical indicating if feature should be counted around genes
-#'   TSS instead
-#' @param aroundTSS Region to take in account around genes TSS
+#' @param genebody A logical indicating if feature should be counted in 
+#' genebodies and promoter
+#' @param extendPromoter Extension length before TSS (2500).
 #'
 #' @return A GRanges object
 #'   
 #' @importFrom rtracklayer import
 #' @importFrom GenomicRanges GRanges duplicated tileGenome width seqnames
 #' @importFrom IRanges subsetByOverlaps
-define_feature <- function(ref, peak_file, n_bins, bin_width,
-                        geneTSS, aroundTSS){
+#' 
+#' @export
+#' @examples
+#' gr_bins = define_feature("hg38", bin_width = 50000)
+#' gr_genes = define_feature("hg38", genebody = TRUE, extendPromoter = 5000)
+#' 
+define_feature <- function(ref = c("hg38","mm10")[1], peak_file = NULL,
+                           bin_width  = NULL, genebody = NULL,
+                           extendPromoter = 2500){
     chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
     chr <- GenomicRanges::GRanges(chr)
     if (!is.null(peak_file)) {
@@ -345,17 +368,9 @@ define_feature <- function(ref, peak_file, n_bins, bin_width,
                     length(which(GenomicRanges::duplicated(which))), 
                     " duplicated regions from peak file.")
         which = which[!GenomicRanges::duplicated(which)]
-    } else if (!is.null(n_bins) | !is.null(bin_width)) {
+    } else if (!is.null(bin_width)) {
         message('ChromSCape::define_feature - ',
                 'Counting on genomic bins...')
-        if (!is.null(n_bins)) {
-            which <- unlist(GenomicRanges::tileGenome(
-                setNames(
-                    GenomicRanges::width(chr),
-                    GenomicRanges::seqnames(chr)),
-                ntile = n_bins
-            ))
-        } else if (!is.null(bin_width)) {
             which <- unlist(GenomicRanges::tileGenome(
                 setNames(
                     GenomicRanges::width(chr),
@@ -363,40 +378,173 @@ define_feature <- function(ref, peak_file, n_bins, bin_width,
                 ),
                 tilewidth = bin_width
             ))
-        }
-    } else if (geneTSS == TRUE) {
+    } else if (genebody == TRUE) {
         # Retrieve gene TSS from ref and create GRanges
         geneTSS_df <- eval(parse(text = paste0(
             "ChromSCape::", ref, ".GeneTSS"
         )))
-        start = geneTSS_df$start
         geneTSS_df$start = ifelse(geneTSS_df$strand == "+",
-                                  geneTSS_df$start - aroundTSS,
-                                  geneTSS_df$end - aroundTSS)
-        geneTSS_df$end = ifelse(geneTSS_df$strand == "+",
-                                start + aroundTSS,
-                                geneTSS_df$end + aroundTSS)
+                                  geneTSS_df$start - extendPromoter,
+                                  geneTSS_df$start)
+        
+        geneTSS_df$end = ifelse(geneTSS_df$strand == "-",
+                                  geneTSS_df$end + extendPromoter,
+                                  geneTSS_df$end)
+    
         geneTSS_df$strand = NULL
+        geneTSS_df$distanceToTSS = 0
         which = GenomicRanges::GRanges(geneTSS_df)
         which = which[!GenomicRanges::duplicated(which)]
     }
     return(which)
 }
 
+#' Wrapper around 'FeatureMatrix' function from Signac Package
+#' 
+#' @param files_dir_list A named character vector of directories containing
+#'  the files. The names correspond to sample names.
+#' @param which A GenomicRanges containing the features to count on.
+#' @param ref Reference genome to use (hg38).Chromosomes that are not present in 
+#' the canonical chromosomes of the given reference genome will be excluded from
+#'  the matrix.
+#' @param process_n Number of regions to load into memory at a time, per thread.
+#'  Processing more regions at once can be faster but uses more memory. (2000)
+#' @param set_future_plan Set 'multisession' plan within the function (TRUE). 
+#' If TRUE, the previous plan (e.g. future::plan()) will be set back on exit.
+#' @param verbose Verbose (TRUE).
+#' @param progress Progress object for Shiny.
+#'
+#' @return A sparse matrix of features x cells
+#' 
+#' @details Signac & future are not required packages for ChromSCape as they are
+#' required only for the fragment matrix calculations. To use this function,
+#' install Signac package first (future will be installed as a dependency).  
+#' For the simplicity of the application & optimization, the function
+#' by defaults sets future::plan("multisession") with workers = 
+#' future::availableCores() - 1 in order to allow parallel processing
+#' with Signac. On exit the plan is re-set to the previously set future plan.
+#' Note that future multisession may have trouble running when VPN is on. To 
+#' run in parallel, first deactivate your VPN if you encounter long runtimes.
+#' 
+#' @references Stuart el al.,  Multimodal single-cell chromatin analysis with 
+#' Signac bioRxiv \url{https://doi.org/10.1101/2020.11.09.373613}
+#' 
+#' @export
+#' @examples 
+#' \dontrun{
+#' gr_bins = define_feature("hg38", bin_width = 50000)
+#' wrapper_Signac_FeatureMatrix("/path/to/dir_containing_fragment_files",
+#'  gr_bins, ref = "hg38")
+#' }
+wrapper_Signac_FeatureMatrix <- function(files_dir_list, which, ref = "hg38",
+                                         set_future_plan = TRUE, verbose = TRUE, 
+                                         progress = NULL){
+    
+    fragment_files = lapply(files_dir_list, function(dir) 
+        list.files(dir, full.names = TRUE, recursive = FALSE,
+                   include.dirs = FALSE, pattern = ".tsv$|.tsv.gz$")
+    )
+    
+    # Number of workers equal to number of workers in BPPARAM
+    if(set_future_plan){
+        cl <- future::availableCores() - 1
+        oplan <- future::plan("multisession", workers = cl,  gc = TRUE)
+    }
+    
+    message("ChromSCape::wrapper_Signac_FeatureMatrix - Running ",
+            "Signac::FeatureMatrix with ", cl,
+            " workers...")
+    
+    if(any(lapply(fragment_files, length) > 1)){
+        message("ChromSCape::wrapper_Signac_FeatureMatrix - Multiple files ",
+                "detected per folder, assigning sample name based on files",
+                " names.")
+        fragment_files = unlist(fragment_files)
+        names(fragment_files) = gsub(".tsv|.gz","",basename(fragment_files))
+    } else{
+        names(fragment_files) = basename(files_dir_list)
+    }
+    
+    mat_list = list()
+    samples_ids = barcodes = c()
+    for(sample_name in names(fragment_files)){
+        message("ChromSCape::wrapper_Signac_FeatureMatrix - Running Signac for",
+                " sample ", sample_name, "...")
+        
+        if(!is.null(progress)) progress$inc(
+            amount = 0.6/(length(fragment_files)),
+            detail = paste0("Counting sample - ", sample_name))
+        
+        fragment_file = fragment_files[[sample_name]]
+        dir = dirname(fragment_file)
+        # if needed index file using samtools tabix
+        if(!file.exists(file.path(dir, paste0(basename(fragment_file),".tbi")))){
+            message("ChromSCape::wrapper_Signac_FeatureMatrix - creating tabix ",
+                    "index...")
+            idx = Rsamtools::indexTabix(fragment_file, format="bed")
+        }
+        # create Signac Fragment 
+        fragments = Signac::CreateFragmentObject(fragment_file)
+       
+        
+        # create count matrix
+        system.time({
+            mat = Signac::FeatureMatrix(fragments = fragments,
+                                        features = which,
+                                        process_n = process_n,
+                                        verbose = TRUE)
+        })
+        rownames(mat) = gsub("-","_", rownames(mat))
+        sample_id = sample_name
+        barcodes <- c(barcodes, colnames(mat))
+        colnames(mat) = paste0(sample_id,"_", colnames(mat))
+        samples_ids = c(samples_ids, rep(sample_id, ncol(mat)))
+        mat_list[[sample_id]] = mat
+        
+        gc()
+    }
+    if(set_future_plan) future::plan(oplan)
+    
+    if (!is.null(progress)) progress$set(detail = "Combining matrices...",
+                                         value = 0.05)
+    mat <- do.call("cbind", mat_list)
+    
+    # If Gene information is present in metadata, add it to the rownames
+    is_gene = ifelse(
+        "Gene" %in% colnames(GenomicRanges::elementMetadata(which)),TRUE, FALSE)
+    if(is_gene) rownames(mat) = paste0(which$Gene,":",rownames(mat))
+    
+    chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
+    mat = mat[which(as.character(which@seqnames) %in% chr$chr),]
+    
+    annot_raw = data.frame(barcode = barcodes,
+                           cell_id = colnames(mat),
+                           sample_id = samples_ids,
+                           batch_id = factor(rep(1, ncol(mat)))
+                           
+    )
+    
+    out <- list("datamatrix" = mat,
+                "annot_raw" = annot_raw)
+    
+    return(out)
+}
+
 #' Import and count input files depending on their format
 #'
 #' @param files_dir A named list of directories containing the input files
-#' @param which A GRanges object of features 
+#   ' @param which A GRanges object of features 
 #' @param ref Reference genome
 #' @param verbose Print ?
 #' @param file_type Input file type
-#'
+#' 
 #' @return A list with the 
 #' feature indexes data.frame containing non-zeroes entries in the count matrix
 #' and the cell names
 #'
 import_count_input_files <- function(files_dir_list, file_type,
                                     which, ref, verbose, progress){
+
     feature_indexes = list()
     name_cells = list()
     for(i in seq_along(files_dir_list)){
@@ -1179,6 +1327,18 @@ create_scExp <- function(
         dim(datamatrix)[2], " cells and ", dim(datamatrix)[1], " features.")
     scExp <- SingleCellExperiment::SingleCellExperiment(
         assays = list(counts = datamatrix), colData = annot)
+    
+    # If rownames is formatted as gene:chr_start_end, put genes into rowRanges
+    contains_genes = all(grepl(":chr",rownames(scExp)[1:5]))
+    if(contains_genes){
+        message("ChromSCape::create_scExp - Genes detected in rownames...")
+        Genes = gsub(":.*","",rownames(scExp))
+        rownames(scExp) = gsub(".*:","",rownames(scExp))
+        SummarizedExperiment::rowRanges(scExp) = get_genomic_coordinates(scExp)
+        SummarizedExperiment::rowRanges(scExp)$Gene = Genes
+        SummarizedExperiment::rowRanges(scExp)$distanceToTSS = 0
+        rownames(scExp) = SummarizedExperiment::rowRanges(scExp)$ID
+    }
     if (has_genomic_coordinates(scExp)) {
         if (remove_non_canonical) scExp <- remove_non_canonical_fun(scExp,
                                                                     verbose)
@@ -1198,7 +1358,7 @@ create_scExp <- function(
         message("ChromSCape::create_scExp - ",
             dim_b[1] - dim(scExp)[1], " features with 0 signals were removed.")
     }
-    if (has_genomic_coordinates(scExp)){
+    if (has_genomic_coordinates(scExp) && !contains_genes){
         rows <- rownames(scExp)
         SummarizedExperiment::rowRanges(scExp) <- get_genomic_coordinates(scExp)
         rownames(scExp) <- rows
@@ -2038,16 +2198,16 @@ num_cell_scExp <- function(annot, datamatrix)
     table <- as.data.frame(
         annot %>% dplyr::group_by(sample_id) %>% 
             dplyr::summarise("#Cells" = n(),
-                             "Median Reads"= 
-                                 paste0(round(median(total_counts),0)," +/- ",
-                                        round(stats::sd(total_counts),0))))
+                             "Median"= round(median(total_counts),0),
+                             "Std"= round(stats::sd(total_counts),0)))
     
     rownames(table) <- NULL
     
     table[, 1] <- as.character(table[, 1])
     table[nrow(table) + 1, ] = c(
-        "", sum(table[, 2]), paste0(round(median(annot$total_counts),0),
-                                    " +/- ", round(stats::sd(annot$total_counts),0)))
+        "", sum(table[, 2]), round(median(annot$total_counts),0),
+        round(stats::sd(annot$total_counts),0))
+    
     table %>% kableExtra::kable(escape = FALSE, align = "c") %>%
         kableExtra::kable_styling(c("striped",
                                     "condensed"), full_width = TRUE) %>%
@@ -2081,17 +2241,16 @@ num_cell_after_QC_filt_scExp <- function(scExp, annot, datamatrix)
     table <- as.data.frame(
         annot %>% dplyr::group_by(sample_id) %>% 
         dplyr::summarise("#Cells" = n(),
-                            "Median Reads"= 
-                            paste0(round(median(total_counts),0)," +/- ",
-                                   round(stats::sd(total_counts),0))))
+                         "Median"= round(median(total_counts),0),
+                         "Std"= round(stats::sd(total_counts),0)))
     table_filtered <-
         as.data.frame(SingleCellExperiment::colData(scExp))
     table_filtered <- as.data.frame(
         table_filtered %>% dplyr::group_by(sample_id) %>% 
-            dplyr::summarise("#Cells after" = n(),
-                             "Median Reads after"= 
-                                 paste0(round(median(total_counts),0)," +/- ",
-                                        round(stats::sd(total_counts),0))))
+            dplyr::summarise("#Cells (filt.)" = n(),
+                             "Median (filt.)"= round(median(total_counts),0),
+                             "Std (filt.)"= round(stats::sd(total_counts),0)))
+    
     colnames(table)[1] <- c("Sample")
     rownames(table) <- NULL
     colnames(table_filtered) [1] <- c("Sample")
@@ -2105,13 +2264,11 @@ num_cell_after_QC_filt_scExp <- function(scExp, annot, datamatrix)
         dplyr::tibble(
             "Sample" = "",
             "#Cells" = sum(table_both[,2]),
-            "Median Reads" = paste0(round(median(annot$total_counts),0),
-                                                 " +/- ",
-                                           round(stats::sd(annot$total_counts),0)),
-            "#Cells after" = sum(table_both[, 4]),
-            "Median Reads after" = paste0(round(median(scExp$total_counts),0),
-                                          " +/- ",
-                                          round(stats::sd(scExp$total_counts),0))))
+            "Median"= round(median(annot$total_counts),0),
+            "Std"= round(stats::sd(annot$total_counts),0),
+            "#Cells (filt.)" = sum(table_both[, 4]),
+            "Median (filt.)"= round(median(scExp$total_counts),0),
+            "Sd (filt.)"= round(stats::sd(scExp$total_counts),0)))
     table_both %>% kableExtra::kable(escape = FALSE, align = "c") %>%
         kableExtra::kable_styling(c("striped",
                                     "condensed"), full_width = TRUE) %>%

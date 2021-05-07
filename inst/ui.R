@@ -8,7 +8,7 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                                 leftUi =     tagList(uiOutput("dropdown_feature_select_ui"))
                                 ),
                             shinydashboardPlus::dashboardSidebar(
-                              shinydashboard::sidebarUserPanel("Institut Curie - Vallot Lab",
+                              shinydashboard::sidebarUserPanel("Vallot Lab",
                                                subtitle = a(href = "#", icon("circle", class = "text-success"), "Online"),
                                                image = "curie.jpg"
                               ),
@@ -88,8 +88,9 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                                                                                               content = "datamatrix_input")),
                                                                       column(6,
                                                                       radioButtons("data_choice_box", label = "Input data type",
-                                                                                   choices = list("Count matrix(ces)"="DenseMatrix",
+                                                                                   choices = list("Dense Matrix"="DenseMatrix",
                                                                                                   "Sparse Matrix" = "SparseMatrix",
+                                                                                                  "Fragment File" = "FragmentFile",
                                                                                                   "Single-cell BAM files" = "scBAM",
                                                                                                   "Single-cell BED files" = "scBED"
                                                                                                   ))),
