@@ -233,7 +233,7 @@ scExp_cf = gene_set_enrichment_analysis_scExp(scExp_cf,
                             ref = ref_genome,
                             enrichment_qval = 0.1, 
                             peak_distance = 1000,
-                            use_peaks =  F,
+                            use_peaks =  FALSE,
                             qval.th = qval.th, 
                             cdiff.th = cdiff.th,
                             )

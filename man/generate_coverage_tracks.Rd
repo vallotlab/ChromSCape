@@ -43,7 +43,8 @@ signal on. Default to 5.}
 \item{progress}{A Progress object for Shiny. Default to NULL.}
 }
 \value{
-
+Generate coverage tracks (.bigwig) for each cluster in the
+SingleCellExperiment ("cell_cluster" column).
 }
 \description{
 Generate cell cluster pseudo-bulk coverage tracks. First, scBED

@@ -4,20 +4,16 @@
 \alias{correlation_and_hierarchical_clust_scExp}
 \title{Correlation and hierarchical clustering}
 \usage{
-correlation_and_hierarchical_clust_scExp(
-  scExp,
-  correlation = "pearson",
-  hc_linkage = "ward.D"
-)
+correlation_and_hierarchical_clust_scExp(scExp, hc_linkage = "ward.D")
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment object, containing 'PCA' in reducedDims.}
 
-\item{correlation}{A correlation method to use. See \link[stats]{hclust}.
-('pearson')}
-
 \item{hc_linkage}{A linkage method for hierarchical clustering. See
 \link[stats]{cor}. ('ward.D')}
+
+\item{correlation}{A correlation method to use. See \link[stats]{hclust}.
+('pearson')}
 }
 \value{
 Return a SingleCellExperiment object with correlation matrix &
