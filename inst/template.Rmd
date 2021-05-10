@@ -46,11 +46,7 @@ body {
 
 ```{r global, include=FALSE}
 options(knitr.duplicate.label = "allow")
-# datamatrix = qs::qread("/media/pacome/LaCie/InstitutCurie/Documents/Data/Tests/Test_ChromSCape/Test_generate_analysis/ChromSCape_analyses/Analysis_2/datamatrix.qs")
-# scExp = qs::qread("/media/pacome/LaCie/InstitutCurie/Documents/Data/Tests/Test_ChromSCape/Test_generate_analysis/ChromSCape_analyses/Analysis_2/Filtering_Normalize_Reduce/Analysis_2_1600_0.5_95_uncorrected.qs")
-# scExp_cf = qs::qread("/media/pacome/LaCie/InstitutCurie/Documents/Data/Tests/Test_ChromSCape/Test_generate_analysis/ChromSCape_analyses/Analysis_2/Diff_Analysis_Gene_Sets/Analysis_2_1600_0.5_95_uncorrected_2_0.1_1_one_vs_rest.qs")$scExp_cf
-# genes_to_plot = c("Krt8","Krt5","Tgfb1", "Foxq1", "Cdkn2b", "Cdkn2a", "chr7:15000000-20000000")
-# ref_genome = "mm10"
+
 MSIG.classes <- c("c1_positional","c2_curated","c3_motif","c4_computational",
           "c5_GO","c6_oncogenic","c7_immunologic","hallmark")[c(2,5,6,7,8)]
 ```
@@ -168,7 +164,7 @@ if(any(c("cluster", "DA") %in% run)){
 ### Consensus scores
 
 ```{r}
-if(any(c("cluster", "DA") %in% run)){
+if(any(c("consensus") %in% run)){
   if("icl" %in% names(scExp_cf@metadata)){
     plot_cluster_consensus_scExp(scExp_cf)
   }
@@ -314,7 +310,7 @@ if(any(c("DA") %in% run)){
 ```
 
 
-`r paste(knitr::knit(text = paste(out, collapse = '\n')))`
+`r if(any(c("DA") %in% run)) paste(knitr::knit(text = paste(out, collapse = '\n')))`
 
 
 Column
@@ -401,7 +397,7 @@ if(any(c("GSA") %in% run)){
 }
 ```
 
-`r paste(knitr::knit(text = paste(out, collapse = '\n')))`
+`r if(any(c("GSA") %in% run)) paste(knitr::knit(text = paste(out, collapse = '\n')))`
 
 Coverage
 =====================================
@@ -451,7 +447,7 @@ if(any(c("coverage") %in% run)){
 
 ```
 
-`r paste(knitr::knit(text = paste(out_coverage, collapse = '\n')))`
+`r if(any(c("coverage") %in% run)) paste(knitr::knit(text = paste(out_coverage, collapse = '\n')))`
 
 
 Copy Number

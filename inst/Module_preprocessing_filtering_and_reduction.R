@@ -124,7 +124,6 @@ Module_preprocessing_filtering_and_reduction <- function(
         print("Running correlation & hierarchical clustering...")
         print(system.time(
             {scExp = correlation_and_hierarchical_clust_scExp(scExp,
-                                                              correlation = "pearson",
                                                               hc_linkage = "ward.D")
             }))
 

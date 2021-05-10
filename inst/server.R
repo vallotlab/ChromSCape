@@ -229,7 +229,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       <p> Here, simply pick the <u>directory</u> containing the samples folders, and
       ChromSCape will automatically detect your <b>samples</b>. </p>
       <br>
-      Example of folder structure : <br>
+      Example of folder structure (for scBED, but applies in a similar manner for Fragment File & scBAM) : <br>
       <u>scChIPseq</u><br>
           ├── <b>Sample_1</b><br>
           │   ├── cell_1.bed<br>
@@ -281,7 +281,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   output$advanced_data_input <- renderUI({
     if(input$data_choice_box != "DenseMatrix"){
-      if(input$data_choice_box == "SparseMatrix" | input$data_choice_box == "FeatureFile"){
+      if(input$data_choice_box == "SparseMatrix"){
         column(12, uiOutput("datafile_folder_upload_UI"))
       } else{
         column(12, uiOutput("rawcount_data_input"),
@@ -303,7 +303,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     fileInput("peak_file", ".bed file containing the peaks to count on:", multiple = FALSE, accept = c(".bed",".txt"))
   }})
   output$extendPromoter <- renderUI({ if(input$count_on_box == "genebody" ){
-    textInput("extendPromoter", label = "Distance Up/Downstream of TSS(bp):", value = 2500)
+    textInput("extendPromoter", label = "Extend promoter by", value = 2500)
   }})
 
   shinyFiles::shinyDirChoose(input, "datafile_folder", roots = volumes, session = 
@@ -379,7 +379,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if (!is.null(input$alt_name) && nchar(input$alt_name) > 0 && nchar(input$alt_name) < 15
         && !grepl("[[:punct:]]", gsub("_","",input$alt_name)) && input$alt_name!="main") {
       alt_name(input$alt_name)
-      updateActionButton(session, "create_analysis", label= "Create Analysis", icon = NULL)
+      updateActionButton(session, "create_analysis", label= "Create Analysis", icon = character(0))
       removeModal()
     } else {
       showModal(add_to_current_analysis_Modal(failed = TRUE))
@@ -573,8 +573,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                input$feature_select}, {  # load precompiled dataset and update coverage plot
     req(input$selected_analysis)
     if(!is.null(input$selected_analysis) && input$selected_analysis != ""){
-      print("input$feature_select")
-      print(input$feature_select)
       if(input$feature_select != "main"){
         if(input$feature_select %in% get.available.alternative.datasets(input$selected_analysis)) {
           init$datamatrix <- qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis,
@@ -592,6 +590,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       
     }
   })
+  
+  # When switching analysis, set scExp & scExp_cf to NULL
+  observeEvent({input$selected_analysis},
+               {
+                 scExp(NULL)
+                 scExp_cf(NULL)
+                 gc()
+             })
+
   
   output$rename_file_box <- renderUI({
     shinydashboard::box(title = tagList("Rename Samples", shiny::icon("signature")),
@@ -698,6 +705,18 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     of cells to remove (potential doublets), min percentage of cells to support a window,
     quantile of cell read counts to keep and batch correction type."})
   
+  output$cell_filtering_ui <- renderUI({
+    if(input$selected_feature = "main"){
+      column(12,
+      sliderInput("min_coverage_cell", shiny::HTML("<p><span style='color: green'>Select minimum number of reads per cell :</span></p>"),
+                  min=50, max=5000, value=1600, step=50) %>%
+        shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                            content = "filtering_parameters"),
+      sliderInput("quant_removal", shiny::HTML("<p><span style='color: red'>Select the upper percentile of cells to remove (potential doublets):</span></p>"),
+                  min=90, max=100, value=95, step=0.01) 
+      )
+    }
+  })
   output$exclude_file <- renderUI({ if(input$exclude_regions){
     fileInput("exclude_file", ".bed / .bed.gz / .txt file containing the feature to exclude from data set:", multiple = FALSE, accept = c(".bed",".txt", ".bed.gz"))
   }})
@@ -726,7 +745,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     subsample_n <- if(input$do_subsample){input$subsample_n}
     
     annotationId <- annotation_id_norm()
-    print(input$exclude_file)
+
     if(input$exclude_regions) {
       if(!is.null(input$exclude_file) && file.exists(as.character(input$exclude_file$datapath))){
         tmp_file = tempfile(fileext = ".bed.gz")
@@ -813,7 +832,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     file_index <- match(c(input$selected_reduced_dataset), reduced_datasets())
     filename_sel <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),"Filtering_Normalize_Reduce",init$available_reduced_datasets[file_index])
     
-    
+    scExp(NULL)
     t1 = system.time({
     scExp. = qs::qread(filename_sel)
     if(is.reactive(scExp.)) {
@@ -1311,6 +1330,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                 duration = 5, closeButton = TRUE, type="message")
         scExp_cf(scExp_cf()@metadata$Unfiltered)
         updateActionButton(session, "reset_corr_cells", label="Resetted", icon = icon("check-circle"))
+        updateActionButton(session, "filter_corr_cells", "Filter & save", icon=character(0))
       } else {
         shiny::showNotification(paste0("Already original cells ..."),
                                 duration = 5, closeButton = TRUE, type="warning")
@@ -1601,7 +1621,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
         if(!grepl("counts",input$color_by_cf)){
-          shinydashboard::box(title=tagList("Color settings ", shiny::icon("palette")),collapsible = T, collapsed = T,
+          shinydashboard::box(title=tagList("Color settings ", shiny::icon("palette")),collapsible = TRUE, collapsed = TRUE,
                               width = NULL, status = "success", solidHeader = TRUE,
                               column(6, htmlOutput("color_picker_cf")),
                               column(4 , br(), actionButton("col_reset_cf", "Default colours", icon = icon("undo")),
@@ -1750,14 +1770,14 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       }
     print(list_dirs_coverage())
     print(input$coverage_selection)
-    input_files_coverage = sapply(list_dirs_coverage()[input$coverage_selection], function(i) list.files(i, full.names = T, pattern = ".bed|.bed.gz"))
+    input_files_coverage = lapply(list_dirs_coverage()[input$coverage_selection], function(i) list.files(i, full.names = TRUE, pattern = ".bed|.bed.gz"))
     names(input_files_coverage) = basename(list_dirs_coverage()[input$coverage_selection])
     
     if(length(input_files_coverage)==0){
       warning("Can't find any input single-cell BED files. Please make sure you selected the root of a directory",
               " containing one folder per sample. Each folder should contain single-cell raw reads as .bed or .bed.gz file (one file per cell).")
     } else{
-      nclust = input$nclust
+      nclust = length(unique(scExp_cf()$cell_cluster))
       dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage"), showWarnings = FALSE)
       dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
       odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
@@ -1765,7 +1785,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
       checkFiles = 0
       if(sum(checkFiles)==0){
-        generate_coverage_tracks(scExp_cf(),)
+        generate_coverage_tracks(scExp_cf = scExp_cf(),
+                                 input_files_coverage = input_files_coverage,
+                                 odir = odir,
+                                 ref_genome = annotation_id(),
+                                 progress = progress)
         has_available_coverage(TRUE)
         updateActionButton(session, "do_coverage", label="Finished successfully", icon = icon("check-circle"))
       }
@@ -1842,7 +1866,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   top_genes <- reactive({
     req(scExp_cf())
     top_feats = ChromSCape:::retrieve_top_bot_features_pca(SingleCellExperiment::reducedDim(scExp_cf(),"PCA"),
-                                                           component = "Component_1",
+                                                           component = colnames(SingleCellExperiment::reducedDim(scExp_cf(),"PCA"))[1],
                                                            counts = SingleCellExperiment::counts(scExp_cf()),
                                                            n_top_bot = 50, absolute = TRUE)
     
@@ -2024,7 +2048,6 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       return()
     }
     
-    
     progress <- shiny::Progress$new(session, min=0, max=1)
     on.exit(progress$close())
     progress$set(message='Performing peak calling and coverage...', value = 0.0)
@@ -2038,7 +2061,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       }
       print(list_dirs_pc())
       print(input$bed_selection)
-      input_files_pc = sapply(list_dirs_pc()[input$bed_selection], function(i) list.files(i, full.names = T, pattern = ".bed|.bed.gz"))
+      input_files_pc = lapply(list_dirs_pc()[input$bed_selection], function(i) list.files(i, full.names = TRUE, pattern = ".bed|.bed.gz"))
       names(input_files_pc) = basename(list_dirs_pc()[input$bed_selection])
       
       print(names(input_files_pc))
@@ -2061,7 +2084,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       checkFiles = 0
       if(sum(checkFiles)==0){
         
-        progress$set(message='Performing peak calling and coverage...', value = 0.1)
+        progress$set(message='Performing peak calling ...', value = 0.1)
         scExp_cf(subset_bam_call_peaks(scExp_cf(), odir, input_files_pc, format = bam_or_bed(),
                                        as.numeric(input$pc_stat_value), annotation_id(),
                                        input$peak_distance_to_merge, progress = progress))
@@ -2136,19 +2159,24 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$selected_DA_GSA_dataset, { # load reduced data set to work with on next pages
     req(input$selected_DA_GSA_dataset)
-  
+   
     file_index <- match(c(input$selected_DA_GSA_dataset), DA_GSA_datasets())
-    filename_sel <- file.path(init$data_folder, "ChromSCape_analyses", 
+    filename_sel <- file.path(init$data_folder, "ChromSCape_analyses",
                               analysis_name(),"Diff_Analysis_Gene_Sets",
                               init$available_DA_GSA_datasets[file_index])
+    print(paste0("Loading ", filename_sel, " for GSA 1..."))
     t1 = system.time({
-      scExp_cf. = qs::qread(filename_sel)
-      if(is.reactive(scExp_cf.)) {
-        scExp_cf. = isolate(scExp_cf.())
-      }
+      data = qs::qread(filename_sel)
+      # if(is.reactive(data)) {
+      #   data = isolate(data())
+      # }
       scExp_cf(NULL)
-      scExp_cf(scExp_cf.$scExp_cf) # retrieve filtered scExp
-      rm(scExp_cf.)
+      if(input$feature_select %in% getExperimentNames(data$scExp_cf))
+         scExp_cf. = swapAltExp_sameColData(data$scExp_cf,input$feature_select) else
+           scExp_cf. = data$scExp_cf
+      
+      scExp_cf(scExp_cf.)
+      rm(data, scExp_cf.)
     })
     cat("Loaded reduced data in ",t1[3]," secs\n")
   })
@@ -2161,8 +2189,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     (here edgeR GLM) depending on the observed distribution of the reads."})
   output$selected_k <- renderUI({
     req(scExp_cf())
-    HTML(paste0("<h3><b>Number of clusters selected  = ", 
-                                         dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster),"</b></h3>"))
+    n = as.character(dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster))
+    HTML(paste0("<h3><b>Number of clusters selected  = ", n,"</b></h3>"))
   })
   # output$only_contrib_cell_ui <- renderUI({
   #   if("icl" %in% names(scExp_cf()@metadata) && !is.null(scExp_cf()@metadata$icl)){
@@ -2201,9 +2229,15 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                               paste0(input$selected_DA_GSA_dataset, ".qs"))
         if(file.exists(filename)){
-          print(paste0("Loading ", filename, " for GSA..."))
+          print(paste0("Loading ", filename, " for GSA 2..."))
           data = qs::qread(filename)
-          scExp_cf(data$scExp_cf)
+          
+          if(input$feature_select %in% getExperimentNames(data$scExp_cf))
+            scExp_cf. = swapAltExp_sameColData(data$scExp_cf,input$feature_select) else
+              scExp_cf. = data$scExp_cf
+          
+          scExp_cf(NULL)
+          scExp_cf(scExp_cf.)
           rm(data)
           gc()
         } else {

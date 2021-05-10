@@ -19,10 +19,18 @@ $(document).ready(function() {
             position:'auto'},
           {
             element:document.getElementsByClassName("input-group-btn")[0],
-            intro:'Browse your computer to upload your data. ChromSCape accepts a wide variety of format, either processed (count matrices / Sparse matrices) or raw (single-cell BED or BAM files). For the latter 3, place the files of each condition in a separate folder, and places all those folders in the same directory.',position:'auto'},
+            intro:'Browse your computer to upload your data. ChromSCape accepts a wide variety of format, either processed (count matrices / Sparse matrices) or raw (fragment file, single-cell BED or BAM files). For the latter 3, place the files of each condition in a separate folder, and places all those folders in the same directory.',position:'auto'},
           {
+            element:'#data_choice_box',
+            intro:'Upload Dense count matrix, Sparse matrix (10X format), Fragment File raw data (10X format, requires "Seurat" package installed), Single-cell BAM or BED raw data (one file per cell). The latter 3 options will open a menu to enable counting on feature of your choice, e.g. genomic bins, peaks or genes.',
+            position:'auto'},
+            {
             element:'#create_analysis',
             intro:'Click here to create analysis & upload the selected matrices.',
+            position:'auto'},
+            {
+            element:'#add_to_current_analysis',
+            intro:'Add multiple layers of features in your object, e.g. genomic bins, peaks or genes on the same cells by ticking this box. Switch between features by clicking on top of the application ("Features" dropdown menu) that will appear once you loaded multi-feature analysis.',
             position:'auto'},
           {
             element:'#selected_analysis',
@@ -45,16 +53,21 @@ $(document).ready(function() {
           },
           {
             element: tabs[4],
-            intro: "<b>Peak Call:</b> <br> The peak calling & coverage tabs will refine the signal based on cell clusters defined in previous step. It will also creates pseudo-bulk coverage of each cluster for you to explore the intra-cluster heterogeneity anywhere in the genome !.",
+            intro: "<b>Coverage:</b> <br> Generate coverage tracks for each one of your cluster and browse for genes / loci of intereset in this tab. Coverage tracks must be generated from raw data (scBED).",
             position: 'right'
           },
           {
             element: tabs[5],
-            intro: "<b>Differential Analysis: </b> <br> Identify the most differential features between the different epigenomic cell populations.",
+            intro: "<b>Peak Call:</b> <br> The peak calling & coverage tabs will refine the signal based on cell clusters defined in previous step. It will also creates pseudo-bulk coverage of each cluster for you to explore the intra-cluster heterogeneity anywhere in the genome !.",
             position: 'right'
           },
           {
             element: tabs[6],
+            intro: "<b>Differential Analysis: </b> <br> Identify the most differential features between the different epigenomic cell populations.",
+            position: 'right'
+          },
+          {
+            element: tabs[7],
             intro: "<b>Enrichment Analysis: </b> <br> Find significant gene sets associated to differential features and vizualize signal of features in cells.",
             position: 'right'
           },
