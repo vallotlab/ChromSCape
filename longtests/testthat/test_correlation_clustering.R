@@ -16,7 +16,6 @@ scExp = correlation_and_hierarchical_clust_scExp(scExp)
 
 test_that("Correlation & hierarchical clustering - Wrong inputs.", {
   expect_error(correlation_and_hierarchical_clust_scExp(NULL))
-  expect_error(correlation_and_hierarchical_clust_scExp(scExp, correlation = "ABC"))
   expect_error(correlation_and_hierarchical_clust_scExp(scExp, hc_linkage = "ABC"))
   
   scExp. = scExp
@@ -28,21 +27,14 @@ test_that("Correlation & hierarchical clustering - Wrong inputs.", {
 test_that("Correlation & hierarchical clustering - Right inputs.", {
   expect_s4_class(correlation_and_hierarchical_clust_scExp(scExp),
                   "SingleCellExperiment")
-  expect_s4_class(correlation_and_hierarchical_clust_scExp(scExp, correlation = "spearman", hc_linkage = "mcquitty"),
-                  "SingleCellExperiment")
-  expect_s4_class(correlation_and_hierarchical_clust_scExp(scExp, correlation = "kendall", hc_linkage = "median"),
-                  "SingleCellExperiment")
 
   expect_is(scExp@metadata$hc_cor,
                   "hclust")
-  expect_type(SingleCellExperiment::reducedDim(scExp,"Cor"),
-                  "double")
-  expect_is(SingleCellExperiment::reducedDim(scExp,"Cor"),
-                  "matrix")
+  expect_type(as.matrix(SingleCellExperiment::reducedDim(scExp,"Cor")), "double")
 })
 
 
-scExp_cf. = filter_correlated_cell_scExp(scExp, random_iter = 50, percent_correlation = 2,
+scExp_cf. = filter_correlated_cell_scExp(scExp, random_iter = 50, percent_correlation = 0.5,
                                          corr_threshold = 99)
 
 test_that("Filtering lowly correlated cells - Wrong inputs.", {
@@ -66,7 +58,7 @@ test_that("Filtering lowly correlated cells - Right inputs.", {
                dim(scExp))
   expect_equal(dim(filter_correlated_cell_scExp(scExp, percent_correlation = 0, verbose = FALSE)),
                dim(scExp))
-  expect_lt(ncol(filter_correlated_cell_scExp(scExp,percent_correlation = 5, verbose = FALSE)),
+  expect_lt(ncol(filter_correlated_cell_scExp(scExp,percent_correlation = 2, verbose = FALSE)),
                    ncol(scExp))
   
 })

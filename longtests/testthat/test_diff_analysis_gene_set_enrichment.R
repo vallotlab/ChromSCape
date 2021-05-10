@@ -17,7 +17,7 @@ scExp = feature_annotation_scExp(scExp,ref = "hg38")
 
 scExp = correlation_and_hierarchical_clust_scExp(scExp)
 
-scExp_cf = filter_correlated_cell_scExp(scExp,random_iter = 10, verbose = FALSE)
+scExp_cf = filter_correlated_cell_scExp(scExp, random_iter = 10, verbose = FALSE)
 
 scExp_cf = consensus_clustering_scExp(scExp_cf)
 

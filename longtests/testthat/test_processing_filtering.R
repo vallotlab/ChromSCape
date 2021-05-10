@@ -1,7 +1,6 @@
 context("Testing preprocessing, filtering & reduction functions")
 
 # Functions for testing purposes
-
 set.seed(47)
 out = create_scDataset_raw(featureType = "window",sparse = TRUE,
                            batch_id = factor(c(1,1,2,2)))
@@ -51,7 +50,7 @@ test_that("Some cells are empty", {
     mat.[,sample(1:ncol(mat.),3)] = 0
     annot. = annot
     annot.$total_counts = Matrix::colSums(mat.)
-    expect_output(create_scExp(mat.,annot.),
+    expect_message(create_scExp(mat.,annot.),
                   "cells with 0 signals were removed." )
 })
 
@@ -60,14 +59,14 @@ test_that("Some features are empty", {
     mat.[sample(1:nrow(mat.),3),] = 0
     annot. = annot
     annot.$total_counts = Matrix::colSums(mat.)
-    expect_output(create_scExp(mat.,annot.),
+    expect_message(create_scExp(mat.,annot.),
                   "features with 0 signals were removed." )
 })
 
 test_that("Removing chrM - non canonical", {
     mat. = mat
     rownames(mat.)[sample(1:nrow(mat.),3)] = paste0("chrM_1_",1:3)
-    expect_output(create_scExp(mat.,annot),
+    expect_message(create_scExp(mat.,annot),
                   "chromosome M regions were removed." )
     no_removal = create_scExp(mat,annot)
     removal = create_scExp(mat.,annot)
@@ -77,7 +76,7 @@ test_that("Removing chrM - non canonical", {
 test_that("Removing chrM - non canonical", {
     mat. = mat
     rownames(mat.)[sample(1:nrow(mat.),3)] = paste0("chrRandom_Unk_1_",1:3)
-    expect_output(create_scExp(mat.,annot),
+    expect_message(create_scExp(mat.,annot),
                   "non canonical regions were removed." )
     no_removal = create_scExp(mat,annot)
     removal = create_scExp(mat.,annot)
@@ -99,16 +98,15 @@ test_that("Wrong input - basic", {
 test_that("No cell filter doesn't change number cells", {
     
     expect_equal(ncol(filter_scExp(scExp,
-                                   percentMin = 0,
                                    quant_removal = 100,
                                    min_cov_cell = 0)), ncol(scExp) )
 })
 
 test_that("No feature filter doesn't change number features", {
     
-    expect_equal(nrow(filter_scExp(scExp,
-                                   percentMin = 0, quant_removal = 100, 
-                                   min_cov_cell = 0)), nrow(scExp))
+    expect_equal(nrow(find_top_features(scExp,
+                                   n = nrow(scExp), keep_others = FALSE)),
+                 nrow(scExp))
 })
 
 test_that("Max cell filters remove all cells", {
@@ -118,14 +116,22 @@ test_that("Max cell filters remove all cells", {
             Matrix::colSums(SingleCellExperiment::counts(scExp))) )), 0)
 })
 
-test_that("Max feature filters remove all features", {
-    expect_equal(nrow(filter_scExp(scExp,percentMin = 101)),0 )
+test_that("find_top_features keeps correct number of features", {
+    expect_equal(nrow(find_top_features(scExp,
+                                        n = 0, keep_others = FALSE)),
+                 0)
+    expect_equal(nrow(find_top_features(scExp,
+                                        n = 113, keep_others = FALSE)),
+                 113)
+    expect_lt(nrow(find_top_features(scExp,
+                                        n = 113, keep_others = FALSE)),
+                 nrow(scExp))
 })
 
 
 test_that("Verbose is on /off", {
-    expect_output(filter_scExp(scExp,verbose=TRUE))
-    expect_output(filter_scExp(scExp,verbose=TRUE))
+    expect_message(filter_scExp(scExp,verbose=TRUE))
+    expect_message(filter_scExp(scExp,verbose=TRUE))
     expect_invisible({scExp. = filter_scExp(scExp,verbose=FALSE)} )
 })
 
@@ -220,3 +226,4 @@ test_that("Dimensionality reduction right input", {
                retx = TRUE, center = TRUE, scale. = FALSE)$x[,1:50])
     expect_equal(abs(pca_1[,1]), abs(pca_2[,1]))
 })
+
