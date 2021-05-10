@@ -16,11 +16,12 @@ with contaminant DNA.
 by the red line on the plot. Cells with an outlier number of reads should be
 discarded as there is a non-zero percentage of droplets containing 
 2 cells or more (doublets).
-* **Minimum percentage of cells to support a window**  - Regions not supported by this 
-percentage of cells (with coverage greater than 1,000 reads) are filtered 
-out. These regions might not be relevant to the analysis. The threshold at 1% is
-recommended for genomic bins feature, but might be set to 0 if reads were counted
-on predefined regions / features of intereset.
+
+* **Top covered features to keep**  - Number of features to keep for the PCA & 
+downstream analysis. Usually not all of the features contain relevant information
+and retrieving the most covered features is a simple way to filter for
+the most relevant features. The violet line on the 'Feature coverage plot' indicates 
+the minimum coverage in the selected features. 
   
 It is recommended to try out multiple combination of parameters to see what is 
 the impact on clustering & differential analysis.
