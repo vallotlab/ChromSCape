@@ -1,53 +1,4 @@
 ## Run a complete unsupervised analysis and create an HTML report
-# ChromSCape_directory = "/media/pacome/LaCie/InstitutCurie/Documents/Data/Tests/Test_ChromSCape/Test_generate_analysis/ChromSCape_analyses/Mouse_ctrl_orga_50kbp"
-# datamatrix = qs::qread(file.path(ChromSCape_directory, "datamatrix.qs"))
-# scExp = qs::qread(file.path(ChromSCape_directory,"Filtering_Normalize_Reduce" ,"Mouse_ctrl_orga_50kbp_1300_0.5_95_uncorrected.qs"))
-# scExp = qs::qread( "/media/pacome/LaCie/InstitutCurie/Documents/Data/Tests/Test_ChromSCape/Test_generate_analysis/ChromSCape_analyses/Mouse_ctrl_orga_50kbp_full/Filtering_Normalize_Reduce/Mouse_ctrl_orga_50kbp_full_1300_0.5_95_uncorrected.qs")
-# scExp_cf = qs::qread(file.path(ChromSCape_directory,"Diff_Analysis_Gene_Sets" ,"Mouse_ctrl_orga_50kbp_1300_0.5_95_uncorrected_2_0.1_1_one_vs_rest.qs"))$scExp_cf
-
-analysis_name = "Test"
-# coverages = sapply(list.files(file.path(ChromSCape_directory,"coverage","Mouse_ctrl_orga_50kbp_1300_0.5_95_uncorrected_k2"),".bw", full.names = T), rtracklayer::import)
-input_data_type = "scBED"
-feature_count_on = "bins"
-feature_count_parameter = 200000
-min_reads_per_cell = 1000
-n_top_features = 40000
-max_quantile_read_per_cell = 99
-norm_type = "CPM"
-maxK = 8
-n_clust = 6
-output_directory = "/media/pacome/LaCie/InstitutCurie/Documents/Data/Tests/Test_ChromSCape/Test_generate_analysis/"
-input_data_folder = "/media/pacome/LaCie/InstitutCurie/ChromSCape_inputs/test_small_scBED/"
-control_samples_CNA = c("C_a3_H3K27me3")
-ref_genome = "mm10"
-doBatchCorr = F
-batch_sels = list("control" = c( "C_a3_H3K27me3","C_a4_5_H3K27me3"),
-                  "juxta" = c("OJ_m6374_p2_H3K27me3","OT_m6374_p2_H3K27me3"))
-subsample_n = NULL
-exclude_regions = NULL
-corr_threshold = 99
-percent_correlation = 1
-qval.th = 0.1
-logFC.th = 1
-enrichment_qval = 0.1
-genes_to_plot = c("Krt8","Krt5","Tgfb1" ,"Foxq1", "Cdkn2b",
-                  "Cdkn2a", "chr7:15000000-20000000")
-# generate_analysis(
-#     analysis_name = analysis_name,
-#     input_data_folder = input_data_folder,
-#     output_directory = output_directory,
-#     input_data_type = input_data_type,
-#     feature_count_on = feature_count_on,
-#     feature_count_parameter = feature_count_parameter,
-#     ref_genome = ref_genome,
-#     control_samples_CNA = control_samples_CNA,
-#     min_reads_per_cell = min_reads_per_cell,
-#     max_quantile_read_per_cell = max_quantile_read_per_cell,
-#     min_percent_to_keep_feature = min_percent_to_keep_feature,
-#     maxK = maxK,
-#     n_clust = n_clust,
-#     doBatchCorr = doBatchCorr,
-#     batch_sels = batch_sels)
 
 #' Generate a complete ChromSCape analysis
 #'
@@ -111,8 +62,8 @@ generate_analysis <- function(input_data_folder,
                   feature_count_on = c("bins","geneTSS","peaks")[1],
                   feature_count_parameter = 50000,
                   ref_genome = c("hg38","mm10")[1],
-                  run = c("filter", "CNA","cluster", "peak_call", "coverage", 
-                          "DA", "GSA", "report")[c(1,3,5,6,7,8)],
+                  run = c("filter", "CNA","cluster", "consensus","peak_call", "coverage", 
+                          "DA", "GSA", "report")[c(1,3,6,7,8,9)],
                   min_reads_per_cell = 1000,
                   max_quantile_read_per_cell = 99,
                   n_top_features = 40000,
@@ -162,10 +113,15 @@ generate_analysis <- function(input_data_folder,
     time_analysis = system.time({
     #### Select & Import ####
     message("ChromSCape::generate_analysis - Importing datasets ...")
-    out <- rawData_to_datamatrix_annot(input_data_folder, input_data_type,
-                                       feature_count_on, feature_count_parameter,
-                                       ref_genome
-    )
+    if(input_data_type == "DenseMatrix"){
+        out <- import_scExp(file_paths = list.files(input_data_folder, full.names = T))
+    } else {
+        out <- rawData_to_datamatrix_annot(input_data_folder, input_data_type,
+                                           feature_count_on, feature_count_parameter,
+                                           ref_genome
+        )
+    }
+        
     
     datamatrix = out$datamatrix
     annot_raw = out$annot_raw
@@ -234,6 +190,8 @@ generate_analysis <- function(input_data_folder,
             gc()
         }
     }
+    rm(annot_raw, datamatrix)
+    gc()
     qs::qsave(scExp, file = file.path(ChromSCape_directory,
                                       "Filtering_Normalize_Reduce",
                                       paste0(prefix, ".qs")))
@@ -241,8 +199,10 @@ generate_analysis <- function(input_data_folder,
     #### Correlation Filtering & Clustering ####
     if("cluster" %in% run) {
         message("ChromSCape::generate_analysis - Correlation Consensus Clustering ...")
+        system.time({
         scExp_cf = filter_correlated_cell_scExp(scExp, random_iter = 50, corr_threshold = corr_threshold,
                                                 percent_correlation = percent_correlation)
+        })
         
         # Check that number of cells and features is enough or finish here
         n_cell = ncol(scExp_cf)
@@ -251,7 +211,10 @@ generate_analysis <- function(input_data_folder,
                     "correlation filtering, skipping cell correlation filtering...")
             scExp_cf = scExp_cf@metadata$Unfiltered
         }
+        rm(scExp)
+        gc()
         
+        if("consenus" %in% run){
         scExp_cf = consensus_clustering_scExp(scExp_cf, reps = 100,
                                               maxK = maxK,
                                               clusterAlg = "hc",
@@ -267,15 +230,19 @@ generate_analysis <- function(input_data_folder,
         average_consensus_score$diff[2:(maxK-1)] = average_consensus_score$mean[2:(maxK-1)] - average_consensus_score$mean[1:(maxK-2)]
         nclust = average_consensus_score$k[which.max(abs(average_consensus_score$diff))-1]
         
-        if(!is.null(n_clust)) nclust =n_clust
-        
+        if(!is.null(n_clust)) nclust = n_clust
+        }
+        if(is.null(n_clust) && !'consensus' %in% run) nclust = 5 else nclust = n_clust
+            
         message("ChromSCape::generate_analysis - Choosing k = ", nclust, " as the optimal cluster number...")
-        scExp_cf = choose_cluster_scExp(scExp_cf, nclust = nclust, consensus = TRUE)
+        scExp_cf = choose_cluster_scExp(scExp_cf, nclust = nclust, consensus = 'consensus' %in% run)
         
         data = list("scExp_cf" = scExp_cf)
         qs::qsave(data, file = file.path(ChromSCape_directory,
                                          "correlation_clustering",
                                          paste0(prefix,".qs")))
+        rm(data)
+        gc()
     }
     
     #### Coverage #####
@@ -285,9 +252,10 @@ generate_analysis <- function(input_data_folder,
             message("ChromSCape::generate_analysis - Creating pseudo-bulk cluster ",
                     "coverage tracks...")
             
-            sample_folders = list.dirs(input_data_folder, full.names = T, recursive = F)
+            sample_folders = list.dirs(input_data_folder, full.names = TRUE,
+                                       recursive = FALSE)
             input_files_coverage = sapply(sample_folders, function(i)
-                list.files(i, full.names = T, pattern = ".bed|.bed.gz"))
+                list.files(i, full.names = TRUE, pattern = ".bed|.bed.gz"))
             names(input_files_coverage) = basename(sample_folders)
             
             coverage_dir_nclust = file.path(ChromSCape_directory,
@@ -300,8 +268,6 @@ generate_analysis <- function(input_data_folder,
                                                   ref_genome = ref_genome
             )
             })
-            
-            coverages = sapply(list.files(coverage_dir_nclust,".bw", full.names = T), rtracklayer::import)
         }
     }
     
@@ -311,8 +277,11 @@ generate_analysis <- function(input_data_folder,
             message("ChromSCape::generate_analysis - Calling peaks on pseudo-bulk ",
                     "clusters ...")
             
-            sample_folders = list.dirs(input_data_folder, full.names = T, recursive = F)
-            input_files = sapply(sample_folders, function(i) list.files(i, full.names = T, pattern = ".bed|.bed.gz"))
+            sample_folders = list.dirs(input_data_folder, full.names = TRUE,
+                                       recursive = FALSE)
+            input_files = sapply(
+                sample_folders, function(i) list.files(
+                    i, full.names = TRUE, pattern = ".bed|.bed.gz"))
             names(input_files) = basename(sample_folders)
             
             peak_dir_nclust = file.path(ChromSCape_directory, "peaks",
@@ -341,6 +310,7 @@ generate_analysis <- function(input_data_folder,
                                                cdiff.th = logFC.th,
                                                qval.th = qval.th,
                                                block = block)
+        gc()
     }
     
     #### Gene Sets Analysis #####
@@ -366,10 +336,14 @@ generate_analysis <- function(input_data_folder,
                                    "Diff_Analysis_Gene_Sets",
                                    paste0(prefix,"_",nclust,"_",qval.th,"_",
                                           logFC.th,"_","one_vs_rest",".qs")))
+        rm(data)
+        rm(scExp_cf)
+        gc()
     }
     
     #### Creating HTML report ####
     if("report" %in% run){
+
         message("ChromSCape::generate_analysis - Running Gene Set Analysis ...")
         generate_report(ChromSCape_directory = ChromSCape_directory,
                         prefix = prefix,
@@ -378,11 +352,21 @@ generate_analysis <- function(input_data_folder,
                         control_samples_CNA = control_samples_CNA
                         )
     }
+    gc()
     })
+    
     message("ChromSCape::generate_analysis - Done ! ...")
     message("ChromSCape::generate_analysis - finished complete analysis in ",
             round(time_analysis[3]/60,2), " minutes...")
-    
+    scExp = qs::qread(file = file.path(ChromSCape_directory,
+                                       "Filtering_Normalize_Reduce",
+                                       paste0(prefix, ".qs")))
+    gc()
+    scExp_cf = qs::qread(file.path(ChromSCape_directory,
+                                   "Diff_Analysis_Gene_Sets",
+                                   paste0(prefix,"_",nclust,"_",qval.th,"_",
+                                          logFC.th,"_","one_vs_rest",".qs")))$scExp_cf
+    gc()
     out = list("scExp" = scExp, "scExp_cf" = scExp_cf)
     return(out)
 }
@@ -401,7 +385,7 @@ rawData_to_datamatrix_annot <- function(input_data_folder,
         annot_raw = tmp_list$annot_raw
         out = list(datamatrix = datamatrix, annot_raw = annot_raw)
     } else {
-        selected_sample_folders = list.dirs(input_data_folder, recursive = F)
+        selected_sample_folders = list.dirs(input_data_folder, recursive = FALSE)
         names(selected_sample_folders) = basename(selected_sample_folders)
         send_warning = FALSE
         if(input_data_type == "scBAM") if(length(list.files(selected_sample_folders[1],pattern = "*.bam$"))==0) send_warning = TRUE
@@ -598,8 +582,8 @@ preprocessing_filtering_and_reduction <- function(
 
 generate_report <- function(ChromSCape_directory,
                             prefix = NULL,
-                            run = c("filter", "CNA","cluster", "peak_call",
-                                    "coverage", "DA", "GSA", "report")[c(1,3,5,6,7,8)],
+                            run = c("filter", "CNA","cluster", "consensus", "peak_call",
+                                    "coverage", "DA", "GSA", "report")[c(1,3,6,7,8,9)],
                             genes_to_plot =  c(
                                 "Krt8","Krt5","Tgfb1", "Foxq1", "Cdkn2b",
                                 "Cdkn2a", "chr7:15000000-20000000"),
@@ -647,7 +631,7 @@ generate_report <- function(ChromSCape_directory,
     if(shiny::is.reactive(scExp_cf)) scExp = shiny::isolate(scExp_cf())
     
     rmarkdown::render(
-        input = file.path("/media/pacome/LaCie/InstitutCurie/Documents/GitLab/ChromSCape/inst/template.Rmd"),
+        input = file.path(system.file(package="ChromSCape","template.Rmd")),
         output_file = file.path(ChromSCape_directory, paste0(analysis_name, "_report.html")),
         params = list(
             analysis_name = analysis_name,

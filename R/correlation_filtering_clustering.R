@@ -33,9 +33,8 @@
 #' scExp_cf = correlation_and_hierarchical_clust_scExp(scExp)
 #'
 correlation_and_hierarchical_clust_scExp <- function(
-    scExp, correlation = "pearson", hc_linkage = "ward.D"){
-    stopifnot(is(scExp, "SingleCellExperiment"), is.character(correlation),
-            is.character(hc_linkage))
+    scExp, hc_linkage = "ward.D"){
+    stopifnot(is(scExp, "SingleCellExperiment"), is.character(hc_linkage))
     
     if (is.null(SingleCellExperiment::reducedDim(scExp, "PCA")))
         stop(
@@ -72,7 +71,8 @@ correlation_and_hierarchical_clust_scExp <- function(
 #'   is considered to be 'correlated' with another cell. (99)
 #' @param percent_correlation Percentage of the cells that any cell must be
 #'   'correlated' to in order to not be filtered. (1)
-#' @param run_tsne Re-run tsne ? (FALSE)
+#' @param n_process Number of cell to proceed at a time. Increase this number to
+#'  increase speed at memory cost
 #' @param downsample Number of cells to calculate correlation filtering 
 #' threshold ? (2500)
 #' @param verbose Print messages ?  (TRUE)
@@ -94,14 +94,16 @@ correlation_and_hierarchical_clust_scExp <- function(
 #' dim(scExp_cf)
 filter_correlated_cell_scExp <- function(scExp, random_iter = 5,
     corr_threshold = 99, percent_correlation = 1,
-    downsample = 2500, verbose = TRUE, BPPARAM = BiocParallel::bpparam()){
+    downsample = 2500, verbose = TRUE, n_process = 250,
+    BPPARAM = BiocParallel::bpparam()){
     warning_filter_correlated_cell_scExp(
         scExp, random_iter,corr_threshold, percent_correlation, run_tsne,
         downsample, verbose)
     if(ncol(scExp) < 5000) scExp@metadata$Unfiltered <- scExp
     pca_t = Matrix::t(SingleCellExperiment::reducedDim(scExp, "PCA"))
     correlation_values <- vector(length = random_iter)
-    corChIP <- SingleCellExperiment::reducedDim(scExp, "Cor")
+    corChIP <- as.matrix(SingleCellExperiment::reducedDim(scExp, "Cor"))
+    gc()
     limitC <- 0
     downsample = min(downsample, ncol(pca_t)) 
     if(verbose) message("ChromSCape::filter_correlated_cell_scExp - ",
@@ -120,11 +122,14 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 5,
     gc()
     if(verbose) message("ChromSCape::filter_correlated_cell_scExp - ",
                         "Filtering low correlated cells...")
+    
+    system.time({
     selection_cor_filtered =  unlist(DelayedArray::blockApply(
-        corChIP, grid = DelayedArray::colAutoGrid(corChIP),
+        corChIP, grid = DelayedArray::colAutoGrid(corChIP, ncol = n_process),
         BPPARAM = BPPARAM, verbose = FALSE, 
         function(X) apply(X, 2, function(x) length(which(x > limitC_mean)))
     ))
+    })
     gc()
     selection_cor_filtered = selection_cor_filtered > 
         (percent_correlation * 0.01) * nrow(corChIP)

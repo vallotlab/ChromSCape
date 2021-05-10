@@ -465,6 +465,7 @@ gene_set_enrichment_analysis_scExp = function(
     GeneSets = database_MSIG$GeneSets
     GeneSetsDf = database_MSIG$GeneSetsDf
     GenePool = database_MSIG$GenePool
+    GeneSets <- lapply(GeneSets, function(x) unique(intersect(x, GenePool)))
     
     nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
     
@@ -472,9 +473,11 @@ gene_set_enrichment_analysis_scExp = function(
         as.data.frame(SummarizedExperiment::rowRanges(scExp)), 
         .data$Gene, sep = ", "))
     enr <- combine_enrichmentTests(
-        scExp@metadata$diff, enrichment_qval, qval.th, cdiff.th,
-        annotFeat_long, peak_distance, refined_annotation, GeneSets,
-        GeneSetsDf, GenePool, progress = progress)
+        diff = scExp@metadata$diff, enrichment_qval = enrichment_qval,
+        qval.th = qval.th, cdiff.th = cdiff.th, annotFeat_long = annotFeat_long,
+        peak_distance = peak_distance, refined_annotation = refined_annotation,
+        GeneSets = GeneSets, GeneSetsDf = GeneSetsDf, GenePool = GenePool,
+        progress = progress)
     scExp@metadata$enr <- enr
     return(scExp)
 }

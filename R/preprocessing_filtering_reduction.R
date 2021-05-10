@@ -244,7 +244,8 @@ raw_counts_to_sparse_matrix <- function(
     which <- define_feature(ref, peak_file, bin_width, genebody,
                             extendPromoter)
     
-    if(use_Signac && requireNamespace("Signac", quietly=TRUE) && file_type == "FragmentFile"){
+    if(use_Signac && requireNamespace("Signac", quietly=TRUE) &&
+       file_type == "FragmentFile"){
         out <- wrapper_Signac_FeatureMatrix(files_dir_list, which, ref,
                                      verbose, progress)
     } else {
@@ -339,7 +340,7 @@ warning_raw_counts_to_sparse_matrix <- function(
 #' @param peak_file A bed file if counting on peaks
 #' @param bin_width A number of bins if divinding genome into fixed width bins
 #' @param genebody A logical indicating if feature should be counted in 
-#' genebodies and promoter
+#' genebodies and promoter.
 #' @param extendPromoter Extension length before TSS (2500).
 #'
 #' @return A GRanges object
@@ -354,7 +355,7 @@ warning_raw_counts_to_sparse_matrix <- function(
 #' gr_genes = define_feature("hg38", genebody = TRUE, extendPromoter = 5000)
 #' 
 define_feature <- function(ref = c("hg38","mm10")[1], peak_file = NULL,
-                           bin_width  = NULL, genebody = NULL,
+                           bin_width  = NULL, genebody = FALSE,
                            extendPromoter = 2500){
     chr <- eval(parse(text = paste0("ChromSCape::", ref, ".chromosomes")))
     chr <- GenomicRanges::GRanges(chr)
@@ -395,6 +396,7 @@ define_feature <- function(ref = c("hg38","mm10")[1], peak_file = NULL,
         geneTSS_df$distanceToTSS = 0
         which = GenomicRanges::GRanges(geneTSS_df)
         which = which[!GenomicRanges::duplicated(which)]
+        names(which@ranges) = NULL
     }
     return(which)
 }
@@ -1514,7 +1516,7 @@ find_top_features <- function (scExp, n = 20000, keep_others = TRUE,
     n = min(n, nrow(scExp))
     feature_counts = Matrix::rowSums(counts(scExp))
     if(is.numeric(n)){
-        feature_counts_top = sort(feature_counts,decreasing = T)[seq_len(n)]   
+        feature_counts_top = sort(feature_counts,decreasing = TRUE)[seq_len(n)]   
     } else{
         n = as.numeric(gsub("q","",n))
         feature_counts_top = feature_counts[which(
@@ -1651,7 +1653,7 @@ exclude_features_scExp <-
                 "ChromSCape::exclude_features_scExp - features_to_exclude must be
            either GenomicRanges or data.frame containg feature names.")
             } else {
-                features_to_exclude = rtracklayer::import(exclude_regions)
+                features_to_exclude = rtracklayer::import(features_to_exclude)
             }
         }
         if (!by[1] %in% c("region", "feature_name")) 
@@ -1852,7 +1854,7 @@ normalize_scExp <- function(scExp,
         type[1] %in% c("CPM", "TFIDF", "RPKM", "TPM", "feature_size_only"),
         is(scExp, "SingleCellExperiment")
     )
-    if (class(SingleCellExperiment::counts(scExp)) != "dgCMatrix") {
+    if (!is(SingleCellExperiment::counts(scExp), "dgCMatrix")) {
         SingleCellExperiment::counts(scExp) <- as(
             SingleCellExperiment::counts(scExp), "dgCMatrix")
     }
@@ -1943,7 +1945,7 @@ feature_annotation_scExp <- function(scExp, ref = "hg38",
         "start" = as.character(GenomicRanges::start(feature_ranges[q_hits])),
         "end" = as.character(GenomicRanges::end(feature_ranges[q_hits])),
         "Gene" = as.character(
-            reference_annotation@elementMetadata$gene)[s_hits],
+            reference_annotation@elementMetadata$Gene)[s_hits],
         "distanceToTSS" = hits@elementMetadata$distance)
     annotFeat <- annotFeat %>% dplyr::mutate(
         "ID" = paste(.data$chr, .data$start, .data$end, sep = "_")) %>%
@@ -2047,7 +2049,7 @@ reduce_dims_scExp <-
             pca <- out$pca
         } else{
             scExp$batch_id <- factor(1)
-            if (is(mat, "dgCMatrix") | is(mat, "dgTMatrix")) {
+            if ( is(mat, "dgCMatrix") | is(mat, "dgTMatrix")) {
                 pca <- pca_irlba_for_sparseMatrix(Matrix::t(mat), n)
             } else{
                 pca <- stats::prcomp(Matrix::t(mat),center = TRUE,
@@ -2110,7 +2112,7 @@ reduce_dim_batch_correction <- function(scExp, mat, batch_list, n){
     adj_annot <- data.frame()
     b_names <- unique(scExp.$batch_name)
     scExp.$batch_id <- as.factor(as.numeric(as.factor(scExp.$batch_name)))
-    if (class(mat) %in% c("dgCMatrix", "dgTMatrix"))
+    if (is(mat,"dgCMatrix") | is(mat, "dgTMatrix"))
     {
         pca <- pca_irlba_for_sparseMatrix(Matrix::t(mat), n)
     } else
@@ -2268,7 +2270,7 @@ num_cell_after_QC_filt_scExp <- function(scExp, annot, datamatrix)
             "Std"= round(stats::sd(annot$total_counts),0),
             "#Cells (filt.)" = sum(table_both[, 4]),
             "Median (filt.)"= round(median(scExp$total_counts),0),
-            "Sd (filt.)"= round(stats::sd(scExp$total_counts),0)))
+            "Std (filt.)"= round(stats::sd(scExp$total_counts),0)))
     table_both %>% kableExtra::kable(escape = FALSE, align = "c") %>%
         kableExtra::kable_styling(c("striped",
                                     "condensed"), full_width = TRUE) %>%

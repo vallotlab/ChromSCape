@@ -148,7 +148,7 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
 #' @param odir Output directory to write MACS2 output
 #' @param p.value P value to detect peaks, passed to MACS2
 #' @param format File format, either "scBAM" or "scBED"
-#' @param ref Reference genome
+#' @param ref Reference genome to get chromosome information from.
 #' @param peak_distance_to_merge Distance to merge peaks
 #'
 #' @return A list of merged GRanges peaks
@@ -156,7 +156,7 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
 #' 
 call_macs2_merge_peaks <- function(affectation, odir, p.value,
                                    format = c("scBED","scBAM")[1],
-                                ref, peak_distance_to_merge){
+                                   ref, peak_distance_to_merge){
     suffix = ".bam"
     if(format != "scBAM") suffix = ".bed"
     if(format == "scBAM") format = "BAM" else format = "BED"
@@ -193,7 +193,7 @@ call_macs2_merge_peaks <- function(affectation, odir, p.value,
 #'
 #' @importFrom IRanges subsetByOverlaps
 #' @importFrom GenomicRanges GRanges reduce ranges
-merge_MACS2_peaks <- function(odir,class,peak_distance_to_merge,ref){
+merge_MACS2_peaks <- function(odir, class, peak_distance_to_merge, ref){
     merged_peaks = list()
     peaks = read.table(
         file = file.path(odir, paste0(class, "_peaks.broadPeak")),
@@ -205,7 +205,7 @@ merge_MACS2_peaks <- function(odir,class,peak_distance_to_merge,ref){
                                 ignore.strand = TRUE)
     
     ref_chromosomes = GenomicRanges::GRanges(
-        eval(parse(text = paste0(ref, ".chromosomes"))))
+        eval(parse(text = paste0("ChromSCape::",ref, ".chromosomes"))))
     peaks = IRanges::subsetByOverlaps(peaks, ref_chromosomes, 
                                                     ignore.strand = TRUE)
     return(peaks)
@@ -254,7 +254,7 @@ annotation_from_merged_peaks <- function(scExp, odir,
     
     refined_annotation = refined_annotation[S4Vectors::queryHits(hits_genes)]
     refined_annotation$Gene = as.character(
-        geneTSS_annotation$gene[S4Vectors::subjectHits(hits_genes)])
+        geneTSS_annotation$Gene[S4Vectors::subjectHits(hits_genes)])
     refined_annotation$distance = hits_genes@elementMetadata$distance
     
     refined_annotation$peak_ID = paste(

@@ -57,7 +57,7 @@ swapAltExp_sameColData <- function(scExp, alt){
             withColData = FALSE)
         SummarizedExperiment::colData(scExp) = cd
     } else {
-        warning("ChromSCape::swapAltExp_sameColData - ", alt, " not in ",
+        message("ChromSCape::swapAltExp_sameColData - ", alt, " not in ",
                 "altExpNames(scExp), returning unchanged scExp.")
     }
     return(scExp)
@@ -272,21 +272,15 @@ enrichmentTest <- function(
     gene.sets, mylist, possibleIds, sep = ";", silent = FALSE)
 {
     possibleIds <- unique(possibleIds)
-    mylist <- unique(mylist)
-    gene.sets <- lapply(gene.sets, unique)
+    mylist = intersect(mylist, possibleIds)
     nids <- length(possibleIds)
-    gene.sets <- lapply(gene.sets, function(x) intersect(x, possibleIds))
+    possibleIds
     nref <- as.numeric(lapply(gene.sets, length))
     if (all(nref == 0)) 
         stop("Error: no intersection between gene sets and possible IDs.")
-    if (any(nref == 0)) 
-        print("Warning: some of the gene sets have no intersection 
-            with possibleIds")
-    if (!all(mylist %in% possibleIds)) 
-        stop("Error: some genes in mylist are not in possibleIds")
+
     if (!silent) 
-        cat(paste("NB : enrichment tests are based on", nids,
-                "distinct ids.\n"))
+        cat("NB : enrichment tests are based on", nids, "distinct ids.\n")
     gene.sets <- gene.sets[nref > 0]
     n <- length(mylist)
     fun <- function(x)
@@ -297,10 +291,12 @@ enrichmentTest <- function(
         pval <- stats::phyper(ny - 1, nx, nids - nx, n, lower.tail = FALSE)
         c(nx, ny, pval, paste(y, collapse = sep))
     }
-    tmp <- as.data.frame(t(as.matrix(vapply(gene.sets, fun,FUN.VALUE = c(
-    "Nb_of_genes" = 0, "Nb_of_deregulated_genes" = 0,
-    "p-value" =0, "Deregulated_genes" = ""
-    )))))
+    tmp <- as.data.frame(t(as.matrix(
+        vapply(gene.sets, fun, FUN.VALUE = c(
+            "Nb_of_genes" = 0, "Nb_of_deregulated_genes" = 0,
+            "p-value" =0, "Deregulated_genes" = ""
+        ))
+    )))
     rownames(tmp) <- names(gene.sets)
     for (i in seq_len(3)) tmp[, i] <- as.numeric(
         as.character(tmp[, i]))

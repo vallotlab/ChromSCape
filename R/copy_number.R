@@ -69,7 +69,7 @@ get_cyto_features <- function(scExp, ref_genome = c("hg38", "mm10")[1] ){
 #' @return The SCE with the fraction of reads in each cytobands in each cells
 #' (of dimension cell x cytoband ) in the  reducedDim slot "cytoBand".
 #' 
-#' @importFrom dplyr group_by summarise everything
+#' @importFrom dplyr group_by summarise everything across
 #' @importFrom Matrix colSums
 #' @importFrom SingleCellExperiment reducedDim
 #' @export
@@ -84,7 +84,7 @@ calculate_cyto_mat <- function(scExp, ref_genome = c("hg38","mm10")[1]){
     
     # Group counts by cytobands
     cyto_mat = as.data.frame(as.matrix(mat)) %>% dplyr::group_by(matching_cyto$hits) %>%
-        dplyr::summarise(across(.cols = dplyr::everything(),sum)) %>% 
+        dplyr::summarise(dplyr::across(.cols = dplyr::everything(),sum)) %>% 
         as.data.frame()
     gc()
 
@@ -131,8 +131,8 @@ get_most_variable_cyto <- function(scExp, top = 50){
     
     cyto_df = cyto_df %>% tidyr::gather("cell_id","Fri_cyto",-ncol(cyto_df))
     top_var = cyto_df %>% dplyr::group_by(cytoBand) %>%
-        dplyr::summarise(var = var(Fri_cyto)) %>% 
-        dplyr::arrange(dplyr::desc(var)) %>% head(n = top)
+        dplyr::summarise("var" = stats::var(Fri_cyto)) %>% 
+        dplyr::arrange(dplyr::desc(.data[["var"]])) %>% utils::head(n = top)
     
     return(top_var)
 }

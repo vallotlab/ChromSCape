@@ -32,7 +32,8 @@
 #' @param read_size The estimated size of reads. Default to 101.
 #' @param progress A Progress object for Shiny. Default to NULL.
 #'
-#' @return
+#' @return Generate coverage tracks (.bigwig) for each cluster in the 
+#' SingleCellExperiment ("cell_cluster" column).
 #' @export
 #'
 #' @examples \dontrun{
@@ -53,6 +54,8 @@ generate_coverage_tracks <- function(scExp_cf, input_files_coverage, odir,
               dir.exists(odir), ref_genome %in% c("hg38","mm10"), 
               is.numeric(bin_width), is.numeric(n_smoothBin),
               is.numeric(read_size))
+    
+    nclust = length(unique(scExp_cf$cell_cluster))
     if (!is.null(progress)) progress$set(message=paste0('Generating coverage tracks for k= ', nclust,' clusters ...'), value = 0.1)
     
     affectation = SingleCellExperiment::colData(scExp_cf)
@@ -110,15 +113,16 @@ concatenate_scBed_into_clusters <- function(affectation, files_list, odir){
                     class_barcodes_chunk = class_barcodes[1:500]
                     files_class = c(files_class,
                                     file_pool[grep(paste(class_barcodes_chunk, collapse="|"),
-                                                   file_pool,useBytes = TRUE, perl = T)])
+                                                   file_pool,useBytes = TRUE, perl = TRUE)])
                     class_barcodes = class_barcodes[-c(1:500)]
                 }
                 files_class = c(files_class,
                                 file_pool[grep(paste(class_barcodes, collapse="|"),
-                                               file_pool,useBytes = TRUE, perl = T)])
+                                               file_pool,useBytes = TRUE, perl = TRUE)])
                 
             } else {
-                files_class = file_pool[grep(paste(class_barcodes, collapse="|"), file_pool,useBytes = TRUE, perl = T)]
+                files_class = file_pool[grep(paste(class_barcodes, collapse="|"),
+                                             file_pool,useBytes = TRUE, perl = TRUE)]
             }
             if(length(class_barcodes)>0){
                 for(file in files_class){
@@ -181,6 +185,8 @@ smoothBin <- function(bin_score, nb_bins = 10){
 rawfile_ToBigWig <- function(filename, BigWig_filename, format = "BAM",
                              bin_width = 150, n_smoothBin = 5, ref = "hg38",
                              read_size = 101){
+    message("ChromSCape:::rawfile_ToBigWig - generating bigwig for  ",
+             basename(filename), " file...")
     canonical_chr <- eval(parse(text = paste0("ChromSCape::",
                                               ref, ".chromosomes")))
     canonical_chr$start = 1
