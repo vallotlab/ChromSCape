@@ -1,31 +1,87 @@
 library(shiny)
 library(shinyjs)
+library(shinydashboard)
+library(shinydashboardPlus)
+library(shinyWidgets)
 library(dplyr)
 
-shinyUI(shinydashboardPlus::dashboardPage(skin='green',
-                            shinydashboardPlus::dashboardHeader(
-                                title = "ChromSCape",
-                                leftUi =     tagList(uiOutput("dropdown_feature_select_ui"))
+mytheme <- fresh::create_theme(
+    fresh::adminlte_color(
+        light_blue = "#434C5E",
+        red = "#D81B60",
+        green = "#434C5E",
+        yellow = "#f39c12",
+        aqua = "#39CCCC"
+    ),
+    fresh::adminlte_sidebar(
+        dark_bg = "#D8DEE9",
+        dark_hover_bg = "#81A1C1",
+        dark_color = "#2E3440"),
+    fresh::adminlte_global(
+        content_bg = "#FFF",
+    )
+)
+
+shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
+                            header = shinydashboardPlus::dashboardHeader(
+                                title = tagList(
+                                    span(class = "logo-lg", "ChromSCape"), 
+                                    icon("ellipsis-h")),
+                                leftUi = tagList(uiOutput("dropdown_feature_select_ui"))
                                 ),
-                            shinydashboardPlus::dashboardSidebar(
-                              shinydashboard::sidebarUserPanel("Vallot Lab",
-                                               subtitle = a(href = "#", icon("circle", class = "text-success"), "Online"),
-                                               image = "curie.jpg"
+                            sidebar = shinydashboardPlus::dashboardSidebar(
+                                  shinydashboard::sidebarUserPanel(
+                                      "Vallot Lab",
+                                               subtitle = a(href = "https://github.com/vallotlab/ChromSCape/", icon("github"), "GitHub"),
+                                               image = "LogoCurie.png"
                               ),
-                              shinydashboard::sidebarMenu(id="tabs", style = "position: fixed; overflow: visible;",
+                              shinydashboard::sidebarMenu(id="tabs", 
                                           shinydashboard::menuItem("Select & Import", tabName = "select_import", icon=icon("upload")),
                                           shinydashboard::menuItem("Filter & Normalize", tabName = "filter_normalize", icon=icon("fas fa-filter")),
                                           shinydashboard::menuItem("Visualize Cells", tabName = "vizualize_dim_red", icon=icon("fas fa-image")),
                                           shinydashboard::menuItem("Cluster Cells", tabName = "cons_clustering", icon=icon("th")),
                                           shinydashboard::menuItem("Coverage", tabName = "coverage", icon=icon("chart-area")), #mountain
                                           shinydashboard::menuItem("Peak Calling", tabName = "peak_calling", icon=icon("fab fa-mountain")), #mountain
-                                          shinydashboard::menuItem("Differential Analysis", tabName = "diff_analysis", icon=icon("chart-bar")),
-                                          shinydashboard::menuItem("Pathway Enrichment Analysis", tabName = "enrich_analysis", icon=icon("code-branch")),
+                                          shinydashboard::menuItem("Differential Analysis", tabName = "diff_analysis", icon=icon("sort-amount-up")),
+                                          shinydashboard::menuItem("Gene Set Analysis", tabName = "enrich_analysis", icon=icon("code-branch")),
                                           shinydashboard::menuItem("Close App & Save Analysis", tabName = "close_and_save", icon=icon("close"))
                               )
                             ),
-                            
-                            shinydashboard::dashboardBody(
+                            controlbar = shinydashboardPlus::dashboardControlbar(
+                                id = "controlbar",
+                                shinydashboardPlus::controlbarMenu(
+                                    id = "menu",
+                                    shinydashboardPlus::controlbarItem(
+                                        title = "Visualisation Settings",
+                                        icon = icon("chart-bar"),
+                                        h4("UMAP"), br(),
+                                        sliderInput("options.dotplot_downsampling", "Downsampled cells",
+                                                    min = 500, max = 100000, step = 10, value = getOption("ChromSCape_options")$dotplot_downsample),
+                                        sliderInput("options.dotplot_size", "Point size",
+                                                    min = 0.01, max = 5, step = 0.01, value = getOption("ChromSCape_options")$dotplot_size),
+                                        sliderInput("options.dotplot_transparency", "Point transparency",
+                                                    min = 0.01, max = 1, step = 0.01, value = getOption("ChromSCape_options")$dotplot_transparency),
+                                        sliderInput("options.dotplot_max_distanceToTSS", "Max. distance to TSS",
+                                                    min = 0, max = 100000, step = 100, value = getOption("ChromSCape_options")$dotplot_max_distanceToTSS),
+                                        sliderInput("options.dotplot_min_quantile", "Remove lower range outlier",
+                                                    min = 0, max = 1, step = 0.01, value = getOption("ChromSCape_options")$dotplot_min_quantile),
+                                        sliderInput("options.dotplot_max_quantile", "Remove higher range outlier",
+                                                    min = 0, max = 1, step = 0.01, value = getOption("ChromSCape_options")$dotplot_max_quantile),
+                                        h4("Heatmap"), br(),
+                                        sliderInput("options.heatmap_downsampling", "Downsampled cells",
+                                                    min = 500, max = 20000, step = 10, value = getOption("ChromSCape_options")$heatmap_downsample)
+                                    ),
+                                    shinydashboardPlus::controlbarItem(
+                                        title = "Parallel Settings",
+                                        icon = icon("align-left"),
+                                    selectInput("options.nb_workers","Select number of workers for parallel computation",
+                                                choices= seq_len(parallel::detectCores()), selected = BiocParallel::bpworkers(BiocParallel::bpparam())),
+                                    selectInput("options.bpparam_class","Select parallel computation type",
+                                                choices = names(BiocParallel::registered()), selected = 1)
+                                    )
+                                )
+                            ),
+                            body = shinydashboard::dashboardBody(
                               shinyjs::useShinyjs(),
                               tags$head(includeCSS('www/style.css')),
                               tags$head(includeCSS('www/introjs.min.css')),
@@ -65,26 +121,26 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                                     shiny::includeScript(file.path(system.file(package="ChromSCape"),"intro.min.js")),
                                     shiny::includeScript(file.path(system.file(package="ChromSCape"),"app.js")),
                                     shiny::includeScript(file.path(system.file(package="ChromSCape"),"www","shiny_js_functions.js")),
-
+                                    shinyWidgets::chooseSliderSkin("Flat", color = "#112446"),
                                     #Load shinyJS added functions
                                     shinyjs::extendShinyjs(script = file.path(system.file(package="ChromSCape"),"www","shiny_js_functions.js"),
                                                            functions = c("init_directory","save_cookie","disableTab","enableTab")),
                                     #Center Panel
                                     column(width=6,align="left",
-                                           shinydashboard::box(title="Select output directory", width = NULL, status="success",
+                                           shinydashboard::box(title=tagList(shiny::icon("folder"), " Select output directory"), width = NULL, status="success",
                                                                 solidHeader=TRUE,
                                                                column(12, align="left",
-                                                                      shinyFiles::shinyDirButton("data_folder", "Browse", "Upload") %>%
-                                                                          shinyhelper::helper(type = 'markdown', icon ="info-circle",
-                                                                                              content = "output_directory"),
+                                                                      shinyFiles::shinyDirButton("data_folder",  icon = icon("folder-open"), label = "Browse", title = "Upload") %>%
+                                                                          shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
+                                                                                              content = "output_directory"), br(),
                                                                       verbatimTextOutput("directory", placeholder = TRUE)),
                                                                column(12, align="left", textOutput("data_folder_info"))),
-                                           shinydashboard::box(title="Import raw data & Create new analysis", width = NULL, status="success", solidHeader=TRUE,
+                                           shinydashboard::box(title=tagList(shiny::icon("upload"), " Import raw data & Create new analysis"), width = NULL, status="success", solidHeader=TRUE,
                                                                column(12, align="left",
                                                                       column(12, align="left",textInput("new_analysis_name", "Enter a name for the new analysis :", value = "Analysis_1"),
                                                                       selectInput("annotation","Select reference genome:", choices=c("hg38", "mm10")),
                                                                       textOutput("data_matrices_info") %>%
-                                                                          shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                          shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                                                                                               content = "datamatrix_input")),
                                                                       column(6,
                                                                       radioButtons("data_choice_box", label = "Input data type",
@@ -104,7 +160,7 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                                     ),
                                     column(6,
                                            column(11, align="left",
-                                                  shinydashboard::box(title="Current analysis", width = NULL, status="success", solidHeader=TRUE,
+                                                  shinydashboard::box(title=tagList(shiny::icon("file"), " Current analysis"), width = NULL, status="success", solidHeader=TRUE,
                                                                       column(12, align="left",
                                                                              uiOutput("selected_analysis")
                                                                       )),
@@ -123,38 +179,40 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                                                 fluidPage(
                                                     #Right Panel
                                                     column(width=7,
-                                                           shinydashboard::box(title="Filter & Normalize panel", width = NULL, status="success", solidHeader=TRUE,
+                                                           shinydashboard::box(title = tagList(shiny::icon("fas fa-filter"), " Filter & Normalize"),
+                                                                               width = NULL, status="success", solidHeader=TRUE,
                                                                                column(6, align="left",
                                                                                       column(12, align = "middle", h4("Cell coverage")),
                                                                                       br(), br(),
                                                                                       plotly::plotlyOutput("cell_coverage", height=250) %>%
-                                                                                          shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75),
+                                                                                          shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75),
                                                                                       br(), hr()),
                                                                                column(6, align="left",
                                                                                       column(12, align = "middle", h4("Feature coverage")),
                                                                                       br(), br(),
                                                                                       plotly::plotlyOutput("feature_coverage", height=250) %>%
-                                                                                          shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75),
+                                                                                          shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75),
                                                                                       br(), hr()),
                                                                                column(12, align="left",
                                                                                       uiOutput("table_QC_filt_box"),
                                                                                       br(), hr(),
-                                                                                      uiOutput('cell_filtering_ui'),
+                                                                                      uiOutput('min_coverage_cell_ui'),
+                                                                                      uiOutput('quant_removal_ui'),
                                                                                       sliderInput("n_top_features", shiny::HTML("<p><span style='color: #A020F0'>Select number of top covered features to keep:</span></p>"), min=1000, max=200000, value=30000, step=100),
                                                                                       selectInput("norm_type", "Normalization method: ", choices = c("CPM", "TFIDF"), width = "20%"),
                                                                                       checkboxInput("run_tsne", "Run T-SNE", value= FALSE) %>%
-                                                                                          shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                                          shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                                                                                                               content = "run_tsne"),
                                                                                       checkboxInput("do_subsample", "Perform subsampling", value=FALSE)%>%
-                                                                                          shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                                          shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                                                                                                               content = "subsampling"),
                                                                                       uiOutput("do_subsample"),
                                                                                       checkboxInput("exclude_regions", "Exclude specific genomic regions", value=FALSE)  %>%
-                                                                                          shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                                          shinyhelper::helper(type = 'markdown',  colour = "#434C5E", icon ="info-circle",
                                                                                                               content = "exclude_region"),
                                                                                       uiOutput("exclude_file"),
                                                                                       checkboxInput("do_batch_corr", "Perform batch correction", value=FALSE) %>%
-                                                                                          shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                                          shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                                                                                                               content = "batch_correction"),
                                                                                       uiOutput("num_batches")),
                                                                                column(5, align="left",
@@ -165,7 +223,7 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                                                                                       hr(),
                                                                                       actionButton("filter_normalize_reduce", "Filter, Normalize & Reduce")))),
                                                     column(width = 5,
-                                                           shinydashboard::box(title="Select filtered & normalized dataset", width = NULL, status="success", solidHeader=TRUE,
+                                                           shinydashboard::box(title=tagList(shiny::icon("file"), " Select filtered & normalized dataset"), width = NULL, status="success", solidHeader=TRUE,
                                                                                column(12, align="left",
                                                                                       htmlOutput("selected_reduced_dataset"),
                                                                                       textOutput("red_data_selection_info"),
@@ -185,21 +243,21 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                           tabName = "vizualize_dim_red",
                                 fluidPage(
                                   column(width=6,
-                                         shinydashboard::box(title="PCA", width = NULL, status="success", solidHeader=TRUE,
+                                         shinydashboard::box(title = tagList(shiny::icon("fas fa-image"), " PCA"), width = NULL, status="success", solidHeader=TRUE,
                                              column(6, align="left", uiOutput("feature_color")),
                                              column(12, align="left",plotOutput("pca_plot") %>%
-                                                        shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
-                                                        shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                        shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75) %>%
+                                                        shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                                                                             content = "pca_plot")
                                                         ),
                                              column(3, align="left", uiOutput("pc_select_x")),
                                              column(3, align="left", uiOutput("pc_select_y"))),
                                          uiOutput("contribution_to_pca_UI")),
                                   column(width=6,
-                                         shinydashboard::box(title="UMAP", width = NULL, status="success", solidHeader=TRUE,
+                                         shinydashboard::box(title=tagList(shiny::icon("fas fa-image"), " UMAP"), width = NULL, status="success", solidHeader=TRUE,
                                                              column(12, align="left", plotOutput("UMAP_plot") %>%
-                                                                        shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
-                                                                        shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                        shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75) %>%
+                                                                        shinyhelper::helper(type = 'markdown',  colour = "#434C5E", icon ="info-circle",
                                                                                             content = "umap_plot")
                                                                     )),
                                          uiOutput("tsne_box")
@@ -216,14 +274,14 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                         shinydashboard::tabItem(tabName = "cons_clustering",
                                 fluidPage(
                                   column(width=6,
-                                         shinydashboard::box(title=tagList(shiny::icon("cube"),"Hierarchical Clustering"),
+                                         shinydashboard::box(title=tagList(shiny::icon("cube")," Hierarchical Clustering"),
                                                              width=NULL, status="success", solidHeader=TRUE,
                                                              column(12, align ="center", plotOutput("hc_heatmap_plot", height=500, width=500) %>%
-                                                                        shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
-                                                                        shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                        shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75) %>%
+                                                                        shinyhelper::helper(type = 'markdown',  colour = "#434C5E", icon ="info-circle",
                                                                                             content = "correlation_clustering"))
                                          ),
-                                         shinydashboard::box(title = tagList(shiny::icon("cubes"),"Consensus Hierarchical Clustering"),
+                                         shinydashboard::box(title = tagList(shiny::icon("cubes")," Consensus Hierarchical Clustering"),
                                                              width=NULL, status="success", solidHeader=TRUE,
                                                              collapsible = TRUE, collapsed = TRUE,
                                                              column(12, align = "left", br()),
@@ -244,13 +302,13 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                                                              column(12, align="left", textOutput("cluster_consensus_info")),
                                                              column(12, align="left", uiOutput("cons_clust_pdf"))
                                          ),
-                                         shinydashboard::box(title=tagList(shiny::icon("fas fa-filter"),"Filter lowly correlated cells"),
+                                         shinydashboard::box(title=tagList(shiny::icon("fas fa-filter")," Filter lowly correlated cells"),
                                                              width=NULL, status="success", solidHeader=TRUE,
                                                              collapsible = TRUE, collapsed = TRUE,
                                                              column(12, align="center",
                                                                     plotOutput("cell_cor_hist_plot", height=300, width=500) %>%
-                                                                        shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
-                                                                        shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                        shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75) %>%
+                                                                        shinyhelper::helper(type = 'markdown',  colour = "#434C5E", icon ="info-circle",
                                                                                             content = "filter_correlation_distrib")),
                                                              column(12, align = "left",
                                                                     hr(),
@@ -266,7 +324,7 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                                   ),
    
                                   column(width=6,
-                                         shinydashboard::box(title="Select Cluster Number", width=NULL, status="success", solidHeader=TRUE,
+                                         shinydashboard::box(title=tagList(shiny::icon("project-diagram"), "Select Cluster Number"), width=NULL, status="success", solidHeader=TRUE,
                                                              align="left",
                                                              column(width=4, uiOutput("nclust_UI")),
                                                              column(width=3, br(),br(), checkboxInput("cluster_type",label = shiny::HTML("<b>Use consensus</b>"),value = FALSE)),
@@ -276,13 +334,13 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                                          uiOutput("UMAP_box"),
                                          uiOutput("tsne_box_cf"),
                                          uiOutput("color_box_cf"),
-                                         shinydashboard::box(title="Correlation heatmap with cluster annotation", width=NULL,
+                                         shinydashboard::box(title=tagList(shiny::icon("cube")," Hierarchical Clustering with cluster annotation"), width=NULL,
                                                              status="success", solidHeader=TRUE, align="left", 
                                                              column(width=4,
                                                                     actionButton(inputId = "do_annotated_heatmap_plot", label = "Plot Clustered Heatmap"), br()),
                                                              column(width=12, uiOutput("annotated_heatmap_UI"))
                                          ),
-                                         shinydashboard::box(title=tagList(shiny::icon("fas fa-filter"), "Intra / Inter correlation"), width=NULL,
+                                         shinydashboard::box(title=tagList(shiny::icon("ruler-combined"), " Intra / Inter correlation"), width=NULL,
                                                              status="success", solidHeader=TRUE, align="left",
                                                              collapsible = TRUE, collapsed = TRUE,
                                                              column(12, align="left",
@@ -291,7 +349,7 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                                                                     column(3, align = "left", actionButton(inputId = "save_plots_violins",
                                                                                                                   label = "Save HQ plots",
                                                                                                                   icon = icon("fa-picture-o"))) %>%
-                                                                               shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                               shinyhelper::helper(type = 'markdown',  colour = "#434C5E", icon ="info-circle",
                                                                                                    content = "intra_inter_correlation")),
                                                                     column(width=4,uiOutput("jitter_color")),  br(),br(),br(),br(),br(),
                                                                     mainPanel(tabsetPanel(id='inter_intra_cor',
@@ -313,15 +371,16 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                         shinydashboard::tabItem(tabName = "coverage",
                                                 fluidPage(
                                                     column(width=4,
-                                                           shinydashboard::box(title="Coverage plots", width=NULL, status="success", solidHeader=TRUE,
+                                                           shinydashboard::box(title=tagList(shiny::icon("chart-area"), " Generate Coverage Plots"), width=NULL, status="success", solidHeader=TRUE,
                                                                                column(12, align="left", textOutput("coverage_info"), hr()),
                                                                                tags$style(HTML(".large_icon { font-size: 70px; }")),
                                                                                
                                                                                column(12, align="left",
-                                                                                      shinyFiles::shinyDirButton("coverage_folder", "Browse directory of raw signal (scBED)" ,
+                                                                                      shinyFiles::shinyDirButton("coverage_folder", icon = icon("folder-open"), 
+                                                                                                                 "Browse directory of raw signal (scBED)" ,
                                                                                                                  title = "Please select a folder:",
                                                                                                                  buttonType = "default", class = NULL) %>%
-                                                                                          shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                                                          shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                                                                                                               content = "coverage"),
                                                                                       br(),hr(),br(),
                                                                                       uiOutput("coverage_upload")),
@@ -338,7 +397,7 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                         shinydashboard::tabItem(tabName = "peak_calling",
                                 fluidPage(
                                   column(width=6,
-                                         shinydashboard::box(title="Peak calling", width=NULL, status="success", solidHeader=TRUE,
+                                         shinydashboard::box(title=tagList(shiny::icon("fab fa-mountain"), " Peak calling"), width=NULL, status="success", solidHeader=TRUE,
                                              column(12, align="left", textOutput("peak_calling_info"), hr()),
                                              tags$style(HTML(".large_icon { font-size: 70px; }")),
                                              column(5, align="left",
@@ -347,9 +406,11 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                                              column(12, align="left",
                                                     sliderInput("peak_distance_to_merge", "Select distance of peaks to merge:", min=0, max=50000, value=5000, step=100),
                                                     shinyFiles::shinyDirButton("pc_folder", "Browse folder of BAM / scBED files" ,
-                                                                   title = "Please select a folder:",
-                                                                   buttonType = "default", class = NULL),
+                                                                               icon = icon("folder-open"),
+                                                                               title = "Please select a folder:",
+                                                                               buttonType = "default", class = NULL),
                                                     uiOutput("pc_upload")),
+                                             br(), br(),
                                              column(4, align="left", textOutput("pc_k_selection"),
                                                     selectInput("pc_stat","Select statistic for cutoff:", choices=c("p.value", "q.value"), selected="p.value")),
                                              column(12, align="left", br(), br(),
@@ -365,9 +426,9 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                         shinydashboard::tabItem(tabName = "diff_analysis",
                                 fluidPage(
                                   column(width=6,
-                                         shinydashboard::box(title="Differential Analysis parameters", width=NULL, status="success", solidHeader=TRUE,
+                                         shinydashboard::box(title= tagList(shiny::icon("sort-amount-up"), " Differential Analysis"), width=NULL, status="success", solidHeader=TRUE,
                                              column(12, align="left", textOutput("diff_analysis_info") %>%
-                                                        shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                                        shinyhelper::helper(type = 'markdown',  colour = "#434C5E", icon ="info-circle",
                                                                             content = "differential_analysis"), br(),
                                                     htmlOutput("selected_DA_GSA_dataset")),
                                              column(8, align="left", uiOutput("selected_k"), br(), br()),
@@ -409,11 +470,11 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                         shinydashboard::tabItem(tabName = "enrich_analysis",
                                 fluidPage(
                                   column(width=6,
-                                         shinydashboard::box(title="Enrichment analysis", width=NULL, status="success", solidHeader=TRUE,
+                                         shinydashboard::box(title=tagList(shiny::icon("code-branch"), " Gene Set Analysis"), width=NULL, status="success", solidHeader=TRUE,
                                              column(12, align="left", htmlOutput("enr_info"), br(),
                                                     uiOutput("use_peaks"),
                                                     actionButton("do_enrich", "Start enrichment analysis"))),
-                                         shinydashboard::box(title="Enriched gene sets in differential regions across clusters", width=NULL, status="success", solidHeader=TRUE,
+                                         shinydashboard::box(title=tagList(icon("th"), " Enriched Gene sets in differential features"), width=NULL, status="success", solidHeader=TRUE,
                                              column(4, align="left", uiOutput("GSA_group_sel"), br()),
                                              column(8, align="left", uiOutput("enr_class_sel"), br()),
                                              column(12, align="left",
@@ -424,13 +485,13 @@ shinyUI(shinydashboardPlus::dashboardPage(skin='green',
                                                     br(), br(), br(), br(), br(),
                                                     downloadButton("download_enr_data", "Download tables")))),
                                   column(width=6,
-                                         shinydashboard::box(title="Enrichment near TSS", width=NULL, status="success", solidHeader=TRUE,
+                                         shinydashboard::box(title=tagList(icon("image"), " UMAP of enrichment near TSS"), width=NULL, status="success", solidHeader=TRUE,
                                              column(3, align="left", uiOutput("gene_sel")),
                                              column(6, align="left", uiOutput("region_sel")),
                                              column(3, align="left", actionButton("save_plot_GSA", "Save HQ plot")),
                                              column(12, align="left", uiOutput("gene_umap_UI"))
                                              ),
-                                         shinydashboard::box(title="Enrichment in Gene Sets", width=NULL, status="success", solidHeader=TRUE,
+                                         shinydashboard::box(title=tagList(icon("image"), " Enrichment in Gene Sets"), width=NULL, status="success", solidHeader=TRUE,
                                                              column(4, align="left", actionButton("plot_pathways", "Plot pathways")), 
                                                              column(8, align="left", uiOutput("pathways_sel")), 
                                                              column(12, align="left",uiOutput("pathways_umap_UI"))

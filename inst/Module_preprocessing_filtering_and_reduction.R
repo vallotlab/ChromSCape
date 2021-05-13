@@ -53,7 +53,8 @@ Module_preprocessing_filtering_and_reduction <- function(
         print(system.time({ scExp = find_top_features(
             scExp,
             n =  n_top_features(),
-            keep_others = FALSE)
+            keep_others = FALSE,
+            prioritize_genes = FALSE)
         }))
         gc()
         

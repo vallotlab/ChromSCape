@@ -13,7 +13,7 @@ shinyServer(function(input, output, session) {
   #Initializating user experience functions
   js$init_directory() #Getting cookie for the directory
   volumes = c(Home = fs::path_home(), "R Installation" = R.home(), shinyFiles::getVolumes()())
-shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
+  shinyhelper::observe_helpers(help_dir = "www/helpfiles", withMathJax = TRUE)
   
   tab_vector = c("filter_normalize",
                  "vizualize_dim_red",
@@ -49,6 +49,14 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   init <- reactiveValues(data_folder =  getwd(), datamatrix = data.frame(), annot_raw = data.frame(),
                          available_analyses = list.dirs(path = file.path(getwd(), "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE),
                          available_reduced_datasets = NULL, available_DA_GSA_datasets = NULL)
+  
+  CS_options.BPPARAM = reactive({
+    req(input$options.bpparam_class, input$options.nb_workers)
+    BPPARAM = BiocParallel::bpparam(input$options.bpparam_class)
+    BiocParallel::bpworkers(BPPARAM) = input$options.nb_workers
+    BPPARAM
+  })
+
   reduced_datasets <- reactive({
     if (is.null(init$available_reduced_datasets)) c() else gsub('.{3}$', '', basename(init$available_reduced_datasets)) })
   
@@ -337,9 +345,9 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$add_to_current_analysis_checkbox_UI <- renderUI({
     req(input$selected_analysis)
     if(!is.null(input$selected_analysis) & length(input$selected_analysis) > 0){
-      checkboxInput(inputId = "add_to_current_analysis", value = FALSE,
-                    label = "Add to current analysis") %>%
-        shinyhelper::helper(type = 'markdown', icon ="info-circle",
+      materialSwitch(inputId = "add_to_current_analysis", value = FALSE,
+                    label = "Add to current analysis", status = "primary") %>%
+        shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                             content = "add_to_current_analysis", size = "l")
     }
   })
@@ -389,7 +397,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   observeEvent(input$add_to_current_analysis_Modal_cancel, {
     # Check that data object exists and is data frame.
     alt_name("")
-    updateCheckboxInput(inputId = "add_to_current_analysis", value = FALSE)
+    updateMaterialSwitch(session = session, inputId = "add_to_current_analysis", value = FALSE)
     removeModal()
   })
   
@@ -482,14 +490,16 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
             file_type = type_file,
             bin_width = as.numeric(input$bin_width),
             ref = input$annotation,
-            progress = progress)
+            progress = progress,
+            BPPARAM = CS_options.BPPARAM())
           
           if(input$count_on_box == "peak_file") out = ChromSCape:::raw_counts_to_sparse_matrix(
             files_dir_list = selected_sample_folders,
             file_type = type_file,
             peak_file = as.character(input$peak_file$datapath),
             ref = input$annotation,
-            progress = progress)
+            progress = progress,
+            BPPARAM = CS_options.BPPARAM())
           
           if(input$count_on_box == "genebody")  out = ChromSCape:::raw_counts_to_sparse_matrix(
             files_dir_list = selected_sample_folders,
@@ -497,7 +507,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
             genebody = TRUE,
             extendPromoter = as.numeric(input$extendPromoter),
             ref = input$annotation,
-            progress = progress)
+            progress = progress,
+            BPPARAM = CS_options.BPPARAM())
                   } else {
                     stop("No data folder or data files selected.")
                   }
@@ -528,7 +539,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
             choices = c("main", get.available.alternative.datasets(input$selected_analysis))
           )
           alt_name("")
-          updateCheckboxInput(inputId = "add_to_current_analysis", value = FALSE)
+          updateMaterialSwitch(session = session, inputId = "add_to_current_analysis", value = FALSE)
         } else{
           qs::qsave(datamatrix, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "datamatrix.qs"))
           qs::qsave(annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "annot_raw.qs"))
@@ -554,8 +565,10 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       print(get.available.alternative.datasets(input$selected_analysis))
           shinydashboardPlus::dropdownBlock(
             id = "feature_select_dropdown",
-            title = shiny::HTML("<span style='color: white'><b>Features</b></span>"),
-            icon = shiny::HTML(paste0("<span style='color: white'>",icon("circle"),"</span>")),
+            badgeStatus = NULL,
+            title = shiny::HTML(paste0("<span style='color: white'><h4> <i class='far fa-caret-square-down'",
+            "role='presentation' aria-label='caret-square-down icon'></i> &nbsp; Features</h4></span>")),
+            icon = NULL, # shiny::HTML(paste0("<span style='color: white'>",icon("circle"),"</span>"))
             radioButtons(
               inputId = "feature_select",
               label = "Select a feature",
@@ -601,7 +614,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
 
   
   output$rename_file_box <- renderUI({
-    shinydashboard::box(title = tagList("Rename Samples", shiny::icon("signature")),
+    shinydashboard::box(title = tagList(shiny::icon("signature"), " Rename Samples"),
                         width = NULL, status = "success", solidHeader = TRUE, 
                         collapsible = TRUE, collapsed = TRUE,
                         column(8, htmlOutput("rename_file_UI")),
@@ -705,16 +718,23 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     of cells to remove (potential doublets), min percentage of cells to support a window,
     quantile of cell read counts to keep and batch correction type."})
   
-  output$cell_filtering_ui <- renderUI({
-    if(input$selected_feature = "main"){
-      column(12,
+  output$min_coverage_cell_ui <- renderUI({
+    req(input$feature_select)
+    if(input$feature_select == "main"){
       sliderInput("min_coverage_cell", shiny::HTML("<p><span style='color: green'>Select minimum number of reads per cell :</span></p>"),
                   min=50, max=5000, value=1600, step=50) %>%
-        shinyhelper::helper(type = 'markdown', icon ="info-circle",
-                            content = "filtering_parameters"),
+        shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
+                            content = "filtering_parameters")
+    }
+  })
+
+  output$quant_removal_ui <- renderUI({
+    req(input$feature_select)
+    if(input$feature_select == "main"){
       sliderInput("quant_removal", shiny::HTML("<p><span style='color: red'>Select the upper percentile of cells to remove (potential doublets):</span></p>"),
                   min=90, max=100, value=95, step=0.01) 
-      )
+    } else{
+      column(12, align = "middle", br(),h4("Filtering features only, keeping same cells as in 'main' features."),br())
     }
   })
   output$exclude_file <- renderUI({ if(input$exclude_regions){
@@ -854,22 +874,26 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   
   quantile_threshold =  reactive({
-    req(init$datamatrix)
+    req(init$datamatrix, input$quant_removal)
     index = round(ncol(init$datamatrix) * as.numeric(input$quant_removal) * 0.01)
     q = cell_cov_df()$coverage[index]
     q
   })
   
   cell_cov_plot <- reactive({
-    ggplot(cell_cov_df(), aes(x = coverage)) + 
+    req(input$feature_select)
+    p = ggplot(cell_cov_df(), aes(x = coverage)) + 
       geom_histogram(color="black", fill="steelblue", bins = 75) +
       labs(x="Log10(Reads per cell)", y = "nCells")  + 
       theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), 
             panel.background=element_blank(), axis.line=element_line(colour="black"),
-            panel.border=element_rect(colour="black", fill=NA)) +
-      geom_vline(xintercept = as.numeric(input$min_coverage_cell), color = "#22AD18") + 
-      geom_vline(xintercept = quantile_threshold(), color = "#D61111") +
-      scale_x_log10()
+            panel.border=element_rect(colour="black", fill=NA)) + scale_x_log10()
+      if(input$feature_select == "main"){
+        p = p + geom_vline(xintercept = as.numeric(input$min_coverage_cell), color = "#22AD18") + 
+          geom_vline(xintercept = quantile_threshold(), color = "#D61111")
+          
+      }
+      p
       
     })
   
@@ -958,7 +982,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       if(input$pc_select_x  %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
         p = plot_reduced_dim_scExp(scExp(),input$color_by, "PCA",
                                    select_x = input$pc_select_x,
-                                   select_y = input$pc_select_y
+                                   select_y = input$pc_select_y,
+                                   transparency = input$options.dotplot_transparency,
+                                   size = input$options.dotplot_size,
+                                   max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
+                                   downsample = input$options.dotplot_downsampling,
+                                   min_quantile = input$options.dotplot_min_quantile,
+                                   max_quantile = input$options.dotplot_max_quantile
         )
         unlocked$list$pca=TRUE
         p
@@ -991,21 +1021,21 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     req(scExp(), input$pc_select_x)
     if("PCA" %in% SingleCellExperiment::reducedDimNames(scExp())){
       if(input$pc_select_x %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
-        shinydashboard::box(title="Contribution to PCA", width = NULL, status="success", solidHeader=TRUE,
+        shinydashboard::box(title=tagList(shiny::icon("fas fa-chart-bar"), " Contribution to PCA"), width = NULL, status="success", solidHeader=TRUE,
                             column(12, align="left",
                                    selectInput("n_features_contributing", label =  "Top features",
                                                choices = 5:100,
                                                multiple = FALSE, selected = 10),
                                    h3(paste0("Most contributing features to '", input$pc_select_x,"' .")),
                                    plotlyOutput("contrib_features_plot") %>% 
-                                     shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
-                                     shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                     shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75) %>%
+                                     shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                                                          content = "most_contributing_features")
                             ),
                             column(12, align="left", 
                                    h3("Contribution of chromosomes in top 100 features."),
                                    plotOutput("contrib_chr_plot") %>% 
-                                     shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+                                     shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75)
                                    ))
       }
     }
@@ -1015,12 +1045,18 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     req(scExp(), annotCol(), input$color_by)
     if("TSNE" %in% SingleCellExperiment::reducedDimNames(scExp())){
       if(input$color_by %in% colnames(SingleCellExperiment::colData(scExp())) ){
-      p = plot_reduced_dim_scExp(scExp(),input$color_by, "TSNE")
+      p = plot_reduced_dim_scExp(scExp(), input$color_by, "TSNE",
+                                 transparency = input$options.dotplot_transparency,
+                                 size = input$options.dotplot_size,
+                                 max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
+                                 downsample = input$options.dotplot_downsampling,
+                                 min_quantile = input$options.dotplot_min_quantile,
+                                 max_quantile = input$options.dotplot_max_quantile)
       output$tsne_plot = renderPlot(p)
       shinydashboard::box(title="t-SNE vizualisation 1", width = NULL, status="success", solidHeader=TRUE,
                           column(12, align="left", plotOutput("tsne_plot") %>% 
-                                   shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75) %>%
-                                   shinyhelper::helper(type = 'markdown', icon ="info-circle",
+                                   shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75) %>%
+                                   shinyhelper::helper(type = 'markdown',  colour = "#434C5E", icon ="info-circle",
                                                        content = "tsne_plot")
                                  ))
       }
@@ -1030,7 +1066,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$UMAP_plot <- renderPlot({
     req(scExp(), annotCol(), input$color_by)
     if(input$color_by %in% colnames(SingleCellExperiment::colData(scExp())) ){
-      p = plot_reduced_dim_scExp(scExp(), input$color_by, "UMAP")
+      p = plot_reduced_dim_scExp(scExp(), input$color_by, "UMAP",
+                                 transparency = input$options.dotplot_transparency,
+                                 size = input$options.dotplot_size,
+                                 max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
+                                 downsample = input$options.dotplot_downsampling,
+                                 min_quantile = input$options.dotplot_min_quantile,
+                                 max_quantile = input$options.dotplot_max_quantile)
       p
     }
      })
@@ -1038,14 +1080,14 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$color_box <- renderUI({
     req(input$color_by)
     if(!grepl("counts",input$color_by)){
-      shinydashboard::box(title = tagList("Color settings ",shiny::icon("palette")),
+      shinydashboard::box(title = tagList(shiny::icon("palette"), " Color settings"),
                           width = NULL, status = "success", solidHeader = TRUE,
           column(6, htmlOutput("color_picker")),
           column(6 , br(), actionButton("col_reset", "Default colours", icon = icon("undo")),
                  br(), br(), actionButton("save_color", "Save colors & apply to all", icon = icon("save")),
                  br(), br(), actionButton("save_plots_PCA", "Save HQ plots", icon = icon("fa-picture-o"))))
     } else{
-      shinydashboard::box(title = tagList("Color settings ",shiny::icon("palette")),
+      shinydashboard::box(title = tagList(shiny::icon("palette"), " Color settings"),
                           width = NULL, status = "success", solidHeader = TRUE,
                           column(6 ,br(), br(), actionButton("save_plots_PCA", "Save HQ plots", icon = icon("fa-picture-o"))))
     }
@@ -1107,9 +1149,22 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(!dir.exists(plot_dir())) dir.create(plot_dir())
     pdf(file = file.path(plot_dir(), paste0("PCA_UMAP_",input$color_by,".pdf")))
     print(pca_plot())
-    print(plot_reduced_dim_scExp(scExp(), input$color_by, "UMAP"))
+    print(plot_reduced_dim_scExp(scExp(), input$color_by, "UMAP",
+                                 transparency = input$options.dotplot_transparency,
+                                 size = input$options.dotplot_size,
+                                 max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
+                                 downsample = input$options.dotplot_downsampling,
+                                 min_quantile = input$options.dotplot_min_quantile,
+                                 max_quantile = input$options.dotplot_max_quantile))
     print(pca_plot() + theme(text = element_blank(), legend.position = "none"))
-    print(plot_reduced_dim_scExp(scExp(), input$color_by, "UMAP") + theme(text = element_blank(), legend.position = "none"))
+    print(plot_reduced_dim_scExp(scExp(), input$color_by, "UMAP",
+                                 transparency = input$options.dotplot_transparency,
+                                 size = input$options.dotplot_size,
+                                 max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
+                                 downsample = input$options.dotplot_downsampling,
+                                 min_quantile = input$options.dotplot_min_quantile,
+                                 max_quantile = input$options.dotplot_max_quantile) +
+            theme(text = element_blank(), legend.position = "none"))
     if("t-SNE" %in% names(scExp()@metadata)) print(tsne_plot()  + theme(text = element_blank(),legend.position = "none"))
     dev.off()
     shiny::showNotification(paste0("Plots saved in '",plot_dir(),"' !"),
@@ -1161,7 +1216,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                    gc()
                  }
                  output$hc_heatmap_plot <- renderPlot({
-                   plot_heatmap_scExp(scExp(), color_by = annotCol())
+                   plot_heatmap_scExp(scExp(),downsample = input$options.heatmap_downsampling, color_by = annotCol())
                  })
                }
                })
@@ -1240,7 +1295,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     input$choose_cluster
   }, { # application header (tells you which data set is selected)
     req(analysis_name(), input$nclust)
-    header <- paste0('<b>Analysis : ', analysis_name(), ' - ',input$feature_select, ' - k = ', input$nclust, ' </b>')
+    header <- paste0('<b>Analysis:</b> ', analysis_name(), ' - ',input$feature_select, ' - k = ', input$nclust, ' ')
     shinyjs::html("pageHeader", header) 
   })
   
@@ -1249,7 +1304,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     filename=function(){ paste0("correlation_clustering_", input$selected_reduced_dataset, ".png")},
     content=function(file){
       grDevices::png(file, width=1200, height=1400, res=300,pointsize = 8)
-      plot_heatmap_scExp(scExp_cf())
+      plot_heatmap_scExp(scExp_cf(), downsample = input$options.heatmap_downsampling)
       grDevices::dev.off()
 
   })
@@ -1306,7 +1361,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     withProgress(message='Filtering correlated cells...', value = 0, {
       incProgress(amount=0.6, detail=paste("Filtering"))
       scExp_cf(filter_correlated_cell_scExp(scExp_cf(), random_iter = 50, corr_threshold = input$corr_threshold,
-                                            percent_correlation = input$percent_correlation))
+                                            percent_correlation = input$percent_correlation,
+                                            BPPARAM = CS_options.BPPARAM()))
       scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust), consensus = cluster_type()))
       gc()
       incProgress(amount=0.2, detail=paste("Saving"))
@@ -1441,16 +1497,11 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   observeEvent(input$do_annotated_heatmap_plot,
                {
-                 print("Doing annotated heatmap")
-                 print(scExp_cf())
-                 print(input$feature_select)
-                 print(input$nclust)
-                 
                  if(input$nclust != ""){
                    output$annotated_heatmap_UI <- renderUI({
-                     output$annotated_heatmap_plot = renderPlot(plot_heatmap_scExp(scExp_cf()))
+                     output$annotated_heatmap_plot = renderPlot(plot_heatmap_scExp(scExp_cf(), downsample = input$options.heatmap_downsampling))
                      plotOutput("annotated_heatmap_plot",width = 500,height = 500) %>%
-                       shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+                       shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75)
                  })
                }
                }
@@ -1475,7 +1526,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
      plot_intra_correlation_scExp(scExp_cf(), by = input$violin_color,
                                   jitter_by = jitter_col))
     plotly::plotlyOutput("intra_corr_plot",width = 500,height = 500) %>%
-      shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+      shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75)
     
     })
   
@@ -1496,7 +1547,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                    reference_group = input$reference_group))
     
     plotly::plotlyOutput("inter_corr_plot",width = 500,height = 500) %>%
-      shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+      shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75)
     
   })
   
@@ -1526,7 +1577,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$contingency_table_cluster <- renderUI({
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
-        shinydashboard::box(title="Samples & Cluster association table", width = NULL, status="success", solidHeader = TRUE,
+        shinydashboard::box(title=tagList(icon("th-large"), " Samples & Cluster association table"), width = NULL, status="success", solidHeader = TRUE,
             column(12, align="left", tableOutput("hcor_kable")),
             column(5,offset = 2, align="left", htmlOutput("chi_info"),br())
         )
@@ -1555,7 +1606,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
         if(input$color_by_cf %in% colnames(SingleCellExperiment::colData(scExp_cf())) ){
         p = plot_reduced_dim_scExp(scExp_cf(),input$color_by_cf, "TSNE",
                                    select_x = "Component_1",
-                                   select_y = "Component_2") +
+                                   select_y = "Component_2",
+                                   transparency = input$options.dotplot_transparency,
+                                   size = input$options.dotplot_size,
+                                   max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
+                                   downsample = input$options.dotplot_downsampling,
+                                   min_quantile = input$options.dotplot_min_quantile,
+                                   max_quantile = input$options.dotplot_max_quantile) +
           ggtitle("t-SNE")
         output$tsne_plot_cf <- renderPlot(p)
         shinydashboard::box(title="t-SNE", width = NULL, status="success", solidHeader=TRUE,
@@ -1570,7 +1627,13 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(input$color_by_cf %in% colnames(SingleCellExperiment::colData(scExp_cf())) ){
       p = plot_reduced_dim_scExp(scExp_cf(),input$color_by_cf, "UMAP",
                                  select_x = "Component_1",
-                                 select_y = "Component_2")
+                                 select_y = "Component_2",
+                                 transparency = input$options.dotplot_transparency,
+                                 size = input$options.dotplot_size,
+                                 max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
+                                 downsample = input$options.dotplot_downsampling,
+                                 min_quantile = input$options.dotplot_min_quantile,
+                                 max_quantile = input$options.dotplot_max_quantile)
       p
     }
   })
@@ -1590,7 +1653,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$UMAP_box <- renderUI({
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf())) ){
-        shinydashboard::box(title="UMAP", width = NULL, status="success", solidHeader = TRUE,
+        shinydashboard::box(title= tagList(shiny::icon("fas fa-image"), " UMAP"), width = NULL, status="success", solidHeader = TRUE,
                             column(4, align="left",
                                    selectInput("color_by_cf", "Color by",
                                                selected = annotCol_cf()[max(grep("cluster",annotCol_cf())[1],1)],
@@ -1609,7 +1672,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     pdf(file = file.path(plot_dir(), paste0("UMAP_heatmap_",input$color_by_cf,".pdf")))
     print(umap_p_cf())
     print(umap_p_cf() + theme(text = element_blank(), legend.position = "none"))
-    plot_heatmap_scExp(isolate(scExp_cf()))
+    plot_heatmap_scExp(isolate(scExp_cf()), downsample = input$options.heatmap_downsampling)
     dev.off()
     shiny::showNotification(paste0("Plots saved in '",plot_dir(),"' !"),
                             duration = 15, closeButton = TRUE, type="message")
@@ -1621,7 +1684,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
     if(! is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
         if(!grepl("counts",input$color_by_cf)){
-          shinydashboard::box(title=tagList("Color settings ", shiny::icon("palette")),collapsible = TRUE, collapsed = TRUE,
+          shinydashboard::box(title=tagList(shiny::icon("palette"), " Color settings "),collapsible = TRUE, collapsed = TRUE,
                               width = NULL, status = "success", solidHeader = TRUE,
                               column(6, htmlOutput("color_picker_cf")),
                               column(4 , br(), actionButton("col_reset_cf", "Default colours", icon = icon("undo")),
@@ -1824,7 +1887,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
       if(display_coverage_plot()){
         shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
                             column(12, align="left", plotOutput("coverage_region_plot") %>%
-                                     shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)),
+                                     shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75)),
                             column(3, actionButton("save_plots_coverage", "Save HQ plot", icon =  icon("fa-picture-o")))) 
       }
     }
@@ -2190,7 +2253,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   output$selected_k <- renderUI({
     req(scExp_cf())
     n = as.character(dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster))
-    HTML(paste0("<h3><b>Number of clusters selected  = ", n,"</b></h3>"))
+    HTML(paste0("<h5><b>Number of clusters selected  = ", n,"</b></h5>"))
   })
   # output$only_contrib_cell_ui <- renderUI({
   #   if("icl" %in% names(scExp_cf()@metadata) && !is.null(scExp_cf()@metadata$icl)){
@@ -2343,7 +2406,8 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
                                            block = block,
                                            group = group,
                                            ref = ref,
-                                           progress = progress)) 
+                                           progress = progress,
+                                           BPPARAM = CS_options.BPPARAM())) 
       gc()
       data = list("scExp_cf" = getMainExperiment(scExp_cf()))
       DA_GSA_suffix = input$de_type
@@ -2823,12 +2887,16 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
   
   gene_umap_p <- reactive({
     req(input$gene_sel)
-    print("gene_umap_p()")
-    print(input$gene_sel)
-    print("input$gene_sel %in% scExp_cf")
-    print(input$gene_sel %in% SummarizedExperiment::rowRanges(scExp_cf())$Gene)
-      p <- plot_reduced_dim_scExp(scExp_cf(), color_by = input$gene_sel,  reduced_dim = "UMAP")
-      print(p)
+      p <- plot_reduced_dim_scExp(scExp_cf(),
+                                  color_by = input$gene_sel,
+                                  reduced_dim = "UMAP",
+                                  transparency = input$options.dotplot_transparency,
+                                  size = input$options.dotplot_size,
+                                  max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
+                                  downsample = input$options.dotplot_downsampling,
+                                  min_quantile = input$options.dotplot_min_quantile,
+                                  max_quantile = input$options.dotplot_max_quantile
+                                  )
       p
   })
   
@@ -2841,7 +2909,7 @@ shinyhelper::observe_helpers(help_dir = "www/helpfiles",withMathJax = TRUE)
           gene_umap_p()
       })
       shiny::plotOutput("gene_umap_plot") %>% 
-        shinycssloaders::withSpinner(type=8,color="#0F9D58",size = 0.75)
+        shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75)
 
   })
   

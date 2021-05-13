@@ -1,31 +1,33 @@
-.sidebar {
-  color: #FFF;
-  position: fixed;
-  width: 220px;
-  white-space: nowrap;
-  overflow: visible;
+.skin-blue .user-panel>.info,
+.skin-blue .user-panel>.info>a {
+ color: #434C5E !important;
 }
 
-.main-header {
-  position: fixed;
-  width:100%;
+.skin-blue .user-panel {
+    padding: 10px;
+        padding-left: 3px;
 }
 
+.user-panel .img-circle {
+    border-radius: 0%;
+}
 .content {
   padding-top: 60px;
 }
 
 a.disabled {
-background-color: #777;
+background-color: #5564858B;
 border-left:#222d32;
 cursor: default;
 }
+
 a.disabled:hover{
-background-color: #777 !important;
+background-color: #5564858B !important;
 color:#b8c7ce  !important;
 border-left:#222d32  !important;
 cursor: default  !important;
 }
+
 figure { text-align: center }
 
 .loader {
@@ -42,3 +44,6 @@ figure { text-align: center }
   100% { transform: rotate(360deg); }
 }
 
+.body{
+  font-family: sans-serif;
+}
