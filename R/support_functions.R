@@ -107,8 +107,8 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL,
 {
     res = featureTab
     for (k in seq_along(groups)){
-    if (length(ref_group) == 1) refsamp <- ref_group[[1]] 
-    else refsamp <- ref_group[[k]]
+    if (length(ref_group) == 1) refsamp <- ref_group[[1]] else
+        refsamp <- ref_group[[k]]
     
     gpsamp <- groups[[k]]
     refidx = match(refsamp,colnames(dataMat))
@@ -122,19 +122,27 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL,
                                  rep(2, length(gpidx)))),
             block = annot.$batch_id[c(refidx, gpidx)],
             BPPARAM = BPPARAM)
+        
         pval.gpsamp <- testWilc$statistics[[1]]$p.value
     } else
     {
- 
-        testWilc <- scran::pairwiseWilcox(
-            dataMat[,c(refidx, gpidx)],
-            groups = as.factor(c(rep(1, length(refidx)),
-                                 rep(2, length(gpidx)))),
-            BPPARAM = BPPARAM)
-        pval.gpsamp <- testWilc$statistics[[1]]$p.value
+        dataMat = t(dataMat)
+        
+        system.time({
+            testWilc =  DelayedArray::blockApply(
+                dataMat,
+                grid = DelayedArray::colAutoGrid(dataMat, ncol = 1000),
+                BPPARAM = BPPARAM,
+                function(X, gpidx, refidx){
+                    matrixTests::col_wilcoxon_twosample(X[gpidx,], X[refidx,])
+                }, gpidx, refidx)
+        })
+        testWilc = do.call("rbind", testWilc)
+        pval.gpsamp <- testWilc$pvalue
     }
     
     qval.gpsamp <- stats::p.adjust(pval.gpsamp, method = "BH")
+    dataMat = t(dataMat)
     Count.gpsamp <- rowMeans(dataMat[,gpidx])
     Count.refsamp <- rowMeans(dataMat[,refidx])
     cdiff.gpsamp <- log(Count.gpsamp/Count.refsamp,2)
@@ -154,6 +162,7 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL,
     }
     res
 }
+
 
 #' Creates a summary table with the number of genes under- or overexpressed in
 #' each group and outputs several graphical representations

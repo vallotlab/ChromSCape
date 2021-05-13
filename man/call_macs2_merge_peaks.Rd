@@ -23,7 +23,7 @@ information}
 
 \item{format}{File format, either "scBAM" or "scBED"}
 
-\item{ref}{Reference genome}
+\item{ref}{Reference genome to get chromosome information from.}
 
 \item{peak_distance_to_merge}{Distance to merge peaks}
 }

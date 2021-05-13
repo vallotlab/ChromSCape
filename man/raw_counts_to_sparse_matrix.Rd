@@ -18,7 +18,8 @@ raw_counts_to_sparse_matrix(
   extendPromoter = 2500,
   verbose = TRUE,
   ref = c("hg38", "mm10")[1],
-  progress = NULL
+  progress = NULL,
+  BPPARAM = BiocParallel::bpparam()
 )
 }
 \arguments{
@@ -46,6 +47,10 @@ downstream of TSS (2500).}
 \item{ref}{reference genome to use (hg38)}
 
 \item{progress}{Progress object for Shiny}
+
+\item{BPPARAM}{BPPARAM object for multiprocessing. See
+\link[BiocParallel]{bpparam} for more informations. Will take the default
+BPPARAM set in your R session.}
 }
 \value{
 A sparse matrix of features x cells

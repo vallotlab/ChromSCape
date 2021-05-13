@@ -4,12 +4,16 @@
 \alias{bams_to_matrix_indexes}
 \title{Count bam files on interval to create count indexes}
 \usage{
-bams_to_matrix_indexes(dir, which, progress, n_samp_progress)
+bams_to_matrix_indexes(dir, which, BPPARAM = BiocParallel::bpparam())
 }
 \arguments{
 \item{dir}{A directory containing single cell  BAM files and BAI files}
 
 \item{which}{Genomic Range on which to count}
+
+\item{BPPARAM}{BPPARAM object for multiprocessing. See
+\link[BiocParallel]{bpparam} for more informations. Will take the default
+BPPARAM set in your R session.}
 }
 \value{
 A list containing a "feature index" data.frame and a

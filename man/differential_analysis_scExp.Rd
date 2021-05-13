@@ -13,6 +13,8 @@ differential_analysis_scExp(
   block = NULL,
   group = NULL,
   ref = NULL,
+  prioritize_genes = nrow(scExp) > 20000,
+  max_distanceToTSS = 10000,
   progress = NULL,
   BPPARAM = BiocParallel::bpparam()
 )
@@ -45,6 +47,10 @@ column data.frame. The name of the column is the group name and the values
 are character either cluster ("C1", "C2", ...) or sample_id.}
 
 \item{progress}{A shiny Progress instance to display progress bar.}
+
+\item{BPPARAM}{BPPARAM object for multiprocessing. See
+\link[BiocParallel]{bpparam} for more informations. Will take the default
+BPPARAM set in your R session.}
 }
 \value{
 Returns a SingleCellExperiment object containing a differential list.

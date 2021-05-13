@@ -4,7 +4,14 @@
 \alias{find_top_features}
 \title{Find most covered features}
 \usage{
-find_top_features(scExp, n = 20000, keep_others = TRUE, verbose = TRUE)
+find_top_features(
+  scExp,
+  n = 20000,
+  keep_others = FALSE,
+  prioritize_genes = FALSE,
+  max_distanceToTSS = 10000,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{n}{Either an integer indicating the number of top covered regions to
@@ -13,6 +20,12 @@ find or a character vector of the top percentile of features to keep (e.g.
 
 \item{keep_others}{Logical indicating if non-top regions are to be removed
 from the SCE or not (FALSE).}
+
+\item{prioritize_genes}{First filter by loci being close to genes ? E.g. for
+differential analysis, it is more relevant to keep features close to genes}
+
+\item{max_distanceToTSS}{If prioritize_genes is TRUE, the maximum distance to
+consider a feature close to a gene.}
 
 \item{verbose}{Print ?}
 }

@@ -11,7 +11,8 @@ DA_pairwise(
   method,
   feature,
   block,
-  progress = NULL
+  progress = NULL,
+  BPPARAM = BiocParallel::bpparam()
 )
 }
 \arguments{
@@ -29,6 +30,10 @@ columns}
 \item{block}{Blocking feature}
 
 \item{progress}{A shiny Progress instance to display progress bar.}
+
+\item{BPPARAM}{BPPARAM object for multiprocessing. See
+\link[BiocParallel]{bpparam} for more informations. Will take the default
+BPPARAM set in your R session.}
 }
 \value{
 A list of results, groups compared and references

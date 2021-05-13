@@ -37,7 +37,10 @@
 #' column data.frame. The name of the column is the group name and the values
 #' are character either cluster ("C1", "C2", ...) or sample_id.
 #' @param progress A shiny Progress instance to display progress bar. 
-#'
+#' @param BPPARAM BPPARAM object for multiprocessing. See
+#'  \link[BiocParallel]{bpparam} for more informations. Will take the default
+#'  BPPARAM set in your R session.
+#'  
 #' @return Returns a SingleCellExperiment object containing a differential list.
 #' @export
 #'
@@ -52,31 +55,50 @@
 #' 
 differential_analysis_scExp = function(
     scExp, de_type = "one_vs_rest", method = "wilcox", qval.th = 0.01, 
-    cdiff.th = 1, block = NULL, group = NULL, ref = NULL, progress = NULL,
-    BPPARAM = BiocParallel::bpparam())
+    cdiff.th = 1, block = NULL, group = NULL, ref = NULL,
+    prioritize_genes = nrow(scExp) > 20000, max_distanceToTSS = 1000, 
+    progress = NULL, BPPARAM = BiocParallel::bpparam())
 {
     warning_DA(scExp, de_type, method, qval.th, cdiff.th, block,
                group, ref)
     if (!is.null(progress)) progress$set(detail = "Retrieving counts...", value = 0.15)
     if (isFALSE(block)) block = NULL
+    if(prioritize_genes){
+        message("ChromSCape::differential_analysis_scExp - Large number of loci",
+                " detected, selecting features closest to ", max_distanceToTSS,
+                "bp from genes TSS only.")
+        scExp = find_top_features(
+            scExp,
+            n =  nrow(scExp),
+            keep_others = TRUE,
+            prioritize_genes = TRUE,
+            max_distanceToTSS = max_distanceToTSS)
+    }
     if(method != "custom")
         nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
-    if(method == "wilcox"){counts = SingleCellExperiment::normcounts(scExp)
-    } else{counts = SingleCellExperiment::counts(scExp)}
-    feature <- as.data.frame(SummarizedExperiment::rowRanges(scExp))
+    if(method == "wilcox"){
+        counts = SingleCellExperiment::normcounts(
+            scExp[SingleCellExperiment::rowData(scExp)$top_feature,])
+    } else{
+        counts = SingleCellExperiment::counts(
+            scExp[SingleCellExperiment::rowData(scExp)$top_feature,])
+        }
+    feature <- as.data.frame(SummarizedExperiment::rowRanges(
+        scExp[SingleCellExperiment::rowData(scExp)$top_feature,]))
     feature = data.frame(ID = feature[, "ID"], chr = feature[, "seqnames"],
         start = feature[, "start"], end = feature[, "end"])
     affectation = as.data.frame(SingleCellExperiment::colData(scExp))
     diff = list(res = NULL, summary = NULL, groups = NULL, refs = NULL)
     if (de_type == "one_vs_rest"){
         out <- DA_one_vs_rest_fun(affectation, nclust, counts,
-                                method, feature, block, progress)
+                                method, feature, block, progress,
+                                BPPARAM = BPPARAM)
     } else if(de_type == "pairwise"){
         out <- DA_pairwise(affectation,nclust, counts, method, feature, block,
-                           progress)
+                           progress, BPPARAM = BPPARAM)
     } else if(de_type == "custom"){
         out <- DA_custom(affectation, counts, method, feature, block,
-                         ref, group, progress)
+                         ref, group, progress, BPPARAM = BPPARAM)
     }
     if (!is.null(progress)) progress$inc(
         detail = paste0("Generating differential table..."), amount = 0.1)
@@ -156,7 +178,10 @@ warning_DA <- function(scExp, de_type, method, qval.th, cdiff.th, block,
 #' @param feature Feature tables
 #' @param block Blocking feature
 #' @param progress A shiny Progress instance to display progress bar. 
-#' 
+#' @param BPPARAM BPPARAM object for multiprocessing. See
+#'  \link[BiocParallel]{bpparam} for more informations. Will take the default
+#'  BPPARAM set in your R session.
+#'  
 #' @return A list of results, groups compared and references
 #'   
 DA_one_vs_rest_fun <- function(affectation,nclust, counts, method, feature,
@@ -211,17 +236,21 @@ DA_one_vs_rest_fun <- function(affectation,nclust, counts, method, feature,
 #' @param method DA method, Wilcoxon or edgeR
 #' @param block Blocking feature
 #' @param progress A shiny Progress instance to display progress bar. 
-#' 
+#' @param BPPARAM BPPARAM object for multiprocessing. See
+#'  \link[BiocParallel]{bpparam} for more informations. Will take the default
+#'  BPPARAM set in your R session.
+#'  
 #' @return A list of results, groups compared and references
 #'
 DA_pairwise <- function(affectation,nclust, counts,
-                        method, feature, block, progress = NULL){
+                        method, feature, block, progress = NULL,
+                        BPPARAM = BiocParallel::bpparam()){
     stopifnot(is.data.frame(affectation),is.integer(nclust),
                 is(counts,"dgCMatrix")|is.matrix(counts), is.character(method),
                 is.data.frame(feature))
     res = feature
     out <- run_pairwise_tests(affectation, nclust, counts,feature, method,
-                              progress = progress)
+                              progress = progress, BPPARAM = BPPARAM)
     if (!is.null(progress)) progress$inc(detail = "Merging results...",
                                          amount = 0.1)
     count_save <- out$count_save
@@ -266,7 +295,10 @@ DA_pairwise <- function(affectation,nclust, counts,
 #' @param feature Feature tables
 #' @param block Blocking feature
 #' @param progress A shiny Progress instance to display progress bar. 
-#'
+#' @param BPPARAM BPPARAM object for multiprocessing. See
+#'  \link[BiocParallel]{bpparam} for more informations. Will take the default
+#'  BPPARAM set in your R session.
+#'  
 #' @return A list of results, groups compared and references
 #'   
 DA_custom <- function(affectation, counts, method, feature,
@@ -319,7 +351,10 @@ DA_custom <- function(affectation, counts, method, feature,
 #' @param feature Feature data.frame
 #' @param method DA method, Wilcoxon or edgeR
 #' @param progress A shiny Progress instance to display progress bar. 
-#' 
+#' @param BPPARAM BPPARAM object for multiprocessing. See
+#'  \link[BiocParallel]{bpparam} for more informations. Will take the default
+#'  BPPARAM set in your R session.
+#'  
 #' @return A list containing objects for DA function
 #'
 run_pairwise_tests <- function(affectation, nclust, counts, 

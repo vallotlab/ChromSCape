@@ -180,13 +180,13 @@ get_color_dataframe_from_input <- function(
 #' 
 plot_reduced_dim_scExp <- function(
     scExp, color_by = "sample_id", reduced_dim = c("PCA", "TSNE", "UMAP"),
-    select_x = "Component_1", select_y = "Component_2", downsample = 5000, 
+    select_x = NULL, select_y = NULL, downsample = 5000, 
     transparency = 0.6,  size = 1, max_distanceToTSS = 1000,
     annotate_clusters = "cell_cluster" %in% colnames(colData(scExp)),
     min_quantile = 0.01, max_quantile = 0.99)
 {
     warning_plot_reduced_dim_scExp(scExp, color_by , reduced_dim,
-                                   select_x, select_y, downsample, transparency,
+                                   downsample, transparency,
                                    size, max_distanceToTSS,
                                    annotate_clusters,
                                    min_quantile, max_quantile)
@@ -225,6 +225,9 @@ plot_reduced_dim_scExp <- function(
     plot_df = as.data.frame(
         cbind(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]), 
               annot))
+    if(is.null(select_x)) select_x = colnames(plot_df)[1]
+    if(is.null(select_y)) select_y = colnames(plot_df)[2]
+    
     plot_df = plot_df %>% dplyr::mutate("transparency" = transparency) %>%
         dplyr::mutate("transparency" = base::I(.data[["transparency"]]))
     plot_df = plot_df %>% 
@@ -300,13 +303,12 @@ plot_reduced_dim_scExp <- function(
 #' @return Warning or errors if the inputs are not correct
 #' 
 warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
-                                           select_x, select_y, downsample,
+                                           downsample,
                                            transparency, size, max_distanceToTSS,
                                            annotate_clusters,
                                            min_quantile, max_quantile){
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(color_by),
-              is.character(reduced_dim), is.character(select_x),
-              is.character(select_y), is.numeric(downsample),
+              is.character(reduced_dim), is.numeric(downsample),
               is.numeric(transparency), is.numeric(size),
               is.logical(annotate_clusters), is.numeric(max_distanceToTSS),
               is.numeric(min_quantile), is.numeric(max_quantile))
@@ -314,16 +316,6 @@ warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
         stop(paste0("ChromSCape::plot_reduced_dim_scExp - ", reduced_dim[1],
                     " is not present in object, please run normalize_scExp ",
                     "first."))
-    if (!select_x %in% 
-        colnames(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]))) 
-        stop(paste0("ChromSCape::plot_reduced_dim_scExp - select_x must be ",
-                    "present in colnames of PCA of scExp."))
-    
-    if (!select_y %in% 
-        colnames(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]))) 
-        stop(paste0("ChromSCape::plot_reduced_dim_scExp - select_y must be",
-                    " present in colnames of PCA of scExp."))
-    
     if (!color_by %in% colnames(SingleCellExperiment::colData(scExp))) {
         genes = unique(
             unlist(strsplit(SummarizedExperiment::rowRanges(scExp)$Gene,

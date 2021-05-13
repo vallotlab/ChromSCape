@@ -30,6 +30,10 @@ columns}
 
 \item{progress}{A shiny Progress instance to display progress bar.}
 
+\item{BPPARAM}{BPPARAM object for multiprocessing. See
+\link[BiocParallel]{bpparam} for more informations. Will take the default
+BPPARAM set in your R session.}
+
 \item{nclust}{Number of clusters}
 }
 \value{

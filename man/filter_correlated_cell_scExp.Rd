@@ -4,15 +4,10 @@
 \alias{filter_correlated_cell_scExp}
 \title{Filter lowly correlated cells}
 \usage{
-filter_correlated_cell_scExp(
-  scExp,
-  random_iter = 5,
-  corr_threshold = 99,
-  percent_correlation = 1,
-  downsample = 2500,
-  verbose = TRUE,
-  BPPARAM = BiocParallel::bpparam()
-)
+filter_correlated_cell_scExp(scExp, random_iter = 5,
+corr_threshold = 99, percent_correlation = 1,
+downsample = 2500, verbose = TRUE, n_process = 250,
+BPPARAM = BiocParallel::bpparam())
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment object containing 'Cor', a correlation
@@ -32,7 +27,12 @@ threshold ? (2500)}
 
 \item{verbose}{Print messages ?  (TRUE)}
 
-\item{run_tsne}{Re-run tsne ? (FALSE)}
+\item{n_process}{Number of cell to proceed at a time. Increase this number to
+increase speed at memory cost}
+
+\item{BPPARAM}{BPPARAM object for multiprocessing. See
+\link[BiocParallel]{bpparam} for more informations. Will take the default
+BPPARAM set in your R session.}
 }
 \value{
 Returns a SingleCellExperiment object without lowly correlated cells.

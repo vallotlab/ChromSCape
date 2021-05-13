@@ -10,7 +10,8 @@ import_count_input_files(
   which,
   ref,
   verbose,
-  progress
+  progress,
+  BPPARAM = BiocParallel::bpparam()
 )
 }
 \arguments{
@@ -19,6 +20,10 @@ import_count_input_files(
 \item{ref}{Reference genome}
 
 \item{verbose}{Print ?}
+
+\item{BPPARAM}{BPPARAM object for multiprocessing. See
+\link[BiocParallel]{bpparam} for more informations. Will take the default
+BPPARAM set in your R session.}
 
 \item{files_dir}{A named list of directories containing the input files}
 }

@@ -79,13 +79,22 @@ correlation_and_hierarchical_clust_scExp <- function(
 #'
 #' @return Returns a SingleCellExperiment object without lowly correlated cells.
 #'   The calculated correlation score limit threshold is saved in metadata.
+#' 
 #' @export
-#'
+#' 
+#' @usage filter_correlated_cell_scExp(scExp, random_iter = 5,
+#' corr_threshold = 99, percent_correlation = 1,
+#' downsample = 2500, verbose = TRUE, n_process = 250,
+#' BPPARAM = BiocParallel::bpparam())
+#'  
 #' @importFrom SingleCellExperiment reducedDim
 #' @importFrom Matrix t
 #' @importFrom Rtsne Rtsne
 #' @importFrom stats cor hclust as.dist
-#'
+#' @param BPPARAM BPPARAM object for multiprocessing. See
+#'  \link[BiocParallel]{bpparam} for more informations. Will take the default
+#'  BPPARAM set in your R session.
+#'  
 #' @examples
 #' data("scExp")
 #' dim(scExp)
@@ -291,10 +300,10 @@ num_cell_before_cor_filt_scExp <- function(scExp)
 intra_correlation_scExp <- function(scExp_cf, by = c("sample_id",
                                                      "cell_cluster")[1]){
     stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(by))
-    if (is.null(SingleCellExperiment::reducedDim(scExp, "Cor")))
+    if (is.null(SingleCellExperiment::reducedDim(scExp_cf, "Cor")))
         stop("ChromSCape::intra_correlation_scExp - 
                 No correlation, run correlation_and_hierarchical_clust_scExp")
-    if (is.null(SingleCellExperiment::reducedDim(scExp, "PCA")))
+    if (is.null(SingleCellExperiment::reducedDim(scExp_cf, "PCA")))
         stop("ChromSCape::intra_correlation_scExp - No PCA, 
                 run reduced_dim before filtering.")
     
@@ -337,10 +346,10 @@ inter_correlation_scExp <- function(
     reference_group = unique(scExp_cf[[by]])[1],
     other_groups = unique(scExp_cf[[by]])){
     stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(by))
-    if (is.null(SingleCellExperiment::reducedDim(scExp, "Cor")))
+    if (is.null(SingleCellExperiment::reducedDim(scExp_cf, "Cor")))
         stop("ChromSCape::inter_correlation_scExp - 
                 No correlation, run correlation_and_hierarchical_clust_scExp")
-    if (is.null(SingleCellExperiment::reducedDim(scExp, "PCA")))
+    if (is.null(SingleCellExperiment::reducedDim(scExp_cf, "PCA")))
         stop("ChromSCape::inter_correlation_scExp - No PCA, 
                 run reduced_dim before filtering.")
     
@@ -544,7 +553,7 @@ consensus_clustering_scExp <- function(scExp, prefix = NULL, maxK = 10,
 #'   \link[stats]{cor}. ('ward.D')
 #' @param nclust Number of cluster to pick (3)
 #' @param consensus Use consensus clustering results instead of simple
-#'   hierarchical clustering ? (TRUE)
+#'   hierarchical clustering ? (FALSE)
 #'
 #' @return Returns a SingleCellExperiment object with each cell assigned to a
 #'   correlation cluster in colData.
@@ -565,7 +574,7 @@ consensus_clustering_scExp <- function(scExp, prefix = NULL, maxK = 10,
 #' scExp_cf_consensus = choose_cluster_scExp(scExp_cf,nclust=3,consensus=TRUE)
 #' table(scExp_cf_consensus$cell_cluster)
 #' 
-choose_cluster_scExp <- function(scExp, nclust = 3, consensus = TRUE, 
+choose_cluster_scExp <- function(scExp, nclust = 3, consensus = FALSE, 
                                 hc_linkage = "ward.D")
 {
     stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(nclust),

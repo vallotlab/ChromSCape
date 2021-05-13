@@ -204,8 +204,9 @@ merge_MACS2_peaks <- function(odir, class, peak_distance_to_merge, ref){
     peaks = GenomicRanges::reduce(peaks, min.gapwidth = peak_distance_to_merge, 
                                 ignore.strand = TRUE)
     
-    ref_chromosomes = GenomicRanges::GRanges(
-        eval(parse(text = paste0("ChromSCape::",ref, ".chromosomes"))))
+    eval(parse(text = paste0("data(", ref, ".chromosomes)")))
+    ref_chromosomes <- eval(parse(text = paste0("", ref, ".chromosomes")))
+    ref_chromosomes = GenomicRanges::GRanges(ref_chromosomes)
     peaks = IRanges::subsetByOverlaps(peaks, ref_chromosomes, 
                                                     ignore.strand = TRUE)
     return(peaks)

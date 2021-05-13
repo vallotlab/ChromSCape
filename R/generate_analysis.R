@@ -1,7 +1,36 @@
 ## Run a complete unsupervised analysis and create an HTML report
 
 #' Generate a complete ChromSCape analysis
-#'
+#' @usage generate_analysis(input_data_folder,
+#' analysis_name = "Analysis_1",
+#' output_directory = "./",
+#' input_data_type = c("scBED", "DenseMatrix", "SparseMatrix",
+#'                    "scBAM")[1],
+#' feature_count_on = c("bins","geneTSS","peaks")[1],
+#' feature_count_parameter = 50000,
+#' ref_genome = c("hg38","mm10")[1],
+#' run = c("filter", "CNA","cluster", "consensus","peak_call", "coverage", 
+#'        "DA", "GSA", "report")[c(1,3,6,7,8,9)],
+#' min_reads_per_cell = 1000,
+#' max_quantile_read_per_cell = 99,
+#' n_top_features = 40000,
+#' norm_type = "CPM",
+#' subsample_n = NULL,
+#' exclude_regions = NULL,
+#' n_clust = NULL,
+#' corr_threshold = 99,
+#' percent_correlation = 1,
+#' maxK = 10,
+#' qval.th = 0.1,
+#' logFC.th = 1,
+#' enrichment_qval = 0.1,
+#' doBatchCorr  = FALSE,
+#' batch_sels  = NULL,
+#' control_samples_CNA = NULL,
+#' genes_to_plot = c("Krt8","Krt5","Tgfb1", "Foxq1", "Cdkn2b",
+#'                  "Cdkn2a", "chr7:15000000-20000000")
+#' )
+#' 
 #' @param input_data_folder Directory containing the input data.
 #' @param analysis_name Name given to the analysis.
 #' @param output_directory Directory where to create the analysis and the 
@@ -114,7 +143,7 @@ generate_analysis <- function(input_data_folder,
     #### Select & Import ####
     message("ChromSCape::generate_analysis - Importing datasets ...")
     if(input_data_type == "DenseMatrix"){
-        out <- import_scExp(file_paths = list.files(input_data_folder, full.names = T))
+        out <- import_scExp(file_paths = list.files(input_data_folder, full.names = TRUE))
     } else {
         out <- rawData_to_datamatrix_annot(input_data_folder, input_data_type,
                                            feature_count_on, feature_count_parameter,
@@ -379,7 +408,7 @@ rawData_to_datamatrix_annot <- function(input_data_folder,
     {
     if(input_data_type == "DenseMatrix"){
         file_list = list.files(input_data_folder, pattern =  ".gz|.txt|.tsv")
-        tmp_list = import_scExp(file_names = basename(as.character(file_list)),
+        tmp_list = import_scExp(file_paths = basename(as.character(file_list)),
                                 path_to_matrix = file_list)
         datamatrix = tmp_list$datamatrix
         annot_raw = tmp_list$annot_raw

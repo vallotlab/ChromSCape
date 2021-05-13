@@ -7,7 +7,7 @@
 choose_cluster_scExp(
   scExp,
   nclust = 3,
-  consensus = TRUE,
+  consensus = FALSE,
   hc_linkage = "ward.D"
 )
 }
@@ -17,7 +17,7 @@ choose_cluster_scExp(
 \item{nclust}{Number of cluster to pick (3)}
 
 \item{consensus}{Use consensus clustering results instead of simple
-hierarchical clustering ? (TRUE)}
+hierarchical clustering ? (FALSE)}
 
 \item{hc_linkage}{A linkage method for hierarchical clustering. See
 \link[stats]{cor}. ('ward.D')}

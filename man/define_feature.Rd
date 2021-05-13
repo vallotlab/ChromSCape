@@ -4,13 +4,11 @@
 \alias{define_feature}
 \title{Define the features on which reads will be counted}
 \usage{
-define_feature(
-  ref = c("hg38", "mm10")[1],
-  peak_file = NULL,
-  bin_width = NULL,
-  genebody = NULL,
-  extendPromoter = 2500
-)
+define_feature(ref = c("hg38","mm10")[1],
+ peak_file = NULL,
+ bin_width  = NULL,
+ genebody = FALSE,
+ extendPromoter = 2500)
 }
 \arguments{
 \item{ref}{Reference genome}
@@ -20,7 +18,7 @@ define_feature(
 \item{bin_width}{A number of bins if divinding genome into fixed width bins}
 
 \item{genebody}{A logical indicating if feature should be counted in
-genebodies and promoter}
+genebodies and promoter.}
 
 \item{extendPromoter}{Extension length before TSS (2500).}
 }

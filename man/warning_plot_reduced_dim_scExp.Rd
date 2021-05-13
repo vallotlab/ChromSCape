@@ -8,8 +8,6 @@ warning_plot_reduced_dim_scExp(
   scExp,
   color_by,
   reduced_dim,
-  select_x,
-  select_y,
   downsample,
   transparency,
   size,
@@ -26,10 +24,6 @@ warning_plot_reduced_dim_scExp(
 
 \item{reduced_dim}{Reduced Dimension used for plotting}
 
-\item{select_x}{Which variable to select for x axis}
-
-\item{select_y}{Which variable to select for y axis}
-
 \item{downsample}{Number of cells to downsample}
 
 \item{transparency}{Alpha parameter, between 0 and 1}
@@ -44,6 +38,10 @@ as quantile of cell embeddings (between 0 and 0.5).}
 
 \item{max_quantile}{The upper threshold to remove outlier cells,
 as quantile of cell embeddings (between 0.5 and 1).}
+
+\item{select_x}{Which variable to select for x axis}
+
+\item{select_y}{Which variable to select for y axis}
 }
 \value{
 Warning or errors if the inputs are not correct
