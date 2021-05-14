@@ -90,7 +90,6 @@ colors_scExp <- function(
     SummarizedExperiment::colData(
         scExp)[, paste0(annotCol, "_color")] = as.data.frame(anocol, 
                                                              stringsAsFactors = FALSE)[, annotCol]  # factor or not ?
-    
     if (!is.null(color_df))
     {
         # add custom colors
@@ -103,6 +102,18 @@ colors_scExp <- function(
                            color_df[, color_by]), paste0(color_by, "_color"),
                      drop = FALSE]
     }
+    
+    # same colors for cell_cluster & cluster + 'feature'
+    if(any(grepl("cluster_", annotCol))){
+        SummarizedExperiment::colData(scExp)[, paste0("cell_cluster_color")] =
+            SummarizedExperiment::colData(scExp)[, paste0("cluster_",mainExpName(scExp),"_color")]
+    }
+    if(any(grepl("cell_cluster", annotCol))){
+        SummarizedExperiment::colData(scExp)[, paste0("cluster_",mainExpName(scExp),"_color")] =
+            SummarizedExperiment::colData(scExp)[, "cell_cluster_color"]
+    }
+    
+    
     return(scExp)
 }
 

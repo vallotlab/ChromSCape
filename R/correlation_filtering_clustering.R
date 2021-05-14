@@ -609,11 +609,8 @@ choose_cluster_scExp <- function(scExp, nclust = 3, consensus = FALSE,
         paste0("cluster_",SingleCellExperiment::mainExpName(scExp))] =
         paste("C", cell_clusters, sep = "")
     
-    scExp = colors_scExp(
-        scExp = scExp,
-        annotCol = c("cell_cluster",
-                     paste0("cluster_",SingleCellExperiment::mainExpName(scExp)
-                            )))
+    scExp = colors_scExp(scExp = scExp, annotCol = c("cell_cluster"))
+
     return(scExp)
 }
 
