@@ -507,6 +507,7 @@ gene_set_enrichment_analysis_scExp = function(
     annotFeat_long = as.data.frame(tidyr::separate_rows(
         as.data.frame(SummarizedExperiment::rowRanges(scExp)), 
         .data$Gene, sep = ", "))
+
     enr <- combine_enrichmentTests(
         diff = scExp@metadata$diff, enrichment_qval = enrichment_qval,
         qval.th = qval.th, cdiff.th = cdiff.th, annotFeat_long = annotFeat_long,

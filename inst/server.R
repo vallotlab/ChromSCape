@@ -2475,8 +2475,10 @@ shinyServer(function(input, output, session) {
         if(input$gpsamp %in% scExp_cf()@metadata$diff$groups){
         diff = scExp_cf()@metadata$diff$res[,-grep("Rank|pval|ID",colnames(scExp_cf()@metadata$diff$res))]
         if(!is.null(SummarizedExperiment::rowRanges(scExp_cf())$Gene)){
-          diff = cbind(SummarizedExperiment::rowRanges(scExp_cf())$distanceToTSS, diff)
-          diff = cbind(SummarizedExperiment::rowRanges(scExp_cf())$Gene, diff)
+          rowD = SummarizedExperiment::rowRanges(scExp_cf())
+          rowD = rowD[which(SummarizedExperiment::rowData(scExp_cf())$top_feature)]
+          diff = cbind(rowD$distanceToTSS, diff)
+          diff = cbind(rowD$Gene, diff)
           colnames(diff)[1:2] = c("Gene","distanceToTSS")
         }
         rownames(diff) <- NULL
