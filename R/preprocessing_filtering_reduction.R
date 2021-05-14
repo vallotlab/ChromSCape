@@ -295,8 +295,11 @@ raw_counts_to_sparse_matrix <- function(
     
     if(use_Signac && requireNamespace("Signac", quietly=TRUE) &&
        file_type == "FragmentFile"){
-        out <- wrapper_Signac_FeatureMatrix(files_dir_list, which, ref,
-                                     verbose, progress)
+        out <- wrapper_Signac_FeatureMatrix(files_dir_list = files_dir_list,
+                                            which = which,
+                                            ref = ref,
+                                            verbose = verbose,
+                                            progress = progress)
     } else {
         out <- import_count_input_files(
             files_dir_list, file_type, which, ref, verbose, progress,
@@ -497,6 +500,7 @@ define_feature <- function(ref = c("hg38","mm10")[1], peak_file = NULL,
 #'  gr_bins, ref = "hg38")
 #' }
 wrapper_Signac_FeatureMatrix <- function(files_dir_list, which, ref = "hg38",
+                                         process_n = 2000,
                                          set_future_plan = TRUE, verbose = TRUE, 
                                          progress = NULL){
     
@@ -784,8 +788,8 @@ beds_to_matrix_indexes <- function(dir, which,
     names(single_cell_beds) = names_cells
 
     BiocParallel::bpprogressbar(BPPARAM) <- TRUE
-    BiocParallel::bptasks(BPPARAM) <- ceiling(length(single_cell_beds) /
-                                    (10*BiocParallel::bpworkers(BPPARAM)))
+    # BiocParallel::bptasks(BPPARAM) <- ceiling(length(single_cell_beds) /
+    #                                 (10*BiocParallel::bpworkers(BPPARAM)))
 
     system.time({
     feature_list = BiocParallel::bplapply( BPPARAM = BPPARAM,
