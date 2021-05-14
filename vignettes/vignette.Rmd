@@ -22,6 +22,8 @@ resolution, opening up perspectives to characterize the heterogeneity of
 chromatin marks in complex biological systems over time. Yet, existing tools
 used to analyze bulk histone modifications profiles are not fit for the low
 coverage and sparsity of single-cell epigenomic datasets.  
+
+![<br> <br> **ChromSCape Overview: **  The application takes as input various single-cell format and let the user filter & cluster cells, run differential analysis & gene set enrichment analysis between epigenomic subpopulations, in an unsupervised manner.](../inst/www/ChromSCape_concept.png)
   
 **ChromSCape** is a user-friendly interactive **Shiny/R application** that
 processes single-cell epigenomic data to assist the biological interpretation of
@@ -128,8 +130,6 @@ datasets :
   * scDNA methylation profiling, scRRBS, scWGBS ...
 <br>
 
-   
-![<br> <br> **ChromSCape Overview: **  The application takes as input various single-cell format and let the user filter & cluster cells, run differential analysis & gene set enrichment analysis between epigenomic subpopulations, in an unsupervised manner.](../inst/www/ChromSCape_concept.png)
 
 <br>
 After sequencing a single-cell epigenomic experiment, the raw sequencing files

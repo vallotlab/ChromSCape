@@ -1,0 +1,21 @@
+title: ChromSCape
+
+template:
+  params:
+    bootswatch: flatly
+    
+navbar:
+  title: "ChromSCape"
+  left:
+    - text: "Get started"
+      href: news/index.html
+    - text: "Examples"
+      href: news/index.html
+    - text: "Get started"
+      href: news/index.html
+    - text: "Vignettes"
+      menu:
+        - text: "Vignettes overview"
+          href: news/index.html
+    - text: "News"
+      href: news/index.html

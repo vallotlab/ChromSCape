@@ -1,4 +1,4 @@
-# ChromSCape: Analysis of single-cell epigenomics datasets with a Shiny App
+# ChromSCape
 
 ## What is ChromSCape ?
 
@@ -15,10 +15,7 @@ To install **ChromSCape**, open **R** or **Rstudio** and run the following comma
 ```
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-
-# The following initializes usage of Bioc devel
-BiocManager::install(version='devel')
-
+    
 BiocManager::install("ChromSCape")
 ```
 

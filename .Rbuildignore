@@ -1,1 +1,4 @@
 ^\.git
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
