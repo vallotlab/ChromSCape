@@ -25,13 +25,13 @@
 #'  
 get_cyto_features <- function(scExp, ref_genome = c("hg38", "mm10")[1] ){
     
-    canonical_chr <- eval(parse(text = paste0("ChromSCape::",
-                                              ref_genome, ".chromosomes")))
+    eval(parse(text = paste0("data(",ref_genome, ".chromosomes)")))
+    canonical_chr <- eval(parse(text = paste0(ref_genome, ".chromosomes")))
     canonical_chr$start = 1
     canonical_chr <- as(canonical_chr, "GRanges")
     
-    cyto <- eval(parse(text = paste0("ChromSCape::",
-                                     ref_genome, ".cytoBand")))
+    eval(parse(text = paste0("data(",ref_genome, ".cytoBand)")))
+    cyto <- eval(parse(text = paste0(ref_genome, ".cytoBand")))
         
     cyto = as(cyto,"GRanges")
     
