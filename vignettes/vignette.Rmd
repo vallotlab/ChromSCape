@@ -394,7 +394,20 @@ saved colors will be saved in the Analysis.
 
 <br>
 
-![<br> <br> **Visualize Cells: ** Visualize cells in reduced dimensions: PCA, UMAP & TSNE. Color cells by sample, batch, or total count to make sure cells are not separating due to library size only.](../inst/www/Guide_images/Step3_visualize_cells.png) 
+![<br> <br> **Visualize Cells: ** Visualize cells in reduced dimensions: PCA, UMAP & TSNE. Color cells by sample, batch, or total count to make sure cells are not separating due to library size only.](../inst/www/Guide_images/Step3_UMAP.png) 
+
+<br>
+
+A brief understanding into what features drives the main PCs is shown in the 
+'Contribution to PCA' box.  
+  
+  * In the barplot, you will get the top loci / closest genes associated to the top loci contributing to the Component of your choice. The top contributing features are taken by sorting the values of the features in the componenent of intereset (e.g. PC1, PC2…). If you observe a huge gap between the top 2-3 features and the rest, this means that very few features are driving most of the dimensionality reduction, and that other less contributing features might be hidden. This also gives you interesting features to look at in the Peak Calling & Coverage or Differential Analysis tabs.
+  
+  *  In the pie chart, the chromosome repartition of the top 100 most contributing features to the componenent of interest (e.g. PC1, PC2…) are displayed. This is used to see if there is any strong imbalance in the “chromosome contribution”, e.g. if a chromosome is contributing more than it should be. Usually, if a single chromosome has > 30% representation, this might indicate that CNVs or genetic events are happening on this chromosome, and you might want to look into more details at these events, or exclude them from the analysis (see Filter & Normalize tab)
+
+<br>
+
+![<br> <br> **Most contributing features **](../inst/www/Guide_images/Step3_contribution_to_PCA.png) 
 
 ## Cluster cells
 
@@ -449,7 +462,27 @@ Gene Set Analysis directly if you are confident in your choice of clusters.
 
 <br>
 
-![<br> <br> **Cluster Cells - results: ** Association of cells to each cluster in  a table & cluster visualization with UMAP.](../inst/www/Guide_images/Step4_table_UMAP.png)
+![<br> <br> **Cluster Cells - results: ** Cluster visualization with UMAP.](../inst/www/Guide_images/Step4_UMAP.png)
+## Inter & Intra correlation violin plots
+
+***
+
+In this box, the heterogeneity of cells in various groups (e.g. sample or 
+cluster) are displayed with two plots:
+
+- In the intra-correlation plot, the distribution of cell-to-cell Pearson
+correlation scores **within** each cluster or sample is displayed. Heterogeneous 
+groups will have lower correlation than homogeneous groups. 
+
+- In the inter-correlation plot, the distribution of cell-to-cell Pearson
+correlation scores **between** each cluster or sample is displayed. This allows to 
+understand which groups are closer to each other than other groups.
+
+For both plots, you can add a layer of information by adding the single-cell
+as jitter points on the plots. This is interesting when combining samples and
+clusters to see the repartition of conditions into the clusters.
+
+![<br> <br> **Inter/Intra correlation **](../inst/www/Guide_images/Step4_intracorrelation.png)
 
 ## Peak Calling to refine bins to gene annotation
 

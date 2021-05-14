@@ -1132,7 +1132,6 @@ shinyServer(function(input, output, session) {
                                    paste0(input$selected_reduced_dataset,".qs")),
               nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
     
-    rm(scExp.)
     rm(color_df)
     gc()
   })

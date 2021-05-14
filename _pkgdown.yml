@@ -8,14 +8,12 @@ navbar:
   title: "ChromSCape"
   left:
     - text: "Get started"
-      href: news/index.html
+      href: articles/vignette.html
     - text: "Examples"
-      href: news/index.html
-    - text: "Get started"
-      href: news/index.html
+      href: articles/vignette.html
     - text: "Vignettes"
       menu:
         - text: "Vignettes overview"
-          href: news/index.html
+          href: articles/vignette.html
     - text: "News"
       href: news/index.html
