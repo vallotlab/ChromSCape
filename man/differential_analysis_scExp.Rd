@@ -14,7 +14,7 @@ differential_analysis_scExp(
   group = NULL,
   ref = NULL,
   prioritize_genes = nrow(scExp) > 20000,
-  max_distanceToTSS = 10000,
+  max_distanceToTSS = 1000,
   progress = NULL,
   BPPARAM = BiocParallel::bpparam()
 )

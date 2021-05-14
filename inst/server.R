@@ -32,7 +32,6 @@ shinyServer(function(input, output, session) {
   }
 
   observeEvent(input$startHelp,{
-    print("Started help")
     # on click, send custom message to start help
     session$sendCustomMessage(type = 'startHelp', message = list(""))
   })
@@ -62,8 +61,6 @@ shinyServer(function(input, output, session) {
   
   observeEvent({analysis_name()},{
     init$available_reduced_datasets = get.available.reduced.datasets(analysis_name())
-    print("observeEvent({analysis_name()}")
-    print(init$available_reduced_datasets)
   })
   annotCol <- reactive({
     req(scExp())
@@ -161,8 +158,6 @@ shinyServer(function(input, output, session) {
            
            init$available_analyses <- list.dirs(path = file.path(init$data_folder, "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE)
            init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
-           print("observeEvent({ input$path_cookie}")
-           print(init$available_reduced_datasets)
          }
        }
       })
@@ -182,8 +177,6 @@ shinyServer(function(input, output, session) {
         path = file.path(init$data_folder, "ChromSCape_analyses"),
         full.names = FALSE, recursive = FALSE)
       init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
-      print("observeEvent({ input$data_folder}")
-      print(init$available_reduced_datasets)
       if(.Platform$OS.type != "windows"){
         js$save_cookie(init$data_folder)
       }
@@ -323,7 +316,6 @@ shinyServer(function(input, output, session) {
               {
                 req(input$datafile_folder)
                 if(!is.null(input$datafile_folder)){
-                  print("Retrieving sample folders")
                   datafile_folder = shinyFiles::parseDirPath(volumes, input$datafile_folder)
                   files_dir_tmp = list.dirs(datafile_folder, recursive = FALSE, full.names = TRUE)
                   names(files_dir_tmp) = basename(files_dir_tmp)
@@ -333,9 +325,7 @@ shinyServer(function(input, output, session) {
   
   output$datafile_folder_upload_UI <- renderUI({
     req(files_dir())
-    print("Inside output$datafile_folder_upload_UI")
     if(!is.null(files_dir()) & length(files_dir()) > 0 ){
-        print("Inside output$pc_upload UI... BAM")
         selectInput("sample_selection", label = "Selected samples",
                     choices = names(files_dir()), multiple = TRUE,
                     selected = names(files_dir()) )
@@ -343,13 +333,12 @@ shinyServer(function(input, output, session) {
   })
   
   output$add_to_current_analysis_checkbox_UI <- renderUI({
-    req(input$selected_analysis)
-    if(!is.null(input$selected_analysis) & length(input$selected_analysis) > 0){
+    req(input$feature_select)
+   
       materialSwitch(inputId = "add_to_current_analysis", value = FALSE,
                     label = "Add to current analysis", status = "primary") %>%
         shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                             content = "add_to_current_analysis", size = "l")
-    }
   })
   
   add_to_current_analysis_Modal <- function(failed = FALSE){
@@ -401,18 +390,28 @@ shinyServer(function(input, output, session) {
     removeModal()
   })
   
-  observeEvent(input$add_to_current_analysis,{
+  observeEvent(input$add_to_current_analysis, {
+
+    if(!is.null(input$selected_analysis) & nchar(input$selected_analysis) > 1){
     if(input$add_to_current_analysis){
-      print("Creating analysis - add_to_current_analysis_Modal")
       showModal(add_to_current_analysis_Modal())
-      print("Creating analysis - finished modal")
+    }
+    } else{
+      if(input$add_to_current_analysis) 
+        showNotification(paste0("Warning : Please create an analysis before",
+                              " adding new features..."),
+                       duration = 10, closeButton = TRUE, type="warning")
+      updateMaterialSwitch(session = session, inputId = "add_to_current_analysis", value = FALSE)
     }
   })
   
   observeEvent(input$create_analysis, {  # save new dataset
     req(input$new_analysis_name, input$annotation)
-    
+
     if(is.null(input$datafile_folder) && is.null(input$datafile_matrix)) return()
+    if(!is.null(input$datafile_folder) && is.null(input$datafile_matrix)){
+      if(is.null(files_dir())) return()
+    }
       
     datamatrix <- NULL
     annot_raw <- NULL
@@ -432,7 +431,7 @@ shinyServer(function(input, output, session) {
           progress$set(message='Creating new data set..', value = 0.1)
         
         if(type_file == "DenseMatrix" & !is.null(input$datafile_matrix)){
-          
+
           progress$inc(detail="Reading Dense Matrices", amount = 0.3)
           if(input$is_combined_mat == TRUE){
             if(length(input$datafile_matrix$name)>1){
@@ -533,7 +532,7 @@ shinyServer(function(input, output, session) {
         if(input$add_to_current_analysis){
           qs::qsave(datamatrix, file = file.path(init$data_folder, 
                                                  "ChromSCape_analyses", input$selected_analysis,
-                                                 paste0("datamatrix_",alt_name(),".qs")))
+                                                 paste0("datamatrix_",alt_name(),".qs")), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
           updateRadioButtons(
             inputId = "feature_select",
             choices = c("main", get.available.alternative.datasets(input$selected_analysis))
@@ -541,8 +540,8 @@ shinyServer(function(input, output, session) {
           alt_name("")
           updateMaterialSwitch(session = session, inputId = "add_to_current_analysis", value = FALSE)
         } else{
-          qs::qsave(datamatrix, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "datamatrix.qs"))
-          qs::qsave(annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "annot_raw.qs"))
+          qs::qsave(datamatrix, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "datamatrix.qs"), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
+          qs::qsave(annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "annot_raw.qs"), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
           init$available_analyses <- list.dirs(path = file.path(init$data_folder, "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE)
           updateSelectInput(session = session, inputId = "selected_analysis",
                             label =  "Select an Analysis:",
@@ -560,9 +559,7 @@ shinyServer(function(input, output, session) {
   })
   
   output$dropdown_feature_select_ui <- renderUI({
-    req(input$selected_analysis)
-    if(!is.null(input$selected_analysis) & input$selected_analysis != ""){
-      print(get.available.alternative.datasets(input$selected_analysis))
+    if(!is.null(input$selected_analysis) && input$selected_analysis != ""){
           shinydashboardPlus::dropdownBlock(
             id = "feature_select_dropdown",
             badgeStatus = NULL,
@@ -574,11 +571,23 @@ shinyServer(function(input, output, session) {
               label = "Select a feature",
               choices = c("main", get.available.alternative.datasets(input$selected_analysis))
             ))
+    } else {
+      shinydashboardPlus::dropdownBlock(
+        id = "feature_select_dropdown",
+        badgeStatus = NULL,
+        title = shiny::HTML(paste0("<span style='color: white'><h4> <i class='far fa-caret-square-down'",
+                                   "role='presentation' aria-label='caret-square-down icon'></i> &nbsp; Features</h4></span>")),
+        icon = NULL, # shiny::HTML(paste0("<span style='color: white'>",icon("circle"),"</span>"))
+        radioButtons(
+          inputId = "feature_select",
+          label = "Select a feature",
+          choices = c("main")
+        ))
         }
   })
   
   is_main <- reactive({
-    req(input$selected_analysis, input$feature_select)
+    req(input$feature_select)
     ifelse(input$feature_select == "main", TRUE, FALSE)
   })
   
@@ -589,7 +598,7 @@ shinyServer(function(input, output, session) {
       if(input$feature_select != "main"){
         if(input$feature_select %in% get.available.alternative.datasets(input$selected_analysis)) {
           init$datamatrix <- qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis,
-                                                 paste0("datamatrix_",input$feature_select,".qs")))
+                                                 paste0("datamatrix_",input$feature_select,".qs")), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
         } else{
           updateRadioButtons(
             inputId = "feature_select",
@@ -597,8 +606,8 @@ shinyServer(function(input, output, session) {
           )
         }
       } else{
-        init$datamatrix <- qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "datamatrix.qs"))
-        init$annot_raw <-  qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "annot_raw.qs"))
+        init$datamatrix <- qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "datamatrix.qs"), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
+        init$annot_raw <-  qs::qread(file.path(init$data_folder, "ChromSCape_analyses", input$selected_analysis, "annot_raw.qs"), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
       }
       
     }
@@ -625,10 +634,8 @@ shinyServer(function(input, output, session) {
   
   output$rename_file_UI <- renderUI({
     req(analysis_name())
-    print("Inside rename_file_UI")
     if(nrow(init$datamatrix) > 0 & nrow(init$annot_raw) > 0 ){
       sample_names = unique(init$annot_raw$sample_id)
-      print(sample_names)
       lapply(sample_names, function(i) {
         shiny::textInput(inputId = paste0("sample_", i),
                          placeholder = i,
@@ -664,8 +671,8 @@ shinyServer(function(input, output, session) {
       init$annot_raw <- annot_raw
       init$datamatrix <- datamatrix
 
-      qs::qsave(datamatrix, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "datamatrix.qs"))
-      qs::qsave(annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "annot_raw.qs"))
+      qs::qsave(datamatrix, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "datamatrix.qs"), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
+      qs::qsave(annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "annot_raw.qs"), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
       
       if(length(list.files(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering"), pattern = ".qs"))>0){
         showNotification(paste0("Please re-run analysis from filtering in order to rename downstream analysis."),
@@ -808,7 +815,7 @@ shinyServer(function(input, output, session) {
       filename_sel <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),"Filtering_Normalize_Reduce",init$available_reduced_datasets[file_index])
       
       t1 = system.time({
-        scExp. = qs::qread(filename_sel)
+        scExp. = qs::qread(filename_sel, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
         if(is.reactive(scExp.)) {
           scExp. = isolate(scExp.())
         }
@@ -854,7 +861,7 @@ shinyServer(function(input, output, session) {
     
     scExp(NULL)
     t1 = system.time({
-    scExp. = qs::qread(filename_sel)
+    scExp. = qs::qread(filename_sel, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
     if(is.reactive(scExp.)) {
       scExp. = isolate(scExp.())
     }
@@ -903,7 +910,6 @@ shinyServer(function(input, output, session) {
   feature_cov_df <- reactive ({
     req(init$datamatrix)
     df = data.frame(coverage = sort(unname(Matrix::rowSums(init$datamatrix)),decreasing = TRUE))
-    print(head(df))
     df = df[which(df$coverage>10),,drop=FALSE]
     df
   })  # used for plotting feature coverage on first page
@@ -911,7 +917,6 @@ shinyServer(function(input, output, session) {
   top_feature_min_reads =  reactive({
     req(feature_cov_df(), input$n_top_features)
     min_reads = min(feature_cov_df()$coverage[seq_len(input$n_top_features)])
-    print(min_reads)
     min_reads
   })
   
@@ -1120,12 +1125,12 @@ shinyServer(function(input, output, session) {
   
     color_df = ChromSCape:::get_color_dataframe_from_input(input,levels_selected(),input$color_by)
 
-    scExp. = colors_scExp(scExp(),annotCol = input$color_by,color_by = input$color_by, color_df = color_df)
-    scExp(getMainExperiment(scExp.))
+    scExp(colors_scExp(scExp(), annotCol = input$color_by, color_by = input$color_by, color_df = color_df))
     
-    qs::qsave(scExp, file = file.path(init$data_folder, "ChromSCape_analyses",
+    qs::qsave(getMainExperiment(scExp()), file = file.path(init$data_folder, "ChromSCape_analyses",
                                    analysis_name(), "Filtering_Normalize_Reduce",
-                                   paste0(input$selected_reduced_dataset,".qs")))
+                                   paste0(input$selected_reduced_dataset,".qs")),
+              nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
     
     rm(scExp.)
     rm(color_df)
@@ -1145,7 +1150,6 @@ shinyServer(function(input, output, session) {
   })
   
   observeEvent(input$save_plots_PCA,{
-    print('Saving plots...')
     if(!dir.exists(plot_dir())) dir.create(plot_dir())
     pdf(file = file.path(plot_dir(), paste0("PCA_UMAP_",input$color_by,".pdf")))
     print(pca_plot())
@@ -1206,11 +1210,18 @@ shinyServer(function(input, output, session) {
                                   analysis_name(), "correlation_clustering",
                                   paste0(selected_filtered_dataset(),".qs"))
                  if(file.exists(file)){
-                   data = qs::qread(file)
+                   data = qs::qread(file, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
                    scExp_cf(data$scExp_cf)
                    rm(data)
                    gc()
-
+                   print("FILLLLE")
+                   print(setdiff(get.available.alternative.datasets(input$selected_analysis),
+                                 getExperimentNames(scExp_cf())))
+                   if(length(setdiff(get.available.alternative.datasets(input$selected_analysis),
+                              getExperimentNames(scExp_cf()))) > 0 ){
+                     scExp_cf(scExp())
+                     gc()  
+                   }
                  } else {
                    scExp_cf(scExp())
                    gc()
@@ -1265,13 +1276,12 @@ shinyServer(function(input, output, session) {
                                     paste0(selected_filtered_dataset(),".qs"))
                    if(!file.exists(file)){
                      data = list("scExp_cf" = getMainExperiment(scExp_cf()))
-                     qs::qsave(data,file=file )
+                     qs::qsave(data,file=file, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
                      rm(data)
                      gc()
                    }
                    odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$nclust))
                    if(file.exists(file.path(odir,"refined_annotation.qs"))){
-                     print("Loading refined annotation")
                      # Loading refined peak annotation
                      scExp_cf. = scExp_cf()
                      scExp_cf.@metadata[["refined_annotation"]] = qs::qread(file = file.path(odir, "refined_annotation.qs"))
@@ -1281,7 +1291,6 @@ shinyServer(function(input, output, session) {
                      
                      if("refined_annotation" %in% names(scExp_cf()@metadata)){
                        # Reset any refined annotation found with other nclust
-                       print("Resetting refined annotation")
                        scExp_cf. = scExp_cf()
                        scExp_cf.@metadata[["refined_annotation"]] <- NULL
                        scExp_cf(scExp_cf.)
@@ -1368,7 +1377,7 @@ shinyServer(function(input, output, session) {
       incProgress(amount=0.2, detail=paste("Saving"))
       data = list("scExp_cf" = getMainExperiment(scExp_cf()))
       qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
-                                              paste0(input$selected_reduced_dataset, ".qs")))
+                                              paste0(input$selected_reduced_dataset, ".qs")), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
       incProgress(amount=0.2, detail=paste("Finished"))
       rm(data)
       gc()
@@ -1460,7 +1469,7 @@ shinyServer(function(input, output, session) {
       progress$set(value = 0.7)
       data = list("scExp_cf" = getMainExperiment(scExp_cf()))
       qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering",
-                                  paste0(input$selected_reduced_dataset, ".qs")))
+                                  paste0(input$selected_reduced_dataset, ".qs")), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
       rm(data)
       gc()
       clust$clust_pdf <- NULL  # needed in order to update the pdf output
@@ -1552,7 +1561,6 @@ shinyServer(function(input, output, session) {
   })
   
   observeEvent(input$save_plots_violins,{
-    print('Saving plots...')
     if(!dir.exists(plot_dir())) dir.create(plot_dir())
     if(input$add_jitter) jitter_col = input$jitter_color else jitter_col = NULL
     pdf(file = file.path(plot_dir(), paste0("violins_intra_inter_correlation.pdf")))
@@ -1667,7 +1675,6 @@ shinyServer(function(input, output, session) {
   })
   
   observeEvent(input$save_plots_COR,{
-    print('Saving plots...')
     if(!dir.exists(plot_dir())) dir.create(plot_dir())
     pdf(file = file.path(plot_dir(), paste0("UMAP_heatmap_",input$color_by_cf,".pdf")))
     print(umap_p_cf())
@@ -1771,8 +1778,6 @@ shinyServer(function(input, output, session) {
   list_dirs_coverage = reactive({
     req(coverage_folder())
     if(!is.null(coverage_folder())){
-      print("list_dirs_coverage")
-      print(setNames(list.dirs(coverage_folder(), full.names = TRUE, recursive = FALSE), basename(list.dirs(coverage_folder(), recursive = FALSE))))
       setNames(list.dirs(coverage_folder(), full.names = TRUE, recursive = FALSE), basename(list.dirs(coverage_folder(), recursive = FALSE)))
     }
   })
@@ -1788,9 +1793,6 @@ shinyServer(function(input, output, session) {
   
   output$coverage_upload <- renderUI({
     req(list_files_coverage(),  list_dirs_coverage())
-    print("Inside output$coverage_upload UI")
-    print(head(list_files_coverage()))
-    print(list_dirs_coverage())
     if(!is.null(list_files_coverage())){
         dirs = basename(list_dirs_coverage())
         selectInput("coverage_selection", label = "Selected samples:",
@@ -1804,10 +1806,8 @@ shinyServer(function(input, output, session) {
   
   observe({
     req(input$tabs, scExp_cf(), input$nclust, analysis_name(), selected_filtered_dataset())
-    print("Observing has_available_coverage 1 ...")
-    
+
     if(input$tabs == "coverage"){
-      print("Observing has_available_coverage 2...")
       if(!is.null(scExp_cf())){
         nclust = input$nclust
         odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
@@ -1831,8 +1831,6 @@ shinyServer(function(input, output, session) {
         warning("Can't find any input BED files.")
         return()
       }
-    print(list_dirs_coverage())
-    print(input$coverage_selection)
     input_files_coverage = lapply(list_dirs_coverage()[input$coverage_selection], function(i) list.files(i, full.names = TRUE, pattern = ".bed|.bed.gz"))
     names(input_files_coverage) = basename(list_dirs_coverage()[input$coverage_selection])
     
@@ -1862,8 +1860,6 @@ shinyServer(function(input, output, session) {
   
   output$coverage_UI <- renderUI({
     req(GenePool(),has_available_coverage())
-    print("Inside output$coverage_UI ... ")
-    print("Inside output$coverage_UI ... 2 ")
     s <- shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
                              column(3, align="left", selectizeInput(inputId = "select_cov_gene", "Select gene:", choices = NULL, selected = 1)),
                              column(2, align="left", selectInput("cov_chr","Chromosome", choices = unique(as.character(seqnames(rowRanges(scExp_cf())))))),
@@ -1871,7 +1867,6 @@ shinyServer(function(input, output, session) {
                              column(2, align="left", textInput("cov_end","End", 16000000)),
                              column(2, align="left", actionButton("make_plot_coverage", "Plot Coverage", icon = icon("chart-area"))),
                              column(12, align="left", textOutput("top_genes")))
-    print("Inside output$coverage_UI ... 3")
     updateSelectizeInput(session = session,
                          inputId = 'select_cov_gene',
                          choices = GenePool(),
@@ -1882,7 +1877,6 @@ shinyServer(function(input, output, session) {
   
   output$coverage_plot_UI <- renderUI({
     req(GenePool(), has_available_coverage(), display_coverage_plot())
-    print("Inside output$coverage_UI ... ")
     if(has_available_coverage()){
       if(display_coverage_plot()){
         shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
@@ -1896,7 +1890,6 @@ shinyServer(function(input, output, session) {
   
   GenePool <- reactive({
     req(annotation_id())
-    print("Inside GenePool reactive ...")
     eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
     GenePool = unique(eval(parse(text = paste0("", annotation_id(), ".GeneTSS$Gene"))))
     c("Enter Gene...", GenePool)
@@ -1943,8 +1936,6 @@ shinyServer(function(input, output, session) {
     req(input$cov_chr, has_available_coverage(),
         scExp_cf(), coverages(), annotation_id())
     if(input$select_cov_gene != "Enter Gene..."){
-      print("Uploading Gene selection")
-      
       eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
       gene_annot = eval(parse(text = paste0(annotation_id(), ".GeneTSS")))
       updateSelectInput(session, "cov_chr", selected = gene_annot$chr[which(gene_annot$Gene == input$select_cov_gene)])
@@ -1960,7 +1951,6 @@ shinyServer(function(input, output, session) {
       peaks = rtracklayer::import.bed(file.path(odir, "merged_peaks.bed"))
     } else{peaks = NULL}
     
-    print("input$make_plot_coverage")
     output$coverage_region_plot <- renderPlot({
       plot_coverage_BigWig(
         coverages(), 
@@ -1975,7 +1965,6 @@ shinyServer(function(input, output, session) {
   })
   
   observeEvent(input$save_plots_coverage, {
-    print('Saving plots...')
     label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
     nclust = input$nclust
     odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
@@ -2058,8 +2047,6 @@ shinyServer(function(input, output, session) {
   list_dirs_pc = reactive({
     req(pc_folder())
     if(!is.null(pc_folder())){
-      print("list_dirs_pc")
-      print(setNames(list.dirs(pc_folder(), full.names = TRUE, recursive = FALSE), basename(list.dirs(pc_folder(), recursive = FALSE))))
       setNames(list.dirs(pc_folder(), full.names = TRUE, recursive = FALSE), basename(list.dirs(pc_folder(), recursive = FALSE)))
     }
   })
@@ -2068,9 +2055,6 @@ shinyServer(function(input, output, session) {
     req(list_files_pc())
     nBAMs = length(grep(".*.bam$", list_files_pc()))
     nBEDs = length(grep(".*.bed.gz$|.*.bed$", list_files_pc()))
-    print("is bam or bed ?")
-    print(nBAMs)
-    print(nBEDs)
     ifelse(nBAMs>nBEDs,"BAM","BED")
   })
   
@@ -2086,7 +2070,6 @@ shinyServer(function(input, output, session) {
   
   output$pc_upload <- renderUI({
     req(list_files_pc(), bam_or_bed(), list_dirs_pc())
-    print("Inside output$pc_upload UI")
     if(!is.null(list_files_pc()) & !is.null(bam_or_bed())){
       if(bam_or_bed() == "BAM") {
         files = list_files_pc()[grep(".bam$", list_files_pc())]
@@ -2122,13 +2105,8 @@ shinyServer(function(input, output, session) {
         warning("Can't find any input BED files.")
         return()
       }
-      print(list_dirs_pc())
-      print(input$bed_selection)
       input_files_pc = lapply(list_dirs_pc()[input$bed_selection], function(i) list.files(i, full.names = TRUE, pattern = ".bed|.bed.gz"))
       names(input_files_pc) = basename(list_dirs_pc()[input$bed_selection])
-      
-      print(names(input_files_pc))
-      print(length(input_files_pc))
     }
     if(length(input_files_pc)==0){
       warning("Can't find any input BAM / BED files.")
@@ -2155,7 +2133,7 @@ shinyServer(function(input, output, session) {
 
         # Export rowRanges as peaks
         refined_annotation = scExp_cf()@metadata$refined_annotation
-        qs::qsave(refined_annotation, file = file.path(odir, "refined_annotation.qs"))
+        qs::qsave(refined_annotation, file = file.path(odir, "refined_annotation.qs"), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
         
         pc$new <- Sys.time()
         updateActionButton(session, "do_pc", label="Finished successfully", icon = icon("check-circle"))
@@ -2227,9 +2205,8 @@ shinyServer(function(input, output, session) {
     filename_sel <- file.path(init$data_folder, "ChromSCape_analyses",
                               analysis_name(),"Diff_Analysis_Gene_Sets",
                               init$available_DA_GSA_datasets[file_index])
-    print(paste0("Loading ", filename_sel, " for GSA 1..."))
     t1 = system.time({
-      data = qs::qread(filename_sel)
+      data = qs::qread(filename_sel, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
       # if(is.reactive(data)) {
       #   data = isolate(data())
       # }
@@ -2292,8 +2269,7 @@ shinyServer(function(input, output, session) {
         filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
                               paste0(input$selected_DA_GSA_dataset, ".qs"))
         if(file.exists(filename)){
-          print(paste0("Loading ", filename, " for GSA 2..."))
-          data = qs::qread(filename)
+          data = qs::qread(filename, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
           
           if(input$feature_select %in% getExperimentNames(data$scExp_cf))
             scExp_cf. = swapAltExp_sameColData(data$scExp_cf,input$feature_select) else
@@ -2418,7 +2394,7 @@ shinyServer(function(input, output, session) {
              "_", input$qval.th, "_", input$cdiff.th, "_", DA_GSA_suffix, ".qs")
       
       qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
-                                       suffix))
+                                       suffix), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
       rm(data)
       gc()
       init$available_DA_GSA_datasets = get.available.DA_GSEA.datasets(analysis_name(), input$selected_reduced_dataset)
@@ -2527,7 +2503,6 @@ shinyServer(function(input, output, session) {
   })
   
   observeEvent(input$save_plots_DA,{
-    print('Saving plots...')
     if(!dir.exists(plot_dir())) dir.create(plot_dir())
     pdf(file.path(plot_dir(), paste0("differential_analysis_", input$gpsamp,".pdf")))
     plot_differential_volcano_scExp(scExp_cf(),cell_cluster = input$gpsamp,
@@ -2663,7 +2638,7 @@ shinyServer(function(input, output, session) {
     data = list("scExp_cf" = getMainExperiment(scExp_cf()) )
 
     qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
-                                     paste0(input$selected_DA_GSA_dataset, ".qs")))
+                                     paste0(input$selected_DA_GSA_dataset, ".qs")), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
     rm(data)
     gc()
     progress$inc(detail='Done !', amount = 0.5)
@@ -2764,19 +2739,15 @@ shinyServer(function(input, output, session) {
     req(annotFeat_long())
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
-        print("Inside output gene_sel")
         s = selectizeInput(inputId = "gene_sel", label = "Select gene:", choices = NULL)
         most_diff = scExp_cf()@metadata$diff$res %>% dplyr::select(ID,starts_with("qval."))
         most_diff[,"qval"] = Matrix::rowMeans(as.matrix(most_diff[,-1]))
         most_diff = dplyr::left_join(most_diff[order(most_diff$qval),], annotFeat_long(),by = c("ID"))
-        print("head(most_diff)")
-        print(head(most_diff))
         most_diff = most_diff %>% dplyr::filter(!is.na(Gene)) %>%
           dplyr::filter(distanceToTSS < 1000) 
         
         genes = base::intersect(most_diff$Gene,unique(GencodeGenes()))
-        print("head(genes)")
-        print(head(genes))
+
         updateSelectizeInput(session = session, inputId = "gene_sel",
                              label =  "Select gene:", choices = genes, server = TRUE)
         return(s)
@@ -2785,7 +2756,6 @@ shinyServer(function(input, output, session) {
   })
   
   observeEvent(input$save_plot_GSA,{
-    print('Saving plots...')
     req(gene_umap_p(), input$gene_sel)
     if(!dir.exists(plot_dir())) dir.create(plot_dir())
     pdf(file.path(plot_dir(), paste0("UMAP_", input$gene_sel,".pdf")))
@@ -2802,9 +2772,7 @@ shinyServer(function(input, output, session) {
   
   pathways <- reactive({
     req(scExp_cf())
-    print("Retrieving pathways ....")
     if(!is.null(scExp_cf()@metadata$enr)){
-      print(scExp_cf()@metadata$diff$groups)
       all_paths <- unique(as.character(unlist(sapply(1:length(scExp_cf()@metadata$diff$groups), 
                           function(i) {
                             all = c()
@@ -2816,7 +2784,6 @@ shinyServer(function(input, output, session) {
                               all = c(all, scExp_cf()@metadata$enr$Both[[i]]$Gene.Set)
                             return(all)
                           }))))
-      print("Done & update selectize input!")
       shiny::updateSelectizeInput(session =  session, inputId = "pathways_sel",
                                   label = "Select pathways:", choices = all_paths, server = TRUE)
 
@@ -2904,9 +2871,7 @@ shinyServer(function(input, output, session) {
   
   output$gene_umap_UI <- renderUI({
     req(input$gene_sel)
-      
-      print(gene_umap_p())
-      
+    
       output$gene_umap_plot <- renderPlot({
           gene_umap_p()
       })
@@ -2929,8 +2894,6 @@ shinyServer(function(input, output, session) {
       unlink(file.path(init$data_folder, "ChromSCape_analyses", input$selected_delete_analysis), recursive=TRUE)
       init$available_analyses <- list.dirs(path=file.path(init$data_folder, "ChromSCape_analyses"), full.names=FALSE, recursive=FALSE)
       init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
-      print("observeEvent({ input$delete_analysis}")
-      print(init$available_reduced_datasets)
       incProgress(amount=0.5, detail=paste("... finished"))
     })
     showNotification("Data set successfully deleted.", duration=5, closeButton=TRUE, type="warning")
@@ -2944,7 +2907,7 @@ shinyServer(function(input, output, session) {
       scExp = isolate(getMainExperiment(scExp()))
       qs::qsave(scExp, file = file.path(init$data_folder, "ChromSCape_analyses",
                                    analysis_name(), "Filtering_Normalize_Reduce",
-                                   paste0(input$selected_reduced_dataset,".qs")))
+                                   paste0(input$selected_reduced_dataset,".qs")), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
       
     }
     if(!is.null(scExp_cf()) & !is.null(selected_filtered_dataset())){
@@ -2966,7 +2929,7 @@ shinyServer(function(input, output, session) {
                                  ".qs"))
         }
         scExp = getMainExperiment(scExp)
-        qs::qsave(scExp, file = dir)
+        qs::qsave(scExp, file = dir, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
       } 
       
     }

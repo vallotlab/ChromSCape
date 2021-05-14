@@ -8,6 +8,7 @@ wrapper_Signac_FeatureMatrix(
   files_dir_list,
   which,
   ref = "hg38",
+  process_n = 2000,
   set_future_plan = TRUE,
   verbose = TRUE,
   progress = NULL
@@ -23,15 +24,15 @@ the files. The names correspond to sample names.}
 the canonical chromosomes of the given reference genome will be excluded from
 the matrix.}
 
+\item{process_n}{Number of regions to load into memory at a time, per thread.
+Processing more regions at once can be faster but uses more memory. (2000)}
+
 \item{set_future_plan}{Set 'multisession' plan within the function (TRUE).
 If TRUE, the previous plan (e.g. future::plan()) will be set back on exit.}
 
 \item{verbose}{Verbose (TRUE).}
 
 \item{progress}{Progress object for Shiny.}
-
-\item{process_n}{Number of regions to load into memory at a time, per thread.
-Processing more regions at once can be faster but uses more memory. (2000)}
 }
 \value{
 A sparse matrix of features x cells
