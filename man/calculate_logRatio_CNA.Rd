@@ -30,8 +30,9 @@ If the average signal in normal sample in a cytoband is 0, set this value to
 }
 \examples{
 
+data("scExp")
 scExp = calculate_cyto_mat(scExp, ref_genome="hg38")
 scExp = calculate_logRatio_CNA(scExp, controls=unique(scExp$sample_id)[1])
-reducedDim(scExp, "logRatio_cytoBand")
+SingleCellExperiment::reducedDim(scExp, "logRatio_cytoBand")
 
 }

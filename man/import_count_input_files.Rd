@@ -15,17 +15,21 @@ import_count_input_files(
 )
 }
 \arguments{
-\item{file_type}{Input file type}
+\item{files_dir_list}{A named list of directories containing the input files.}
 
-\item{ref}{Reference genome}
+\item{file_type}{Input file type.}
+
+\item{which}{A GRanges object of features.}
+
+\item{ref}{Reference genome.}
 
 \item{verbose}{Print ?}
+
+\item{progress}{A progress object for Shiny.}
 
 \item{BPPARAM}{BPPARAM object for multiprocessing. See
 \link[BiocParallel]{bpparam} for more informations. Will take the default
 BPPARAM set in your R session.}
-
-\item{files_dir}{A named list of directories containing the input files}
 }
 \value{
 A list with the

@@ -22,6 +22,12 @@ plot_inter_correlation_scExp(
 \item{jitter_by}{Add jitter points of another layer
 (cell_cluster or sample_id)}
 
+\item{reference_group}{Character containing the reference group name to
+calculate correlation from.}
+
+\item{other_groups}{Character vector of the other groups for which to
+calculate correlation with the reference group.}
+
 \item{downsample}{Downsample for plotting}
 }
 \value{
@@ -32,5 +38,6 @@ Violin plot of inter-correlation distribution between one or multiple groups
 and one reference group
 }
 \examples{
+data(scExp)
 plot_intra_correlation_scExp(scExp)
 }

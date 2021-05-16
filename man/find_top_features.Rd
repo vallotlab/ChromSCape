@@ -14,6 +14,8 @@ find_top_features(
 )
 }
 \arguments{
+\item{scExp}{A SingleCellExperiment.}
+
 \item{n}{Either an integer indicating the number of top covered regions to
 find or a character vector of the top percentile of features to keep (e.g.
 'q20' to keep top 20\% features).}
@@ -35,10 +37,9 @@ A SCE with top features
 \description{
 Find the top most covered features that will be used for dimensionality
 reduction. Optionally remove non-top features.
-
-@param scExp
 }
 \examples{
+data(scExp)
 scExp_top = find_top_features(scExp, n = 4000, keep_others = FALSE)
 
 }

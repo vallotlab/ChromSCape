@@ -26,9 +26,6 @@
 #' samples = detect_samples(barcodes, nb_samples=2)
 #' 
 detect_samples <- function(barcodes, nb_samples = 1) {
-    if(barcodes > 2000){
-        
-    }
     t = system.time({
         mat = stringdist::stringdistmatrix(
             barcodes, barcodes, useNames = "strings",
@@ -599,11 +596,12 @@ wrapper_Signac_FeatureMatrix <- function(files_dir_list, which, ref = "hg38",
 
 #' Import and count input files depending on their format
 #'
-#' @param files_dir A named list of directories containing the input files
-#   ' @param which A GRanges object of features 
-#' @param ref Reference genome
+#' @param files_dir_list A named list of directories containing the input files.
+#' @param which A GRanges object of features. 
+#' @param ref Reference genome.
 #' @param verbose Print ?
-#' @param file_type Input file type
+#' @param file_type Input file type.
+#' @param progress A progress object for Shiny.
 #' @param BPPARAM BPPARAM object for multiprocessing. See
 #'  \link[BiocParallel]{bpparam} for more informations. Will take the default
 #'  BPPARAM set in your R session.
@@ -724,7 +722,7 @@ bams_to_matrix_indexes = function(dir, which,
 #' Read index-peaks-barcodes trio files on interval to create count indexes
 #'
 #'
-#' @param peak_file A file containing the peak genomic locations
+#' @param feature_file A file containing the features genomic locations
 #' @param matrix_file A file containing the indexes of non-zeroes values and
 #'   their value (respectively i,j,x,see sparseMatrix)
 #' @param barcode_file A file containing the barcode ids
@@ -1054,7 +1052,7 @@ generate_feature_names <- function(featureType, ref,
         eval(parse(text = paste0("data(", ref, ".GeneTSS)")))
         chr <- eval(parse(text = paste0("", ref, ".GeneTSS")))
         feature_names <- as.character(sample(
-            chr$gene, features, replace = FALSE))
+            chr$Gene, features, replace = FALSE))
     }
     return(feature_names)
 }
@@ -1571,7 +1569,7 @@ filter_scExp =  function (
 #' Find the top most covered features that will be used for dimensionality 
 #' reduction. Optionally remove non-top features. 
 #'
-#'  @param scExp 
+#' @param scExp A SingleCellExperiment.
 #' @param n Either an integer indicating the number of top covered regions to 
 #' find or a character vector of the top percentile of features to keep (e.g.
 #' 'q20' to keep top 20% features). 
@@ -1588,6 +1586,7 @@ filter_scExp =  function (
 #' @export
 #'
 #' @examples
+#' data(scExp)
 #' scExp_top = find_top_features(scExp, n = 4000, keep_others = FALSE)
 #' 
 find_top_features <- function (scExp, n = 20000, keep_others = FALSE,
@@ -1731,8 +1730,7 @@ get_genomic_coordinates <- function(scExp)
 #' features_to_exclude = data.frame(chr=c("chr4","chr7","chr17"),
 #' start=c(50000,8000000,2000000),
 #' end=c(100000,16000000,2500000))
-#' 
-#' scExp
+#' features_to_exclude = as(features_to_exclude,"GRanges")
 #' scExp = exclude_features_scExp(scExp,features_to_exclude)
 #' scExp
 #' 
@@ -1873,6 +1871,9 @@ preprocess_CPM <- function(scExp)
 #' Preprocess scExp - TF-IDF
 #'
 #' @param scExp A SingleCellExperiment Object
+#' @param scale A numeric to multiply the matrix in order to have human readeable
+#' numbers. Has no impact on the downstream analysis
+#' @param log Wether to use neperian log on the TF-IDF normalized data or not.
 #'
 #' @return A SingleCellExperiment object.
 #' @importFrom GenomicRanges width
@@ -2256,6 +2257,8 @@ reduce_dim_batch_correction <- function(scExp, mat, batch_list, n){
 #' 
 #' @param x A sparse normalized matrix (features x cells)
 #' @param n_comp The number of principal components to keep
+#' @param work Working subspace dimension, larger values can speed convergence
+#'  at the cost of more memory use.
 #'
 #' @return The rotated data, e.g. the cells x PC column in case of sc data.
 #'

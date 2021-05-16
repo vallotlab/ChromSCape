@@ -30,5 +30,6 @@ features to PCA
 #'
 }
 \examples{
+data(scExp)
  plot_pie_most_contributing_chr(scExp, component = "Component_1")
 }

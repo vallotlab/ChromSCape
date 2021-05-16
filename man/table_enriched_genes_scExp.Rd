@@ -19,10 +19,11 @@ sets.}
 \item{set}{A character vector, either 'Both', 'Overexpressed' or
 'Underexpressed'. ('Both')}
 
+\item{group}{The "group" name from differential analysis. Can be the cluster
+name or the custom name in case of a custom differential analysis.}
+
 \item{enr_class_sel}{Which classes of gene sets to show. (c('c1_positional',
 'c2_curated', ...))}
-
-\item{cell_cluster}{Cell cluster. ('C1')}
 }
 \value{
 A DT::data.table of enriched gene sets.

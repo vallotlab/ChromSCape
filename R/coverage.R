@@ -37,6 +37,7 @@
 #' @export
 #'
 #' @examples \dontrun{
+#' data(scExp)
 #' input_files_coverage = list(
 #'   "scChIP_Jurkat_K4me3" = paste0("/path/to/",scExp$barcode[1:51],".bed"),
 #'   "scChIP_Ramos_K4me3" = paste0("/path/to/",scExp$barcode[52:106],".bed")

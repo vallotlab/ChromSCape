@@ -30,12 +30,14 @@ Plot Gain or Loss of cytobands of the most variables cytobands
 }
 \examples{
 
+data("scExp")
 scExp = calculate_CNA(scExp,  control_samples = unique(scExp$sample_id)[1],
 ref_genome="hg38", quantiles_to_define_gol = c(0.05,0.95))
 plot_gain_or_loss_barplots(scExp, cells = scExp$cell_id[which(
 scExp$sample_id \%in\% unique(scExp$sample_id)[2])])
 
 
+data("scExp")
 scExp = calculate_CNA(scExp,  control_samples = unique(scExp$sample_id)[1],
 ref_genome="hg38", quantiles_to_define_gol = c(0.05,0.95))
 plot_gain_or_loss_barplots(scExp, cells = scExp$cell_id[which(

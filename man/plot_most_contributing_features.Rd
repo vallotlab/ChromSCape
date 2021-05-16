@@ -30,5 +30,6 @@ If a gene TSS is within 10,000bp of the region, the name of the gene(s) will
 be displayed instead of the region
 }
 \examples{
- plot_most_contributing_features(scExp, component = "Component_1")
+data(scExp)
+plot_most_contributing_features(scExp, component = "Component_1")
 }

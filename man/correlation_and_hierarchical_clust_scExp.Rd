@@ -11,9 +11,6 @@ correlation_and_hierarchical_clust_scExp(scExp, hc_linkage = "ward.D")
 
 \item{hc_linkage}{A linkage method for hierarchical clustering. See
 \link[stats]{cor}. ('ward.D')}
-
-\item{correlation}{A correlation method to use. See \link[stats]{hclust}.
-('pearson')}
 }
 \value{
 Return a SingleCellExperiment object with correlation matrix &

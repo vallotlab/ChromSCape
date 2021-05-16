@@ -30,6 +30,9 @@ warning_plot_reduced_dim_scExp(
 
 \item{size}{Size of the points.}
 
+\item{max_distanceToTSS}{Numeric. Maximum distance to a gene's TSS to consider
+a region linked to a gene.}
+
 \item{annotate_clusters}{A logical indicating if clusters should be labelled.
 The 'cell_cluster' column should be present in metadata.}
 
@@ -38,10 +41,6 @@ as quantile of cell embeddings (between 0 and 0.5).}
 
 \item{max_quantile}{The upper threshold to remove outlier cells,
 as quantile of cell embeddings (between 0.5 and 1).}
-
-\item{select_x}{Which variable to select for x axis}
-
-\item{select_y}{Which variable to select for y axis}
 }
 \value{
 Warning or errors if the inputs are not correct

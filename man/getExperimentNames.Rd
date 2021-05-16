@@ -16,6 +16,7 @@ Character vector of unique experiment names
 Get experiment names from a SingleCellExperiment
 }
 \examples{
+data(scExp)
 getExperimentNames(scExp)
 
 }

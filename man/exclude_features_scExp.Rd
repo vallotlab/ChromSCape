@@ -36,8 +36,7 @@ scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
 features_to_exclude = data.frame(chr=c("chr4","chr7","chr17"),
 start=c(50000,8000000,2000000),
 end=c(100000,16000000,2500000))
-
-scExp
+features_to_exclude = as(features_to_exclude,"GRanges")
 scExp = exclude_features_scExp(scExp,features_to_exclude)
 scExp
 

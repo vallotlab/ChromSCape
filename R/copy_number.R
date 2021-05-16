@@ -21,7 +21,9 @@
 #' @importFrom S4Vectors queryHits
 #' @importFrom GenomicRanges findOverlaps
 #' @export
-#' @examples matching_cyto = get_cyto_features(scExp, ref_genome="hg38")
+#' @examples 
+#' data("scExp")
+#' matching_cyto = get_cyto_features(scExp, ref_genome="hg38")
 #'  
 get_cyto_features <- function(scExp, ref_genome = c("hg38", "mm10")[1] ){
     
@@ -74,8 +76,10 @@ get_cyto_features <- function(scExp, ref_genome = c("hg38", "mm10")[1] ){
 #' @importFrom SingleCellExperiment reducedDim
 #' @export
 #' @examples 
+#' 
+#' data("scExp")
 #' scExp = calculate_cyto_mat(scExp, ref_genome="hg38")
-#' reducedDim(scExp, "cytoBand") 
+#' SingleCellExperiment::reducedDim(scExp, "cytoBand") 
 #' 
 calculate_cyto_mat <- function(scExp, ref_genome = c("hg38","mm10")[1]){
     matching_cyto = get_cyto_features(scExp,ref_genome)
@@ -120,6 +124,7 @@ calculate_cyto_mat <- function(scExp, ref_genome = c("hg38","mm10")[1]){
 #' @export
 #' @examples 
 #' 
+#' data("scExp")
 #' scExp = calculate_cyto_mat(scExp, ref_genome="hg38")
 #' get_most_variable_cyto(scExp, top=50)
 #'  
@@ -162,9 +167,10 @@ get_most_variable_cyto <- function(scExp, top = 50){
 #' @export
 #' @examples 
 #' 
+#' data("scExp")
 #' scExp = calculate_cyto_mat(scExp, ref_genome="hg38")
 #' scExp = calculate_logRatio_CNA(scExp, controls=unique(scExp$sample_id)[1])
-#' reducedDim(scExp, "logRatio_cytoBand")
+#' SingleCellExperiment::reducedDim(scExp, "logRatio_cytoBand")
 #' 
 calculate_logRatio_CNA <- function(scExp, controls){
     cyto_mat = SingleCellExperiment::reducedDim(scExp, "cytoBand")
@@ -222,10 +228,11 @@ calculate_logRatio_CNA <- function(scExp, controls){
 #' @export
 #' @examples 
 #' 
+#' data("scExp")
 #' scExp = calculate_cyto_mat(scExp, ref_genome="hg38")
 #' scExp = calculate_logRatio_CNA(scExp, controls=unique(scExp$sample_id)[1])
 #' scExp = calculate_gain_or_loss(scExp, controls=unique(scExp$sample_id)[1])
-#' reducedDim(scExp, "gainOrLoss_cytoBand")
+#' SingleCellExperiment::reducedDim(scExp, "gainOrLoss_cytoBand")
 #' 
 calculate_gain_or_loss <- function(scExp, controls, quantiles = c(0.05, 0.95)){
     logRatio_mat = SingleCellExperiment::reducedDim(scExp, "logRatio_cytoBand")
@@ -271,6 +278,7 @@ calculate_gain_or_loss <- function(scExp, controls, quantiles = c(0.05, 0.95)){
 #' filled. See  \code{\link{calculate_logRatio_CNA}}
 #' @param control_samples Sample IDs of the normal sample to take as 
 #' reference.
+#' @param ref_genome Reference genome ('hg38' or 'mm10') 
 #' @param quantiles_to_define_gol Quantiles of normal log2-ratio distribution
 #'  below/above which cytoband is considered to be a loss/gain. (c(0.05,0.95)). 
 #' See \code{\link{calculate_gain_or_loss}}
@@ -282,11 +290,12 @@ calculate_gain_or_loss <- function(scExp, controls, quantiles = c(0.05, 0.95)){
 #' @export
 #' @examples 
 #' 
+#' data("scExp")
 #' scExp = calculate_CNA(scExp,  control_samples = unique(scExp$sample_id)[1],
 #' ref_genome="hg38", quantiles_to_define_gol = c(0.05,0.95))
-#' reducedDim(scExp, "cytoBand")
-#' reducedDim(scExp, "logRatio_cytoBand")
-#' reducedDim(scExp, "gainOrLoss_cytoBand")
+#' SingleCellExperiment::reducedDim(scExp, "cytoBand")
+#' SingleCellExperiment::reducedDim(scExp, "logRatio_cytoBand")
+#' SingleCellExperiment::reducedDim(scExp, "gainOrLoss_cytoBand")
 #'
 calculate_CNA <- function(scExp, control_samples = unique(scExp$sample_id)[1],
                           ref_genome = c("hg38","mm10")[1],
@@ -313,6 +322,7 @@ calculate_CNA <- function(scExp, control_samples = unique(scExp$sample_id)[1],
 #' @export
 #' @examples 
 #' 
+#' data("scExp")
 #' scExp = calculate_CNA(scExp,  control_samples = unique(scExp$sample_id)[1],
 #' ref_genome="hg38", quantiles_to_define_gol = c(0.05,0.95))
 #' plot_gain_or_loss_barplots(scExp, cells = scExp$cell_id[which(
@@ -356,6 +366,7 @@ plot_gain_or_loss_barplots <- function(scExp, cells = NULL, top = 20){
 #' @export
 #' @examples 
 #' 
+#' data("scExp")
 #' scExp = calculate_CNA(scExp,  control_samples = unique(scExp$sample_id)[1],
 #' ref_genome="hg38", quantiles_to_define_gol = c(0.05,0.95))
 #' plot_gain_or_loss_barplots(scExp, cells = scExp$cell_id[which(
@@ -396,6 +407,7 @@ plot_gain_or_loss_barplots <- function(scExp, cells = NULL, top = 20){
 #' @export
 #' @examples 
 #' 
+#' data("scExp")
 #' scExp = calculate_CNA(scExp,  control_samples = unique(scExp$sample_id)[1],
 #' ref_genome="hg38", quantiles_to_define_gol = c(0.05,0.95))
 #' plot_reduced_dim_scExp_CNA(scExp, get_most_variable_cyto(scExp)$cytoBand[1])

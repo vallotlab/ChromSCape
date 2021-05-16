@@ -45,6 +45,7 @@
 #' @param input A character vector of file paths to each sample's BAM file,
 #'   containing cell barcode information as tags. BAM files can be paired-end or
 #'   single-end.
+#' @param format Format of the input data, either "BAM" or "scBED".
 #' @param p.value a p-value to use for MACS2 to determine significant peaks.
 #'   (0.05)
 #' @param ref A reference genome, either hg38 or mm10. ('hg38')
@@ -147,7 +148,7 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
 #'   information
 #' @param odir Output directory to write MACS2 output
 #' @param p.value P value to detect peaks, passed to MACS2
-#' @param format File format, either "scBAM" or "scBED"
+#' @param format File format, either "BAM" or "scBED"
 #' @param ref Reference genome to get chromosome information from.
 #' @param peak_distance_to_merge Distance to merge peaks
 #'
@@ -155,11 +156,11 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
 #'
 #' 
 call_macs2_merge_peaks <- function(affectation, odir, p.value,
-                                   format = c("scBED","scBAM")[1],
+                                   format = c("scBED","BAM")[1],
                                    ref, peak_distance_to_merge){
     suffix = ".bam"
-    if(format != "scBAM") suffix = ".bed"
-    if(format == "scBAM") format = "BAM" else format = "BED"
+    if(format != "BAM") suffix = ".bed"
+    if(format != "BAM") format = "BED"
     merged_peaks=list()
     for (class in levels(factor(affectation$cell_cluster))){
         

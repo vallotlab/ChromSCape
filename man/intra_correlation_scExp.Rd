@@ -19,6 +19,7 @@ A data.frame of cell average intra-correlation
 Calculate intra correlation between cluster or samples
 }
 \examples{
+data(scExp)
 intra_correlation_scExp(scExp, by = "sample_id")
 intra_correlation_scExp(scExp, by = "cell_cluster")
 }

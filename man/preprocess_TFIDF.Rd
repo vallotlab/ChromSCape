@@ -8,6 +8,11 @@ preprocess_TFIDF(scExp, scale = 10000, log = TRUE)
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment Object}
+
+\item{scale}{A numeric to multiply the matrix in order to have human readeable
+numbers. Has no impact on the downstream analysis}
+
+\item{log}{Wether to use neperian log on the TF-IDF normalized data or not.}
 }
 \value{
 A SingleCellExperiment object.

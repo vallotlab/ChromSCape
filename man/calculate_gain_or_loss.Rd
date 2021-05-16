@@ -32,9 +32,10 @@ Discovery Rate is directly proportional to the quantiles.
 }
 \examples{
 
+data("scExp")
 scExp = calculate_cyto_mat(scExp, ref_genome="hg38")
 scExp = calculate_logRatio_CNA(scExp, controls=unique(scExp$sample_id)[1])
 scExp = calculate_gain_or_loss(scExp, controls=unique(scExp$sample_id)[1])
-reducedDim(scExp, "gainOrLoss_cytoBand")
+SingleCellExperiment::reducedDim(scExp, "gainOrLoss_cytoBand")
 
 }

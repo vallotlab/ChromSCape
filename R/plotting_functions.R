@@ -299,11 +299,11 @@ plot_reduced_dim_scExp <- function(
 #' @param scExp A SingleCellExperiment Object
 #' @param color_by Feature used for coloration
 #' @param reduced_dim Reduced Dimension used for plotting
-#' @param select_x Which variable to select for x axis
-#' @param select_y Which variable to select for y axis
 #' @param downsample Number of cells to downsample
 #' @param transparency Alpha parameter, between 0 and 1
 #' @param size Size of the points.
+#' @param max_distanceToTSS Numeric. Maximum distance to a gene's TSS to consider
+#' a region linked to a gene. 
 #' @param annotate_clusters A logical indicating if clusters should be labelled.
 #' The 'cell_cluster' column should be present in metadata.
 #' @param min_quantile The lower threshold to remove outlier cells, 
@@ -360,7 +360,8 @@ warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
 #' @export
 #'
 #' @examples
-#'  plot_most_contributing_features(scExp, component = "Component_1")
+#' data(scExp)
+#' plot_most_contributing_features(scExp, component = "Component_1")
 plot_most_contributing_features <- function(scExp, component = "Component_1",
                                             n_top_bot = 10){
     
@@ -403,6 +404,7 @@ plot_most_contributing_features <- function(scExp, component = "Component_1",
 #' @export
 #'
 #' @examples
+#' data(scExp)
 #'  plot_pie_most_contributing_chr(scExp, component = "Component_1")
 plot_pie_most_contributing_chr <- function(scExp, component = "Component_1",
                                            n_top_bot = 100){
@@ -467,6 +469,9 @@ retrieve_top_bot_features_pca <- function(pca, counts, component, n_top_bot,
 #'   object
 #' @param corColors A palette of colors for the heatmap
 #' @param color_by Which features to add as additional bands on top of plot
+#' @param downsample Number of cells to downsample
+#' @param hc_linkage A linkage method for hierarchical clustering. See
+#'   \link[stats]{cor}. ('ward.D')
 #'
 #' @return A heatmap of cell to cell correlation, grouping cells by hierarchical
 #'   clustering.
@@ -544,7 +549,9 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
 #' @return A violin plot of intra-correlation
 #' @export
 #' @importFrom forcats fct_inorder
-#' @examples plot_intra_correlation_scExp(scExp)
+#' @examples 
+#' data(scExp)
+#' plot_intra_correlation_scExp(scExp)
 plot_intra_correlation_scExp <- function(
     scExp_cf, by = c("sample_id", "cell_cluster")[1], jitter_by = NULL,
     downsample = 5000){
@@ -599,6 +606,10 @@ plot_intra_correlation_scExp <- function(
 #' @param by Color by sample_id or cell_cluster
 #' @param jitter_by Add jitter points of another layer
 #'  (cell_cluster or sample_id)
+#' @param reference_group Character containing the reference group name to 
+#' calculate correlation from.
+#' @param other_groups Character vector of the other groups for which to 
+#' calculate correlation with the reference group.
 #' @param downsample Downsample for plotting
 #'
 #' @return A violin plot of inter-correlation
@@ -606,7 +617,9 @@ plot_intra_correlation_scExp <- function(
 #'
 #' @importFrom forcats fct_inorder
 #' 
-#' @examples plot_intra_correlation_scExp(scExp)
+#' @examples
+#' data(scExp)
+#' plot_intra_correlation_scExp(scExp)
 plot_inter_correlation_scExp <- function(
     scExp_cf, by = c("sample_id", "cell_cluster")[1], jitter_by = NULL,
     reference_group = unique(scExp_cf[[by]])[1],
@@ -674,7 +687,9 @@ plot_inter_correlation_scExp <- function(
 #' @importFrom GenomicRanges GRanges findOverlaps 
 #' @export
 #'
-#' @examples plot_intra_correlation_scExp(scExp)
+#' @examples
+#' data(scExp)
+#' plot_intra_correlation_scExp(scExp)
 #' 
 plot_coverage_BigWig <- function(
     coverages, label_color_list, peaks = NULL,

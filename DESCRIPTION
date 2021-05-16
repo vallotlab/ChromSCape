@@ -24,7 +24,9 @@ Suggests:
     knitr,
     markdown,
     rmarkdown,
-    BiocStyle	 
+    BiocStyle,
+    Signac,
+    future
 RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE)
 Imports: 
@@ -74,11 +76,12 @@ Imports:
     SingleCellExperiment,
     SummarizedExperiment,
     msigdbr,
-    qs,
     Sushi,
     forcats,
     Rcpp,
-    coop
+    coop,
+    matrixTests,
+    DelayedArray
 Depends: 
     R (>= 4.1)
 LinkingTo: 

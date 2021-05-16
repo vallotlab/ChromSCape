@@ -46,6 +46,12 @@ values are character either cluster ("C1", "C2", ...) or sample_id.}
 column data.frame. The name of the column is the group name and the values
 are character either cluster ("C1", "C2", ...) or sample_id.}
 
+\item{prioritize_genes}{First filter by loci being close to genes ? E.g. for
+differential analysis, it is more relevant to keep features close to genes}
+
+\item{max_distanceToTSS}{If prioritize_genes is TRUE, the maximum distance to
+consider a feature close to a gene.}
+
 \item{progress}{A shiny Progress instance to display progress bar.}
 
 \item{BPPARAM}{BPPARAM object for multiprocessing. See

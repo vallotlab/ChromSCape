@@ -8,6 +8,7 @@
 #' @export
 #'
 #' @examples
+#' data(scExp)
 #' getExperimentNames(scExp)
 #' 
 getExperimentNames<- function(scExp){
@@ -23,6 +24,7 @@ getExperimentNames<- function(scExp){
 #' @export
 #' @importFrom SingleCellExperiment mainExpName altExpNames
 #' @examples
+#' data(scExp)
 #' getMainExperiment(scExp)
 #' 
 getMainExperiment  <- function(scExp){
@@ -46,6 +48,7 @@ getMainExperiment  <- function(scExp){
 #' @importFrom SingleCellExperiment mainExpName altExpNames swapAltExp
 #' @importFrom SummarizedExperiment colData
 #' @examples
+#' data(scExp) 
 #' swapAltExp_sameColData(scExp, "peaks")
 #' 
 swapAltExp_sameColData <- function(scExp, alt){
@@ -83,11 +86,17 @@ distPearson <- function(m)
 #' @param groups List with cells in group(s) to test
 #' @param featureTab data.frame with feature annotation
 #' @param block Use a blocking factor to conteract batch effect ? 
+#' @param BPPARAM BPPARAM object for multiprocessing. See
+#'  \link[BiocParallel]{bpparam} for more informations. Will take the default
+#'  BPPARAM set in your R session.
 #'
 #' @return A dataframe containing the foldchange and p.value of each feature
 #' @importFrom stats p.adjust wilcox.test
+#' @importFrom DelayedArray blockApply colAutoGrid
+#' @importFrom scran pairwiseWilcox 
+#' @importFrom matrixTests col_wilcoxon_twosample 
 #' @export
-#' @author Eric Letouze & Celine Vallot
+#' @author Eric Letouze & Celine Vallot & Pacome Prompsy
 #' 
 #' @examples
 #' data("scExp")

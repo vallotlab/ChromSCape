@@ -24,6 +24,7 @@ regions.
 }
 \examples{
 
+data("scExp")
 scExp = calculate_cyto_mat(scExp, ref_genome="hg38")
 get_most_variable_cyto(scExp, top=50)
  

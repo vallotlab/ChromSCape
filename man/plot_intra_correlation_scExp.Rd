@@ -28,5 +28,6 @@ A violin plot of intra-correlation
 Violin plot of intra-correlation distribution
 }
 \examples{
+data(scExp)
 plot_intra_correlation_scExp(scExp)
 }

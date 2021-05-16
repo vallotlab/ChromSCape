@@ -12,14 +12,14 @@ index_peaks_barcodes_to_matrix_indexes(
 )
 }
 \arguments{
+\item{feature_file}{A file containing the features genomic locations}
+
 \item{matrix_file}{A file containing the indexes of non-zeroes values and
 their value (respectively i,j,x,see sparseMatrix)}
 
 \item{barcode_file}{A file containing the barcode ids}
 
 \item{binarize}{Binarize matrix ?}
-
-\item{peak_file}{A file containing the peak genomic locations}
 }
 \value{
 A list containing a "feature index" data.frame, name_cells, and a

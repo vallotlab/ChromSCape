@@ -18,6 +18,8 @@ filled. See  \code{\link{calculate_logRatio_CNA}}}
 \item{control_samples}{Sample IDs of the normal sample to take as
 reference.}
 
+\item{ref_genome}{Reference genome ('hg38' or 'mm10')}
+
 \item{quantiles_to_define_gol}{Quantiles of normal log2-ratio distribution
 below/above which cytoband is considered to be a loss/gain. (c(0.05,0.95)).
 See \code{\link{calculate_gain_or_loss}}}
@@ -42,10 +44,11 @@ The corresponding matrices are accessibles in the reducedDim slots
 }
 \examples{
 
+data("scExp")
 scExp = calculate_CNA(scExp,  control_samples = unique(scExp$sample_id)[1],
 ref_genome="hg38", quantiles_to_define_gol = c(0.05,0.95))
-reducedDim(scExp, "cytoBand")
-reducedDim(scExp, "logRatio_cytoBand")
-reducedDim(scExp, "gainOrLoss_cytoBand")
+SingleCellExperiment::reducedDim(scExp, "cytoBand")
+SingleCellExperiment::reducedDim(scExp, "logRatio_cytoBand")
+SingleCellExperiment::reducedDim(scExp, "gainOrLoss_cytoBand")
 
 }

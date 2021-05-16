@@ -6,7 +6,7 @@
 #' output_directory = "./",
 #' input_data_type = c("scBED", "DenseMatrix", "SparseMatrix",
 #'                    "scBAM")[1],
-#' feature_count_on = c("bins","geneTSS","peaks")[1],
+#' feature_count_on = c("bins","genebody","peaks")[1],
 #' feature_count_parameter = 50000,
 #' ref_genome = c("hg38","mm10")[1],
 #' run = c("filter", "CNA","cluster", "consensus","peak_call", "coverage", 
@@ -88,7 +88,7 @@ generate_analysis <- function(input_data_folder,
                   output_directory = "./",
                   input_data_type = c("scBED", "DenseMatrix", "SparseMatrix",
                                       "scBAM")[1],
-                  feature_count_on = c("bins","geneTSS","peaks")[1],
+                  feature_count_on = c("bins","genebody","peaks")[1],
                   feature_count_parameter = 50000,
                   ref_genome = c("hg38","mm10")[1],
                   run = c("filter", "CNA","cluster", "consensus","peak_call", "coverage", 
@@ -402,14 +402,14 @@ generate_analysis <- function(input_data_folder,
 
 rawData_to_datamatrix_annot <- function(input_data_folder,
                                         input_data_type = c("DenseMatrix", "SparseMatrix", "scBED", "scBAM")[1],
-                                        feature_count_on = c("bins","geneTSS","peaks")[1],
+                                        feature_count_on = c("bins","genebody","peaks")[1],
                                         feature_count_parameter = 50000,
                                         ref_genome = c("hg38","mm10")[1])
     {
     if(input_data_type == "DenseMatrix"){
         file_list = list.files(input_data_folder, pattern =  ".gz|.txt|.tsv")
         tmp_list = import_scExp(file_paths = basename(as.character(file_list)),
-                                path_to_matrix = file_list)
+                                temp_path = file_list)
         datamatrix = tmp_list$datamatrix
         annot_raw = tmp_list$annot_raw
         out = list(datamatrix = datamatrix, annot_raw = annot_raw)
@@ -431,7 +431,7 @@ rawData_to_datamatrix_annot <- function(input_data_folder,
         }
         
         if(input_data_type == "SparseMatrix"){
-            out =  ChromSCape:::read_sparse_matrix(
+            out =  read_sparse_matrix(
                 files_dir_list = selected_sample_folders,
                 ref = ref_genome)
             
@@ -442,7 +442,7 @@ rawData_to_datamatrix_annot <- function(input_data_folder,
                 stopifnot(is.double(feature_count_parameter),
                           feature_count_parameter >= 500)
                 
-                out = ChromSCape:::raw_counts_to_sparse_matrix(
+                out = raw_counts_to_sparse_matrix(
                     files_dir_list = selected_sample_folders,
                     file_type = input_data_type,
                     bin_width = round(feature_count_parameter),
@@ -451,20 +451,20 @@ rawData_to_datamatrix_annot <- function(input_data_folder,
             if(feature_count_on == "peaks"){
                 stopifnot(is.character(feature_count_parameter),
                           file.exists(feature_count_parameter))
-                out = ChromSCape:::raw_counts_to_sparse_matrix(
+                out = raw_counts_to_sparse_matrix(
                     files_dir_list = selected_sample_folders,
                 file_type = input_data_type,
                 peak_file = as.character(feature_count_parameter),
                 ref = ref_genome)
             }
-            if(feature_count_on == "geneTSS"){
+            if(feature_count_on == "genebody"){
                 stopifnot(is.double(feature_count_parameter),
                           feature_count_parameter >= 100)
-                out = ChromSCape:::raw_counts_to_sparse_matrix(
+                out = raw_counts_to_sparse_matrix(
                     files_dir_list = selected_sample_folders,
                 file_type = input_data_type,
-                geneTSS = TRUE,
-                aroundTSS = feature_count_parameter,
+                genebody = TRUE,
+                extendPromoter = feature_count_parameter,
                 ref = ref_genome)
             }
         } else {
@@ -619,7 +619,7 @@ generate_report <- function(ChromSCape_directory,
                             control_samples_CNA = NULL
                             ){
     
-    ChromSCape_directory = R.utils::getAbsolutePath(ChromSCape_directory)
+    ChromSCape_directory = ChromSCape_directory
     filt_dir <- file.path(ChromSCape_directory,"Filtering_Normalize_Reduce") 
     coverage_dir <- file.path(ChromSCape_directory,"coverage")
     cor_dir <- file.path(ChromSCape_directory, "correlation_clustering")

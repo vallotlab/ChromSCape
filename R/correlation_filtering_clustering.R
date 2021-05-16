@@ -14,8 +14,6 @@
 #' matrix and hierarchical clustering.
 #'
 #' @param scExp A SingleCellExperiment object, containing 'PCA' in reducedDims.
-#' @param correlation A correlation method to use. See \link[stats]{hclust}.
-#'   ('pearson')
 #' @param hc_linkage A linkage method for hierarchical clustering. See
 #'   \link[stats]{cor}. ('ward.D')
 #'
@@ -134,7 +132,8 @@ filter_correlated_cell_scExp <- function(scExp, random_iter = 5,
     
     system.time({
     selection_cor_filtered =  unlist(DelayedArray::blockApply(
-        corChIP, grid = DelayedArray::colAutoGrid(corChIP, ncol = n_process),
+        corChIP, grid = DelayedArray::colAutoGrid(
+            corChIP, ncol = min(ncol(corChIP), n_process)),
         BPPARAM = BPPARAM, verbose = FALSE, 
         function(X) apply(X, 2, function(x) length(which(x > limitC_mean)))
     ))
@@ -295,6 +294,7 @@ num_cell_before_cor_filt_scExp <- function(scExp)
 #' @export
 #'
 #' @examples
+#' data(scExp)
 #' intra_correlation_scExp(scExp, by = "sample_id")
 #' intra_correlation_scExp(scExp, by = "cell_cluster")
 intra_correlation_scExp <- function(scExp_cf, by = c("sample_id",
@@ -340,7 +340,8 @@ intra_correlation_scExp <- function(scExp_cf, by = c("sample_id",
 #' @export
 #'
 #' @examples
-#' intra_correlation_scExp
+#' data(scExp)
+#' inter_correlation_scExp(scExp)
 inter_correlation_scExp <- function(
     scExp_cf, by = c("sample_id","cell_cluster")[1],
     reference_group = unique(scExp_cf[[by]])[1],

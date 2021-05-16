@@ -28,13 +28,19 @@ columns}
 
 \item{block}{Blocking feature}
 
+\item{ref}{If de_type is custom, the reference to compare (data.frame), must
+be a one-column data.frame with cell_clusters or sample_id as character in
+rows}
+
+\item{group}{If de_type is custom, the group to compare (data.frame), must
+be a one-column data.frame with cell_clusters or sample_id as character in
+rows}
+
 \item{progress}{A shiny Progress instance to display progress bar.}
 
 \item{BPPARAM}{BPPARAM object for multiprocessing. See
 \link[BiocParallel]{bpparam} for more informations. Will take the default
 BPPARAM set in your R session.}
-
-\item{nclust}{Number of clusters}
 }
 \value{
 A list of results, groups compared and references

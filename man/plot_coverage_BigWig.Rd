@@ -36,6 +36,7 @@ A coverage plot annotated with genes
 Coverage plot using Sushi
 }
 \examples{
+data(scExp)
 plot_intra_correlation_scExp(scExp)
 
 }

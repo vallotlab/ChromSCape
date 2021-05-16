@@ -27,6 +27,7 @@ The cytobands are an arbitrary cutting of the genome that dates back to
 staining metaphase chromosomes with Giemsa.
 }
 \examples{
+data("scExp")
 matching_cyto = get_cyto_features(scExp, ref_genome="hg38")
  
 }

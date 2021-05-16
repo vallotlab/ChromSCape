@@ -18,6 +18,7 @@ A swapped SingleCellExperiment with the exact same colData.
 Swap main & alternative Experiments, with fixed colData
 }
 \examples{
+data(scExp) 
 swapAltExp_sameColData(scExp, "peaks")
 
 }

@@ -31,5 +31,6 @@ with cells in reference_group
 Calculate inter correlation between cluster or samples
 }
 \examples{
-intra_correlation_scExp
+data(scExp)
+inter_correlation_scExp(scExp)
 }

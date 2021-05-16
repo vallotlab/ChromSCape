@@ -36,6 +36,10 @@
 #' @param ref If de_type = "custom", the sample / cluster of reference as a one-
 #' column data.frame. The name of the column is the group name and the values
 #' are character either cluster ("C1", "C2", ...) or sample_id.
+#' @param prioritize_genes First filter by loci being close to genes ? E.g. for
+#' differential analysis, it is more relevant to keep features close to genes
+#' @param max_distanceToTSS If prioritize_genes is TRUE, the maximum distance to 
+#' consider a feature close to a gene.
 #' @param progress A shiny Progress instance to display progress bar. 
 #' @param BPPARAM BPPARAM object for multiprocessing. See
 #'  \link[BiocParallel]{bpparam} for more informations. Will take the default
@@ -289,11 +293,16 @@ DA_pairwise <- function(affectation,nclust, counts,
 #'
 #' @param affectation An annotation data.frame with cell_id and cell_cluster
 #'   columns
-#' @param nclust Number of clusters
 #' @param counts Count matrix
 #' @param method DA method : Wilcoxon or EdgeR
 #' @param feature Feature tables
 #' @param block Blocking feature
+#' @param group If de_type is custom, the group to compare (data.frame), must
+#' be a one-column data.frame with cell_clusters or sample_id as character in 
+#' rows
+#' @param ref If de_type is custom, the reference to compare (data.frame), must
+#' be a one-column data.frame with cell_clusters or sample_id as character in 
+#' rows
 #' @param progress A shiny Progress instance to display progress bar. 
 #' @param BPPARAM BPPARAM object for multiprocessing. See
 #'  \link[BiocParallel]{bpparam} for more informations. Will take the default
@@ -730,9 +739,10 @@ filter_genes_with_refined_peak_annotation <- function(
 #'   sets.
 #' @param set A character vector, either 'Both', 'Overexpressed' or
 #'   'Underexpressed'. ('Both')
-#' @param cell_cluster Cell cluster. ('C1')
 #' @param enr_class_sel Which classes of gene sets to show. (c('c1_positional',
 #'   'c2_curated', ...))
+#' @param group The "group" name from differential analysis. Can be the cluster
+#' name or the custom name in case of a custom differential analysis.
 #'
 #' @return A DT::data.table of enriched gene sets.
 #' @export

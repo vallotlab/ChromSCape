@@ -2,7 +2,7 @@
 
 ## What is ChromSCape ?
 
-**ChromSCape** - Chromatin landape profiling for Single Cells - is a ready-to-launch user-friendly Shiny Application for the analysis of single-cell epigenomics datasets (scChIP-seq, scATAC-seq, scCUT&Tag, ...) from aligned data to differential analysis & gene set enrichment analysis. It is highly interactive, enables users to save their analysis and covers a wide range of analytical steps: QC, preprocessing, filtering, batch correction, dimensionality reduction, vizualisation, clustering, differential analysis and gene set analysis. 
+**ChromSCape** - Chromatin landscape profiling for Single Cells - is a ready-to-launch user-friendly Shiny Application for the analysis of single-cell epigenomics datasets (scChIP-seq, scATAC-seq, scCUT&Tag, ...) from aligned data to differential analysis & gene set enrichment analysis. It is highly interactive, enables users to save their analysis and covers a wide range of analytical steps: QC, preprocessing, filtering, batch correction, dimensionality reduction, vizualisation, clustering, differential analysis and gene set analysis. 
 
 [Prompsy, P., Kirchmeier, P., Marsolier, J. et al. Interactive analysis of single-cell epigenomic landscapes with ChromSCape.  
 Nat Commun 11, 5702 (2020).](https://www.nature.com/articles/s41467-020-19542-x)

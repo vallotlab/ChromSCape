@@ -25,7 +25,9 @@ cytoband level is not considered as an epigenetic event but as a genetic
 event, e.g. Copy Number Alterations.
 }
 \examples{
+
+data("scExp")
 scExp = calculate_cyto_mat(scExp, ref_genome="hg38")
-reducedDim(scExp, "cytoBand") 
+SingleCellExperiment::reducedDim(scExp, "cytoBand") 
 
 }

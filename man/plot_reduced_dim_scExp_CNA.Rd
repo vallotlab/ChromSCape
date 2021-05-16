@@ -20,6 +20,7 @@ Plot UMAP colored by Gain or Loss of cytobands
 }
 \examples{
 
+data("scExp")
 scExp = calculate_CNA(scExp,  control_samples = unique(scExp$sample_id)[1],
 ref_genome="hg38", quantiles_to_define_gol = c(0.05,0.95))
 plot_reduced_dim_scExp_CNA(scExp, get_most_variable_cyto(scExp)$cytoBand[1])

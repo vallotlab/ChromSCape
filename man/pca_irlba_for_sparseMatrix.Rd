@@ -10,6 +10,9 @@ pca_irlba_for_sparseMatrix(x, n_comp, work = 3 * n_comp)
 \item{x}{A sparse normalized matrix (features x cells)}
 
 \item{n_comp}{The number of principal components to keep}
+
+\item{work}{Working subspace dimension, larger values can speed convergence
+at the cost of more memory use.}
 }
 \value{
 The rotated data, e.g. the cells x PC column in case of sc data.

@@ -26,6 +26,10 @@ CompareWilcox(
 \item{featureTab}{data.frame with feature annotation}
 
 \item{block}{Use a blocking factor to conteract batch effect ?}
+
+\item{BPPARAM}{BPPARAM object for multiprocessing. See
+\link[BiocParallel]{bpparam} for more informations. Will take the default
+BPPARAM set in your R session.}
 }
 \value{
 A dataframe containing the foldchange and p.value of each feature
@@ -47,5 +51,5 @@ annot=as.data.frame(SingleCellExperiment::colData(scExp_cf)),
 
 }
 \author{
-Eric Letouze & Celine Vallot
+Eric Letouze & Celine Vallot & Pacome Prompsy
 }

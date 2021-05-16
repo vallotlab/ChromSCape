@@ -27,6 +27,8 @@ cluster's BAM file}
 containing cell barcode information as tags. BAM files can be paired-end or
 single-end.}
 
+\item{format}{Format of the input data, either "BAM" or "scBED".}
+
 \item{p.value}{a p-value to use for MACS2 to determine significant peaks.
 (0.05)}
 

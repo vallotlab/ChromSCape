@@ -22,6 +22,11 @@ object}
 \item{corColors}{A palette of colors for the heatmap}
 
 \item{color_by}{Which features to add as additional bands on top of plot}
+
+\item{downsample}{Number of cells to downsample}
+
+\item{hc_linkage}{A linkage method for hierarchical clustering. See
+\link[stats]{cor}. ('ward.D')}
 }
 \value{
 A heatmap of cell to cell correlation, grouping cells by hierarchical

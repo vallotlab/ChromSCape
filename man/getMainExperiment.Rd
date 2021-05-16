@@ -16,6 +16,7 @@ The swapped SingleCellExperiment towards "main" experiment
 Get Main experiment of a SingleCellExperiment
 }
 \examples{
+data(scExp)
 getMainExperiment(scExp)
 
 }
