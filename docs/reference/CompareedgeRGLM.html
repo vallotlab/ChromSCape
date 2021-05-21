@@ -95,7 +95,10 @@ each group and outputs several graphical representations" />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/vignette.html">Vignettes overview</a>
+      <a href="../articles/vignette.html">ChromSCape overview</a>
+    </li>
+    <li>
+      <a href="../articles/scCutTag_Bartosovic_H3K27me3.html">scCUT&amp;TAG in the mouse brain</a>
     </li>
   </ul>
 </li>
@@ -183,7 +186,7 @@ reference samples. Names of the vectors will be used in the results table</p></t
     <p>Eric Letouze &amp; Celine Vallot</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='st'>"scExp"</span><span class='op'>)</span>
+    <pre class="examples"><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='st'>"scExp"</span><span class='op'>)</span>
 <span class='va'>scExp_cf</span> <span class='op'>=</span> <span class='fu'><a href='correlation_and_hierarchical_clust_scExp.html'>correlation_and_hierarchical_clust_scExp</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span>
 <span class='va'>scExp_cf</span> <span class='op'>=</span> <span class='fu'><a href='choose_cluster_scExp.html'>choose_cluster_scExp</a></span><span class='op'>(</span><span class='va'>scExp_cf</span>,nclust<span class='op'>=</span><span class='fl'>2</span>,consensus<span class='op'>=</span><span class='cn'>FALSE</span><span class='op'>)</span>
 <span class='va'>featureTab</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/as.data.frame.html'>as.data.frame</a></span><span class='op'>(</span><span class='fu'>SummarizedExperiment</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/SummarizedExperiment/man/RangedSummarizedExperiment-class.html'>rowRanges</a></span><span class='op'>(</span><span class='va'>scExp_cf</span><span class='op'>)</span><span class='op'>)</span>
@@ -193,8 +196,8 @@ reference samples. Names of the vectors will be used in the results table</p></t
 <span class='va'>myres</span> <span class='op'>=</span> <span class='fu'>CompareedgeRGLM</span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>as.matrix</a></span><span class='op'>(</span><span class='fu'>SingleCellExperiment</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/SingleCellExperiment/man/assays.html'>counts</a></span><span class='op'>(</span><span class='va'>scExp_cf</span><span class='op'>)</span><span class='op'>)</span>,
 annot<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/as.data.frame.html'>as.data.frame</a></span><span class='op'>(</span><span class='fu'>SingleCellExperiment</span><span class='fu'>::</span><span class='fu'>colData</span><span class='op'>(</span><span class='va'>scExp_cf</span><span class='op'>)</span><span class='op'>)</span>,
    ref_group<span class='op'>=</span><span class='va'>ref_group</span>,groups<span class='op'>=</span><span class='va'>groups</span>, featureTab<span class='op'>=</span><span class='va'>featureTab</span><span class='op'>)</span>
-
-</pre>
+</div><div class='output co'>#&gt; [1] "Comparing C1 versus C2"</div><div class='input'>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

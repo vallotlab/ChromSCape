@@ -92,7 +92,10 @@
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/vignette.html">Vignettes overview</a>
+      <a href="../articles/vignette.html">ChromSCape overview</a>
+    </li>
+    <li>
+      <a href="../articles/scCutTag_Bartosovic_H3K27me3.html">scCUT&amp;TAG in the mouse brain</a>
     </li>
   </ul>
 </li>
@@ -166,9 +169,436 @@ multiple groups, and also reference_group). Must be in accordance with "by".</p>
 with cells in reference_group</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span>
+    <pre class="examples"><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span>
 <span class='fu'>inter_correlation_scExp</span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span>
-</pre>
+</div><div class='output co'>#&gt;                                                       cells_i
+#&gt; scChIP_Jurkat_K4me3_BC1062721   scChIP_Jurkat_K4me3_BC1062721
+#&gt; scChIP_Jurkat_K4me3_BC12143233 scChIP_Jurkat_K4me3_BC12143233
+#&gt; scChIP_Jurkat_K4me3_BC13415329 scChIP_Jurkat_K4me3_BC13415329
+#&gt; scChIP_Jurkat_K4me3_BC15476065 scChIP_Jurkat_K4me3_BC15476065
+#&gt; scChIP_Jurkat_K4me3_BC16748833 scChIP_Jurkat_K4me3_BC16748833
+#&gt; scChIP_Jurkat_K4me3_BC17648641 scChIP_Jurkat_K4me3_BC17648641
+#&gt; scChIP_Jurkat_K4me3_BC20721121 scChIP_Jurkat_K4me3_BC20721121
+#&gt; scChIP_Jurkat_K4me3_BC21672769 scChIP_Jurkat_K4me3_BC21672769
+#&gt; scChIP_Jurkat_K4me3_BC22586401 scChIP_Jurkat_K4me3_BC22586401
+#&gt; scChIP_Jurkat_K4me3_BC23141473 scChIP_Jurkat_K4me3_BC23141473
+#&gt; scChIP_Jurkat_K4me3_BC2340865   scChIP_Jurkat_K4me3_BC2340865
+#&gt; scChIP_Jurkat_K4me3_BC23851969 scChIP_Jurkat_K4me3_BC23851969
+#&gt; scChIP_Jurkat_K4me3_BC24108961 scChIP_Jurkat_K4me3_BC24108961
+#&gt; scChIP_Jurkat_K4me3_BC24665185 scChIP_Jurkat_K4me3_BC24665185
+#&gt; scChIP_Jurkat_K4me3_BC26968033 scChIP_Jurkat_K4me3_BC26968033
+#&gt; scChIP_Jurkat_K4me3_BC28166785 scChIP_Jurkat_K4me3_BC28166785
+#&gt; scChIP_Jurkat_K4me3_BC31515361 scChIP_Jurkat_K4me3_BC31515361
+#&gt; scChIP_Jurkat_K4me3_BC34973569 scChIP_Jurkat_K4me3_BC34973569
+#&gt; scChIP_Jurkat_K4me3_BC35823937 scChIP_Jurkat_K4me3_BC35823937
+#&gt; scChIP_Jurkat_K4me3_BC37576129 scChIP_Jurkat_K4me3_BC37576129
+#&gt; scChIP_Jurkat_K4me3_BC38512993 scChIP_Jurkat_K4me3_BC38512993
+#&gt; scChIP_Jurkat_K4me3_BC39310561 scChIP_Jurkat_K4me3_BC39310561
+#&gt; scChIP_Jurkat_K4me3_BC39912865 scChIP_Jurkat_K4me3_BC39912865
+#&gt; scChIP_Jurkat_K4me3_BC40220065 scChIP_Jurkat_K4me3_BC40220065
+#&gt; scChIP_Jurkat_K4me3_BC41338177 scChIP_Jurkat_K4me3_BC41338177
+#&gt; scChIP_Jurkat_K4me3_BC41719873 scChIP_Jurkat_K4me3_BC41719873
+#&gt; scChIP_Jurkat_K4me3_BC43343425 scChIP_Jurkat_K4me3_BC43343425
+#&gt; scChIP_Jurkat_K4me3_BC44502337 scChIP_Jurkat_K4me3_BC44502337
+#&gt; scChIP_Jurkat_K4me3_BC47439073 scChIP_Jurkat_K4me3_BC47439073
+#&gt; scChIP_Jurkat_K4me3_BC47520577 scChIP_Jurkat_K4me3_BC47520577
+#&gt; scChIP_Jurkat_K4me3_BC47570113 scChIP_Jurkat_K4me3_BC47570113
+#&gt; scChIP_Jurkat_K4me3_BC4894657   scChIP_Jurkat_K4me3_BC4894657
+#&gt; scChIP_Jurkat_K4me3_BC50167009 scChIP_Jurkat_K4me3_BC50167009
+#&gt; scChIP_Jurkat_K4me3_BC54146401 scChIP_Jurkat_K4me3_BC54146401
+#&gt; scChIP_Jurkat_K4me3_BC56298337 scChIP_Jurkat_K4me3_BC56298337
+#&gt; scChIP_Jurkat_K4me3_BC57367393 scChIP_Jurkat_K4me3_BC57367393
+#&gt; scChIP_Jurkat_K4me3_BC57949537 scChIP_Jurkat_K4me3_BC57949537
+#&gt; scChIP_Jurkat_K4me3_BC60120097 scChIP_Jurkat_K4me3_BC60120097
+#&gt; scChIP_Jurkat_K4me3_BC61740385 scChIP_Jurkat_K4me3_BC61740385
+#&gt; scChIP_Jurkat_K4me3_BC67162081 scChIP_Jurkat_K4me3_BC67162081
+#&gt; scChIP_Jurkat_K4me3_BC67415425 scChIP_Jurkat_K4me3_BC67415425
+#&gt; scChIP_Jurkat_K4me3_BC68083489 scChIP_Jurkat_K4me3_BC68083489
+#&gt; scChIP_Jurkat_K4me3_BC71253025 scChIP_Jurkat_K4me3_BC71253025
+#&gt; scChIP_Jurkat_K4me3_BC72501889 scChIP_Jurkat_K4me3_BC72501889
+#&gt; scChIP_Jurkat_K4me3_BC74529217 scChIP_Jurkat_K4me3_BC74529217
+#&gt; scChIP_Jurkat_K4me3_BC74612545 scChIP_Jurkat_K4me3_BC74612545
+#&gt; scChIP_Jurkat_K4me3_BC74736577 scChIP_Jurkat_K4me3_BC74736577
+#&gt; scChIP_Jurkat_K4me3_BC74865601 scChIP_Jurkat_K4me3_BC74865601
+#&gt; scChIP_Jurkat_K4me3_BC76074433 scChIP_Jurkat_K4me3_BC76074433
+#&gt; scChIP_Jurkat_K4me3_BC81515233 scChIP_Jurkat_K4me3_BC81515233
+#&gt; scChIP_Jurkat_K4me3_BC8618497   scChIP_Jurkat_K4me3_BC8618497
+#&gt; scChIP_Ramos_K4me3_BC14774209   scChIP_Ramos_K4me3_BC14774209
+#&gt; scChIP_Ramos_K4me3_BC17271937   scChIP_Ramos_K4me3_BC17271937
+#&gt; scChIP_Ramos_K4me3_BC19205185   scChIP_Ramos_K4me3_BC19205185
+#&gt; scChIP_Ramos_K4me3_BC20312449   scChIP_Ramos_K4me3_BC20312449
+#&gt; scChIP_Ramos_K4me3_BC20546113   scChIP_Ramos_K4me3_BC20546113
+#&gt; scChIP_Ramos_K4me3_BC21132481   scChIP_Ramos_K4me3_BC21132481
+#&gt; scChIP_Ramos_K4me3_BC22013857   scChIP_Ramos_K4me3_BC22013857
+#&gt; scChIP_Ramos_K4me3_BC23778049   scChIP_Ramos_K4me3_BC23778049
+#&gt; scChIP_Ramos_K4me3_BC25192897   scChIP_Ramos_K4me3_BC25192897
+#&gt; scChIP_Ramos_K4me3_BC26053537   scChIP_Ramos_K4me3_BC26053537
+#&gt; scChIP_Ramos_K4me3_BC28858273   scChIP_Ramos_K4me3_BC28858273
+#&gt; scChIP_Ramos_K4me3_BC28860865   scChIP_Ramos_K4me3_BC28860865
+#&gt; scChIP_Ramos_K4me3_BC29455681   scChIP_Ramos_K4me3_BC29455681
+#&gt; scChIP_Ramos_K4me3_BC35562721   scChIP_Ramos_K4me3_BC35562721
+#&gt; scChIP_Ramos_K4me3_BC35820481   scChIP_Ramos_K4me3_BC35820481
+#&gt; scChIP_Ramos_K4me3_BC36249793   scChIP_Ramos_K4me3_BC36249793
+#&gt; scChIP_Ramos_K4me3_BC3676513     scChIP_Ramos_K4me3_BC3676513
+#&gt; scChIP_Ramos_K4me3_BC37639681   scChIP_Ramos_K4me3_BC37639681
+#&gt; scChIP_Ramos_K4me3_BC38001121   scChIP_Ramos_K4me3_BC38001121
+#&gt; scChIP_Ramos_K4me3_BC39188833   scChIP_Ramos_K4me3_BC39188833
+#&gt; scChIP_Ramos_K4me3_BC40418401   scChIP_Ramos_K4me3_BC40418401
+#&gt; scChIP_Ramos_K4me3_BC40682209   scChIP_Ramos_K4me3_BC40682209
+#&gt; scChIP_Ramos_K4me3_BC40866433   scChIP_Ramos_K4me3_BC40866433
+#&gt; scChIP_Ramos_K4me3_BC42021505   scChIP_Ramos_K4me3_BC42021505
+#&gt; scChIP_Ramos_K4me3_BC42290113   scChIP_Ramos_K4me3_BC42290113
+#&gt; scChIP_Ramos_K4me3_BC46043233   scChIP_Ramos_K4me3_BC46043233
+#&gt; scChIP_Ramos_K4me3_BC4666369     scChIP_Ramos_K4me3_BC4666369
+#&gt; scChIP_Ramos_K4me3_BC47331841   scChIP_Ramos_K4me3_BC47331841
+#&gt; scChIP_Ramos_K4me3_BC50190721   scChIP_Ramos_K4me3_BC50190721
+#&gt; scChIP_Ramos_K4me3_BC50825473   scChIP_Ramos_K4me3_BC50825473
+#&gt; scChIP_Ramos_K4me3_BC5271265     scChIP_Ramos_K4me3_BC5271265
+#&gt; scChIP_Ramos_K4me3_BC56576929   scChIP_Ramos_K4me3_BC56576929
+#&gt; scChIP_Ramos_K4me3_BC57761665   scChIP_Ramos_K4me3_BC57761665
+#&gt; scChIP_Ramos_K4me3_BC58075105   scChIP_Ramos_K4me3_BC58075105
+#&gt; scChIP_Ramos_K4me3_BC58556353   scChIP_Ramos_K4me3_BC58556353
+#&gt; scChIP_Ramos_K4me3_BC58852705   scChIP_Ramos_K4me3_BC58852705
+#&gt; scChIP_Ramos_K4me3_BC59649601   scChIP_Ramos_K4me3_BC59649601
+#&gt; scChIP_Ramos_K4me3_BC60971713   scChIP_Ramos_K4me3_BC60971713
+#&gt; scChIP_Ramos_K4me3_BC66549409   scChIP_Ramos_K4me3_BC66549409
+#&gt; scChIP_Ramos_K4me3_BC66908353   scChIP_Ramos_K4me3_BC66908353
+#&gt; scChIP_Ramos_K4me3_BC6733729     scChIP_Ramos_K4me3_BC6733729
+#&gt; scChIP_Ramos_K4me3_BC68560129   scChIP_Ramos_K4me3_BC68560129
+#&gt; scChIP_Ramos_K4me3_BC68914753   scChIP_Ramos_K4me3_BC68914753
+#&gt; scChIP_Ramos_K4me3_BC71198401   scChIP_Ramos_K4me3_BC71198401
+#&gt; scChIP_Ramos_K4me3_BC7302049     scChIP_Ramos_K4me3_BC7302049
+#&gt; scChIP_Ramos_K4me3_BC73327681   scChIP_Ramos_K4me3_BC73327681
+#&gt; scChIP_Ramos_K4me3_BC74665729   scChIP_Ramos_K4me3_BC74665729
+#&gt; scChIP_Ramos_K4me3_BC74863489   scChIP_Ramos_K4me3_BC74863489
+#&gt; scChIP_Ramos_K4me3_BC75159073   scChIP_Ramos_K4me3_BC75159073
+#&gt; scChIP_Ramos_K4me3_BC76624129   scChIP_Ramos_K4me3_BC76624129
+#&gt; scChIP_Ramos_K4me3_BC77629153   scChIP_Ramos_K4me3_BC77629153
+#&gt; scChIP_Ramos_K4me3_BC77810689   scChIP_Ramos_K4me3_BC77810689
+#&gt; scChIP_Ramos_K4me3_BC78287521   scChIP_Ramos_K4me3_BC78287521
+#&gt; scChIP_Ramos_K4me3_BC78985057   scChIP_Ramos_K4me3_BC78985057
+#&gt; scChIP_Ramos_K4me3_BC9280513     scChIP_Ramos_K4me3_BC9280513
+#&gt;                                        sample_id_i         sample_id_j
+#&gt; scChIP_Jurkat_K4me3_BC1062721  scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC12143233 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC13415329 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC15476065 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC16748833 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC17648641 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC20721121 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC21672769 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC22586401 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC23141473 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC2340865  scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC23851969 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC24108961 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC24665185 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC26968033 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC28166785 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC31515361 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC34973569 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC35823937 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC37576129 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC38512993 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC39310561 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC39912865 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC40220065 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC41338177 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC41719873 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC43343425 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC44502337 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC47439073 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC47520577 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC47570113 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC4894657  scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC50167009 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC54146401 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC56298337 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC57367393 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC57949537 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC60120097 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC61740385 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC67162081 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC67415425 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC68083489 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC71253025 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC72501889 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC74529217 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC74612545 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC74736577 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC74865601 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC76074433 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC81515233 scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC8618497  scChIP_Jurkat_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC14774209   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC17271937   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC19205185   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC20312449   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC20546113   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC21132481   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC22013857   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC23778049   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC25192897   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC26053537   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC28858273   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC28860865   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC29455681   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC35562721   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC35820481   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC36249793   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC3676513    scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC37639681   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC38001121   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC39188833   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC40418401   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC40682209   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC40866433   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC42021505   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC42290113   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC46043233   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC4666369    scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC47331841   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC50190721   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC50825473   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC5271265    scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC56576929   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC57761665   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC58075105   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC58556353   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC58852705   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC59649601   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC60971713   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC66549409   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC66908353   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC6733729    scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC68560129   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC68914753   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC71198401   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC7302049    scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC73327681   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC74665729   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC74863489   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC75159073   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC76624129   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC77629153   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC77810689   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC78287521   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC78985057   scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC9280513    scChIP_Ramos_K4me3 scChIP_Jurkat_K4me3
+#&gt;                                 inter_corr
+#&gt; scChIP_Jurkat_K4me3_BC1062721   0.26674676
+#&gt; scChIP_Jurkat_K4me3_BC12143233  0.13754858
+#&gt; scChIP_Jurkat_K4me3_BC13415329  0.24448606
+#&gt; scChIP_Jurkat_K4me3_BC15476065  0.20750927
+#&gt; scChIP_Jurkat_K4me3_BC16748833  0.15621435
+#&gt; scChIP_Jurkat_K4me3_BC17648641  0.15854069
+#&gt; scChIP_Jurkat_K4me3_BC20721121  0.21318096
+#&gt; scChIP_Jurkat_K4me3_BC21672769  0.12183935
+#&gt; scChIP_Jurkat_K4me3_BC22586401  0.19479498
+#&gt; scChIP_Jurkat_K4me3_BC23141473  0.12385641
+#&gt; scChIP_Jurkat_K4me3_BC2340865   0.20327234
+#&gt; scChIP_Jurkat_K4me3_BC23851969  0.09764539
+#&gt; scChIP_Jurkat_K4me3_BC24108961  0.15148547
+#&gt; scChIP_Jurkat_K4me3_BC24665185  0.13827676
+#&gt; scChIP_Jurkat_K4me3_BC26968033  0.22201719
+#&gt; scChIP_Jurkat_K4me3_BC28166785  0.09713911
+#&gt; scChIP_Jurkat_K4me3_BC31515361  0.20987389
+#&gt; scChIP_Jurkat_K4me3_BC34973569  0.25552524
+#&gt; scChIP_Jurkat_K4me3_BC35823937  0.23568537
+#&gt; scChIP_Jurkat_K4me3_BC37576129  0.04476699
+#&gt; scChIP_Jurkat_K4me3_BC38512993  0.11549025
+#&gt; scChIP_Jurkat_K4me3_BC39310561  0.20951857
+#&gt; scChIP_Jurkat_K4me3_BC39912865  0.18960920
+#&gt; scChIP_Jurkat_K4me3_BC40220065  0.05847309
+#&gt; scChIP_Jurkat_K4me3_BC41338177  0.12188603
+#&gt; scChIP_Jurkat_K4me3_BC41719873  0.17395175
+#&gt; scChIP_Jurkat_K4me3_BC43343425  0.12393970
+#&gt; scChIP_Jurkat_K4me3_BC44502337  0.14698444
+#&gt; scChIP_Jurkat_K4me3_BC47439073  0.19445546
+#&gt; scChIP_Jurkat_K4me3_BC47520577  0.08044842
+#&gt; scChIP_Jurkat_K4me3_BC47570113  0.23719831
+#&gt; scChIP_Jurkat_K4me3_BC4894657   0.09454936
+#&gt; scChIP_Jurkat_K4me3_BC50167009  0.18672516
+#&gt; scChIP_Jurkat_K4me3_BC54146401  0.17115088
+#&gt; scChIP_Jurkat_K4me3_BC56298337  0.07789120
+#&gt; scChIP_Jurkat_K4me3_BC57367393  0.21973984
+#&gt; scChIP_Jurkat_K4me3_BC57949537  0.19400677
+#&gt; scChIP_Jurkat_K4me3_BC60120097  0.16183239
+#&gt; scChIP_Jurkat_K4me3_BC61740385  0.20658225
+#&gt; scChIP_Jurkat_K4me3_BC67162081  0.13743437
+#&gt; scChIP_Jurkat_K4me3_BC67415425  0.15059885
+#&gt; scChIP_Jurkat_K4me3_BC68083489  0.18844732
+#&gt; scChIP_Jurkat_K4me3_BC71253025  0.09437510
+#&gt; scChIP_Jurkat_K4me3_BC72501889  0.18869430
+#&gt; scChIP_Jurkat_K4me3_BC74529217  0.13890884
+#&gt; scChIP_Jurkat_K4me3_BC74612545  0.18544694
+#&gt; scChIP_Jurkat_K4me3_BC74736577  0.08868541
+#&gt; scChIP_Jurkat_K4me3_BC74865601  0.19621915
+#&gt; scChIP_Jurkat_K4me3_BC76074433  0.04622832
+#&gt; scChIP_Jurkat_K4me3_BC81515233  0.13213568
+#&gt; scChIP_Jurkat_K4me3_BC8618497   0.24223646
+#&gt; scChIP_Ramos_K4me3_BC14774209  -0.15173556
+#&gt; scChIP_Ramos_K4me3_BC17271937  -0.12882436
+#&gt; scChIP_Ramos_K4me3_BC19205185  -0.10043603
+#&gt; scChIP_Ramos_K4me3_BC20312449  -0.23647354
+#&gt; scChIP_Ramos_K4me3_BC20546113  -0.11667644
+#&gt; scChIP_Ramos_K4me3_BC21132481  -0.09057223
+#&gt; scChIP_Ramos_K4me3_BC22013857  -0.09124074
+#&gt; scChIP_Ramos_K4me3_BC23778049  -0.14104915
+#&gt; scChIP_Ramos_K4me3_BC25192897  -0.13052809
+#&gt; scChIP_Ramos_K4me3_BC26053537  -0.07968552
+#&gt; scChIP_Ramos_K4me3_BC28858273  -0.05169158
+#&gt; scChIP_Ramos_K4me3_BC28860865  -0.04583969
+#&gt; scChIP_Ramos_K4me3_BC29455681  -0.09355074
+#&gt; scChIP_Ramos_K4me3_BC35562721  -0.23715092
+#&gt; scChIP_Ramos_K4me3_BC35820481  -0.19667032
+#&gt; scChIP_Ramos_K4me3_BC36249793  -0.16036033
+#&gt; scChIP_Ramos_K4me3_BC3676513   -0.22825116
+#&gt; scChIP_Ramos_K4me3_BC37639681  -0.04255659
+#&gt; scChIP_Ramos_K4me3_BC38001121  -0.18449627
+#&gt; scChIP_Ramos_K4me3_BC39188833  -0.11101308
+#&gt; scChIP_Ramos_K4me3_BC40418401  -0.06773275
+#&gt; scChIP_Ramos_K4me3_BC40682209  -0.01065773
+#&gt; scChIP_Ramos_K4me3_BC40866433  -0.13627999
+#&gt; scChIP_Ramos_K4me3_BC42021505  -0.05206719
+#&gt; scChIP_Ramos_K4me3_BC42290113  -0.18120686
+#&gt; scChIP_Ramos_K4me3_BC46043233  -0.12839222
+#&gt; scChIP_Ramos_K4me3_BC4666369   -0.15470197
+#&gt; scChIP_Ramos_K4me3_BC47331841  -0.09378584
+#&gt; scChIP_Ramos_K4me3_BC50190721  -0.12075744
+#&gt; scChIP_Ramos_K4me3_BC50825473  -0.12936909
+#&gt; scChIP_Ramos_K4me3_BC5271265   -0.07335578
+#&gt; scChIP_Ramos_K4me3_BC56576929  -0.15963271
+#&gt; scChIP_Ramos_K4me3_BC57761665  -0.14867532
+#&gt; scChIP_Ramos_K4me3_BC58075105  -0.08659254
+#&gt; scChIP_Ramos_K4me3_BC58556353  -0.14011385
+#&gt; scChIP_Ramos_K4me3_BC58852705  -0.09933129
+#&gt; scChIP_Ramos_K4me3_BC59649601  -0.01308423
+#&gt; scChIP_Ramos_K4me3_BC60971713  -0.16206825
+#&gt; scChIP_Ramos_K4me3_BC66549409  -0.13077659
+#&gt; scChIP_Ramos_K4me3_BC66908353  -0.09703651
+#&gt; scChIP_Ramos_K4me3_BC6733729   -0.17022138
+#&gt; scChIP_Ramos_K4me3_BC68560129  -0.15321770
+#&gt; scChIP_Ramos_K4me3_BC68914753  -0.07198926
+#&gt; scChIP_Ramos_K4me3_BC71198401  -0.21914313
+#&gt; scChIP_Ramos_K4me3_BC7302049   -0.15259129
+#&gt; scChIP_Ramos_K4me3_BC73327681  -0.19770634
+#&gt; scChIP_Ramos_K4me3_BC74665729  -0.12317027
+#&gt; scChIP_Ramos_K4me3_BC74863489  -0.09253526
+#&gt; scChIP_Ramos_K4me3_BC75159073  -0.13433284
+#&gt; scChIP_Ramos_K4me3_BC76624129  -0.16618578
+#&gt; scChIP_Ramos_K4me3_BC77629153  -0.14340946
+#&gt; scChIP_Ramos_K4me3_BC77810689  -0.26124594
+#&gt; scChIP_Ramos_K4me3_BC78287521  -0.21123128
+#&gt; scChIP_Ramos_K4me3_BC78985057  -0.07581663
+#&gt; scChIP_Ramos_K4me3_BC9280513   -0.10197357
+#&gt;                                                            association
+#&gt; scChIP_Jurkat_K4me3_BC1062721  scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC12143233 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC13415329 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC15476065 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC16748833 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC17648641 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC20721121 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC21672769 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC22586401 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC23141473 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC2340865  scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC23851969 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC24108961 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC24665185 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC26968033 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC28166785 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC31515361 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC34973569 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC35823937 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC37576129 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC38512993 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC39310561 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC39912865 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC40220065 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC41338177 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC41719873 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC43343425 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC44502337 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC47439073 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC47520577 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC47570113 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC4894657  scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC50167009 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC54146401 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC56298337 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC57367393 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC57949537 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC60120097 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC61740385 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC67162081 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC67415425 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC68083489 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC71253025 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC72501889 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC74529217 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC74612545 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC74736577 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC74865601 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC76074433 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC81515233 scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Jurkat_K4me3_BC8618497  scChIP_Jurkat_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC14774209   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC17271937   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC19205185   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC20312449   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC20546113   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC21132481   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC22013857   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC23778049   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC25192897   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC26053537   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC28858273   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC28860865   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC29455681   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC35562721   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC35820481   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC36249793   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC3676513    scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC37639681   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC38001121   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC39188833   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC40418401   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC40682209   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC40866433   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC42021505   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC42290113   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC46043233   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC4666369    scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC47331841   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC50190721   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC50825473   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC5271265    scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC56576929   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC57761665   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC58075105   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC58556353   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC58852705   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC59649601   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC60971713   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC66549409   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC66908353   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC6733729    scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC68560129   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC68914753   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC71198401   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC7302049    scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC73327681   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC74665729   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC74863489   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC75159073   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC76624129   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC77629153   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC77810689   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC78287521   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC78985057   scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3
+#&gt; scChIP_Ramos_K4me3_BC9280513    scChIP_Ramos_K4me3_scChIP_Jurkat_K4me3</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

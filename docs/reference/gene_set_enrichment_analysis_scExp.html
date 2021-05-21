@@ -100,7 +100,10 @@ object containing a differential list." />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/vignette.html">Vignettes overview</a>
+      <a href="../articles/vignette.html">ChromSCape overview</a>
+    </li>
+    <li>
+      <a href="../articles/scCutTag_Bartosovic_H3K27me3.html">scCUT&amp;TAG in the mouse brain</a>
     </li>
   </ul>
 </li>
@@ -230,13 +233,13 @@ Gene Sets for each cluster, either in depleted features, enriched features
 or simply differential features (both).</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='st'>"scExp"</span><span class='op'>)</span>
+    <pre class="examples"><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='st'>"scExp"</span><span class='op'>)</span>
 
 <span class='co'>#Usually recommanding qval.th = 0.01 &amp; cdiff.th = 1 or 2</span>
 <span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='va'>scExp_cf</span> <span class='op'>=</span> <span class='fu'>gene_set_enrichment_analysis_scExp</span><span class='op'>(</span><span class='va'>scExp</span>,
  qval.th <span class='op'>=</span> <span class='fl'>0.4</span>, cdiff.th <span class='op'>=</span> <span class='fl'>0.3</span><span class='op'>)</span>
 
-</pre>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

@@ -92,7 +92,10 @@
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/vignette.html">Vignettes overview</a>
+      <a href="../articles/vignette.html">ChromSCape overview</a>
+    </li>
+    <li>
+      <a href="../articles/scCutTag_Bartosovic_H3K27me3.html">scCUT&amp;TAG in the mouse brain</a>
     </li>
   </ul>
 </li>
@@ -154,16 +157,68 @@ with genomic coordinates.</p></td>
     <p>A SingleCellExperiment object with annotated rowData.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='va'>scExp</span> <span class='op'>=</span> <span class='fu'><a href='create_scExp.html'>create_scExp</a></span><span class='op'>(</span><span class='fu'><a href='create_scDataset_raw.html'>create_scDataset_raw</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>$</span><span class='va'>mat</span>,<span class='fu'><a href='create_scDataset_raw.html'>create_scDataset_raw</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>$</span><span class='va'>annot</span><span class='op'>)</span>
-<span class='va'>scExp</span> <span class='op'>=</span> <span class='fu'>feature_annotation_scExp</span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span>
-<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='fu'>SummarizedExperiment</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/SummarizedExperiment/man/RangedSummarizedExperiment-class.html'>rowRanges</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span><span class='op'>)</span>
-
+    <pre class="examples"><div class='input'><span class='va'>scExp</span> <span class='op'>=</span> <span class='fu'><a href='create_scExp.html'>create_scExp</a></span><span class='op'>(</span><span class='fu'><a href='create_scDataset_raw.html'>create_scDataset_raw</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>$</span><span class='va'>mat</span>,<span class='fu'><a href='create_scDataset_raw.html'>create_scDataset_raw</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>$</span><span class='va'>annot</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='message'>ChromSCape::create_scExp - the matrix has 300 cells and 600 features.</span></div><div class='input'><span class='va'>scExp</span> <span class='op'>=</span> <span class='fu'>feature_annotation_scExp</span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='message'>ChromSCape::feature_annotation_scExp - Selecting hg38 genes from Gencode.</span></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='fu'>SummarizedExperiment</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/SummarizedExperiment/man/RangedSummarizedExperiment-class.html'>rowRanges</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; GRanges object with 6 ranges and 3 metadata columns:
+#&gt;                          seqnames            ranges strand |
+#&gt;                             &lt;Rle&gt;         &lt;IRanges&gt;  &lt;Rle&gt; |
+#&gt;           chr1_1_5147117     chr1         1-5147117      * |
+#&gt;    chr1_5147118_10294233     chr1  5147118-10294233      * |
+#&gt;   chr1_10294234_15441350     chr1 10294234-15441350      * |
+#&gt;   chr1_15441351_20588466     chr1 15441351-20588466      * |
+#&gt;   chr1_20588467_25735583     chr1 20588467-25735583      * |
+#&gt;   chr1_25735584_30882699     chr1 25735584-30882699      * |
+#&gt;                                              ID                   Gene
+#&gt;                                     &lt;character&gt;            &lt;character&gt;
+#&gt;           chr1_1_5147117         chr1_1_5147117 MIR1302-2, FAM138A, ..
+#&gt;    chr1_5147118_10294233  chr1_5147118_10294233 RP1-58B11.1, RP11-15..
+#&gt;   chr1_10294234_15441350 chr1_10294234_15441350 PGD, APITD1-CORT, AP..
+#&gt;   chr1_15441351_20588466 chr1_15441351_20588466 CELA2A, CELA2B, CASP..
+#&gt;   chr1_20588467_25735583 chr1_20588467_25735583 CDA, PINK1, PINK1-AS..
+#&gt;   chr1_25735584_30882699 chr1_25735584_30882699 SEPN1, RP1-317E23.6,..
+#&gt;                          distanceToTSS
+#&gt;                              &lt;integer&gt;
+#&gt;           chr1_1_5147117             0
+#&gt;    chr1_5147118_10294233             0
+#&gt;   chr1_10294234_15441350             0
+#&gt;   chr1_15441351_20588466             0
+#&gt;   chr1_20588467_25735583             0
+#&gt;   chr1_25735584_30882699             0
+#&gt;   -------
+#&gt;   seqinfo: 23 sequences from an unspecified genome; no seqlengths</div><div class='input'>
 <span class='co'># Mouse</span>
 <span class='va'>scExp</span> <span class='op'>=</span> <span class='fu'><a href='create_scExp.html'>create_scExp</a></span><span class='op'>(</span><span class='fu'><a href='create_scDataset_raw.html'>create_scDataset_raw</a></span><span class='op'>(</span>ref<span class='op'>=</span><span class='st'>"mm10"</span><span class='op'>)</span><span class='op'>$</span><span class='va'>mat</span>,
   <span class='fu'><a href='create_scDataset_raw.html'>create_scDataset_raw</a></span><span class='op'>(</span>ref<span class='op'>=</span><span class='st'>"mm10"</span><span class='op'>)</span><span class='op'>$</span><span class='va'>annot</span><span class='op'>)</span>
-<span class='va'>scExp</span> <span class='op'>=</span> <span class='fu'>feature_annotation_scExp</span><span class='op'>(</span><span class='va'>scExp</span>,ref<span class='op'>=</span><span class='st'>"mm10"</span><span class='op'>)</span>
-<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='fu'>SummarizedExperiment</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/SummarizedExperiment/man/RangedSummarizedExperiment-class.html'>rowRanges</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span><span class='op'>)</span>
-</pre>
+</div><div class='output co'>#&gt; <span class='message'>ChromSCape::create_scExp - the matrix has 300 cells and 600 features.</span></div><div class='input'><span class='va'>scExp</span> <span class='op'>=</span> <span class='fu'>feature_annotation_scExp</span><span class='op'>(</span><span class='va'>scExp</span>,ref<span class='op'>=</span><span class='st'>"mm10"</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='message'>ChromSCape::feature_annotation_scExp - Selecting mm10 genes from Gencode.</span></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='fu'>SummarizedExperiment</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/SummarizedExperiment/man/RangedSummarizedExperiment-class.html'>rowRanges</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; GRanges object with 6 ranges and 3 metadata columns:
+#&gt;                          seqnames            ranges strand |
+#&gt;                             &lt;Rle&gt;         &lt;IRanges&gt;  &lt;Rle&gt; |
+#&gt;           chr1_1_4542536     chr1         1-4542536      * |
+#&gt;     chr1_4542537_9085072     chr1   4542537-9085072      * |
+#&gt;    chr1_9085073_13627607     chr1  9085073-13627607      * |
+#&gt;   chr1_13627608_18170143     chr1 13627608-18170143      * |
+#&gt;   chr1_18170144_22712679     chr1 18170144-22712679      * |
+#&gt;   chr1_22712680_27255214     chr1 22712680-27255214      * |
+#&gt;                                              ID                   Gene
+#&gt;                                     &lt;character&gt;            &lt;character&gt;
+#&gt;           chr1_1_4542536         chr1_1_4542536 Gm1992, Xkr4, Gm3738..
+#&gt;     chr1_4542537_9085072   chr1_4542537_9085072 Gm37323, Mrpl15, Lyp..
+#&gt;    chr1_9085073_13627607  chr1_9085073_13627607 Sntg1, Rrs1, Adhfe1,..
+#&gt;   chr1_13627608_18170143 chr1_13627608_18170143 Lactb2, Xkr9, Eya1, ..
+#&gt;   chr1_18170144_22712679 chr1_18170144_22712679 Defb18, Defb41, Gm29..
+#&gt;   chr1_22712680_27255214 chr1_22712680_27255214 Rims1, 4933415F23Rik..
+#&gt;                          distanceToTSS
+#&gt;                              &lt;integer&gt;
+#&gt;           chr1_1_4542536             0
+#&gt;     chr1_4542537_9085072             0
+#&gt;    chr1_9085073_13627607             0
+#&gt;   chr1_13627608_18170143             0
+#&gt;   chr1_18170144_22712679             0
+#&gt;   chr1_22712680_27255214             0
+#&gt;   -------
+#&gt;   seqinfo: 21 sequences from an unspecified genome; no seqlengths</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

@@ -92,7 +92,10 @@
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/vignette.html">Vignettes overview</a>
+      <a href="../articles/vignette.html">ChromSCape overview</a>
+    </li>
+    <li>
+      <a href="../articles/scCutTag_Bartosovic_H3K27me3.html">scCUT&amp;TAG in the mouse brain</a>
     </li>
   </ul>
 </li>
@@ -145,11 +148,11 @@
     <p>A GRanges object of genomic coordinates.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples">
+    <pre class="examples"><div class='input'>
 <span class='va'>scExp</span> <span class='op'>=</span> <span class='fu'><a href='create_scExp.html'>create_scExp</a></span><span class='op'>(</span><span class='fu'><a href='create_scDataset_raw.html'>create_scDataset_raw</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>$</span><span class='va'>mat</span>,<span class='fu'><a href='create_scDataset_raw.html'>create_scDataset_raw</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>$</span><span class='va'>annot</span><span class='op'>)</span>
-<span class='va'>feature_GRanges</span> <span class='op'>=</span> <span class='fu'>get_genomic_coordinates</span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='message'>ChromSCape::create_scExp - the matrix has 300 cells and 600 features.</span></div><div class='input'><span class='va'>feature_GRanges</span> <span class='op'>=</span> <span class='fu'>get_genomic_coordinates</span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span>
 
-</pre>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

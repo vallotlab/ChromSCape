@@ -92,7 +92,10 @@
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/vignette.html">Vignettes overview</a>
+      <a href="../articles/vignette.html">ChromSCape overview</a>
+    </li>
+    <li>
+      <a href="../articles/scCutTag_Bartosovic_H3K27me3.html">scCUT&amp;TAG in the mouse brain</a>
     </li>
   </ul>
 </li>
@@ -145,10 +148,23 @@
     <p>The swapped SingleCellExperiment towards "main" experiment</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span>
+    <pre class="examples"><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span>
 <span class='fu'>getMainExperiment</span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span>
-
-</pre>
+</div><div class='output co'>#&gt; class: SingleCellExperiment 
+#&gt; dim: 5499 106 
+#&gt; metadata(6): hc_cor consclust ... diff enr
+#&gt; assays(2): counts normcounts
+#&gt; rownames(5499): chr1_6025000_6030000 chr1_20185000_20190000 ...
+#&gt;   chrX_154395000_154400000 chrX_154545000_154550000
+#&gt; rowData names(4): ID Gene distanceToTSS top_feature
+#&gt; colnames(106): scChIP_Jurkat_K4me3_BC1062721
+#&gt;   scChIP_Jurkat_K4me3_BC12143233 ... scChIP_Ramos_K4me3_BC78985057
+#&gt;   scChIP_Ramos_K4me3_BC9280513
+#&gt; colData names(9): barcode cell_id ... cell_cluster cell_cluster_color
+#&gt; reducedDimNames(3): PCA UMAP Cor
+#&gt; mainExpName: main
+#&gt; altExpNames(0):</div><div class='input'>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

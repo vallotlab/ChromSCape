@@ -102,7 +102,10 @@ ommitted due to peaks smaller than minimum overlap." />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/vignette.html">Vignettes overview</a>
+      <a href="../articles/vignette.html">ChromSCape overview</a>
+    </li>
+    <li>
+      <a href="../articles/scCutTag_Bartosovic_H3K27me3.html">scCUT&amp;TAG in the mouse brain</a>
     </li>
   </ul>
 </li>
@@ -193,11 +196,11 @@ peak as overlapping the bin (150).</p></td>
     <p>A sparse matrix of bins instead of peaks</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='va'>mat</span> <span class='op'>=</span> <span class='fu'><a href='create_scDataset_raw.html'>create_scDataset_raw</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>$</span><span class='va'>mat</span>
+    <pre class="examples"><div class='input'><span class='va'>mat</span> <span class='op'>=</span> <span class='fu'><a href='create_scDataset_raw.html'>create_scDataset_raw</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>$</span><span class='va'>mat</span>
 <span class='va'>binned_mat</span> <span class='op'>=</span> <span class='fu'>peaks_to_bins</span><span class='op'>(</span><span class='va'>mat</span>,bin_width <span class='op'>=</span> <span class='fl'>10e6</span><span class='op'>)</span>
-<span class='fu'><a href='https://rdrr.io/r/base/dim.html'>dim</a></span><span class='op'>(</span><span class='va'>binned_mat</span><span class='op'>)</span>
-
-</pre>
+</div><div class='output co'>#&gt; <span class='message'>ChromSCape::peaks_to_bins - converting 600 peaks into 332 bins of 9302017.63855422 bp in average.</span></div><div class='output co'>#&gt; [1] "Running aggregation of peaks to bins in parallel"</div><div class='output co'>#&gt; <span class='message'>ChromSCape::peaks_to_bins - From peaks to bins in 2.43099999999998 sec.</span></div><div class='output co'>#&gt; <span class='message'>ChromSCape::peaks_to_bins - removed 12 empty bins from the binned matrix.</span></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/base/dim.html'>dim</a></span><span class='op'>(</span><span class='va'>binned_mat</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; [1] 320 300</div><div class='input'>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

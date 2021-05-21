@@ -93,7 +93,10 @@ reduction. Optionally remove non-top features." />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/vignette.html">Vignettes overview</a>
+      <a href="../articles/vignette.html">ChromSCape overview</a>
+    </li>
+    <li>
+      <a href="../articles/scCutTag_Bartosovic_H3K27me3.html">scCUT&amp;TAG in the mouse brain</a>
     </li>
   </ul>
 </li>
@@ -179,10 +182,10 @@ consider a feature close to a gene.</p></td>
     <p>A SCE with top features</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span>
+    <pre class="examples"><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>)</span>
 <span class='va'>scExp_top</span> <span class='op'>=</span> <span class='fu'>find_top_features</span><span class='op'>(</span><span class='va'>scExp</span>, n <span class='op'>=</span> <span class='fl'>4000</span>, keep_others <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
-
-</pre>
+</div><div class='output co'>#&gt; <span class='message'>ChromScape::find_top_features - 4000 features kept as  most covered features...</span></div><div class='input'>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

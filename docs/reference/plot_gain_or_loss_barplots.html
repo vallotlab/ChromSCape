@@ -93,7 +93,10 @@ Plot Gain or Loss of cytobands of the most variables cytobands" />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/vignette.html">Vignettes overview</a>
+      <a href="../articles/vignette.html">ChromSCape overview</a>
+    </li>
+    <li>
+      <a href="../articles/scCutTag_Bartosovic_H3K27me3.html">scCUT&amp;TAG in the mouse brain</a>
     </li>
   </ul>
 </li>
@@ -161,21 +164,21 @@ barplots</p>
 barplots</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples">
+    <pre class="examples"><div class='input'>
 <span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='st'>"scExp"</span><span class='op'>)</span>
 <span class='va'>scExp</span> <span class='op'>=</span> <span class='fu'><a href='calculate_CNA.html'>calculate_CNA</a></span><span class='op'>(</span><span class='va'>scExp</span>,  control_samples <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/unique.html'>unique</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>$</span><span class='va'>sample_id</span><span class='op'>)</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>]</span>,
 ref_genome<span class='op'>=</span><span class='st'>"hg38"</span>, quantiles_to_define_gol <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0.05</span>,<span class='fl'>0.95</span><span class='op'>)</span><span class='op'>)</span>
-<span class='fu'>plot_gain_or_loss_barplots</span><span class='op'>(</span><span class='va'>scExp</span>, cells <span class='op'>=</span> <span class='va'>scExp</span><span class='op'>$</span><span class='va'>cell_id</span><span class='op'>[</span><span class='fu'><a href='https://rdrr.io/r/base/which.html'>which</a></span><span class='op'>(</span>
+</div><div class='output co'>#&gt; <span class='warning'>Warning: One of the cytoBand has no reads in control. Empty control cytobands logRatios are set to 1.</span></div><div class='input'><span class='fu'>plot_gain_or_loss_barplots</span><span class='op'>(</span><span class='va'>scExp</span>, cells <span class='op'>=</span> <span class='va'>scExp</span><span class='op'>$</span><span class='va'>cell_id</span><span class='op'>[</span><span class='fu'><a href='https://rdrr.io/r/base/which.html'>which</a></span><span class='op'>(</span>
 <span class='va'>scExp</span><span class='op'>$</span><span class='va'>sample_id</span> <span class='op'>%in%</span> <span class='fu'><a href='https://rdrr.io/r/base/unique.html'>unique</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>$</span><span class='va'>sample_id</span><span class='op'>)</span><span class='op'>[</span><span class='fl'>2</span><span class='op'>]</span><span class='op'>)</span><span class='op'>]</span><span class='op'>)</span>
-
+</div><div class='img'><img src='plot_gain_or_loss_barplots-1.png' alt='' width='700' height='433' /></div><div class='input'>
 
 <span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='st'>"scExp"</span><span class='op'>)</span>
 <span class='va'>scExp</span> <span class='op'>=</span> <span class='fu'><a href='calculate_CNA.html'>calculate_CNA</a></span><span class='op'>(</span><span class='va'>scExp</span>,  control_samples <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/unique.html'>unique</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>$</span><span class='va'>sample_id</span><span class='op'>)</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>]</span>,
 ref_genome<span class='op'>=</span><span class='st'>"hg38"</span>, quantiles_to_define_gol <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0.05</span>,<span class='fl'>0.95</span><span class='op'>)</span><span class='op'>)</span>
-<span class='fu'>plot_gain_or_loss_barplots</span><span class='op'>(</span><span class='va'>scExp</span>, cells <span class='op'>=</span> <span class='va'>scExp</span><span class='op'>$</span><span class='va'>cell_id</span><span class='op'>[</span><span class='fu'><a href='https://rdrr.io/r/base/which.html'>which</a></span><span class='op'>(</span>
+</div><div class='output co'>#&gt; <span class='warning'>Warning: One of the cytoBand has no reads in control. Empty control cytobands logRatios are set to 1.</span></div><div class='input'><span class='fu'>plot_gain_or_loss_barplots</span><span class='op'>(</span><span class='va'>scExp</span>, cells <span class='op'>=</span> <span class='va'>scExp</span><span class='op'>$</span><span class='va'>cell_id</span><span class='op'>[</span><span class='fu'><a href='https://rdrr.io/r/base/which.html'>which</a></span><span class='op'>(</span>
 <span class='va'>scExp</span><span class='op'>$</span><span class='va'>sample_id</span> <span class='op'>%in%</span> <span class='fu'><a href='https://rdrr.io/r/base/unique.html'>unique</a></span><span class='op'>(</span><span class='va'>scExp</span><span class='op'>$</span><span class='va'>sample_id</span><span class='op'>)</span><span class='op'>[</span><span class='fl'>2</span><span class='op'>]</span><span class='op'>)</span><span class='op'>]</span><span class='op'>)</span>
-
-</pre>
+</div><div class='img'><img src='plot_gain_or_loss_barplots-2.png' alt='' width='700' height='433' /></div><div class='input'>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
