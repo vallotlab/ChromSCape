@@ -579,7 +579,7 @@ plot_intra_correlation_scExp <- function(
     p <- p + scale_fill_manual(values = cols)
     
     if(!is.null(jitter_by)){
-        if(grepl("counts_", jitter_by)){
+        if(grepl("counts", jitter_by)){
             p <- p + geom_jitter(
                 aes(x=.data[[by]], y=.data$intra_corr,
                     color = .data[[jitter_by]]),
