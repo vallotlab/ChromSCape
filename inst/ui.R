@@ -83,6 +83,7 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                             ),
                             body = shinydashboard::dashboardBody(
                               shinyjs::useShinyjs(),
+                              tags$head(tags$link(rel="shortcut icon", href="ChromSCape_logo.png")),
                               tags$head(includeCSS('www/style.css')),
                               tags$head(includeCSS('www/introjs.min.css')),
                               tags$head(includeCSS('www/app.css')),
