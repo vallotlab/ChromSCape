@@ -13,7 +13,9 @@ navbar:
       href: articles/vignette.html
     - text: "Vignettes"
       menu:
-        - text: "Vignettes overview"
+        - text: "ChromSCape overview"
           href: articles/vignette.html
+        - text: "scCUT&TAG in the mouse brain"
+          href: articles/scCutTag_Bartosovic_H3K27me3.html
     - text: "News"
       href: news/index.html

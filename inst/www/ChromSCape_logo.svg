@@ -12,8 +12,8 @@
    viewBox="0 0 12 14"
    version="1.1"
    id="svg1215"
-   inkscape:version="1.0.2 (394de47547, 2021-03-26)"
-   sodipodi:docname="drawing.svg"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="ChromSCape_logo.svg"
    inkscape:export-filename="/home/pacome/Downloads/drawing.png"
    inkscape:export-xdpi="100000"
    inkscape:export-ydpi="100000">
@@ -58,17 +58,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="3.959798"
-     inkscape:cx="116.03898"
-     inkscape:cy="44.389092"
+     inkscape:zoom="10.270313"
+     inkscape:cx="8.7860441"
+     inkscape:cy="29.924374"
      inkscape:document-units="mm"
-     inkscape:current-layer="g2626"
+     inkscape:current-layer="g2847"
      inkscape:document-rotation="0"
      showgrid="false"
-     inkscape:window-width="1920"
-     inkscape:window-height="960"
-     inkscape:window-x="0"
-     inkscape:window-y="27"
+     inkscape:window-width="1859"
+     inkscape:window-height="1056"
+     inkscape:window-x="61"
+     inkscape:window-y="24"
      inkscape:window-maximized="1"
      fit-margin-top="0"
      fit-margin-left="0"
@@ -82,7 +82,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -106,24 +106,30 @@
            points="90.5,0 181,52.2 181,156.8 90.5,209 0,156.8 0,52.2 "
            id="polygon835"
            transform="matrix(0.26458333,0,0,0.26458333,12.486991,6.0428491)"
-           style="fill:#6b971e;fill-opacity:1;stroke-width:1.00157;stroke-miterlimit:4;stroke-dasharray:none" />
+           style="fill:#384c7d;fill-opacity:1;stroke-width:1.00157;stroke-miterlimit:4;stroke-dasharray:none" />
         <polygon
            class="st1"
            points="90.5,8.7 173.5,56.6 173.5,152.4 90.5,200.3 7.5,152.4 7.5,56.6 "
            id="polygon837"
            transform="matrix(0.26458333,0,0,0.26458333,12.486991,6.0428491)"
-           style="fill:#f39630;fill-opacity:1" />
+           style="fill:#8d8cea;fill-opacity:0.76368874" />
         <text
            xml:space="preserve"
            id="text1139"
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.3778px;line-height:1.25;font-family:AnjaliOldLipi;-inkscape-font-specification:'AnjaliOldLipi, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;white-space:pre;shape-inside:url(#rect1141);fill:#ffffff;fill-opacity:1;stroke-width:1.00076;stroke-miterlimit:4;stroke-dasharray:none;"
-           transform="matrix(0.53714747,0,0,0.53714747,102.32336,96.630632)"><tspan
-             x="-160.97064"
-             y="-98.33509"><tspan
-               style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:13.3778px;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">C</tspan><tspan
-               style="font-weight:normal">hrom</tspan><tspan
-               style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:13.3778px;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">SC</tspan><tspan
-               style="font-weight:normal">ape</tspan></tspan></text>
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:6.5304122px;line-height:1.25;font-family:AnjaliOldLipi;-inkscape-font-specification:'AnjaliOldLipi, Normal';text-align:center;white-space:pre;fill:#ffffff;fill-opacity:1;stroke-width:1.00075996;stroke-miterlimit:4;stroke-dasharray:none"
+           x="94.463547"
+           y="91.949089"><tspan
+             x="15.88526"
+             y="43.946522"
+             id="tspan18"><tspan
+               style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:6.5304122px;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter, Bold'"
+               id="tspan20">C</tspan><tspan
+               style="font-weight:normal"
+               id="tspan22">hrom</tspan><tspan
+               style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:6.5304122px;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter, Bold'"
+               id="tspan24">SC</tspan><tspan
+               style="font-weight:normal"
+               id="tspan26">ape</tspan></tspan></text>
         <g
            id="g2517">
           <g
@@ -186,7 +192,9 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.3778px;line-height:1.25;font-family:AnjaliOldLipi;-inkscape-font-specification:'AnjaliOldLipi, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;white-space:pre;shape-inside:url(#rect1141-7);fill:#ffffff;fill-opacity:1;stroke-width:1.00076;stroke-miterlimit:4;stroke-dasharray:none;"
            transform="matrix(0.08980188,-0.0502782,0.0502782,0.08980188,59.585792,59.536753)"><tspan
              x="-184.74759"
-             y="-101.0765"><tspan>Institut Curie - CNRS</tspan></tspan></text>
+             y="-101.0765"
+             id="tspan41"><tspan
+               id="tspan43">Institut Curie - CNRS</tspan></tspan></text>
       </g>
     </g>
   </g>
