@@ -85,7 +85,7 @@
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Analysis of scCUT&amp;TAG in the mouse brain in different histone marks</h1>
             
-            <h4 class="date">2021-05-20</h4>
+            <h4 class="date">2021-05-21</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/vallotlab/ChromSCape/blob/master/vignettes/scCutTag_Bartosovic_H3K27me3.Rmd"><code>vignettes/scCutTag_Bartosovic_H3K27me3.Rmd</code></a></small>
       <div class="hidden name"><code>scCutTag_Bartosovic_H3K27me3.Rmd</code></div>
@@ -129,7 +129,7 @@ Info buttons are also here to help you when you are not sure about some features
 <p>First we will load the pre-computed SingleCellExperiments (replace the path with the path where you downloaded the computed analysis)</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Load the preprocessed data (in the 'Filtering_Normalize_Reduce' folder)</span>
-<span class="va">ChromScape_path</span> <span class="op">=</span> <span class="st">"/media/pprompsy/LaCie/InstitutCurie/Documents/Data/ChromSCape_Data/ChromSCape_3.13_2/ChromSCape_analyses/"</span>
+<span class="va">ChromScape_path</span> <span class="op">=</span> <span class="st">"/media/pacome/LaCie/InstitutCurie/Documents/Data/ChromSCape_Data/ChromSCape_3.13_2/ChromSCape_analyses/"</span>
 
 <span class="va">scExp</span> <span class="op">=</span> <span class="fu">qs</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs/man/qread.html">qread</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">ChromScape_path</span>,<span class="st">"Bartosovic_scCutTag_H3K27me3"</span>, <span class="st">"Filtering_Normalize_Reduce"</span>,<span class="st">"Bartosovic_scCutTag_H3K27me3_100_40000_99.88_uncorrected.qs"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 </div>
@@ -146,26 +146,43 @@ Info buttons are also here to help you when you are not sure about some features
 <p>We can now plot the PCA and the UMAP of the dataset, colored by replicate. Note that the first Principal Component (PC) of the PCA was removed as with TF-IDF normalization the first PC is almost always driven by count.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Plot PCA (remember PC1 was removed as in TF-IDF + PCA, PC1 is driven by total count) &amp; UMAP</span>
-<span class="va">p1</span> <span class="op">=</span> <span class="fu"><a href="../reference/plot_reduced_dim_scExp.html">plot_reduced_dim_scExp</a></span><span class="op">(</span><span class="va">scExp</span>, color_by <span class="op">=</span> <span class="st">"replicate"</span>, reduced_dim <span class="op">=</span> <span class="st">"PCA"</span>, downsample <span class="op">=</span> <span class="fl">10e6</span>, transparency <span class="op">=</span> <span class="fl">0.1</span>, size <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>
-<span class="va">p2</span> <span class="op">=</span> <span class="fu"><a href="../reference/plot_reduced_dim_scExp.html">plot_reduced_dim_scExp</a></span><span class="op">(</span><span class="va">scExp</span>, color_by <span class="op">=</span> <span class="st">"replicate"</span>, reduced_dim <span class="op">=</span> <span class="st">"UMAP"</span>, downsample <span class="op">=</span> <span class="fl">10e6</span>, transparency <span class="op">=</span> <span class="fl">0.1</span>, size <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>
+<span class="va">p1</span> <span class="op">=</span> <span class="fu"><a href="../reference/plot_reduced_dim_scExp.html">plot_reduced_dim_scExp</a></span><span class="op">(</span><span class="va">scExp</span>, color_by <span class="op">=</span> <span class="st">"replicate"</span>, reduced_dim <span class="op">=</span> <span class="st">"PCA"</span>,
+                            downsample <span class="op">=</span> <span class="fl">10e6</span>, transparency <span class="op">=</span> <span class="fl">0.1</span>, size <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>
+<span class="va">p2</span> <span class="op">=</span> <span class="fu"><a href="../reference/plot_reduced_dim_scExp.html">plot_reduced_dim_scExp</a></span><span class="op">(</span><span class="va">scExp</span>, color_by <span class="op">=</span> <span class="st">"replicate"</span>, reduced_dim <span class="op">=</span> <span class="st">"UMAP"</span>,
+                            downsample <span class="op">=</span> <span class="fl">10e6</span>, transparency <span class="op">=</span> <span class="fl">0.1</span>, size <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>
 <span class="fu">gridExtra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html">grid.arrange</a></span><span class="op">(</span><span class="va">p1</span>,<span class="va">p2</span><span class="op">)</span></code></pre></div>
 <p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-5-1.png" width="700"></p>
 <p>We observe clear clusters on the UMAP, that happen to be more discontinous than what was observed in the original paper. On the UMAP, it seems that some clusters are specific to one or two replicates. Let’s check that later when we will choose the clusters. This might be because replicates have s1 &amp; 2 are older mice while replicate 4 is GFP+ and other clusters GFP-.</p>
 <hr>
 <p>Let’s vizualise the PCA and UMAP of the normalized data. For this dataset we used the TF-IDF normalization, as the cells are binned on small genomic bins (5000bp).</p>
 <p>This is why the first component of the PCA was removed from the analysis as it is almost always strongly driven by the total counts (library size).</p>
+<p>Let’s plot the UMAP colored by the number of reads in each cell, e.g. ‘total_counts’.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">p1</span> <span class="op">=</span> <span class="fu"><a href="../reference/plot_reduced_dim_scExp.html">plot_reduced_dim_scExp</a></span><span class="op">(</span><span class="va">scExp</span>, color_by <span class="op">=</span> <span class="st">"total_counts"</span>, reduced_dim <span class="op">=</span> <span class="st">"PCA"</span>, downsample <span class="op">=</span> <span class="fl">10e6</span>, transparency <span class="op">=</span> <span class="fl">0.2</span>, size <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>
-<span class="va">p2</span> <span class="op">=</span> <span class="fu"><a href="../reference/plot_reduced_dim_scExp.html">plot_reduced_dim_scExp</a></span><span class="op">(</span><span class="va">scExp</span>, color_by <span class="op">=</span> <span class="st">"total_counts"</span>, reduced_dim <span class="op">=</span> <span class="st">"UMAP"</span>, downsample <span class="op">=</span> <span class="fl">10e6</span>, transparency <span class="op">=</span> <span class="fl">0.2</span>, size <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>
-<span class="fu">gridExtra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html">grid.arrange</a></span><span class="op">(</span><span class="va">p1</span>,<span class="va">p2</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="../reference/plot_reduced_dim_scExp.html">plot_reduced_dim_scExp</a></span><span class="op">(</span><span class="va">scExp</span>, color_by <span class="op">=</span> <span class="st">"total_counts"</span>, reduced_dim <span class="op">=</span> <span class="st">"UMAP"</span>,
+                            downsample <span class="op">=</span> <span class="fl">10e6</span>, transparency <span class="op">=</span> <span class="fl">0.2</span>, size <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></code></pre></div>
 <p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-6-1.png" width="700"></p>
 </div>
-<div id="pca-umap-plots-of-replicates-total-counts-1" class="section level2">
+<div id="features-contributing-the-most-to-cell-type-differenciation" class="section level2">
 <h2 class="hasAnchor">
-<a href="#pca-umap-plots-of-replicates-total-counts-1" class="anchor"></a>PCA &amp; UMAP plots of replicates &amp; total counts</h2>
+<a href="#features-contributing-the-most-to-cell-type-differenciation" class="anchor"></a>Features contributing the most to cell type differenciation</h2>
+<p>A simple way to find interesting features and genes is to retrieve the features that contributed the most to the PCA and therefore to the cell type differences.</p>
+<p>Let’s plot the list of the top 15 most contributing features to the second and third component of the PCA. Green bars show positive contribution and red bars show negative contribution. Features that have both a positive or negative contribution are probably correlated, while genes having opposite contribution will most likely be anti-correlated.</p>
+<p>Let’s plot feature contribution to the second component :</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="../reference/plot_most_contributing_features.html">plot_most_contributing_features</a></span><span class="op">(</span><span class="va">scExp</span>,component <span class="op">=</span> <span class="st">"Component_2"</span>, n_top_bot <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></code></pre></div>
+<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-7-1.png" width="700"></p>
+<p>Let’s plot feature contribution to the second component :</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="../reference/plot_most_contributing_features.html">plot_most_contributing_features</a></span><span class="op">(</span><span class="va">scExp</span>,component <span class="op">=</span> <span class="st">"Component_3"</span>, n_top_bot <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></code></pre></div>
+<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-8-1.png" width="700"></p>
+<p>As we can see, many genes involved in brain development &amp; nervous sytem cell types are present: Olig2, Neurod2, Nkx6-2, Eomes, Barhl1, Lhx1, Prdm8, Prdm12, Islr2…</p>
+</div>
+<div id="marker-genes" class="section level2">
+<h2 class="hasAnchor">
+<a href="#marker-genes" class="anchor"></a>Marker Genes</h2>
 <p>We can now take the markers used in the paper for H3K27me3 and color the UMAP with the loci signal at the gene’s locations. Note that for repressive marks such as H3K27me3, the signal is supposedly anti-correlated with expression, therefore cells likely to express marker genes are cells lacking the signal.</p>
 <p>For Rfx4 and Olig2, it seems that those genes are marked by H3K27me3 in all clusters but 2 and 3.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">OLG_marker_genes</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Rfx4"</span>,<span class="st">"Olig2"</span>,<span class="st">"Pdgfra"</span>,<span class="st">"Nkx6-2"</span>, <span class="st">"Alx4"</span>, <span class="st">"Neurod2"</span>, <span class="st">"Gad1"</span>, <span class="st">"Foxf2"</span>,<span class="st">"Cttn"</span><span class="op">)</span> 
 <span class="va">p</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="op">)</span>
 <span class="kw">for</span><span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq_along</a></span><span class="op">(</span><span class="va">OLG_marker_genes</span><span class="op">)</span><span class="op">)</span><span class="op">{</span>
@@ -176,17 +193,22 @@ Info buttons are also here to help you when you are not sure about some features
                                   <span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html">theme</a></span><span class="op">(</span>axis.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html">element_blank</a></span><span class="op">(</span><span class="op">)</span>,
                                                      legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span>
                                   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">ggtitle</a></span><span class="op">(</span><span class="va">gene</span><span class="op">)</span>
-<span class="op">}</span>
-<span class="fu">gridExtra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html">grid.arrange</a></span><span class="op">(</span>grobs <span class="op">=</span> <span class="va">p</span>, ncol <span class="op">=</span> <span class="fl">3</span>, nrow <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></code></pre></div>
-<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-7-1.png" width="700"> ## Clustering and correlations</p>
+<span class="op">}</span></code></pre></div>
+<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-10-1.png" width="1440"></p>
+<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-11-1.png" width="1440"></p>
+<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-12-1.png" width="1440"></p>
+</div>
+<div id="clustering-and-correlations" class="section level2">
+<h2 class="hasAnchor">
+<a href="#clustering-and-correlations" class="anchor"></a>Clustering and correlations</h2>
 <p>Let’s check the cell-to-cell correlation by plotting a heatmap. We will check if cells group by correlation accordingly how they group on the UMAP feature space.</p>
 <p>This also shows us if there are cells with very low correlation scores, that might be low covered cells or artifacts that we can later filter out using the <code><a href="../reference/filter_correlated_cell_scExp.html">?filter_correlated_cell_scExp</a></code> function.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/plot_heatmap_scExp.html">plot_heatmap_scExp</a></span><span class="op">(</span><span class="va">scExp</span>, downsample <span class="op">=</span> <span class="fl">3000</span><span class="op">)</span></code></pre></div>
-<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-8-1.png" width="700"></p>
+<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-13-1.png" width="700"></p>
 <p>On the heatmap we can distinguish between 7 and 9 red squares, representing groups of highly correlated cells, e.g. clusters.</p>
 <p>Some cells seem to have low correlation values with other cells, and group with the largest cell cluster, let’s filter lowly correlated cells first and then define the clusters.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scExp_cf</span> <span class="op">=</span> <span class="fu"><a href="../reference/filter_correlated_cell_scExp.html">filter_correlated_cell_scExp</a></span><span class="op">(</span><span class="va">scExp</span>,
                                         random_iter <span class="op">=</span> <span class="fl">5</span>, <span class="co"># for speed</span>
                                         corr_threshold <span class="op">=</span> <span class="fl">99</span>,
@@ -194,19 +216,24 @@ Info buttons are also here to help you when you are not sure about some features
 <pre><code>## ChromSCape::filter_correlated_cell_scExp - Calculating correlation threshold using random matrix values...</code></pre>
 <pre><code>## ChromSCape::filter_correlated_cell_scExp - Filtering low correlated cells...</code></pre>
 <pre><code>## ChromSCape::filter_correlated_cell_scExp - Re-calculating hierarchical clustering...</code></pre>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="st">"Filtered "</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">scExp</span><span class="op">)</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">scExp_cf</span><span class="op">)</span>, <span class="st">" lowly correlated cells.\n"</span><span class="op">)</span></code></pre></div>
-<pre><code>## Filtered  552  lowly correlated cells.</code></pre>
-<p>Let’s pick 8 clusters using hierarchical clustering on the correlation matrix, as shown above the heatmap.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">scExp_cf</span> <span class="op">=</span> <span class="fu"><a href="../reference/choose_cluster_scExp.html">choose_cluster_scExp</a></span><span class="op">(</span><span class="va">scExp_cf</span>, nclust <span class="op">=</span> <span class="fl">8</span><span class="op">)</span>
-<span class="fu"><a href="../reference/plot_heatmap_scExp.html">plot_heatmap_scExp</a></span><span class="op">(</span><span class="va">scExp</span><span class="op">)</span></code></pre></div>
-<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-10-1.png" width="700"></p>
-<p>Let’s color the cells by cluster to see if the correlation clusters match the clusters observed in the 2D UMAP space.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plot_reduced_dim_scExp.html">plot_reduced_dim_scExp</a></span><span class="op">(</span><span class="va">scExp_cf</span>, color_by <span class="op">=</span> <span class="st">"cell_cluster"</span>, reduced_dim <span class="op">=</span> <span class="st">"UMAP"</span><span class="op">)</span></code></pre></div>
-<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-11-1.png" width="700"> Finally we can plot a nice table to see the repartition of replicates in each of the clusters.</p>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="st">"Filtered "</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">scExp</span><span class="op">)</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">scExp_cf</span><span class="op">)</span>, <span class="st">" lowly correlated cells.\n"</span><span class="op">)</span></code></pre></div>
+<pre><code>## Filtered  555  lowly correlated cells.</code></pre>
+<p>Let’s pick 8 clusters using hierarchical clustering on the correlation matrix, as shown above the heatmap.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">47</span><span class="op">)</span>
+<span class="va">scExp_cf</span> <span class="op">=</span> <span class="fu"><a href="../reference/choose_cluster_scExp.html">choose_cluster_scExp</a></span><span class="op">(</span><span class="va">scExp_cf</span>, nclust <span class="op">=</span> <span class="fl">8</span><span class="op">)</span>
+<span class="fu"><a href="../reference/plot_heatmap_scExp.html">plot_heatmap_scExp</a></span><span class="op">(</span><span class="va">scExp_cf</span><span class="op">)</span></code></pre></div>
+<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-15-1.png" width="700"></p>
+<p>Most clusters seem to correspond to highly correlated cells. The biggest cluster in blue seem to be less homoegeneous than the other.</p>
+<p>Let’s color the cells by cluster to see if the correlation clusters match the clusters observed in the 2D UMAP space.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="../reference/plot_reduced_dim_scExp.html">plot_reduced_dim_scExp</a></span><span class="op">(</span><span class="va">scExp_cf</span>, color_by <span class="op">=</span> <span class="st">"cell_cluster"</span>, reduced_dim <span class="op">=</span> <span class="st">"UMAP"</span>, downsample <span class="op">=</span> <span class="fl">10e6</span>, size <span class="op">=</span> <span class="fl">0.1</span>, transparency <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></code></pre></div>
+<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-16-1.png" width="700"></p>
+<p>Interestingly, cluster C6 regroups cells that are separated on the UMAP. That might indicate that these cells are differentiation from cluster C1 to cluster C6 (or the contrary).</p>
+<p>In our hands, correlation clustering can sometimes give results that are not perfectly matching clusters observed in the UMAP, that would be called directly by algorithm such as Louvain clustering.</p>
+<p>Finally we can plot a nice table to see the repartition of replicates in each of the clusters.</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scExp_cf</span><span class="op">$</span><span class="va">sample_id</span> <span class="op">=</span> <span class="va">scExp_cf</span><span class="op">$</span><span class="va">replicate</span> <span class="co"># Assign replicate to sample_id</span>
 <span class="va">scExp_cf</span> <span class="op">=</span> <span class="fu"><a href="../reference/colors_scExp.html">colors_scExp</a></span><span class="op">(</span><span class="va">scExp_cf</span>, annotCol <span class="op">=</span> <span class="st">"sample_id"</span><span class="op">)</span> <span class="co"># Assign replicate to sample_id</span>
 <span class="fu"><a href="../reference/num_cell_in_cluster_scExp.html">num_cell_in_cluster_scExp</a></span><span class="op">(</span><span class="va">scExp_cf</span><span class="op">)</span></code></pre></div>
@@ -248,22 +275,22 @@ Info buttons are also here to help you when you are not sure about some features
 <span style=" font-weight: bold;    color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: #4285F4 !important;">N1</span>
 </td>
 <td style="text-align:center;">
-686
+716
 </td>
 <td style="text-align:center;">
 98
 </td>
 <td style="text-align:center;">
-1054
+1057
 </td>
 <td style="text-align:center;">
 313
 </td>
 <td style="text-align:center;">
-354
+356
 </td>
 <td style="text-align:center;">
-137
+100
 </td>
 <td style="text-align:center;">
 12
@@ -272,7 +299,7 @@ Info buttons are also here to help you when you are not sure about some features
 38
 </td>
 <td style="text-align:center;">
-2692
+2690
 </td>
 </tr>
 <tr>
@@ -280,13 +307,13 @@ Info buttons are also here to help you when you are not sure about some features
 <span style=" font-weight: bold;    color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: #DB4437 !important;">N2</span>
 </td>
 <td style="text-align:center;">
-906
+966
 </td>
 <td style="text-align:center;">
 66
 </td>
 <td style="text-align:center;">
-925
+929
 </td>
 <td style="text-align:center;">
 306
@@ -295,7 +322,7 @@ Info buttons are also here to help you when you are not sure about some features
 300
 </td>
 <td style="text-align:center;">
-295
+231
 </td>
 <td style="text-align:center;">
 16
@@ -312,13 +339,13 @@ Info buttons are also here to help you when you are not sure about some features
 <span style=" font-weight: bold;    color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: #F4B400 !important;">N3</span>
 </td>
 <td style="text-align:center;">
-1623
+1757
 </td>
 <td style="text-align:center;">
 722
 </td>
 <td style="text-align:center;">
-286
+287
 </td>
 <td style="text-align:center;">
 314
@@ -327,7 +354,7 @@ Info buttons are also here to help you when you are not sure about some features
 707
 </td>
 <td style="text-align:center;">
-508
+373
 </td>
 <td style="text-align:center;">
 368
@@ -344,7 +371,7 @@ Info buttons are also here to help you when you are not sure about some features
 <span style=" font-weight: bold;    color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: #0F9D58 !important;">N4</span>
 </td>
 <td style="text-align:center;">
-205
+244
 </td>
 <td style="text-align:center;">
 13
@@ -359,7 +386,7 @@ Info buttons are also here to help you when you are not sure about some features
 15
 </td>
 <td style="text-align:center;">
-371
+331
 </td>
 <td style="text-align:center;">
 881
@@ -368,7 +395,7 @@ Info buttons are also here to help you when you are not sure about some features
 417
 </td>
 <td style="text-align:center;">
-2127
+2126
 </td>
 </tr>
 <tr>
@@ -376,22 +403,22 @@ Info buttons are also here to help you when you are not sure about some features
 <span style=" font-weight: bold;    color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: black !important;">#Cells</span>
 </td>
 <td style="text-align:center;">
-3420
+3683
 </td>
 <td style="text-align:center;">
 899
 </td>
 <td style="text-align:center;">
-2427
+2435
 </td>
 <td style="text-align:center;">
 996
 </td>
 <td style="text-align:center;">
-1376
+1378
 </td>
 <td style="text-align:center;">
-1311
+1035
 </td>
 <td style="text-align:center;">
 1277
@@ -400,7 +427,7 @@ Info buttons are also here to help you when you are not sure about some features
 578
 </td>
 <td style="text-align:center;">
-12284
+12281
 </td>
 </tr>
 <tr>
@@ -438,122 +465,133 @@ Info buttons are also here to help you when you are not sure about some features
 </div>
 <p>Clusters 7 &amp; 8 seems to be enriched in N3 &amp; N4 populations.</p>
 </div>
+<div id="intra-and-inter-cluster-correlation" class="section level2">
+<h2 class="hasAnchor">
+<a href="#intra-and-inter-cluster-correlation" class="anchor"></a>Intra and Inter-cluster correlation</h2>
+<p>A interesting metrics is the cell-to-cell correlation between clusters, as it can indicates which cell types share a common epigentic landscape and which cell types are far from each other.</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="../reference/plot_intra_correlation_scExp.html">plot_intra_correlation_scExp</a></span><span class="op">(</span><span class="va">scExp_cf</span>, by <span class="op">=</span> <span class="st">"cell_cluster"</span><span class="op">)</span></code></pre></div>
+<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-18-1.png" width="1440"> We observe the lowest intra-correlation scores for clusters C1 and C6, showing that the H3K27me3 profile of cells in these clusters is more heterogeneous than in other cells.</p>
+<p>Let’s now plot correlation between C1 and the rest:</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="../reference/plot_inter_correlation_scExp.html">plot_inter_correlation_scExp</a></span><span class="op">(</span><span class="va">scExp_cf</span>, by <span class="op">=</span> <span class="st">"cell_cluster"</span>, reference_group <span class="op">=</span> <span class="st">"C1"</span><span class="op">)</span></code></pre></div>
+<p><img src="scCutTag_Bartosovic_H3K27me3_files/figure-html/unnamed-chunk-19-1.png" width="1440"></p>
+</div>
 <div id="session-information" class="section level2">
 <h2 class="hasAnchor">
 <a href="#session-information" class="anchor"></a>Session information</h2>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
-<pre><code>## R Under development (unstable) (2020-12-16 r79643)
+<pre><code>## R Under development (unstable) (2021-04-08 r80148)
 ## Platform: x86_64-pc-linux-gnu (64-bit)
-## Running under: Ubuntu 16.04.7 LTS
+## Running under: Ubuntu 18.04.5 LTS
 ## 
 ## Matrix products: default
-## BLAS:   /home/pprompsy/R/R-4.1/R-devel/lib/libRblas.so
-## LAPACK: /home/pprompsy/R/R-4.1/R-devel/lib/libRlapack.so
+## BLAS:   /home/pacome/R/R-devel/lib/libRblas.so
+## LAPACK: /home/pacome/R/R-devel/lib/libRlapack.so
 ## 
 ## locale:
 ##  [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
-##  [3] LC_TIME=fr_FR.UTF-8        LC_COLLATE=en_US.UTF-8    
-##  [5] LC_MONETARY=fr_FR.UTF-8    LC_MESSAGES=en_US.UTF-8   
-##  [7] LC_PAPER=fr_FR.UTF-8       LC_NAME=C                 
+##  [3] LC_TIME=en_GB.UTF-8        LC_COLLATE=en_US.UTF-8    
+##  [5] LC_MONETARY=en_GB.UTF-8    LC_MESSAGES=en_US.UTF-8   
+##  [7] LC_PAPER=en_GB.UTF-8       LC_NAME=C                 
 ##  [9] LC_ADDRESS=C               LC_TELEPHONE=C            
-## [11] LC_MEASUREMENT=fr_FR.UTF-8 LC_IDENTIFICATION=C       
+## [11] LC_MEASUREMENT=en_GB.UTF-8 LC_IDENTIFICATION=C       
 ## 
 ## attached base packages:
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-## [1] ggplot2_3.3.3    gridExtra_2.3    ChromSCape_1.1.5
+## [1] ggplot2_3.3.3    gridExtra_2.3    ChromSCape_1.1.3
 ## 
 ## loaded via a namespace (and not attached):
 ##   [1] utf8_1.2.1                   shinydashboard_0.7.1        
 ##   [3] reticulate_1.20              tidyselect_1.1.1            
-##   [5] RSQLite_2.2.7                AnnotationDbi_1.53.1        
+##   [5] RSQLite_2.2.7                AnnotationDbi_1.53.2        
 ##   [7] htmlwidgets_1.5.3            grid_4.1.0                  
 ##   [9] BiocParallel_1.25.5          Rtsne_0.15                  
 ##  [11] munsell_0.5.0                ScaledMatrix_0.99.2         
-##  [13] ragg_1.1.2                   statmod_1.4.35              
-##  [15] scran_1.19.19                DT_0.18                     
+##  [13] ragg_1.1.2                   statmod_1.4.36              
+##  [15] scran_1.19.23                DT_0.18                     
 ##  [17] umap_0.2.7.0                 miniUI_0.1.1.1              
-##  [19] withr_2.4.2                  batchelor_1.7.14            
+##  [19] withr_2.4.2                  batchelor_1.7.15            
 ##  [21] colorspace_2.0-1             Biobase_2.51.0              
 ##  [23] filelock_1.0.2               highr_0.9                   
 ##  [25] knitr_1.33                   rstudioapi_0.13             
 ##  [27] stats4_4.1.0                 SingleCellExperiment_1.13.14
 ##  [29] labeling_0.4.2               MatrixGenerics_1.3.1        
-##  [31] GenomeInfoDbData_1.2.5       farver_2.1.0                
+##  [31] GenomeInfoDbData_1.2.6       farver_2.1.0                
 ##  [33] bit64_4.0.5                  rprojroot_2.0.2             
 ##  [35] vctrs_0.3.8                  generics_0.1.0              
-##  [37] xfun_0.22                    BiocFileCache_1.99.7        
+##  [37] xfun_0.23                    BiocFileCache_1.99.8        
 ##  [39] rlist_0.4.6.1                R6_2.5.0                    
-##  [41] GenomeInfoDb_1.27.11         ggbeeswarm_0.6.0            
+##  [41] GenomeInfoDb_1.27.13         ggbeeswarm_0.6.0            
 ##  [43] rsvd_1.0.5                   locfit_1.5-9.4              
 ##  [45] msigdbr_7.4.1                bitops_1.0-7                
-##  [47] cachem_1.0.4                 DelayedArray_0.17.13        
+##  [47] cachem_1.0.5                 DelayedArray_0.17.13        
 ##  [49] assertthat_0.2.1             promises_1.2.0.1            
 ##  [51] BiocIO_1.1.2                 shinycssloaders_1.0.0       
 ##  [53] scales_1.1.1                 beeswarm_0.3.1              
-##  [55] gtable_0.3.0                 beachmat_2.7.7              
+##  [55] gtable_0.3.0                 beachmat_2.7.9              
 ##  [57] qualV_0.3-3                  rlang_0.4.11                
-##  [59] systemfonts_1.0.1            coop_0.6-2                  
+##  [59] systemfonts_1.0.2            coop_0.6-2                  
 ##  [61] rtracklayer_1.51.5           lazyeval_0.2.2              
 ##  [63] yaml_2.2.1                   httpuv_1.6.1                
 ##  [65] tools_4.1.0                  ellipsis_0.3.2              
 ##  [67] kableExtra_1.3.4             jquerylib_0.1.4             
-##  [69] BiocGenerics_0.37.5          Rcpp_1.0.6                  
+##  [69] BiocGenerics_0.37.6          Rcpp_1.0.6                  
 ##  [71] sparseMatrixStats_1.3.8      progress_1.2.2              
 ##  [73] zlibbioc_1.37.0              purrr_0.3.4                 
 ##  [75] RCurl_1.98-1.3               prettyunits_1.1.1           
-##  [77] openssl_1.4.4                viridis_0.6.0               
-##  [79] S4Vectors_0.29.18            zoo_1.8-9                   
-##  [81] SummarizedExperiment_1.21.3  cluster_2.1.0               
+##  [77] openssl_1.4.4                viridis_0.6.1               
+##  [79] S4Vectors_0.29.19            zoo_1.8-9                   
+##  [81] SummarizedExperiment_1.21.3  cluster_2.1.2               
 ##  [83] colorRamps_2.3               fs_1.5.0                    
-##  [85] magrittr_2.0.1               RSpectra_0.16-0             
-##  [87] data.table_1.14.0            ResidualMatrix_1.1.0        
+##  [85] magrittr_2.0.1               data.table_1.14.0           
+##  [87] RSpectra_0.16-0              ResidualMatrix_1.1.0        
 ##  [89] colourpicker_1.1.0           matrixStats_0.58.0          
-##  [91] stringfish_0.15.1            hms_1.0.0                   
+##  [91] stringfish_0.15.1            hms_1.1.0                   
 ##  [93] qs_0.24.1                    shinyjs_2.0.0               
 ##  [95] mime_0.10                    evaluate_0.14               
 ##  [97] xtable_1.8-4                 XML_3.99-0.6                
 ##  [99] IRanges_2.25.11              compiler_4.1.0              
 ## [101] biomaRt_2.47.9               shinyhelper_0.3.2           
-## [103] scater_1.19.11               tibble_3.1.1                
-## [105] KernSmooth_2.23-18           crayon_1.4.1                
+## [103] scater_1.19.13               tibble_3.1.2                
+## [105] KernSmooth_2.23-20           crayon_1.4.1                
 ## [107] htmltools_0.5.1.1            later_1.2.0                 
 ## [109] tidyr_1.1.3                  RcppParallel_5.1.4          
 ## [111] DBI_1.1.1                    RApiSerialize_0.1.0         
 ## [113] dbplyr_2.1.1                 rappdirs_0.3.3              
-## [115] babelgene_21.4               Matrix_1.2-18               
-## [117] parallel_4.1.0               metapod_0.99.5              
+## [115] babelgene_21.4               Matrix_1.3-3                
+## [117] parallel_4.1.0               metapod_0.99.6              
 ## [119] igraph_1.2.6                 GenomicRanges_1.43.4        
 ## [121] forcats_0.5.1                pkgconfig_2.0.3             
 ## [123] pkgdown_1.6.1                GenomicAlignments_1.27.2    
-## [125] plotly_4.9.3                 scuttle_1.1.18              
+## [125] plotly_4.9.3                 scuttle_1.1.20              
 ## [127] xml2_1.3.2                   svglite_2.0.0               
-## [129] vipor_0.4.5                  bslib_0.2.4                 
+## [129] vipor_0.4.5                  bslib_0.2.5                 
 ## [131] dqrng_0.3.0                  stringdist_0.9.6.3          
 ## [133] webshot_0.5.2                XVector_0.31.1              
 ## [135] rvest_1.0.0                  stringr_1.4.0               
 ## [137] digest_0.6.27                ConsensusClusterPlus_1.55.0 
-## [139] matrixTests_0.1.9            Biostrings_2.59.2           
-## [141] rmarkdown_2.8                edgeR_3.33.3                
-## [143] DelayedMatrixStats_1.13.6    restfulr_0.0.13             
-## [145] curl_4.3.1                   shiny_1.6.0                 
-## [147] Rsamtools_2.7.2              rjson_0.2.20                
-## [149] lifecycle_1.0.0              jsonlite_1.7.2              
-## [151] BiocNeighbors_1.9.4          askpass_1.1                 
-## [153] desc_1.3.0                   viridisLite_0.4.0           
-## [155] limma_3.47.13                fansi_0.4.2                 
-## [157] pillar_1.6.0                 lattice_0.20-41             
-## [159] shinyFiles_0.9.0             KEGGREST_1.31.2             
-## [161] fastmap_1.1.0                httr_1.4.2                  
-## [163] glue_1.4.2                   png_0.1-7                   
-## [165] Sushi_1.29.0                 bluster_1.1.12              
-## [167] bit_4.0.4                    stringi_1.5.3               
-## [169] sass_0.3.1                   blob_1.2.1                  
-## [171] textshaping_0.3.4            BiocSingular_1.7.2          
-## [173] memoise_2.0.0                dplyr_1.0.6                 
-## [175] irlba_2.3.3</code></pre>
+## [139] Biostrings_2.59.4            rmarkdown_2.8               
+## [141] edgeR_3.33.7                 DelayedMatrixStats_1.13.6   
+## [143] restfulr_0.0.13              curl_4.3.1                  
+## [145] shiny_1.6.0                  Rsamtools_2.7.2             
+## [147] rjson_0.2.20                 lifecycle_1.0.0             
+## [149] jsonlite_1.7.2               BiocNeighbors_1.9.4         
+## [151] askpass_1.1                  desc_1.3.0                  
+## [153] viridisLite_0.4.0            limma_3.47.15               
+## [155] fansi_0.4.2                  pillar_1.6.1                
+## [157] lattice_0.20-44              shinyFiles_0.9.0            
+## [159] KEGGREST_1.31.2              fastmap_1.1.0               
+## [161] httr_1.4.2                   glue_1.4.2                  
+## [163] png_0.1-7                    Sushi_1.29.0                
+## [165] bluster_1.1.12               bit_4.0.4                   
+## [167] stringi_1.6.2                sass_0.4.0                  
+## [169] blob_1.2.1                   textshaping_0.3.4           
+## [171] BiocSingular_1.7.2           memoise_2.0.0               
+## [173] dplyr_1.0.6                  irlba_2.3.3</code></pre>
 </div>
   </div>
 

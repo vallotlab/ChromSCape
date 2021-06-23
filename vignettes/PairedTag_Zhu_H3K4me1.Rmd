@@ -1,36 +1,31 @@
 ---
-title: "Analysis of scCUT&TAG in the mouse brain in different histone marks"
+title: "Analysis of Paired-TAG H3K4me1 in the mouse brain"
 date: "`r Sys.Date()`"
 output: html_document
 ---
 
 ## Introduction
 
-In their recent [paper](https://doi.org/10.1038/s41587-021-00869-9), Bartosovic
-et al. applied **scCUT&TAG** to the mouse brain to profile active (H3K4me3,
-H3K27ac, H3K36me3) and repressive (H3K27me3) histone marks by adapting CUT&TAG to the
-droplet-based 10X Genomics platform.  
+In their recent [paper](https://doi.org/10.1038/s41592-021-01060-3), Zhu
+et al. devellop the **Paired-Tag** method to jointly profile histone modifications
+and transcriptome in single cells from the mouse brain. They profiles  active (H3K4me3,
+H3K27ac, H3K36me3) and repressive (H3K27me3) histone marks as well as scRNA.
 
-They showed that the oligodendrocyte lineage (OLG) cell type heterogeneity can
-be resolved using these epigenetic marks with more (H3K4me3, H3K27me3) or less
-(H3K36me3, H3K27ac) resolution.
-  
+They showed that active histone mark H3k4me1 matched quite well the seperation
+of mouse brain cell types observed in the corresponding transcriptomic data.
   
 In this article we will show the results of a basic analysis of these data using
 ChromSCape application.
 
 ## Data Access
 
-Bartosovic et al. made the datasets visualizable & downloadable at this
-[link](https://mouse-brain-cutandtag.cells.ucsc.edu) under the form of 
+Zhu et al. made the datasets visualizable & downloadable at this
+[link](http://catlas.org/pairedTag) under the form of 
 **Dense Matrix**.
   
 Their data is also downloadable through GEO portal in the form
-of H5 Seurat files at [GEO](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE157637).
-As these files are not directly readable by ChromSCape, we recommend downloading
-the data through the first link of manually formating the data by reading the 
-H5 files in R (see [Saving and Loading Data from an h5Seurat File
-](https://mojaveazure.github.io/seurat-disk/articles/h5Seurat-load.html)).
+of **Sparse Matrix** at [GEO](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE152020).
+The reads are counted on 5kbp genomic bins.
 
 
 ## Interactive analysis and visualization
@@ -64,7 +59,7 @@ time you like by clicking the **Help** button on the upper right corner.
 Info buttons are also here to help you when you are not sure about some features
 of the application.  
   
-## H3K27me3 mark in the mouse brain
+## H3K4me1 mark in the mouse brain
 
 We will start with the repressive H3K27me3 histone mark. 
 
@@ -74,72 +69,51 @@ variable with the path where you downloaded the computed analysis).
   
 ```{r, eval=TRUE, echo=TRUE}
 # Load the preprocessed data (in the 'Filtering_Normalize_Reduce' folder)
-ChromScape_path = "/media/pacome/LaCie/InstitutCurie/Documents/Data/ChromSCape_Data/ChromSCape_3.13_2/ChromSCape_analyses/"
+ChromScape_path = "/media/pprompsy/LaCie/InstitutCurie/Documents/Data/ChromSCape_Data/ChromSCape_3.13_3/ChromSCape_analyses/"
 
-scExp = qs::qread(file.path(ChromScape_path,"Bartosovic_scCutTag_H3K27me3", "Filtering_Normalize_Reduce","Bartosovic_scCutTag_H3K27me3_100_40000_99.88_uncorrected.qs"))
+scExp = qs::qread(file.path(ChromScape_path,"GSE152020_PairedTag_Zhu_2021_H3K4me1", "Filtering_Normalize_Reduce","GSE152020_PairedTag_Zhu_2021_H3K4me1_1000_150000_99_uncorrected.qs"))
 ```
-
+  
+  
 ## PCA & UMAP plots of replicates & total counts
   
-First we will manually add the replicate information present in the 'barcode' 
-column of the SingleCellExperiment. Based on the paper, we can assign the 
-conditions of each replicate : 
+Let's first see how many cells are present in this dataset:
 
 
 ```{r, eval=TRUE, echo=TRUE}
-# 4 replicates (N1, N2, N3, N4)
-scExp$sample_id = gsub("H3K27me3_|_[ATCG]*|:.*|-.*","", scExp$barcode)
-scExp$sample_id[which(scExp$sample_id == "N1")] = "N1_P15_GFP+"
-scExp$sample_id[which(scExp$sample_id == "N2")] = "N2_P15_GFP+"
-scExp$sample_id[which(scExp$sample_id == "N3")] = "N3_P25_GFP+"
-scExp$sample_id[which(scExp$sample_id == "N4")] = "N4_P25_GFP-"
-
-# Color by replicate
-scExp = colors_scExp(scExp, annotCol = "sample_id")
-
 # Visualize a table of each replicate
 num_cell_scExp(as.data.frame(SingleCellExperiment::colData(scExp)),
                datamatrix = SingleCellExperiment::counts(scExp))
 ```
   
   
-We can now plot the PCA and the UMAP of the dataset, colored by replicate. Note
+We can now plot the PCA and the UMAP of the dataset. Note
 that the first Principal Component (PC) of the PCA was removed as with TF-IDF
-normalization the first PC is almost always driven by count.
+normalization the first PC is almost always driven by count. We recommend using
+TF-IDF normalization when choosing small genomic bins such as 5-kbp bins which
+is the case in this analysis.  
+  
+This is why the first component of the PCA was removed from the analysis as it is 
+almost always strongly driven by the total counts (library size).
+
+
 
 ```{r, eval=TRUE, echo=TRUE, fig.height=7}
 # Plot PCA (remember PC1 was removed as in TF-IDF + PCA, PC1 is driven by total count) & UMAP
-p1 = plot_reduced_dim_scExp(scExp, color_by = "sample_id", reduced_dim = "PCA",
+p1 = plot_reduced_dim_scExp(scExp, color_by = "total_counts", reduced_dim = "PCA",
                             downsample = 10e6, transparency = 0.2, size = 0.3)
-p2 = plot_reduced_dim_scExp(scExp, color_by = "sample_id", reduced_dim = "UMAP",
+p2 = plot_reduced_dim_scExp(scExp, color_by = "total_counts", reduced_dim = "UMAP",
                             downsample = 10e6, transparency = 0.2, size = 0.3)
 gridExtra::grid.arrange(p1,p2)
 ```
   
   
-We observe clear clusters on the UMAP, that happen to be more discontinous than
-what was observed in the original paper. On the UMAP, it  seems that some
-clusters are specific to one or two replicates. Let's check that later when we 
-will choose the clusters. This might be because replicates have s1 & 2 are older mice while
-replicate 4 is GFP+ and other clusters GFP-.
+We observe a high amount of clusters on the UMAP with some light library size 
+gradient within each cluster.
 
 ******
 
-Let's vizualise the PCA and UMAP of the normalized data. For this dataset we used
-the TF-IDF normalization, as the cells are binned on small genomic bins (5000bp).
-  
-This is why the first component of the PCA was removed from the analysis as it is 
-almost always strongly driven by the total counts (library size).
-
-Let's plot the UMAP colored by the number of reads in each cell,
-e.g. 'total_counts'.
-  
-  
-```{r, eval=TRUE, echo=TRUE}
-plot_reduced_dim_scExp(scExp, color_by = "total_counts", reduced_dim = "UMAP",
-                            downsample = 10e6, transparency = 0.2, size = 0.2)
-```
-  
+Let's vizualise the PCA and UMAP of the normalized data.
 
 ## Features contributing the most to cell type differenciation
 
@@ -165,11 +139,10 @@ Let's plot feature contribution to the second component :
 plot_most_contributing_features(scExp,component = "Component_3", n_top_bot = 15)
 ```
  
- As we can see, many genes involved in brain development & nervous sytem cell types are 
- present:  Olig2,  Neurod2,  Nkx6-2, Eomes, Barhl1, Lhx1, Prdm8, Prdm12,
- Islr2...  
-  
-  
+ We observe many intergenic regions that are important in separating the cell 
+ types, which is quite interesting considering H3K4me1 is known to accumulate 
+ mostly around genes.  
+ 
 ## Marker Genes
 
 We can now take the markers used in the paper for H3K27me3 and color the UMAP with
@@ -179,14 +152,13 @@ cells likely to express marker genes are cells lacking the signal.
   
 For Rfx4 and Olig2, it seems that those genes are marked by H3K27me3 in all 
 clusters but 2 and 3.  
-  
-    
+   
   
 ```{r, eval=TRUE, echo=TRUE}
-OLG_marker_genes = c("Rfx4","Olig2","Pdgfra","Nkx6-2", "Alx4", "Neurod2", "Gad1", "Foxf2","Cttn") 
+marker_genes = c("Rfx4","Olig2","Pdgfra","Nkx6-2", "Alx4", "Neurod2", "Gad1", "Foxf2","Cttn")  
 p = list()
-for(i in seq_along(OLG_marker_genes)){
-  gene = OLG_marker_genes[i]
+for(i in seq_along(marker_genes)){
+  gene = marker_genes[i]
   p[[i]] = plot_reduced_dim_scExp(scExp, color_by = gene, reduced_dim = "UMAP",
                                   downsample = 10e6, transparency = 0.2,
                                   size = 0.05, max_distanceToTSS = 2000
@@ -225,30 +197,14 @@ might be low covered cells or artifacts that we can later filter out using the
 plot_heatmap_scExp(scExp, downsample = 3000)
 ```
 
-On the heatmap we can distinguish between 7 and 9 red squares, representing 
-groups of highly correlated cells, e.g. clusters. 
 
-  
-Some cells seem to have low correlation values with other cells, and group with 
-the largest cell cluster, let's filter lowly correlated cells first and then 
-define the clusters.
-
-
-```{r, eval=TRUE, echo=TRUE}
-scExp_cf = filter_correlated_cell_scExp(scExp,
-                                        random_iter = 5, # for speed
-                                        corr_threshold = 99,
-                                        percent_correlation = 1)
-cat("Filtered ", ncol(scExp) - ncol(scExp_cf), " lowly correlated cells.\n")
-```
-  
 Let's pick 8 clusters using hierarchical clustering on the correlation matrix,
 as shown above the heatmap.
 
 ```{r, eval=TRUE, echo=TRUE, fig.height= 7}
 set.seed(47)
-scExp_cf = choose_cluster_scExp(scExp_cf, nclust = 8)
-plot_heatmap_scExp(scExp_cf)
+scExp = choose_cluster_scExp(scExp, nclust = 14)
+plot_heatmap_scExp(scExp, downsample = 10000)
 ```
 
   
@@ -259,7 +215,7 @@ Let's color the cells by cluster to see if the correlation clusters match the
 clusters observed in the 2D UMAP space.  
 
 ```{r, eval=TRUE, echo=TRUE}
-plot_reduced_dim_scExp(scExp_cf, color_by = "cell_cluster", reduced_dim = "UMAP", downsample = 10e6, size = 0.1, transparency = 0.2)
+plot_reduced_dim_scExp(scExp, color_by = "cell_cluster", reduced_dim = "UMAP", downsample = 10e6, size = 0.1, transparency = 0.2)
 ```
  
 Interestingly, cluster C6 regroups cells that are separated on the UMAP. That
@@ -272,51 +228,98 @@ directly by algorithm such as Louvain clustering.
 
 Let's assign cell identity cell identity which was assigned in Bartosovic et al.
  
-```{r, eval=TRUE, echo=TRUE}
-metadata = read.table("https://cells.ucsc.edu/mouse-brain-cutandtag/h3k27me3/bins/meta.tsv",
-                      header = TRUE, sep = "\t")
+```{r, eval=TRUE, echo=TRUE, fig.width=12}
+metadata = read.table("http://catlas.org/pairedTag/cellbrowser/Paired-tag/meta.tsv", header = TRUE, sep = "\t")
+metadata_json = jsonlite::read_json("http://catlas.org/pairedTag/cellbrowser/Paired-tag/dataset.json")
+colors = paste0("#", unlist(metadata_json$metaFields[[15]]$colors))
+df = data.frame(cell_cluster = unlist(metadata_json$metaFields[[15]]$valCounts)[seq(1,44,2)], cell_cluster_color = colors)
+length(intersect(metadata$Cell, scExp$barcode)) #1 cell not in metadata
+ncol(scExp)
+scExp$cell_cluster = metadata$Annotation[match(scExp$barcode, metadata$Cell)]
+scExp = colors_scExp(scExp, annotCol = "cell_cluster",
+                     color_by = "cell_cluster", color_df = df)
 
-length(intersect(metadata$Cell, scExp_cf$barcode)) #1 cell not in metadata
-scExp_cf = scExp_cf[,which(scExp_cf$barcode %in% metadata$Cell)]
-scExp_cf$cell_cluster = metadata$cell_type[match(scExp_cf$barcode, metadata$Cell)]
-scExp_cf = colors_scExp(scExp_cf, annotCol = "cell_cluster") # Assign replicate to sample_id
-plot_reduced_dim_scExp(scExp_cf, color_by = "cell_cluster", reduced_dim = "UMAP", downsample = 10e6, size = 0.1, transparency = 0.2)
+plot_reduced_dim_scExp(scExp, color_by = "cell_cluster", reduced_dim = "UMAP", downsample = 10e6, size = 0.4, transparency = 0.2, annotate_clusters = T)
+
 ```
   
 The labels assigned by the authors do match the clusters observed in the UMAP,
-but differ slightly from the hierarchical clustering clusters (C1 and C6 are 
-a mix of Astrocytes and Neurons_3). 
-
-We can now visualize a nicely formatted table with the exact number of cells
-per cell cluster (label).  
+the main difference being that there seem to be a smooth transition from Cortical
+Neurons (in blue) to Inhibitory neurons (pink) but not a smooth transition towards
+Hippocampal neurons (green). The non-neuron cells (orange) are well separated 
+from neuron cells.
   
-```{r, eval=TRUE, echo=TRUE}
-scExp_cf$sample_id = scExp_cf$sample_id # Assign replicate to sample_id
-scExp_cf = colors_scExp(scExp_cf, annotCol = "sample_id")
-num_cell_in_cluster_scExp(scExp_cf)
-```
+Interestingly, the cells in the center that are a mix from multiple annotations
+in Zhu et al, are all clustered by hierarchical clustering together and with
+cells that are more distant (see UMAP before - cluster C3). 
 
-
-We can see that Neurons are present only in GFP+ 
 
 ## Intra and Inter-cluster correlation
 
 A interesting metrics is the cell-to-cell correlation between clusters, as
-it can indicates which cell types share a common epigentic landscape and which
+it can indicates which cell types share a common epigenetic landscape and which
 cell types are far from each other.
 
 ```{r, eval=TRUE, echo=TRUE, fig.width=15}
-plot_intra_correlation_scExp(scExp_cf, by = "cell_cluster")
+plot_intra_correlation_scExp(scExp, by = "cell_cluster")
 ```
-We observe the lowest intra-correlation scores for clusters C1 and C6, showing 
-that the H3K27me3 profile of cells in these clusters is more heterogeneous
-than in other cells.
 
-  
-Let's now plot correlation between C1 and the rest:
+## Focus on cornu ammonis cells (CA)
+
+Let's focus on 2 cell types present in the Hippocampal neurons : CA1 & CA2/3.
+
+### Filter out lowly correlated cells
+
+We'll first subset the dataset to keep only cells from this two cell types.
+
 
 ```{r, eval=TRUE, echo=TRUE, fig.width=15}
-plot_inter_correlation_scExp(scExp_cf, by = "cell_cluster", reference_group = "VLMC")
+scExp_CA = scExp[,which(scExp$cell_cluster %in% c("CA1", "CA23"))]
+
+# Let's plot the subset of CA1 & CA2/3
+plot_reduced_dim_scExp(scExp_CA, color_by = "cell_cluster", reduced_dim = "UMAP")
+```
+  
+We can see that some cells from CA1 & CA2/3 are not grouped with the main clusters.
+Let's check on correlation:
+  
+```{r, eval=TRUE, echo=TRUE, fig.width=15}
+plot_intra_correlation_scExp(scExp_CA, by = "cell_cluster", jitter_by = "total_counts") + 
+  geom_hline(yintercept = 0.35, lty=2, cex = 1, col = "red")
+```
+  
+Let's filter out the lowly correlated cells in each cluster and check if these
+cells mostly correspond to spread cells in the UMAP.
+  
+  
+```{r, eval=TRUE, echo=TRUE, fig.width=15}
+# Filter out lowly correlated cells in each cluster
+intracorrelation = ChromSCape:::intra_correlation_scExp(scExp_cf = scExp_CA,
+                                                        by = "cell_cluster")
+correlated_cells =
+  rownames(intracorrelation)[which(intracorrelation$intra_corr > 0.35)]
+
+scExp_CA = scExp_CA[,correlated_cells]
+scExp_CA = correlation_and_hierarchical_clust_scExp(scExp_CA)
+
+plot_reduced_dim_scExp(scExp_CA, color_by = "cell_cluster", reduced_dim = "UMAP")
+```
+  
+Nice ! We removed most of the lowly correlated cells that might belong to other cell types. 
+The rightward cluster is still present and might represent a true cell type, 
+e.g. either CA2 or CA3.
+  
+### Differentially H3K4me1 marked loci
+
+We'll try to find what differences are observed in H3K4me1 mark distribution 
+between CA1 & CA2/3.
+
+```{r, eval=TRUE, echo=TRUE, fig.width=5,fig.height=6}
+scExp_CA = differential_analysis_scExp(scExp_CA, de_type = "custom",
+                                       method = "wilcox", qval.th = 0.25,
+                                       group = data.frame("CA1" = "CA1"),
+                                       ref = data.frame("CA23" = "CA23"))
+plot_differential_summary_scExp(scExp_CA)
 ```
 
 ## Session information
