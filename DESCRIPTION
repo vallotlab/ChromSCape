@@ -1,6 +1,6 @@
 Package: ChromSCape
 Title: Analysis of single-cell epigenomics datasets with a Shiny App
-Version: 1.2.0
+Version: 1.2.2
 Authors@R: c(person(given = "Pacome",
            family = "Prompsy",
            role = c("aut", "cre"),
