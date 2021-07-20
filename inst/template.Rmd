@@ -64,11 +64,14 @@ flexdashboard::valueBox(value = ncol(datamatrix), caption = "Number of cells", i
 ```
 
 ### Cells after filterings
+
 ```{r}
 if("filter" %in% run) flexdashboard::valueBox(value = ncol(scExp), caption = "Number of cells after filtering", icon ="fa-circle-notch")
 ```
 
 ### Percentage of features passing filtering
+
+
 ```{r}
 if("filter" %in% run) flexdashboard::gauge(100*round(nrow(scExp)/ nrow(datamatrix),3), min = 0, max = 100, 
           symbol = '%', sectors = flexdashboard::gaugeSectors(
@@ -77,6 +80,7 @@ if("filter" %in% run) flexdashboard::gauge(100*round(nrow(scExp)/ nrow(datamatri
 ```
 
 ### Raw Cell count distribution
+
 ```{r}
 df = data.frame(coverage = sort(unname(Matrix::colSums(datamatrix)))) 
 ggplot(df, aes(x = coverage)) + 
