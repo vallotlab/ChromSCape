@@ -1011,7 +1011,7 @@ shinyServer(function(input, output, session) {
     }
   })
   
-  output$contrib_features_plot <- renderPlotly(contrib_features_plot())
+  output$contrib_features_plot <- plotly::renderPlotly(contrib_features_plot())
   
   contrib_chr_plot <- reactive({
     req(scExp(),  input$pc_select_x)
@@ -1032,7 +1032,7 @@ shinyServer(function(input, output, session) {
                                                choices = 5:100,
                                                multiple = FALSE, selected = 10),
                                    h3(paste0("Most contributing features to '", input$pc_select_x,"' .")),
-                                   plotlyOutput("contrib_features_plot") %>% 
+                                   plotly::plotlyOutput("contrib_features_plot") %>% 
                                      shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75) %>%
                                      shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                                                          content = "most_contributing_features")
@@ -1530,7 +1530,7 @@ shinyServer(function(input, output, session) {
    
     if(input$add_jitter) jitter_col = input$jitter_color else jitter_col = NULL
      
-   output$intra_corr_plot = renderPlotly(
+   output$intra_corr_plot = plotly::renderPlotly(
      plot_intra_correlation_scExp(scExp_cf(), by = input$violin_color,
                                   jitter_by = jitter_col))
     plotly::plotlyOutput("intra_corr_plot",width = 500,height = 500) %>%
@@ -1549,7 +1549,7 @@ shinyServer(function(input, output, session) {
     req(annotCol_cf(), input$violin_color)
     
     if(input$add_jitter) jitter_col = input$jitter_color else jitter_col = NULL
-    output$inter_corr_plot = renderPlotly(
+    output$inter_corr_plot = plotly::renderPlotly(
       plot_inter_correlation_scExp(scExp_cf(), by = input$violin_color,
                                    jitter_by = jitter_col,
                                    reference_group = input$reference_group))
