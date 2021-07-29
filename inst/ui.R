@@ -1,8 +1,6 @@
 library(shiny)
 library(shinyjs)
 library(shinydashboard)
-library(shinydashboardPlus)
-library(shinyWidgets)
 library(dplyr)
 
 mytheme <- fresh::create_theme(
