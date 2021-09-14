@@ -1,6 +1,4 @@
 #' @importFrom plotly plotlyOutput ggplotly renderPlotly
-#' @importFrom shinydashboard box tabItem tabItems dashboardBody sidebarMenu
-#'  dashboardHeader dashboardSidebar dashboardPage menuItem
 #' @importFrom shinyFiles shinyDirButton shinyDirChoose parseDirPath
 #' @importFrom shinyjs useShinyjs extendShinyjs html  
 #' @importFrom Matrix rowMeans cbind2
@@ -18,8 +16,11 @@
 #' @importFrom shinycssloaders withSpinner 
 #' @import shiny
 #' @import ggplot2
-#' @import shinyWidgets
-#' @import shinydashboardPlus
+#' @importFrom shinyWidgets chooseSliderSkin materialSwitch updateMaterialSwitch
+#' @importFrom shinydashboard box sidebarUserPanel sidebarMenu menuItem 
+#' dashboardBody tabItems tabItem
+#' @importFrom shinydashboardPlus dashboardHeader dashboardPage dashboardSidebar
+#' dashboardControlbar controlbarMenu controlbarItem dropdownBlock
 #' @importFrom colourpicker updateColourInput colourInput
 #' @importFrom qs qread qload qsave
 #' @importFrom Rcpp evalCpp
