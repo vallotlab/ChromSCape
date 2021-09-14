@@ -1859,7 +1859,7 @@ shinyServer(function(input, output, session) {
     req(GenePool(),has_available_coverage())
     s <- shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
                              column(3, align="left", selectizeInput(inputId = "select_cov_gene", "Select gene:", choices = NULL, selected = 1)),
-                             column(2, align="left", selectInput("cov_chr","Chromosome", choices = unique(as.character(seqnames(rowRanges(scExp_cf())))))),
+                             column(2, align="left", selectInput("cov_chr","Chromosome", choices = unique(as.character(SummarizedExperiment::seqnames(SummarizedExperiment::rowRanges(scExp_cf())))))),
                              column(2, align="left", textInput("cov_start","Start", value = 15000000)),
                              column(2, align="left", textInput("cov_end","End", 16000000)),
                              column(2, align="left", actionButton("make_plot_coverage", "Plot Coverage", icon = icon("chart-area"))),

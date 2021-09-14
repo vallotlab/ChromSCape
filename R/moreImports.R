@@ -18,6 +18,8 @@
 #' @importFrom shinycssloaders withSpinner 
 #' @import shiny
 #' @import ggplot2
+#' @import shinyWidgets
+#' @import shinydashboardPlus
 #' @importFrom colourpicker updateColourInput colourInput
 #' @importFrom qs qread qload qsave
 #' @importFrom Rcpp evalCpp
