@@ -74,7 +74,7 @@ variable with the path where you downloaded the computed analysis).
   
 ```{r, eval=TRUE, echo=TRUE}
 # Load the preprocessed data (in the 'Filtering_Normalize_Reduce' folder)
-ChromScape_path = "/media/pacome/LaCie/InstitutCurie/Documents/Data/ChromSCape_Data/ChromSCape_3.13_2/ChromSCape_analyses/"
+ChromScape_path = "/media/pacome/Depic_bioinfo_1/InstitutCurie/Documents/Data/ChromSCape_Data/ChromSCape_3.13_3/ChromSCape_analyses/"
 
 scExp = qs::qread(file.path(ChromScape_path,"Bartosovic_scCutTag_H3K27me3", "Filtering_Normalize_Reduce","Bartosovic_scCutTag_H3K27me3_100_40000_99.88_uncorrected.qs"))
 ```
@@ -189,11 +189,12 @@ for(i in seq_along(OLG_marker_genes)){
   gene = OLG_marker_genes[i]
   p[[i]] = plot_reduced_dim_scExp(scExp, color_by = gene, reduced_dim = "UMAP",
                                   downsample = 10e6, transparency = 0.2,
-                                  size = 0.05, max_distanceToTSS = 2000
+                                  size = 0.5, max_distanceToTSS = 15000
                                   ) + theme(axis.title = element_blank(),
                                                      legend.position = "none") +
                                   ggtitle(gene)
 }
+
 ```
 
 ```{r, eval=TRUE, echo=FALSE, fig.width= 15}
@@ -246,8 +247,13 @@ Let's pick 8 clusters using hierarchical clustering on the correlation matrix,
 as shown above the heatmap.
 
 ```{r, eval=TRUE, echo=TRUE, fig.height= 7}
-set.seed(47)
+set.seed(48)
 scExp_cf = choose_cluster_scExp(scExp_cf, nclust = 8)
+pdf("~/UMAP_cluster.pdf")
+plot_reduced_dim_scExp(scExp_cf, color_by = "cell_cluster", reduced_dim = "UMAP", downsample = 10e6, size = 0.7, transparency = 0.2) +
+  theme(legend.position = "none")
+dev.off()
+
 plot_heatmap_scExp(scExp_cf)
 ```
 
@@ -280,7 +286,18 @@ length(intersect(metadata$Cell, scExp_cf$barcode)) #1 cell not in metadata
 scExp_cf = scExp_cf[,which(scExp_cf$barcode %in% metadata$Cell)]
 scExp_cf$cell_cluster = metadata$cell_type[match(scExp_cf$barcode, metadata$Cell)]
 scExp_cf = colors_scExp(scExp_cf, annotCol = "cell_cluster") # Assign replicate to sample_id
-plot_reduced_dim_scExp(scExp_cf, color_by = "cell_cluster", reduced_dim = "UMAP", downsample = 10e6, size = 0.1, transparency = 0.2)
+
+pdf("~/UMAP_annot.png")
+plot_reduced_dim_scExp(scExp_cf, color_by = "cell_cluster", reduced_dim = "UMAP", downsample = 10e6, size = 0.7, transparency = 0.2) +
+  theme(legend.position = "none")
+dev.off()
+
+
+pdf("~/UMAP_annot.pdf")
+plot_reduced_dim_scExp(scExp_cf, color_by = "cell_cluster", reduced_dim = "UMAP", downsample = 10e6, size = 0.7, transparency = 0.2) +
+  theme(legend.position = "none")
+dev.off()
+
 ```
   
 The labels assigned by the authors do match the clusters observed in the UMAP,
