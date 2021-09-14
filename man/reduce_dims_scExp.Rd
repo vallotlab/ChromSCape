@@ -41,7 +41,8 @@ Reduce dimensions (PCA, TSNE, UMAP)
 }
 \examples{
 
-scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+raw <- create_scDataset_raw()
+scExp = create_scExp(raw$mat, raw$annot)
 scExp = reduce_dims_scExp(scExp,dimension_reductions=c("PCA","UMAP"))
 scExp = normalize_scExp(scExp)
 scExp = reduce_dims_scExp(scExp,dimension_reductions=c("PCA","UMAP"))

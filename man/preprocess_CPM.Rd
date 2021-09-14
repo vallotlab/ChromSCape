@@ -16,7 +16,8 @@ A SingleCellExperiment object.
 Preprocess scExp - Counts Per Million (CPM)
 }
 \examples{
-scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+raw <- create_scDataset_raw()
+scExp = create_scExp(raw$mat, raw$annot)
 scExp = preprocess_CPM(scExp)
 head(SingleCellExperiment::normcounts(scExp))
 

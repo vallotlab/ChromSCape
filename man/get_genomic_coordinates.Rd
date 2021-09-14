@@ -17,7 +17,8 @@ Get SingleCellExperiment's genomic coordinates
 }
 \examples{
 
-scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+raw <- create_scDataset_raw()
+scExp = create_scExp(raw$mat, raw$annot)
 feature_GRanges = get_genomic_coordinates(scExp)
 
 }

@@ -21,7 +21,8 @@ A SingleCellExperiment object with annotated rowData.
 Add gene annotations to features
 }
 \examples{
-scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+raw <- create_scDataset_raw()
+scExp = create_scExp(raw$mat, raw$annot)
 scExp = feature_annotation_scExp(scExp)
 head(SummarizedExperiment::rowRanges(scExp))
 

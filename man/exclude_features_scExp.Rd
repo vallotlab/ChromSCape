@@ -32,7 +32,8 @@ Remove specific features (CNA, repeats)
 }
 \examples{
 
-scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+raw <- create_scDataset_raw()
+scExp = create_scExp(raw$mat, raw$annot)
 features_to_exclude = data.frame(chr=c("chr4","chr7","chr17"),
 start=c(50000,8000000,2000000),
 end=c(100000,16000000,2500000))

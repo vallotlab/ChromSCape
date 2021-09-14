@@ -17,7 +17,8 @@ Preprocess scExp - Transcripts per Million (TPM)
 }
 \examples{
 
-scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+raw <- create_scDataset_raw()
+scExp = create_scExp(raw$mat, raw$annot)
 scExp = preprocess_TPM(scExp)
 head(SingleCellExperiment::normcounts(scExp))
 

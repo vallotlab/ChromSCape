@@ -1379,7 +1379,8 @@ combine_datamatrix <- function(datamatrix, datamatrix_single,
 #' @importFrom Matrix rowSums colSums
 #'
 #' @examples
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' scExp
 #' 
 create_scExp <- function(
@@ -1520,7 +1521,8 @@ remove_chr_M_fun <- function(scExp, verbose){
 #'
 #' @examples
 #'
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' scExp. = filter_scExp(scExp)
 #'
 #' # No feature filtering (all features are valuable)
@@ -1632,7 +1634,8 @@ find_top_features <- function (scExp, n = 20000, keep_others = FALSE,
 #' @export
 #' @examples 
 #' 
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' has_genomic_coordinates(scExp)
 #' scExp_gene = create_scExp(create_scDataset_raw(featureType="gene")$mat,
 #'   create_scDataset_raw(featureType="gene")$annot)
@@ -1668,7 +1671,8 @@ has_genomic_coordinates <- function(scExp)
 #' @export
 #' @examples 
 #' 
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' feature_GRanges = get_genomic_coordinates(scExp)
 #' 
 get_genomic_coordinates <- function(scExp)
@@ -1726,7 +1730,8 @@ get_genomic_coordinates <- function(scExp)
 #'
 #' @examples 
 #' 
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' features_to_exclude = data.frame(chr=c("chr4","chr7","chr17"),
 #' start=c(50000,8000000,2000000),
 #' end=c(100000,16000000,2500000))
@@ -1799,7 +1804,8 @@ exclude_features_scExp <-
 #' @export
 #' @examples 
 #' 
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' scExp = preprocess_TPM(scExp)
 #' head(SingleCellExperiment::normcounts(scExp))
 #' 
@@ -1826,7 +1832,8 @@ preprocess_TPM <- function(scExp)
 #' @export
 #' @examples 
 #' 
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' scExp = preprocess_RPKM(scExp)
 #' head(SingleCellExperiment::normcounts(scExp))
 preprocess_RPKM <- function(scExp)
@@ -1854,7 +1861,8 @@ preprocess_RPKM <- function(scExp)
 #' @importFrom Matrix t colSums
 #' @export
 #' @examples 
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' scExp = preprocess_CPM(scExp)
 #' head(SingleCellExperiment::normcounts(scExp))
 #' 
@@ -1882,7 +1890,8 @@ preprocess_CPM <- function(scExp)
 #' @importFrom Matrix t colSums
 #' @export
 #' @examples 
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' scExp = preprocess_TFIDF(scExp)
 #' head(SingleCellExperiment::normcounts(scExp))
 #'
@@ -1911,7 +1920,8 @@ preprocess_TFIDF <- function(scExp, scale = 10000, log = TRUE)
 #' @importFrom Matrix t colSums
 #' @export
 #' @examples 
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' scExp = preprocess_feature_size_only(scExp)
 #' head(SingleCellExperiment::normcounts(scExp))
 #'
@@ -1936,7 +1946,8 @@ preprocess_feature_size_only <- function(scExp)
 #' @export
 #'
 #' @examples 
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' scExp = normalize_scExp(scExp)
 #' head(SingleCellExperiment::normcounts(scExp))
 #'
@@ -1987,7 +1998,8 @@ normalize_scExp <- function(scExp,
 #' @importFrom dplyr mutate select group_by summarise_all
 #'
 #' @examples
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' scExp = feature_annotation_scExp(scExp)
 #' head(SummarizedExperiment::rowRanges(scExp))
 #'
@@ -2124,7 +2136,8 @@ choose_perplexity <- function(dataset)
 #' 
 #' @examples 
 #' 
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' scExp = reduce_dims_scExp(scExp,dimension_reductions=c("PCA","UMAP"))
 #' scExp = normalize_scExp(scExp)
 #' scExp = reduce_dims_scExp(scExp,dimension_reductions=c("PCA","UMAP"))
@@ -2296,7 +2309,8 @@ sweep_sparse <- function(x, margin, stats, fun = "*") {
 #' @importFrom kableExtra kable kable_styling group_rows
 #' 
 #' @examples 
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' \dontrun{num_cell_scExp(SingleCellExperiment::colData(scExp))}
 num_cell_scExp <- function(annot, datamatrix)
 {
@@ -2336,7 +2350,8 @@ num_cell_scExp <- function(annot, datamatrix)
 #' @importFrom kableExtra kable kable_styling group_rows
 #'
 #' @examples 
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' scExp_filtered = filter_scExp(scExp)
 #' \dontrun{ num_cell_after_QC_filt_scExp(
 #' scExp_filtered,SingleCellExperiment::colData(scExp))}
@@ -2399,7 +2414,8 @@ num_cell_after_QC_filt_scExp <- function(scExp, annot, datamatrix)
 #' @importFrom SingleCellExperiment colData
 #' 
 #' @examples 
-#' scExp = create_scExp(create_scDataset_raw()$mat,create_scDataset_raw()$annot)
+#' raw <- create_scDataset_raw()
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' scExp_sub = subsample_scExp(scExp,50)
 #' \dontrun{num_cell_scExp(scExp_sub)}
 #' 
