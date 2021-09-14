@@ -32,6 +32,14 @@ Module_preprocessing_filtering_and_reduction <- function(
                                                 )}))
         gc()
         
+        # Filtering based on exclude-regions from bed file, if provided
+        if (!is.null(exclude_regions()))
+        {
+            scExp = exclude_features_scExp(scExp,
+                                           exclude_regions(), by = "region")
+            gc()
+        }
+        
         ### 2. Filtering & Window selection ###
         if(is_main){
             incProgress(amount = 0.2, detail = paste("Filtering dataset..."))
@@ -57,14 +65,7 @@ Module_preprocessing_filtering_and_reduction <- function(
             prioritize_genes = FALSE)
         }))
         gc()
-        
-        # Filtering based on exclude-regions from bed file, if provided
-        if (!is.null(exclude_regions()))
-        {
-            scExp = exclude_features_scExp(scExp,
-                                           exclude_regions(), by = "region")
-            gc()
-        }
+    
         
        ### 2.ter Optional subsampling ###
         if(is_main){

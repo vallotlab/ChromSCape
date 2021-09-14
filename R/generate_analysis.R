@@ -554,6 +554,13 @@ preprocessing_filtering_and_reduction <- function(
                          remove_zero_features = TRUE)
     gc()
     
+    # Filtering based on exclude-regions from bed file, if provided
+    if (!is.null(exclude_regions))
+    {
+        scExp = exclude_features_scExp(scExp, exclude_regions, by = "region")
+        gc()
+    }
+    
     scExp = filter_scExp(
         scExp,
         min_cov_cell = min_reads_per_cell,
@@ -564,13 +571,6 @@ preprocessing_filtering_and_reduction <- function(
         scExp,
         n = n_top_features,
         keep_others = FALSE)
-    
-    # Filtering based on exclude-regions from bed file, if provided
-    if (!is.null(exclude_regions))
-    {
-        scExp = exclude_features_scExp(scExp, exclude_regions, by = "region")
-        gc()
-    }
     
     ### 2.bis Optional subsampling ###
     if(length(subsample_n)>0){

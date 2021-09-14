@@ -1560,6 +1560,11 @@ filter_scExp =  function (
         "the threshold of ", min_count_per_feature," count per feature.")
 
     scExp <- scExp[sel_feature,]
+    empty_cells = (Matrix::colSums(SingleCellExperiment::counts(scExp)) < min_cov_cell)
+    if(any(empty_cells)) scExp <- scExp[,!empty_cells]
+    empty_features = (Matrix::rowSums(counts) < min_count_per_feature)
+    if(any(empty_features)) scExp <- scExp[!empty_features,]
+    
     SummarizedExperiment::colData(scExp)$total_counts = 
         colSums(SingleCellExperiment::counts(scExp))
     return(scExp)
