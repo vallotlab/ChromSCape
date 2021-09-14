@@ -1545,28 +1545,30 @@ filter_scExp =  function (
     cellCounts <- Matrix::colSums(SingleCellExperiment::counts(scExp))
     thresh <- stats::quantile(cellCounts, probs = seq(0, 1, 0.01))
     sel <- (cellCounts > min_cov_cell & cellCounts <= thresh[quant_removal + 1])
-    if (verbose) message(
-        "ChromSCape::filter_scExp - ", length(which(sel)), " cells pass the ",
-        " threshold of ", min_cov_cell, " minimum reads and are lower than ",
-        "the ", quant_removal, "th centile of library size ~= ",
-        round(thresh[quant_removal + 1]), " reads.")
-    
+
     scExp <- scExp[, sel]
     counts <- SingleCellExperiment::counts(scExp)
     sel_feature <- (Matrix::rowSums(counts) >= min_count_per_feature)
     
-    if (verbose) message(
-        "ChromSCape::filter_scExp - ", length(which(sel_feature))," features pass ",
-        "the threshold of ", min_count_per_feature," count per feature.")
-
     scExp <- scExp[sel_feature,]
     empty_cells = (Matrix::colSums(SingleCellExperiment::counts(scExp)) < min_cov_cell)
     if(any(empty_cells)) scExp <- scExp[,!empty_cells]
-    empty_features = (Matrix::rowSums(counts) < min_count_per_feature)
+    empty_features = (Matrix::rowSums(counts(scExp)) < min_count_per_feature)
     if(any(empty_features)) scExp <- scExp[!empty_features,]
     
     SummarizedExperiment::colData(scExp)$total_counts = 
-        colSums(SingleCellExperiment::counts(scExp))
+        Matrix::colSums(SingleCellExperiment::counts(scExp))
+    
+    if (verbose) message(
+        "ChromSCape::filter_scExp - ", ncol(scExp), " cells pass the ",
+        " threshold of ", min_cov_cell, " minimum reads and are lower than ",
+        "the ", quant_removal, "th centile of library size ~= ",
+        round(thresh[quant_removal + 1]), " reads.")
+    
+    if (verbose) message(
+        "ChromSCape::filter_scExp - ",nrow(scExp)," features pass ",
+        "the threshold of ", min_count_per_feature," count per feature.")
+    
     return(scExp)
 }
 
