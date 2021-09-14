@@ -335,7 +335,7 @@ shinyServer(function(input, output, session) {
   output$add_to_current_analysis_checkbox_UI <- renderUI({
     req(input$feature_select)
    
-      materialSwitch(inputId = "add_to_current_analysis", value = FALSE,
+      shinyWidgets::materialSwitch(inputId = "add_to_current_analysis", value = FALSE,
                     label = "Add to current analysis", status = "primary") %>%
         shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                             content = "add_to_current_analysis", size = "l")
@@ -386,7 +386,7 @@ shinyServer(function(input, output, session) {
   observeEvent(input$add_to_current_analysis_Modal_cancel, {
     # Check that data object exists and is data frame.
     alt_name("")
-    updateMaterialSwitch(session = session, inputId = "add_to_current_analysis", value = FALSE)
+    shinyWidgets::updateMaterialSwitch(session = session, inputId = "add_to_current_analysis", value = FALSE)
     removeModal()
   })
   
@@ -401,7 +401,7 @@ shinyServer(function(input, output, session) {
         showNotification(paste0("Warning : Please create an analysis before",
                               " adding new features..."),
                        duration = 10, closeButton = TRUE, type="warning")
-      updateMaterialSwitch(session = session, inputId = "add_to_current_analysis", value = FALSE)
+      shinyWidgets::updateMaterialSwitch(session = session, inputId = "add_to_current_analysis", value = FALSE)
     }
   })
   
@@ -538,7 +538,7 @@ shinyServer(function(input, output, session) {
             choices = c("main", get.available.alternative.datasets(input$selected_analysis))
           )
           alt_name("")
-          updateMaterialSwitch(session = session, inputId = "add_to_current_analysis", value = FALSE)
+          shinyWidgets::updateMaterialSwitch(session = session, inputId = "add_to_current_analysis", value = FALSE)
         } else{
           qs::qsave(datamatrix, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "datamatrix.qs"), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
           qs::qsave(annot_raw, file = file.path(init$data_folder, "ChromSCape_analyses", input$new_analysis_name, "annot_raw.qs"), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
