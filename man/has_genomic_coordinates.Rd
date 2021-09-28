@@ -20,8 +20,8 @@ Does SingleCellExperiment has genomic coordinates in features ?
 raw <- create_scDataset_raw()
 scExp = create_scExp(raw$mat, raw$annot)
 has_genomic_coordinates(scExp)
-scExp_gene = create_scExp(create_scDataset_raw(featureType="gene")$mat,
-  create_scDataset_raw(featureType="gene")$annot)
+raw_genes = create_scDataset_raw(featureType="gene")
+scExp_gene = create_scExp(raw_genes$mat, raw_genes$annot)
 has_genomic_coordinates(scExp_gene)
 
 }

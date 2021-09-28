@@ -1644,8 +1644,8 @@ find_top_features <- function (scExp, n = 20000, keep_others = FALSE,
 #' raw <- create_scDataset_raw()
 #' scExp = create_scExp(raw$mat, raw$annot)
 #' has_genomic_coordinates(scExp)
-#' scExp_gene = create_scExp(create_scDataset_raw(featureType="gene")$mat,
-#'   create_scDataset_raw(featureType="gene")$annot)
+#' raw_genes = create_scDataset_raw(featureType="gene")
+#' scExp_gene = create_scExp(raw_genes$mat, raw_genes$annot)
 #' has_genomic_coordinates(scExp_gene)
 #' 
 has_genomic_coordinates <- function(scExp)
@@ -2011,8 +2011,8 @@ normalize_scExp <- function(scExp,
 #' head(SummarizedExperiment::rowRanges(scExp))
 #'
 #' # Mouse
-#' scExp = create_scExp(create_scDataset_raw(ref="mm10")$mat,
-#'   create_scDataset_raw(ref="mm10")$annot)
+#' raw = create_scDataset_raw(ref = "mm10")
+#' scExp = create_scExp(raw$mat, raw$annot)
 #' scExp = feature_annotation_scExp(scExp,ref="mm10")
 #' head(SummarizedExperiment::rowRanges(scExp))
 feature_annotation_scExp <- function(scExp, ref = "hg38",

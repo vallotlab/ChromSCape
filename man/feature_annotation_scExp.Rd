@@ -27,8 +27,8 @@ scExp = feature_annotation_scExp(scExp)
 head(SummarizedExperiment::rowRanges(scExp))
 
 # Mouse
-scExp = create_scExp(create_scDataset_raw(ref="mm10")$mat,
-  create_scDataset_raw(ref="mm10")$annot)
+raw = create_scDataset_raw(ref = "mm10")
+scExp = create_scExp(raw$mat, raw$annot)
 scExp = feature_annotation_scExp(scExp,ref="mm10")
 head(SummarizedExperiment::rowRanges(scExp))
 }
