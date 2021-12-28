@@ -1551,7 +1551,7 @@ filter_scExp =  function (
     sel_feature <- (Matrix::rowSums(counts) >= min_count_per_feature)
     
     scExp <- scExp[sel_feature,]
-    empty_cells = (Matrix::colSums(SingleCellExperiment::counts(scExp)) < min_cov_cell)
+    empty_cells = (Matrix::colSums(SingleCellExperiment::counts(scExp)) < 100)
     if(any(empty_cells)) scExp <- scExp[,!empty_cells]
     empty_features = (Matrix::rowSums(counts(scExp)) < min_count_per_feature)
     if(any(empty_features)) scExp <- scExp[!empty_features,]
