@@ -148,10 +148,11 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL,
         })
         testWilc = do.call("rbind", testWilc)
         pval.gpsamp <- testWilc$pvalue
+        
+        dataMat = t(dataMat)
     }
     
     qval.gpsamp <- stats::p.adjust(pval.gpsamp, method = "BH")
-    dataMat = t(dataMat)
     Count.gpsamp <- rowMeans(dataMat[,gpidx])
     Count.refsamp <- rowMeans(dataMat[,refidx])
     cdiff.gpsamp <- log(Count.gpsamp/Count.refsamp,2)
@@ -163,7 +164,7 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL,
         max(res$cdiff.gpsamp[is.finite(res$cdiff.gpsamp)])
     if(length(which(res$cdiff.gpsamp == -Inf))>0) 
         res$cdiff.gpsamp[which(res$cdiff.gpsamp == -Inf)] = 
-        max(res$cdiff.gpsamp[is.finite(res$cdiff.gpsamp)])
+        min(res$cdiff.gpsamp[is.finite(res$cdiff.gpsamp)])
     colnames(res) <- sub("ref", names(
     ref_group)[min(c(k, length(ref_group)))], sub("gpsamp", 
                                                     names(groups)[k],
