@@ -34,20 +34,20 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                               ),
                               shinydashboard::sidebarMenu(id="tabs", 
                                           shinydashboard::menuItem("Select & Import", tabName = "select_import", icon=icon("upload")),
-                                          shinydashboard::menuItem("Filter & Normalize", tabName = "filter_normalize", icon=icon("fas fa-filter")),
+                                          shinydashboard::menuItem("Filter & Normalize", tabName = "filter_normalize", icon=icon("fas fa-filter", verify_fa = FALSE)),
                                           shinydashboard::menuItem("Visualize Cells", tabName = "vizualize_dim_red", icon=icon("fas fa-image")),
                                           shinydashboard::menuItem("Cluster Cells", tabName = "cons_clustering", icon=icon("th")),
                                           shinydashboard::menuItem("Coverage", tabName = "coverage", icon=icon("chart-area")), #mountain
-                                          shinydashboard::menuItem("Peak Calling", tabName = "peak_calling", icon=icon("fab fa-mountain")), #mountain
+                                          shinydashboard::menuItem("Peak Calling", tabName = "peak_calling", icon=icon("fab fa-mountain", verify_fa = FALSE)), #mountain
                                           shinydashboard::menuItem("Differential Analysis", tabName = "diff_analysis", icon=icon("sort-amount-up")),
                                           shinydashboard::menuItem("Gene Set Analysis", tabName = "enrich_analysis", icon=icon("code-branch")),
-                                          shinydashboard::menuItem("Close App & Save Analysis", tabName = "close_and_save", icon=icon("close"))
+                                          shinydashboard::menuItem("Close App & Save Analysis", tabName = "close_and_save", icon=icon("close", verify_fa = FALSE))
                               )
                             ),
                             controlbar = shinydashboardPlus::dashboardControlbar(
                                 id = "controlbar",
                                 shinydashboardPlus::controlbarMenu(
-                                    id = "menu",
+                                    id = "menu", 
                                     shinydashboardPlus::controlbarItem(
                                         title = "Visualisation Settings",
                                         icon = icon("chart-bar"),
@@ -177,7 +177,7 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                                 fluidPage(
                                                     #Right Panel
                                                     column(width=7,
-                                                           shinydashboard::box(title = tagList(shiny::icon("fas fa-filter"), " Filter & Normalize"),
+                                                           shinydashboard::box(title = tagList(shiny::icon("fas fa-filter", verify_fa = FALSE ), " Filter & Normalize"),
                                                                                width = NULL, status="success", solidHeader=TRUE,
                                                                                column(6, align="left",
                                                                                       column(12, align = "middle", h4("Cell coverage")),
@@ -300,7 +300,7 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                                              column(12, align="left", textOutput("cluster_consensus_info")),
                                                              column(12, align="left", uiOutput("cons_clust_pdf"))
                                          ),
-                                         shinydashboard::box(title=tagList(shiny::icon("fas fa-filter")," Filter lowly correlated cells"),
+                                         shinydashboard::box(title=tagList(shiny::icon("fas fa-filter", verify_fa = FALSE)," Filter lowly correlated cells"),
                                                              width=NULL, status="success", solidHeader=TRUE,
                                                              collapsible = TRUE, collapsed = TRUE,
                                                              column(12, align="center",
@@ -346,7 +346,7 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                                                     column(width=4,checkboxInput("add_jitter", shiny::HTML("<b>Add single-cells</b>"), value= FALSE),
                                                                     column(3, align = "left", actionButton(inputId = "save_plots_violins",
                                                                                                                   label = "Save HQ plots",
-                                                                                                                  icon = icon("fa-picture-o"))) %>%
+                                                                                                                  icon = icon("fa-picture-o", verify_fa = FALSE))) %>%
                                                                                shinyhelper::helper(type = 'markdown',  colour = "#434C5E", icon ="info-circle",
                                                                                                    content = "intra_inter_correlation")),
                                                                     column(width=4,uiOutput("jitter_color")),  br(),br(),br(),br(),br(),
@@ -395,7 +395,7 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                         shinydashboard::tabItem(tabName = "peak_calling",
                                 fluidPage(
                                   column(width=6,
-                                         shinydashboard::box(title=tagList(shiny::icon("fab fa-mountain"), " Peak calling"), width=NULL, status="success", solidHeader=TRUE,
+                                         shinydashboard::box(title=tagList(shiny::icon("fab fa-mountain", verify_fa = FALSE), " Peak calling"), width=NULL, status="success", solidHeader=TRUE,
                                              column(12, align="left", textOutput("peak_calling_info"), hr()),
                                              tags$style(HTML(".large_icon { font-size: 70px; }")),
                                              column(5, align="left",

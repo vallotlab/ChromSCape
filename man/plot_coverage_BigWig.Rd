@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotting_functions.R
 \name{plot_coverage_BigWig}
 \alias{plot_coverage_BigWig}
-\title{Coverage plot using Sushi}
+\title{Coverage plot}
 \usage{
 plot_coverage_BigWig(
   coverages,
@@ -33,10 +33,9 @@ plot_coverage_BigWig(
 A coverage plot annotated with genes
 }
 \description{
-Coverage plot using Sushi
+Coverage plot
 }
 \examples{
 data(scExp)
-plot_intra_correlation_scExp(scExp)
 
 }

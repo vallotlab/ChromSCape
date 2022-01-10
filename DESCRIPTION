@@ -27,7 +27,7 @@ Suggests:
     BiocStyle,
     Signac,
     future
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Roxygen: list(markdown = TRUE)
 Imports: 
     shiny,
@@ -50,6 +50,9 @@ Imports:
     parallel,
     Rsamtools,
     ggplot2,
+    ggrepel,
+    gggenes,
+    gridExtra,
     qualV,
     stringdist,
     fs,

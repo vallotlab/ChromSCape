@@ -670,7 +670,7 @@ plot_inter_correlation_scExp <- function(
     return(p + theme(legend.title = element_text("")))
 }
 
-#' Coverage plot using Sushi
+#' Coverage plot 
 #'
 #' @param coverages A list containing sample coverage as GenomicRanges
 #' @param label_color_list List of colors, list names are labels
@@ -682,14 +682,16 @@ plot_inter_correlation_scExp <- function(
 #'
 #' @return A coverage plot annotated with genes
 #' 
-#' @importFrom Sushi plotBedgraph plotGenes
+#' @importFrom ggrepel geom_text_repel
+#' @importFrom gggenes geom_gene_arrow
+#' @importFrom dplyr mutate filter
+#' @importFrom gridExtra grid.arrange
 #' @importFrom S4Vectors subjectHits 
 #' @importFrom GenomicRanges GRanges findOverlaps 
 #' @export
 #'
 #' @examples
 #' data(scExp)
-#' plot_intra_correlation_scExp(scExp)
 #' 
 plot_coverage_BigWig <- function(
     coverages, label_color_list, peaks = NULL,
@@ -700,64 +702,110 @@ plot_coverage_BigWig <- function(
     genebed$strand2 = genebed$strand
     genebed$strand = "."
     colnames(genebed)[5:6] = c("score", "strand")
-
+    
     #Select region of interest
     roi = GenomicRanges::GRanges(
         chrom, ranges = IRanges::IRanges(start, end))
-
-    gl.sub <- genebed[which(genebed[,"chr"] == chrom),]
-
-    for(i in seq_along(coverages)){
-        coverages[[i]] = coverages[[i]][S4Vectors::subjectHits(
-            GenomicRanges::findOverlaps(roi,coverages[[i]])),]
-    }
-
-    if(sum(sapply(coverages, length)) >0){
-
-        max = round(max(sapply(coverages, function(tab) max(tab$score))),3)
     
-        n = length(coverages)
+    coverage_list = list()
+    if(class(coverages) != "list") {
+        coverage_list[[1]] = coverages[S4Vectors::subjectHits(
+            GenomicRanges::findOverlaps(roi,coverages)),]
+    } else{
+        for(i in seq_along(coverages)){
+            coverage_list[[i]] = coverages[[i]][S4Vectors::subjectHits(
+                GenomicRanges::findOverlaps(roi,coverages[[i]])),]
+        }
+    }
+    
+    if(sum(sapply(coverage_list, length)) >0){
+        
+        max = round(max(sapply(coverage_list, function(tab) max(tab$score))),3)
+        
+        n = length(coverage_list)
         layout.matrix <- matrix(
-            c(sort(rep(seq_len(n),3)), n+1,n+1,n+2), ncol = 1)
+            c(sort(rep(seq_len(n),4)), n+1,n+1), ncol = 1)
         peaks_roi=data.frame()
         if(!is.null(peaks)){
             peaks_roi = peaks[S4Vectors::subjectHits(
                 GenomicRanges::findOverlaps(roi,peaks)),]
             peaks_roi = as.data.frame(peaks_roi)
             if(nrow(peaks_roi)>0) layout.matrix <- matrix(
-                c(sort(rep(seq_len(n),3)), n+1,n+1,n+2,n+2,n+3), ncol = 1)
+                c(sort(rep(seq_len(n),3)), n+1,n+1,n+2,n+2), ncol = 1)
         }
-
-        graphics::layout(mat = layout.matrix,
-                         heights = c(1), # Heights of the two rows
-                         widths = c(1)) # Widths of the two columns
         
-        par(cex=0.5)
-        par(mar = c(0.75, 6, 0, 1), oma = c(1, 1, 1, 1))
-        for(i in seq_along(coverages)){
-
-                Sushi::plotBedgraph(as.data.frame(coverages[[i]])[,c(1,2,3,6)],
-                                chrom, start, end,
-                                range = c(0, max),
-                                addscale = TRUE, 
-                                ylab= names(label_color_list)[i],
-                                color= label_color_list[[i]],
-                                cex.lab=2,cex.main=2.1)
-
+        list_plot = list()    
+        for(i in seq_along(coverage_list)){
+            coverages_df_tmp = as.data.frame(coverage_list[[i]])
+            list_plot[[i]] = coverages_df_tmp %>%
+                ggplot(mapping = aes(x = start, y = score)) +
+                geom_area(stat = "identity", fill = label_color_list[i]) + 
+                geom_hline(yintercept = 0, size = 0.1) +
+                ylab(label = names(label_color_list)[i]) + ylim(c(0, max)) + 
+                theme_classic() + 
+                theme(panel.spacing.y = unit(x = 0, units = "line"),
+                      axis.title.x = element_blank(),
+                      axis.text.x = element_blank(),
+                      axis.ticks.x = element_blank(),
+                      axis.line.x = element_blank(),
+                      axis.line.y = element_blank()) 
+            
         }
-        par(mar = c(1, 6, 1, 1),xpd=NA)
-        if(nrow(peaks_roi)>0) Sushi::plotBed(peaks_roi, chrom, start,
-                                             end,row = "supplied",
-                                             rowlabels = "Peaks",
-                                             rowlabelcex = 1.5)
-        Sushi::plotGenes(gl.sub, chrom, start, end,
-                  bentline=FALSE, plotgenetype = "arrow",
-                  labeltext = TRUE, labelat = "start", fontsize=1,
-                  labeloffset = 0.4, bheight=0.07)
         
-        par(mar = c(1, 6, 1, 1))
-        Sushi::labelgenome(chrom, start, end, n=4, scale="Mb", cex.axis=1.5)
+        if(nrow(peaks_roi)>0) {
+            
+            peaks_roi$molecule = 
+                rep(c(1.2,1.8),
+                    length(peaks_roi$start))[1:length(peaks_roi$start)]
+            
+            list_plot[[length(list_plot) + 1 ]] = peaks_roi %>% 
+                ggplot(aes(xmin = start, xmax = end, y = molecule)) +
+                gggenes::geom_gene_arrow(colour ="#B82144" , fill = "#B82144",
+                                         arrowhead_width = grid::unit(0, "mm"),
+                                         arrowhead_height = grid::unit(0, "mm"),
+                                         arrow_body_height = grid::unit(2, "mm"),
+                                         show.legend = F) +
+                theme_classic() + ylim(c(0,2)) + 
+                theme(panel.spacing.y = unit(x = 0.5, units = "line"),
+                      axis.title.x = element_text(),
+                      axis.text.y = element_blank(),
+                      axis.ticks.y = element_blank(),
+                      axis.line.y = element_blank()) +
+                ylab("Peaks")
+        }
         
+        genebed_tmp = genebed[which(genebed$chr==chrom &
+                                        genebed$start > start  & 
+                                        genebed$end < end),]
+        
+        genebed_tmp$orientation = ifelse(genebed_tmp$strand=="+", 1, -1)
+                genebed_tmp$molecule = 
+            rep(c(1,2.35),length(genebed_tmp$start))[1:length(genebed_tmp$start)]
+        if(nrow(genebed_tmp) > 0) { 
+        list_plot[[length(list_plot) + 1 ]] = genebed_tmp %>% 
+            ggplot(aes(xmin = start, xmax = end, y = molecule, forward = orientation)) +
+            gggenes::geom_gene_arrow(fill = "black", 
+                                     arrowhead_width = grid::unit(2, "mm"),
+                                     arrowhead_height = grid::unit(4, "mm"),
+                                     arrow_body_height = grid::unit(1, "mm"),
+                                     show.legend = F) +
+            ggrepel::geom_text_repel(data = genebed_tmp %>%
+                                         dplyr::mutate(start = (.data[["start"]] + .data[["end"]])/2),
+                                     aes(x = start, y = molecule, label = Gene),
+                                     size = 4,   inherit.aes = F,
+                                     nudge_y = -0.1) + 
+            theme_classic() + ylim(c(0,2)) + 
+            theme(panel.spacing.y = unit(x = 0.5, units = "line"),
+                  axis.title.x = element_text(), axis.title = element_blank(),
+                  axis.text.y = element_blank(), axis.ticks.y = element_blank(),
+                  axis.line.y = element_blank()) + xlab(chrom)
+        } else{
+            list_plot[[length(list_plot) + 1 ]] == NULL
+        }
+        print(gridExtra::grid.arrange(grobs = list_plot, layout_matrix = layout.matrix))
+        
+    } else{
+        message("ChromSCape::plot_coverage_BigWig - No reads found within the required ranges.")
     }
 }
 
