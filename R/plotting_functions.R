@@ -913,11 +913,13 @@ plot_differential_volcano_scExp <- function(
                 <= qval.th & res[, 
                                  paste("cdiff", cell_cluster, sep = ".")] < -cdiff.th)] <- "forestgreen"
     
+    idx = which(scExp_cf@metadata$diff$groups == cell_cluster)
+    
     plot(res[, paste("cdiff", cell_cluster, sep = ".")],
          -log10(res[, paste("qval", cell_cluster, sep = ".")]), col = mycol,
          cex = 0.7, pch = 16, xlab = "count difference", 
          ylab = "-log10(adjusted p-value)", las = 1,
-         main = paste(cell_cluster, "vs the rest", "\n",
+         main = paste(cell_cluster, "vs", scExp_cf@metadata$diff$refs[idx] , "\n",
                       summary["over", cell_cluster],
                       "enriched,", summary["under", cell_cluster], "depleted"))
     abline(v = cdiff.th, lty = 2)
