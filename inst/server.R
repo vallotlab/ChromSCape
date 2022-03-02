@@ -459,7 +459,7 @@ shinyServer(function(input, output, session) {
           if(type_file == "scBAM") if(length(list.files(selected_sample_folders[1],pattern = "*.bam$"))==0) send_warning = TRUE
           if(type_file == "scBED") if(length(list.files(selected_sample_folders[1],pattern = "*.bed$|.*.bed.gz"))==0) send_warning = TRUE
           if(type_file == "FragmentFile") if(length(list.files(selected_sample_folders[1],pattern = "*.tsv|.*.tsv.gz"))==0) send_warning = TRUE
-          if(type_file == "FragmentFile") if(!requireNamespace("data.table", quietly=TRUE)){
+          if(type_file == "FragmentFile") if(!requireNamespace("Signac", quietly=TRUE)){
             showNotification(paste0("Warning : In order to read in Fragment Files, you must install Signac Package first.",
                                     "Run install.packages('Signac') in console. "), duration = 20, closeButton = TRUE, type="error")
           }

@@ -290,13 +290,18 @@ raw_counts_to_sparse_matrix <- function(
     which <- define_feature(ref, peak_file, bin_width, genebody,
                             extendPromoter)
     
-    if(use_Signac && requireNamespace("Signac", quietly=TRUE) &&
-       file_type == "FragmentFile"){
-        out <- wrapper_Signac_FeatureMatrix(files_dir_list = files_dir_list,
-                                            which = which,
-                                            ref = ref,
-                                            verbose = verbose,
-                                            progress = progress)
+    if(use_Signac &&file_type == "FragmentFile"){
+        if( !requireNamespace("Signac", quietly=TRUE) ){
+            stop("ChromSCape::raw_counts_to_sparse_matrix - Signac package not",
+            " found but required for treating Fragment files.")
+        } else{
+            out <- wrapper_Signac_FeatureMatrix(files_dir_list = files_dir_list,
+                                                which = which,
+                                                ref = ref,
+                                                verbose = verbose,
+                                                progress = progress)
+        }
+
     } else {
         out <- import_count_input_files(
             files_dir_list, file_type, which, ref, verbose, progress,
