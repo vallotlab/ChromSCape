@@ -536,6 +536,27 @@ create_project_folder <- function(output_directory,
     return(ChromSCape_directory)
 }
 
+#' Preprocess and filter matrix annotation data project folder to SCE
+#'
+#' @param datamatrix A sparse count matrix of features x cells.
+#' @param annot_raw A data.frame with barcode, cell_id, sample_id, batch_id, total_counts 
+#' @param min_reads_per_cell Minimum read per cell to keep the cell
+#' @param max_quantile_read_per_cell Upper count quantile threshold above which cells are removed
+#' @param n_top_features Number of features to keep
+#' @param norm_type Normalization type c("CPM", "TFIDF", "RPKM", "TPM", "feature_size_only")
+#' @param subsample_n Number of cells to subsample.
+#' @param ref_genome Reference genome ("hg38" or "mm10").
+#' @param exclude_regions GenomicRanges with regions to remove from the object.
+#' @param doBatchCorr Run batch correction ? TRUE or FALSE
+#' @param batch_sels If doBatchCorr is TRUE, List of characters.
+#'  Names are batch names, characters are sample names. 
+#'
+#' @return A SingleCellExperiment object containing feature spaces.
+#' @export
+#'
+#' @examples
+#' raw <- create_scDataset_raw()
+#' scExp = preprocessing_filtering_and_reduction(raw$mat, raw$annot)
 preprocessing_filtering_and_reduction <- function(
     datamatrix, annot_raw,
     min_reads_per_cell = 1600,
@@ -543,7 +564,7 @@ preprocessing_filtering_and_reduction <- function(
     n_top_features = 40000,
     norm_type = "CPM",
     subsample_n = NULL,
-    ref_genome,
+    ref_genome = "hg38",
     exclude_regions = NULL,
     doBatchCorr  = FALSE,
     batch_sels  = NULL)
@@ -609,6 +630,32 @@ preprocessing_filtering_and_reduction <- function(
     return(scExp)
 }
 
+#' From a ChromSCape analysis directory, generate an HTML report.
+#'
+#' @param ChromSCape_directory Path towards the ChromSCape directory of which 
+#' you want to create the report. The report will be created at the root of this
+#' directory.
+#' 
+#' @param prefix Name of the analysis with the filtering parameters
+#'  (e.g. Analysis_3000_100000_99_uncorrected). You will find the prefix in the
+#'  Filtering_Normalize_Reduce subfolder.
+#' @param run Which steps to report ("filter", "CNA","cluster", "consensus", "peak_call",
+#' "coverage", "DA", "GSA", "report"). Only indicate steps that were done in the 
+#' analysis. By default do not report CNA, consensus and peak calling.
+#' @param genes_to_plot For the UMAP, which genes do you want to see in the 
+#' report.
+#' @param control_samples_CNA If running the Copy Number Alteration (CNA) part,
+#' which samples are the controls
+#'
+#' @return Generate an HTML report at the root of the analysis directory.
+#'
+#' @export
+#'
+#' @examples
+#' 
+#' \dontrun{
+#' generate_analysis("/path/to/data/", "Analysis_1")
+#' }
 generate_report <- function(ChromSCape_directory,
                             prefix = NULL,
                             run = c("filter", "CNA","cluster", "consensus", "peak_call",
