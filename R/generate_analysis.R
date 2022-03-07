@@ -336,7 +336,7 @@ generate_analysis <- function(input_data_folder,
         scExp_cf = differential_analysis_scExp(scExp = scExp_cf,
                                                method= "wilcox",
                                                de_type = "one_vs_rest",
-                                               cdiff.th = logFC.th,
+                                               logFC.th = logFC.th,
                                                qval.th = qval.th,
                                                block = block)
         gc()
@@ -354,7 +354,7 @@ generate_analysis <- function(input_data_folder,
             scExp_cf,
             enrichment_qval = 0.01, qval.th = qval.th,
             ref = ref_genome,
-            cdiff.th = logFC.th,
+            logFC.th = logFC.th,
             peak_distance = 1000,
             use_peaks = use_peaks,
             GeneSetClasses = MSIG.classes)

@@ -8,7 +8,7 @@ combine_enrichmentTests(
   diff,
   enrichment_qval,
   qval.th,
-  cdiff.th,
+  logFC.th,
   annotFeat_long,
   peak_distance,
   refined_annotation,
@@ -26,7 +26,7 @@ considered significative list}
 
 \item{qval.th}{Differential analysis adjusted p.value threshold}
 
-\item{cdiff.th}{Differential analysis log-fold change threshold}
+\item{logFC.th}{Differential analysis log-fold change threshold}
 
 \item{annotFeat_long}{Long annotation}
 

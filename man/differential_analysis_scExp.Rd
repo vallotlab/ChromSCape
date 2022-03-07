@@ -9,7 +9,7 @@ differential_analysis_scExp(
   de_type = "one_vs_rest",
   method = "wilcox",
   qval.th = 0.01,
-  cdiff.th = 1,
+  logFC.th = 1,
   block = NULL,
   group = NULL,
   ref = NULL,
@@ -32,7 +32,7 @@ parametric testing or 'neg.binomial' for edgerGLM based testing. ('wilcox')}
 
 \item{qval.th}{Adjusted p-value threshold. (0.01)}
 
-\item{cdiff.th}{Fold change threshold. (1)}
+\item{logFC.th}{Fold change threshold. (1)}
 
 \item{block}{Use batches as blocking factors ? If TRUE, block will be taken
 as the column "batch_id" from the SCE. Cells will be compared only within
@@ -72,7 +72,7 @@ combineMarkers function from scran.
 \details{
 This functions takes as input a SingleCellExperiment object with consclust,
 the type of comparison, either 'one_vs_rest' or 'pairwise', the adjusted
-p-value threshold (qval.th) and the fold-change threshold (cdiff.th). It
+p-value threshold (qval.th) and the fold-change threshold (logFC.th). It
 outputs a SingleCellExperiment object containing a differential list.
 }
 \examples{

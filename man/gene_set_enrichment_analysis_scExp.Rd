@@ -13,7 +13,7 @@ gene_set_enrichment_analysis_scExp(
   GeneSetsDf = NULL,
   GenePool = NULL,
   qval.th = 0.01,
-  cdiff.th = 1,
+  logFC.th = 1,
   peak_distance = 1000,
   use_peaks = FALSE,
   GeneSetClasses = c("c1_positional", "c2_curated", "c3_motif", "c4_computational",
@@ -44,7 +44,7 @@ automatically load Gencode list of genes fro specified reference genome.
 \item{qval.th}{Adjusted p-value threshold to define differential features.
 (0.01)}
 
-\item{cdiff.th}{Fold change threshold to define differential features. (1)}
+\item{logFC.th}{Fold change threshold to define differential features. (1)}
 
 \item{peak_distance}{Maximum distanceToTSS of feature to gene TSS to consider
 associated, in bp. (1000)}
@@ -67,14 +67,14 @@ hypergeometric test to look for enriched gene sets in the genes associated
 with differential features, for each cell cluster. This functions takes as
 input a SingleCellExperiment object with consclust, the type of comparison,
 either 'one_vs_rest' or 'pairwise', the adjusted p-value threshold (qval.th)
-and the fold-change threshold (cdiff.th). It outputs a SingleCellExperiment
+and the fold-change threshold (logFC.th). It outputs a SingleCellExperiment
 object containing a differential list.
 }
 \examples{
 data("scExp")
 
-#Usually recommanding qval.th = 0.01 & cdiff.th = 1 or 2
+#Usually recommanding qval.th = 0.01 & logFC.th = 1 or 2
 \dontrun{scExp_cf = gene_set_enrichment_analysis_scExp(scExp,
- qval.th = 0.4, cdiff.th = 0.3)}
+ qval.th = 0.4, logFC.th = 0.3)}
 
 }

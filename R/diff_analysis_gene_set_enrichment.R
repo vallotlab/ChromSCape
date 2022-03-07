@@ -1,4 +1,4 @@
-    ## Authors : Pacôme Prompsy, Celine Vallot
+## Authors : Pacôme Prompsy, Celine Vallot
 ## Title : Wrappers & functions to run differential
 ## analysis on clusters of single-cell based on epigenomic profiling and Gene
 ## Set Enrichment Analysis on the genes associated with differentially enriched
@@ -15,7 +15,7 @@
 #'
 #' This functions takes as input a SingleCellExperiment object with consclust,
 #' the type of comparison, either 'one_vs_rest' or 'pairwise', the adjusted
-#' p-value threshold (qval.th) and the fold-change threshold (cdiff.th). It
+#' p-value threshold (qval.th) and the fold-change threshold (logFC.th). It
 #' outputs a SingleCellExperiment object containing a differential list.
 #'
 #' @param scExp A SingleCellExperiment object containing consclust with selected
@@ -24,7 +24,7 @@
 #'   cluster against all others, or 'pairwise' to make 1 to 1 comparisons.
 #'   ('one_vs_rest')
 #' @param qval.th Adjusted p-value threshold. (0.01)
-#' @param cdiff.th Fold change threshold. (1)
+#' @param logFC.th Fold change threshold. (1)
 #' @param method Differential testing method, either 'wilcox' for Wilcoxon non-
 #' parametric testing or 'neg.binomial' for edgerGLM based testing. ('wilcox')
 #' @param block Use batches as blocking factors ? If TRUE, block will be taken
@@ -59,11 +59,11 @@
 #' 
 differential_analysis_scExp = function(
     scExp, de_type = "one_vs_rest", method = "wilcox", qval.th = 0.01, 
-    cdiff.th = 1, block = NULL, group = NULL, ref = NULL,
+    logFC.th = 1, block = NULL, group = NULL, ref = NULL,
     prioritize_genes = nrow(scExp) > 20000, max_distanceToTSS = 1000, 
     progress = NULL, BPPARAM = BiocParallel::bpparam())
 {
-    warning_DA(scExp, de_type, method, qval.th, cdiff.th, block,
+    warning_DA(scExp, de_type, method, qval.th, logFC.th, block,
                group, ref)
     if (!is.null(progress)) progress$set(detail = "Retrieving counts...", value = 0.15)
     if (isFALSE(block)) block = NULL
@@ -114,14 +114,14 @@ differential_analysis_scExp = function(
     for (k in seq_along(groups)){
         gpsamp = groups[k]
         qval.col <- paste("qval", gpsamp, sep = ".")
-        cdiff.col <- paste("cdiff", gpsamp, sep = ".")
+        logFC.col <- paste("logFC", gpsamp, sep = ".")
         diff$summary["differential", gpsamp] = sum(res[, qval.col] <= qval.th & 
                                                     abs(
-                res[, cdiff.col]) > cdiff.th, na.rm = TRUE)
+                res[, logFC.col]) > logFC.th, na.rm = TRUE)
         diff$summary["over", gpsamp] = sum(res[,qval.col] <= qval.th & 
-                res[, cdiff.col] > cdiff.th, na.rm = TRUE)
+                res[, logFC.col] > logFC.th, na.rm = TRUE)
         diff$summary["under", gpsamp] = sum(res[, qval.col] <= qval.th &
-                res[, cdiff.col] < -cdiff.th, na.rm = TRUE)
+                res[, logFC.col] < -logFC.th, na.rm = TRUE)
     }
     diff$groups = groups
     diff$refs = refs
@@ -138,7 +138,7 @@ differential_analysis_scExp = function(
 #'   cluster against all others, or 'pairwise' to make 1 to 1 comparisons.
 #'   ('one_vs_rest')
 #' @param qval.th Adjusted p-value threshold. (0.01)
-#' @param cdiff.th Fold change threshold. (1)
+#' @param logFC.th Fold change threshold. (1)
 #' @param method Wilcoxon or edgerGLM
 #' @param block Use batches as blocking factors ?
 #' @param group If de_type is custom, the group to compare (data.frame), must
@@ -149,10 +149,10 @@ differential_analysis_scExp = function(
 #' rows
 #'
 #' @return Warnings or Errors if the input are not correct
-warning_DA <- function(scExp, de_type, method, qval.th, cdiff.th, block,
+warning_DA <- function(scExp, de_type, method, qval.th, logFC.th, block,
                        group, ref){
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(de_type),
-            is.numeric(qval.th), is.numeric(cdiff.th))
+            is.numeric(qval.th), is.numeric(logFC.th))
     if (!de_type %in% c("one_vs_rest", "pairwise", "custom")) 
         stop("ChromSCape::run_differential_analysis_scExp - de_type ",
                     "must be 'one_vs_rest', 'pairwise' 'custom'.")
@@ -223,7 +223,7 @@ DA_one_vs_rest_fun <- function(affectation,nclust, counts, method, feature,
             grep("logCPM",colnames(res))] = gsub(
                 "logCPM","Count",colnames(res)[grep("logCPM",colnames(res))])
         colnames(res)[grep("log2FC",colnames(res))] = gsub(
-            "log2FC","cdiff",colnames(res)[grep("log2FC",colnames(res))])
+            "log2FC","logFC",colnames(res)[grep("log2FC",colnames(res))])
         
     }
     out <- list("res" = res, "refs" = refs, "groups" = groups)
@@ -267,17 +267,17 @@ DA_pairwise <- function(affectation,nclust, counts,
         counts, 1, function(x) mean(x[as.character(tmp.gp[[1]])]))
     combinedTests = scran::combineMarkers(
         de.lists = single_results, pairs = pairs, pval.field = "p.val",
-        effect.field = "cdiff", pval.type = "any", log.p.in = FALSE, 
+        effect.field = "logFC", pval.type = "any", log.p.in = FALSE, 
         log.p.out = FALSE, output.field = "stats", full.stats = TRUE)
     for (i in seq_len(as.integer(nclust)))
     {
         cdiffs = vapply(seq_len((as.integer(nclust) - 1)), function(k){
-            combinedTests[[paste0("C", i)]][feature$ID, k + 4]$cdiff
+            combinedTests[[paste0("C", i)]][feature$ID, k + 4]$logFC
         }, FUN.VALUE = rep(0,nrow(feature)))
         res[, paste0("Rank.C", i)] = combinedTests[[paste0("C", i)]][feature$ID,
                                                                     "Top"]
         res[, paste0("Count.C", i)] = as.numeric(count_save[, paste0("C", i)])
-        res[, paste0("cdiff.C", i)] = Matrix::rowMeans(cdiffs)
+        res[, paste0("logFC.C", i)] = Matrix::rowMeans(cdiffs)
         res[, paste0("pval.C", i)] = combinedTests[[paste0("C", i)]][feature$ID,
                                                                     "p.value"]
         res[, paste0("qval.C", i)] = combinedTests[[paste0("C", i)]][feature$ID,
@@ -344,7 +344,7 @@ DA_custom <- function(affectation, counts, method, feature,
             grep("logCPM",colnames(res))] = gsub(
                 "logCPM","Count",colnames(res)[grep("logCPM",colnames(res))])
         colnames(res)[grep("log2FC",colnames(res))] = gsub(
-            "log2FC","cdiff",colnames(res)[grep("log2FC",colnames(res))])
+            "log2FC","logFC",colnames(res)[grep("log2FC",colnames(res))])
         
     }
     out <- list("res" = res, "refs" = refs, "groups" = groups)
@@ -400,20 +400,20 @@ run_pairwise_tests <- function(affectation, nclust, counts,
                 colnames(tmp_result)[logCPM.cols] = gsub(
                     "logCPM","Count", colnames(tmp_result)[logCPM.cols])
                 colnames(tmp_result)[log2FC.cols] = gsub(
-                    "log2FC","cdiff",colnames(tmp_result)[log2FC.cols])}
+                    "log2FC","logFC",colnames(tmp_result)[log2FC.cols])}
             tmp_result = tmp_result[match(count_save$ID, tmp_result$ID), ]
             rownames(tmp_result) = tmp_result$ID
             if(method == "wilcox"){
                 tmp_result[5] = NULL  
-                colnames(tmp_result)[5:8] <- c("count", "cdiff",
+                colnames(tmp_result)[5:8] <- c("count", "logFC",
                                             "p.val", "adj.p.val")} else {
-                colnames(tmp_result)[5:8] = c("cdiff", "count",
+                colnames(tmp_result)[5:8] = c("logFC", "count",
                                             "p.val", "adj.p.val")}
             count_save[, paste0("C", i)] = tmp_result$count
             single_results = rlist::list.append(single_results, tmp_result)
             pairs[nrow(pairs) + 1, ] = list(groups[1], refs[1])
             tmp_mirror = tmp_result
-            tmp_mirror$cdiff = tmp_mirror$cdiff * (-1)
+            tmp_mirror$logFC = tmp_mirror$logFC * (-1)
             tmp_mirror$count = 0  
             single_results = rlist::list.append(single_results, tmp_mirror)
             pairs[nrow(pairs) + 1, ] = list(refs[1], groups[1])}}
@@ -429,7 +429,7 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #' with differential features, for each cell cluster. This functions takes as
 #' input a SingleCellExperiment object with consclust, the type of comparison,
 #' either 'one_vs_rest' or 'pairwise', the adjusted p-value threshold (qval.th)
-#' and the fold-change threshold (cdiff.th). It outputs a SingleCellExperiment
+#' and the fold-change threshold (logFC.th). It outputs a SingleCellExperiment
 #' object containing a differential list.
 #'
 #' @param scExp A SingleCellExperiment object containing list of differential
@@ -447,7 +447,7 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #'   (NULL)
 #' @param qval.th Adjusted p-value threshold to define differential features.
 #'   (0.01)
-#' @param cdiff.th Fold change threshold to define differential features. (1)
+#' @param logFC.th Fold change threshold to define differential features. (1)
 #' @param peak_distance Maximum distanceToTSS of feature to gene TSS to consider
 #'   associated, in bp. (1000)
 #' @param use_peaks Use peak calling method (must be calculated beforehand).
@@ -466,20 +466,20 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #' @examples
 #' data("scExp")
 #' 
-#' #Usually recommanding qval.th = 0.01 & cdiff.th = 1 or 2
+#' #Usually recommanding qval.th = 0.01 & logFC.th = 1 or 2
 #' \dontrun{scExp_cf = gene_set_enrichment_analysis_scExp(scExp,
-#'  qval.th = 0.4, cdiff.th = 0.3)}
+#'  qval.th = 0.4, logFC.th = 0.3)}
 #' 
 gene_set_enrichment_analysis_scExp = function(
     scExp, enrichment_qval = 0.1, ref = "hg38", GeneSets = NULL,
-    GeneSetsDf = NULL, GenePool = NULL, qval.th = 0.01, cdiff.th = 1, 
+    GeneSetsDf = NULL, GenePool = NULL, qval.th = 0.01, logFC.th = 1, 
     peak_distance = 1000, use_peaks = FALSE, GeneSetClasses = c(
         "c1_positional","c2_curated","c3_motif","c4_computational",
         "c5_GO","c6_oncogenic","c7_immunologic","hallmark"), progress=NULL)
 {
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(ref),
             is.numeric(enrichment_qval), is.numeric(peak_distance),
-            is.numeric(qval.th), is.numeric(cdiff.th), 
+            is.numeric(qval.th), is.numeric(logFC.th), 
             is.character(GeneSetClasses))
     if (!is.null(progress)) progress$inc(
         detail = "Loading reference gene sets...", amount = 0.1)
@@ -519,7 +519,7 @@ gene_set_enrichment_analysis_scExp = function(
 
     enr <- combine_enrichmentTests(
         diff = scExp@metadata$diff, enrichment_qval = enrichment_qval,
-        qval.th = qval.th, cdiff.th = cdiff.th, annotFeat_long = annotFeat_long,
+        qval.th = qval.th, logFC.th = logFC.th, annotFeat_long = annotFeat_long,
         peak_distance = peak_distance, refined_annotation = refined_annotation,
         GeneSets = GeneSets, GeneSetsDf = GeneSetsDf, GenePool = GenePool,
         progress = progress)
@@ -631,7 +631,7 @@ results_enrichmentTest <- function(
 #' @param enrichment_qval Adusted p-value threshold above which a pathway is
 #' considered significative list
 #' @param qval.th Differential analysis adjusted p.value threshold
-#' @param cdiff.th Differential analysis log-fold change threshold
+#' @param logFC.th Differential analysis log-fold change threshold
 #' @param annotFeat_long Long annotation
 #' @param peak_distance Maximum gene to peak distance
 #' @param refined_annotation Refined annotation data.frame if peak calling is 
@@ -645,11 +645,11 @@ results_enrichmentTest <- function(
 #' Both / Over / Under and for each cluster
 #'
 combine_enrichmentTests <- function(
-    diff, enrichment_qval, qval.th, cdiff.th, annotFeat_long, peak_distance,
+    diff, enrichment_qval, qval.th, logFC.th, annotFeat_long, peak_distance,
     refined_annotation, GeneSets, GeneSetsDf, GenePool, progress = NULL)
     {
     stopifnot(is.list(diff), is.numeric(enrichment_qval), is.numeric(qval.th),
-                is.numeric(cdiff.th), is.data.frame(annotFeat_long),
+                is.numeric(logFC.th), is.data.frame(annotFeat_long),
                 is.numeric(peak_distance), is.list(GeneSets),
                 is.data.frame(GeneSetsDf), is.character(GenePool))
     groups <- diff$groups
@@ -661,19 +661,19 @@ combine_enrichmentTests <- function(
             detail = paste0("Enrichment for ",gp, "..."),
             value = 0.3 + (0.5 / length(groups)))
         qval.col <- paste("qval", gp, sep = ".")
-        cdiff.col <- paste("cdiff", gp, sep = ".")
+        logFC.col <- paste("logFC", gp, sep = ".")
         signific = res$ID[which(res[, qval.col] <= qval.th & 
-                                    abs(res[, cdiff.col]) > cdiff.th)]
+                                    abs(res[, logFC.col]) > logFC.th)]
         significG = unique(
             annotFeat_long$Gene[annotFeat_long$distanceToTSS < peak_distance & 
                                     annotFeat_long$ID %in% signific])
         over = res$ID[which(res[, qval.col] <= qval.th & 
-                                res[, cdiff.col] > cdiff.th)]
+                                res[, logFC.col] > logFC.th)]
         overG = unique(
             annotFeat_long$Gene[annotFeat_long$distanceToTSS < peak_distance & 
                                             annotFeat_long$ID %in% over])
         under = res$ID[which(res[, qval.col] <= qval.th &
-                                res[,cdiff.col] < -cdiff.th)]
+                                res[,logFC.col] < -logFC.th)]
         underG = unique(
             annotFeat_long$Gene[annotFeat_long$distanceToTSS < peak_distance & 
                                     annotFeat_long$ID %in% under])
@@ -795,3 +795,140 @@ table_enriched_genes_scExp <- function(
     table <- table[order(table$adj.p.value, table$p.value), ]
     return(table)
 }
+
+
+# 
+# scExp = qs::qread("output/Marks/PairedTag/H3K4me1/scExp_5000.qs")
+# cluster = "A1"
+# cluster_mat = counts(scExp[,which(scExp$cell_cluster == "A1")])
+# reference_mat = counts(scExp[,which(scExp$cell_cluster == "A2")])
+# reference_mat = Matrix((reference_mat> 0) + 0, sparse = TRUE)
+# is_binned_reference_mat = TRUE
+# plot = TRUE
+# name = "cluster"
+#' Find Differentialy Activated Features 
+#'
+#' @param scExp  A SingleCellExperiment object containing consclust with selected
+#'   number of cluster.
+#' @param group_by Which grouping to run the marker enrichment ?
+#' @param prioritize_genes First filter by loci being close to genes ? E.g. for
+#' differential analysis, it is more relevant to keep features close to genes
+#' @param max_distanceToTSS If prioritize_genes is TRUE, the maximum distance to 
+#' consider a feature close to a gene.
+#' @param qval.th Adjusted p-value threshold. (0.01)
+#' @param logFC.th Fold change threshold. (1)
+#' @param min.percent Minimum fraction of cells having the feature active to
+#' consider it as significantly differential. (0.01)
+#' @param progress A shiny Progress instance to display progress bar. 
+#' @param BPPARAM BPPARAM object for multiprocessing. See
+#'  \link[BiocParallel]{bpparam} for more informations. Will take the default
+#'  BPPARAM set in your R session.
+#'  
+#' @return Returns a SingleCellExperiment object containing a differential list.
+#' @export
+#'
+#' @importFrom Matrix rowSums colSums
+#' @importFrom parallel parApply clusterExport makeCluster
+#' @importFrom SingleCellExperiment colData counts rowData
+#' @importFrom rlist list.append
+#'
+#' @examples
+#' data("scExp")
+#' scExp_cf = differential_activation_scExp(scExp, group_by = "cell_cluster")
+differential_activation_scExp <- function(scExp, group_by = c("cell_cluster","sample_id"),
+                                    prioritize_genes = nrow(scExp) > 20000, max_distanceToTSS = 1000,
+                                    qval.th = 0.01,  logFC.th = 1, min.percent = 0.01, 
+                                    progress = NULL, BPPARAM = BiocParallel::bpparam()){
+    
+    if(prioritize_genes){
+        message("ChromSCape::differential_activation_scExp - Large number of loci",
+                " detected, selecting features closest to ", max_distanceToTSS,
+                "bp from genes TSS only.")
+        scExp = find_top_features(
+            scExp,
+            n =  nrow(scExp),
+            keep_others = TRUE,
+            prioritize_genes = TRUE,
+            max_distanceToTSS = max_distanceToTSS)
+    }
+    
+    groups = unique(colData(scExp)[, group_by])
+    list_res = list()
+    
+    mat = Matrix::Matrix(SingleCellExperiment::counts(
+        scExp[SingleCellExperiment::rowData(scExp)$top_feature,]) > 0 + 0, sparse = TRUE)
+   
+    for(group in groups){
+        cluster_bin_mat = mat[,which(colData(scExp)[, group_by] %in% group)]
+        reference_bin_mat = mat[,which(! colData(scExp)[, group_by] %in% group)]
+        
+        rectifier = mean(Matrix::colSums(cluster_bin_mat)) / mean(Matrix::colSums(reference_bin_mat))
+        group_sum = Matrix::rowSums(cluster_bin_mat)
+        group_activation = group_sum / (ncol(cluster_bin_mat) * rectifier)
+        
+        reference_sum = Matrix::rowSums(reference_bin_mat) 
+        reference_activation = reference_sum / ncol(reference_bin_mat)
+        
+        n_cell_cluster = ncol(cluster_bin_mat)
+        n_cell_reference = ncol(reference_bin_mat)
+        other_group =  n_cell_cluster - group_sum
+        other_ref = n_cell_reference - reference_sum
+        
+        new_env = new.env()
+        new_env$chisq_mat = cbind(group_sum, other_group, reference_sum, other_ref)
+        
+        cl <- parallel::makeCluster(getOption("cl.cores", 6))
+        parallel::clusterExport(cl, varlist = c("chisq_mat"), envir = new_env)
+        pvalues = parallel::parApply(cl = cl, new_env$chisq_mat, 1, 
+                                     function(row) chisq.test(matrix(c(row[1], row[2], row[3], row[4]), ncol = 2),simulate.p.value = FALSE)$p.value)
+        rm(cl)
+        
+        q.values = p.adjust(pvalues, method = "BH")
+        logFCs = log2(group_activation/reference_activation)
+        
+        res = data.frame(features = rownames(mat),
+                         group_activation = group_activation,
+                         real_group_percentage = group_sum / ncol(cluster_bin_mat),
+                         reference_activation = reference_activation,
+                         logFC = logFCs,
+                         qval = q.values)
+        if(any(res$logFC == Inf)) res$logFC[which(res$logFC == Inf)] = max(
+                res$logFC[which(!is.infinite(res$logFC))])
+        if(any(res$logFC == -Inf)) res$logFC[which(res$logFC == -Inf)] = min(
+            res$logFC[which(!is.infinite(res$logFC))])
+        
+        colnames(res)[2:6] = paste0(colnames(res)[2:6], ".", group)
+        if(group != groups[1]) res = res [,-1]
+        list_res[[group]] = res
+    }
+    names(list_res) = NULL
+    res =  do.call("cbind", list_res)
+    res = res[order(res[,paste0("qval.",groups[1])], res[,paste0("logFC.",groups[1])], decreasing = F),]
+    
+    summary = matrix(nrow = 3, ncol = length(groups), dimnames = list(
+        c("differential", "over", "under"), groups))
+    for (k in seq_along(groups)){
+        gpsamp = groups[k]
+        qval.col <- paste("qval", gpsamp, sep = ".")
+        logFC.col <- paste("logFC", gpsamp, sep = ".")
+
+
+        summary["over", gpsamp] = sum(res[,qval.col] <= qval.th & 
+                                          res[,logFC.col] > logFC.th &
+                                          res[,paste("group_activation", gpsamp, sep = ".")] > min.percent, na.rm = TRUE)
+        summary["under", gpsamp] = sum(res[,qval.col] <= qval.th & 
+                                           res[,logFC.col] < -logFC.th &
+                                               res[,paste("reference_activation", gpsamp, sep = ".")] > min.percent, na.rm = TRUE)
+        summary["differential", gpsamp] = summary["under", gpsamp] +
+                                                  summary["over", gpsamp]
+    }
+    diff = list()
+    diff$groups = groups
+    diff$refs = "All"
+    diff$summary = summary
+    diff$res = res
+    scExp@metadata$diff = diff
+    
+    return(scExp)
+}
+
