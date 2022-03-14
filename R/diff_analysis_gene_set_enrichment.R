@@ -1079,7 +1079,7 @@ enrich_TF_ChEA3_scExp = function(
 #'  Nucleic Acids Research. doi: 10.1093/nar/gkz446
 #'  
 #' @export
-#'
+#' @importFrom utils data
 #' @examples
 #' 
 #' enrich_TF_ChEA3_genes(c("LY6L", "GPIHBP1","RP11-1055B8.2", "RP11-1055B8.3",
@@ -1099,7 +1099,7 @@ enrich_TF_ChEA3_genes = function(genes){
   }
   
   if(length(genes) >= 10){
-  data("CheA3_TF_nTargets")
+  utils::data("CheA3_TF_nTargets")
   
   #POST to ChEA3 server
   httr::set_config(httr::config(ssl_verifypeer = 0L))
