@@ -1,6 +1,10 @@
 ---
 title: "scChIC-seq - H3K4me3 of human white blood cells"
 output: html_document
+vignette: >
+    %\VignetteIndexEntry{Example_scChIC}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}
 ---
 
 ## Introduction
@@ -43,8 +47,8 @@ on 5kbp bins, then on genes.
 
 ```{r, eval=TRUE, echo=TRUE}
 # each directory contain single-cell BED files of a single sample
-input_directory = "/media/pprompsy/LaCie/InstitutCurie/ChromSCape_inputs/GSE105012_scChIC_Ku_2019/"
-files_dir_list = list.dirs(input_directory, recursive = TRUE) 
+input_directory = "/media/pprompsy/Depic_bioinfo_1/InstitutCurie/ChromSCape_inputs/GSE105012_scChIC_Ku_2019/"
+files_dir_list = list.dirs(input_directory, recursive = F) 
 
 out <- raw_counts_to_sparse_matrix(
   files_dir_list = files_dir_list,
@@ -54,16 +58,12 @@ out <- raw_counts_to_sparse_matrix(
 
 ```
 
-
-  
 ## Interactive analysis and visualization
 
 The datasets were analysis interactively with ChromSCape and an archive containing
-the datasets is available at [](). 
+the datasets is available at [GEO](https://www-ncbi-nlm-nih-gov.insb.bib.cnrs.fr/geo/query/acc.cgi?acc=GSE105012). 
 To vizualise the datasets directly in ChromSCape, unzip the directory and launch
 ChromSCape :  
-
-
 
 Once the app has loaded, click on the '**Browse**' button under 
 '**Select output directory**' select the root of the folder (e.g. the folder 
@@ -88,7 +88,7 @@ variable with the path where you downloaded the computed analysis).
   
 ```{r, eval=TRUE, echo=TRUE}
 # Load the preprocessed data (in the 'Filtering_Normalize_Reduce' folder)
-ChromScape_path = "/media/pacome/LaCie/InstitutCurie/Documents/Data/ChromSCape_Data/ChromSCape_3.13_2/ChromSCape_analyses/"
+ChromScape_path = "/media/pprompsy/Depic_bioinfo_1/InstitutCurie/Documents/Data/ChromSCape_Data/ChromSCape_3.13/ChromSCape_analyses/"
 
 scExp = qs::qread(file.path(ChromScape_path,"Bartosovic_scCutTag_H3K27me3", "Filtering_Normalize_Reduce","Bartosovic_scCutTag_H3K27me3_100_40000_99.88_uncorrected.qs"))
 ```

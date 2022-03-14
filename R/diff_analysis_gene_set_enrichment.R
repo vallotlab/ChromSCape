@@ -482,7 +482,7 @@ differential_activation <- function(scExp, group_by = c("cell_cluster","sample_i
   
   for(group in groups){
     if (!is.null(progress)) progress$inc(
-      detail = paste0("Calculating differential activation -", group, "..."), amount = 0.9/length(groups))
+      detail = paste0("Calculating differential activation - ", group, "..."), amount = 0.9/length(groups))
     
     cluster_bin_mat = mat[,which(SingleCellExperiment::colData(scExp)[, group_by] %in% group)]
     reference_bin_mat = mat[,which(!SingleCellExperiment::colData(scExp)[, group_by] %in% group)]
@@ -944,14 +944,20 @@ table_enriched_genes_scExp <- function(
 #'   or simply differential features (both).
 #'
 #' @export
-#' @importFrom SingleCellExperiment colData normcounts rowData
+#' @importFrom SingleCellExperiment colData rowData
+#' @importFrom SummarizedExperiment rowRanges
+#' @importFrom tidyr separate_rows 
 #'
 #' @examples
 #' data("scExp")
 #' 
-#' #Usually recommanding qval.th = 0.01 & logFC.th = 1 or 2
-#' scExp_cf = enrich_TF_ChEA3_scExp(scExp,
-#'  qval.th = 0.4, logFC.th = 0.3)
+#' scExp = enrich_TF_ChEA3_scExp(
+#'  scExp,
+#'  ref = "hg38",
+#'  qval.th = 0.01,
+#'  logFC.th = 1,
+#'  min.percent = 0.01)
+#' 
 #' 
 enrich_TF_ChEA3_scExp = function(
     scExp, ref = "hg38", qval.th = 0.01, logFC.th = 1,
@@ -977,6 +983,7 @@ enrich_TF_ChEA3_scExp = function(
          "When use_peaks is TRUE, metadata must contain refined_annotation ",
          "object.")
   
+
   refined_annotation = NULL
   if(use_peaks) refined_annotation = scExp@metadata$refined_annotation
   
@@ -999,11 +1006,11 @@ enrich_TF_ChEA3_scExp = function(
   groups <- gsub(".*\\.","", grep("qval",colnames(res), value = TRUE))
   TF_enrichment = list()
   for (i in seq_along(groups)) {
-    enr = list(Differential = list(), Enriched = list(), Depleted = list())
+    enr = list(Differential = data.frame(), Enriched = data.frame(), Depleted = data.frame())
     gp = groups[i]
     if (!is.null(progress)) progress$inc(
       detail = paste0("TF enrichment for ",gp, "..."),
-      amount =(0.8 / length(groups)))
+      amount =(0.7 / length(groups)))
     qval.col <- paste("qval", gp, sep = ".")
     logFC.col <- paste("logFC", gp, sep = ".")
     group_activation.col <- paste("group_activation", gp, sep = ".")
@@ -1038,6 +1045,7 @@ enrich_TF_ChEA3_scExp = function(
     if (length(underG)) enr$Depleted = enrich_TF_ChEA3_genes(underG) else
         enr$Differential = df
     TF_enrichment[[gp]] = enr
+    
   }
   scExp@metadata$TF_enrichment= TF_enrichment
   return(scExp)
@@ -1091,7 +1099,7 @@ enrich_TF_ChEA3_genes = function(genes){
   }
   
   if(length(genes) >= 10){
-
+  data("CheA3_TF_nTargets")
   
   #POST to ChEA3 server
   httr::set_config(httr::config(ssl_verifypeer = 0L))
@@ -1111,7 +1119,9 @@ enrich_TF_ChEA3_genes = function(genes){
                             function(x) length(unlist(strsplit(x, split = ","))))
   results$Score = as.numeric(results$Score)
   results = results[,-1]
-  
+  results$totalTargetsTF = CheA3_TF_nTargets$nTargets_TF[
+      match(results$TF,CheA3_TF_nTargets$TF)]
+  results$totalGenesInSet = length(genes)
   } else {
     results = data.frame("Rank" = 0,
                          "TF" = 0,

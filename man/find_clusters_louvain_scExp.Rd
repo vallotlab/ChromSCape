@@ -34,5 +34,6 @@ Build SNN graph and find cluster using Louvain Algorithm
 }
 \examples{
 data('scExp')
+
 scExp = find_clusters_louvain_scExp(scExp, k = 10)
 }

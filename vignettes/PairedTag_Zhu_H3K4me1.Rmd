@@ -2,6 +2,10 @@
 title: "Analysis of Paired-TAG H3K4me1 in the mouse brain"
 date: "`r Sys.Date()`"
 output: html_document
+vignette: >
+    %\VignetteIndexEntry{Example_PairedTag}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}
 ---
 
 ## Introduction
@@ -69,9 +73,9 @@ variable with the path where you downloaded the computed analysis).
   
 ```{r, eval=TRUE, echo=TRUE}
 # Load the preprocessed data (in the 'Filtering_Normalize_Reduce' folder)
-ChromScape_path = "/media/pprompsy/LaCie/InstitutCurie/Documents/Data/ChromSCape_Data/ChromSCape_3.13_3/ChromSCape_analyses/"
+ChromScape_path = "/media/pprompsy/Depic_bioinfo_1/InstitutCurie/Documents/Data/ChromSCape_Data/ChromSCape_1.5.22/ChromSCape_analyses/"
 
-scExp = qs::qread(file.path(ChromScape_path,"GSE152020_PairedTag_Zhu_2021_H3K4me1", "Filtering_Normalize_Reduce","GSE152020_PairedTag_Zhu_2021_H3K4me1_1000_150000_99_uncorrected.qs"))
+scExp = qs::qread(file.path(ChromScape_path,"GSE152020_PairedTag_Zhu_2021_H3K4me1", "Filtering_Normalize_Reduce","GSE152020_PairedTag_Zhu_2021_H3K4me1_500_200000_99_uncorrected.qs"))
 ```
   
   
@@ -194,7 +198,7 @@ might be low covered cells or artifacts that we can later filter out using the
   
 
 ```{r, eval=TRUE, echo=TRUE}
-plot_heatmap_scExp(scExp, downsample = 3000)
+plot_heatmap_scExp(scExp, downsample = 2000)
 ```
 
 
@@ -203,8 +207,8 @@ as shown above the heatmap.
 
 ```{r, eval=TRUE, echo=TRUE, fig.height= 7}
 set.seed(47)
-scExp = choose_cluster_scExp(scExp, nclust = 14)
-plot_heatmap_scExp(scExp, downsample = 10000)
+scExp = find_clusters_louvain_scExp(scExp, k = 10)
+plot_heatmap_scExp(scExp, downsample = 2000)
 ```
 
   
@@ -239,7 +243,13 @@ scExp$cell_cluster = metadata$Annotation[match(scExp$barcode, metadata$Cell)]
 scExp = colors_scExp(scExp, annotCol = "cell_cluster",
                      color_by = "cell_cluster", color_df = df)
 
-plot_reduced_dim_scExp(scExp, color_by = "cell_cluster", reduced_dim = "UMAP", downsample = 10e6, size = 0.4, transparency = 0.2, annotate_clusters = T)
+plot_reduced_dim_scExp(scExp,
+                       color_by = "cell_cluster",
+                       reduced_dim = "UMAP",
+                       downsample = 10e6,
+                       size = 0.4,
+                       transparency = 0.2,
+                       annotate_clusters = TRUE)
 
 ```
   
@@ -264,63 +274,6 @@ cell types are far from each other.
 plot_intra_correlation_scExp(scExp, by = "cell_cluster")
 ```
 
-## Focus on cornu ammonis cells (CA)
-
-Let's focus on 2 cell types present in the Hippocampal neurons : CA1 & CA2/3.
-
-### Filter out lowly correlated cells
-
-We'll first subset the dataset to keep only cells from this two cell types.
-
-
-```{r, eval=TRUE, echo=TRUE, fig.width=15}
-scExp_CA = scExp[,which(scExp$cell_cluster %in% c("CA1", "CA23"))]
-
-# Let's plot the subset of CA1 & CA2/3
-plot_reduced_dim_scExp(scExp_CA, color_by = "cell_cluster", reduced_dim = "UMAP")
-```
-  
-We can see that some cells from CA1 & CA2/3 are not grouped with the main clusters.
-Let's check on correlation:
-  
-```{r, eval=TRUE, echo=TRUE, fig.width=15}
-plot_intra_correlation_scExp(scExp_CA, by = "cell_cluster", jitter_by = "total_counts") + 
-  geom_hline(yintercept = 0.35, lty=2, cex = 1, col = "red")
-```
-  
-Let's filter out the lowly correlated cells in each cluster and check if these
-cells mostly correspond to spread cells in the UMAP.
-  
-  
-```{r, eval=TRUE, echo=TRUE, fig.width=15}
-# Filter out lowly correlated cells in each cluster
-intracorrelation = ChromSCape:::intra_correlation_scExp(scExp_cf = scExp_CA,
-                                                        by = "cell_cluster")
-correlated_cells =
-  rownames(intracorrelation)[which(intracorrelation$intra_corr > 0.35)]
-
-scExp_CA = scExp_CA[,correlated_cells]
-scExp_CA = correlation_and_hierarchical_clust_scExp(scExp_CA)
-
-plot_reduced_dim_scExp(scExp_CA, color_by = "cell_cluster", reduced_dim = "UMAP")
-```
-  
-Nice ! We removed most of the lowly correlated cells that might belong to other cell types. 
-The rightward cluster is still present and might represent a true cell type, 
-e.g. either CA2 or CA3.
-  
-### Differentially H3K4me1 marked loci
-
-We'll try to find what differences are observed in H3K4me1 mark distribution 
-between CA1 & CA2/3.
-
-```{r, eval=TRUE, echo=TRUE, fig.width=5,fig.height=6}
-scExp_CA = differential_analysis_scExp(scExp_CA, de_type = "custom",
-                                       method = "wilcox", qval.th = 0.25,
-                                       group = data.frame("CA1" = "CA1"),
-                                       ref = data.frame("CA23" = "CA23"))
-plot_differential_summary_scExp(scExp_CA)
-```
 
 ## Session information
 

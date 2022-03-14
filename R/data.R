@@ -128,3 +128,34 @@
 #' plot_differential_summary_scExp(scExp)
 "scExp"
 
+#' A data.frame with the number of targets of each TF in ChEA3 
+#' 
+#' This data.frame was obtained by downloading datasets from ChEA3 database
+#' (https://maayanlab.cloud/chea3/) and merging targets for :
+#' * ARCHS4_Coexpression
+#' * ENCODE_ChIP-seq
+#' * Enrichr_Queries
+#' * GTEx_Coexpression
+#' * Literature_ChIP-seq
+#' * ReMap_ChIP-seq
+#' 
+#' @references Keenan AB, Torre D, Lachmann A, Leong AK, Wojciechowicz M, Utti V, 
+#' Jagodnik K, Kropiwnicki E, Wang Z, Ma'ayan A (2019)
+#'  ChEA3: transcription factor enrichment analysis by orthogonal omics integration. 
+#'  Nucleic Acids Research. doi: 10.1093/nar/gkz446
+#' 
+#' The data.frame is composed of two columns:
+#'  * TF column containing the TF gene names (human)
+#'  * nTargets_TF containing the number of targets for this TF in the combined
+#'  database.
+#'  
+#' @usage data("CheA3_TF_nTargets")
+#'  
+#' @format CheA3_TF_nTargets - a data.frame with 1632 rows (unique TFs) and 
+#' 2 columns
+#'
+#' @examples
+#' data("CheA3_TF_nTargets")
+#' head(CheA3_TF_nTargets)
+#' 
+"CheA3_TF_nTargets"

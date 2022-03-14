@@ -726,7 +726,7 @@ plot_inter_correlation_scExp <- function(
 #' @importFrom dplyr mutate filter
 #' @importFrom gridExtra grid.arrange
 #' @importFrom S4Vectors subjectHits 
-#' @importFrom GenomicRanges GRanges findOverlaps 
+#' @importFrom GenomicRanges GRanges findOverlaps score
 #' @export
 #'
 #' @examples
@@ -747,7 +747,7 @@ plot_coverage_BigWig <- function(
         chrom, ranges = IRanges::IRanges(start, end))
     
     coverage_list = list()
-    if(class(coverages) != "list") {
+    if(!is(coverages, "list")) {
         coverage_list[[1]] = coverages[S4Vectors::subjectHits(
             GenomicRanges::findOverlaps(roi,coverages)),]
     } else{
@@ -803,7 +803,7 @@ plot_coverage_BigWig <- function(
                                          arrowhead_width = grid::unit(0, "mm"),
                                          arrowhead_height = grid::unit(0, "mm"),
                                          arrow_body_height = grid::unit(2, "mm"),
-                                         show.legend = F) +
+                                         show.legend = FALSE) +
                 theme_classic() + ylim(c(0,2)) + 
                 theme(panel.spacing.y = unit(x = 0.5, units = "line"),
                       axis.title.x = element_text(),
@@ -827,11 +827,11 @@ plot_coverage_BigWig <- function(
                                      arrowhead_width = grid::unit(2, "mm"),
                                      arrowhead_height = grid::unit(4, "mm"),
                                      arrow_body_height = grid::unit(1, "mm"),
-                                     show.legend = F) +
+                                     show.legend = FALSE) +
             ggrepel::geom_text_repel(data = genebed_tmp %>%
                                          dplyr::mutate(start = (.data[["start"]] + .data[["end"]])/2),
                                      aes(x = start, y = molecule, label = Gene),
-                                     size = 4,   inherit.aes = F,
+                                     size = 4,   inherit.aes = FALSE,
                                      nudge_y = -0.1) + 
             theme_classic() + ylim(c(0,2)) + 
             theme(panel.spacing.y = unit(x = 0.5, units = "line"),
@@ -859,7 +859,7 @@ plot_coverage_BigWig <- function(
 #' 
 #' @return A barplot summary of differential analysis
 #' @export
-#'
+#' @importFrom graphics barplot
 #' @examples
 #' data("scExp")
 #' plot_differential_summary_scExp(scExp)
@@ -1011,7 +1011,9 @@ col2hex <- function(cname)
 #'
 #' @examples
 #' data("scExp")
+#' 
 #' plot_cluster_consensus_scExp(scExp)
+#' 
 plot_cluster_consensus_scExp <- function(scExp)
 {
     stopifnot(is(scExp,"SingleCellExperiment"))
@@ -1045,21 +1047,42 @@ plot_cluster_consensus_scExp <- function(scExp)
 #' @param group A character string specifying the differential group to display
 #' the top TFs
 #' @param set A character string specifying the set of genes in which the TF 
-#' were enriched, either 'Both', 'Overexpressed' or 'Underexpressed'. 
+#' were enriched, either 'Differential', 'Enriched' or 'Depleted'. 
 #' @param type A character string specifying the Y axis of the plot, either the
-#' number of differential targets or the ChEA3 integrated mean score.  
+#' number of differential targets or the ChEA3 integrated mean score. E.g.
+#' either "Score", "nTargets", "nTargets_over_TF" for the number of target genes
+#' over the total number of genes targeted by the TF or "nTargets_over_genes" for
+#' the  number of target genes over the number of genes in the gene set.
 #' @param n_top An integer specifying the number of top TF to display
 #'
 #' @return A bar plot of top TFs from ChEA3 TF enrichment analysis
+#' 
+#' @importFrom forcats fct_reorder
+#' 
 #' @export
 #' @examples 
-#' data(scExp)
-#' plot_top_TF_scExp(scExp, group = "C1", set = "Differential", type = "Score", n_top = 10)
+#' data("scExp")
+#' 
+#' plot_top_TF_scExp(
+#'  scExp,
+#'  group = "C1",
+#'   set = "Differential",
+#'    type = "Score",
+#'     n_top = 10)
+#'     
+#' plot_top_TF_scExp(
+#'  scExp,
+#'  group = "C1",
+#'   set = "Enriched",
+#'    type = "nTargets_over_genes",
+#'     n_top = 20)
+#'     
 plot_top_TF_scExp <- function(
     scExp, group = unique(scExp$cell_cluster)[1], 
     set = c("Differential",'Enriched','Depleted')[1],
-    type = c("nTargets", "Score")[1], n_top = 25){
-  stopifnot(!is.null(scExp), type %in% c("nTargets", "Score"),
+    type = c("Score", "nTargets", "nTargets_over_TF", "nTargets_over_genes")[1], n_top = 25){
+  stopifnot(!is.null(scExp), type %in% c("nTargets", "Score", "nTargets_over_TF",
+                                         "nTargets_over_genes"),
             set %in% c("Differential","Enriched","Depleted"))
   if (!"TF_enrichment" %in% names(scExp@metadata)){
       stop(paste0("ChromSCape::plot_top_TF - No TF enrichment, run ",
@@ -1068,21 +1091,44 @@ plot_top_TF_scExp <- function(
 
   TF_enrichment = scExp@metadata$TF_enrichment[[group]][[set]]
   if(type == "nTargets"){
-    p = TF_enrichment %>% dplyr::arrange(.data[["Score"]]) %>%
+    p =  utils::head(TF_enrichment %>% dplyr::arrange(.data[["Score"]]), n_top) %>%
       dplyr::mutate(TF = forcats::fct_reorder(TF, .data[["Score"]])) %>%
-      head(n_top) %>% 
       ggplot(aes(x=TF, y= .data[["nTargets"]])) + geom_bar(fill = "#009688", stat="identity") +
       theme_classic() + theme(axis.text.x = element_text(size = 15, angle=90),
                               axis.text.y = element_text(size = 14)) + xlab("") +
       ylab("Number of genes targeted by TF")
-  } else{
-    p = TF_enrichment %>% dplyr::arrange(.data[["Score"]]) %>%
+  } else if(type == "Score"){
+    p = utils::head(TF_enrichment %>% dplyr::arrange(.data[["Score"]]), n_top) %>%
       dplyr::mutate(TF = forcats::fct_reorder(TF, .data[["Score"]])) %>%
-      head(n_top) %>% 
       ggplot(aes(x=TF, y= .data[["Score"]])) + geom_bar(fill = "#009688", stat="identity") +
       theme_classic() + theme(axis.text.x = element_text(size = 15, angle=90),
                               axis.text.y = element_text(size = 14)) + xlab("") +
       ylab("ChEA3 Mean-Rank Score")
+  } else if(type == "nTargets_over_TF"){
+      df =  utils::head(TF_enrichment %>% dplyr::arrange(.data[["Score"]]), n_top) %>%
+          dplyr::mutate(TF = forcats::fct_reorder(TF, .data[["Score"]])) %>%
+          dplyr::mutate(Percentage_nTargets_totalTargetsTF = 100 *
+                            round(.data[["nTargets"]] / .data[["totalTargetsTF"]],3))
+      p = df %>%
+          ggplot(aes(x=TF, y= .data[["Percentage_nTargets_totalTargetsTF"]])) + 
+          geom_bar( fill = "#009688", stat="identity") +
+          theme_classic() + theme(axis.text.x = element_text(size = 15, angle=90),
+                                  axis.text.y = element_text(size = 14)) + xlab("") +
+          ylab("nTargets over all TF targets (%)") + 
+          ylim(c(0,max(10, max(df$Percentage_nTargets_totalTargetsTF))))
+          
+  } else if(type == "nTargets_over_genes"){
+      df =  utils::head(TF_enrichment %>% dplyr::arrange(.data[["Score"]]), n_top) %>%
+          dplyr::mutate(TF = forcats::fct_reorder(TF, .data[["Score"]])) %>%
+          dplyr::mutate(Percentage_nTargets_totalGenes = 100 *
+                            round(.data[["nTargets"]] / .data[["totalGenesInSet"]],3))
+      p = df %>%
+          ggplot(aes(x=TF, y= .data[["Percentage_nTargets_totalGenes"]])) + 
+          geom_bar(fill = "#009688", stat="identity") +
+          theme_classic() + theme(axis.text.x = element_text(size = 15, angle=90),
+                                  axis.text.y = element_text(size = 14)) + xlab("") +
+          ylab("nTargets over all genes in list (%)") + 
+          ylim(c(0,max(30, max(df$Percentage_nTargets_totalGenes)))) 
   }
  
   return(p)

@@ -70,15 +70,12 @@ correlation_and_hierarchical_clust_scExp <- function(
 #' @importFrom igraph cluster_louvain
 #' @examples
 #' data('scExp')
+#' 
 #' scExp = find_clusters_louvain_scExp(scExp, k = 10)
 find_clusters_louvain_scExp <- function(scExp, k = 10, use.dimred = "PCA",
                                         type = c("rank", "number", "jaccard")[3],
                                         BPPARAM = BiocParallel::bpparam()){
-  # g = scran::buildSNNGraph(scExp, type = type, k= k, use.dimred = use.dimred,
-  #                          BPPARAM = BPPARAM)
-  # input <- scran:::.setup_knn_data(x = counts(scExp), subset.row = NULL, 
-                           # d = 50, transposed = F,  BSPARAM = BiocSingular::bsparam(),
-  #                          BPPARAM = BPPARAM)
+
   g = bluster::makeSNNGraph(reducedDim(scExp,"PCA"), BPPARAM = BPPARAM)
   clust <- igraph::cluster_louvain(g)$membership
   cell_clusters = paste0("C",clust)

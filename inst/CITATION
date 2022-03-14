@@ -1,0 +1,12 @@
+
+bibentry(bibtype = "Article",
+         title = "{ChromSCape}: Interactive analysis of single-cell epigenomic landscapes with ChromSCape",
+         author = c(person("Pacome", "Prompsy"),
+                    person("Pia", "Kirchmeier"),
+                    person("Justine", "Marsolier"),
+                    person("Marc", "Deloger"),
+                    person("Nicolas", "Servant"),
+                    person("Celine", "Vallot")),
+         doi = "https://doi.org/10.1038/s41467-020-19542-x",
+         journal = "Nature Communications",
+         year = 2019)

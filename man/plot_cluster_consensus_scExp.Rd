@@ -17,5 +17,7 @@ Plot cluster consensus score for each k as a bargraph.
 }
 \examples{
 data("scExp")
+
 plot_cluster_consensus_scExp(scExp)
+
 }

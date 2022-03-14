@@ -8,7 +8,7 @@ plot_top_TF_scExp(
   scExp,
   group = unique(scExp$cell_cluster)[1],
   set = c("Differential", "Enriched", "Depleted")[1],
-  type = c("nTargets", "Score")[1],
+  type = c("Score", "nTargets", "nTargets_over_TF", "nTargets_over_genes")[1],
   n_top = 25
 )
 }
@@ -19,10 +19,13 @@ plot_top_TF_scExp(
 the top TFs}
 
 \item{set}{A character string specifying the set of genes in which the TF
-were enriched, either 'Both', 'Overexpressed' or 'Underexpressed'.}
+were enriched, either 'Differential', 'Enriched' or 'Depleted'.}
 
 \item{type}{A character string specifying the Y axis of the plot, either the
-number of differential targets or the ChEA3 integrated mean score.}
+number of differential targets or the ChEA3 integrated mean score. E.g.
+either "Score", "nTargets", "nTargets_over_TF" for the number of target genes
+over the total number of genes targeted by the TF or "nTargets_over_genes" for
+the  number of target genes over the number of genes in the gene set.}
 
 \item{n_top}{An integer specifying the number of top TF to display}
 }
@@ -33,6 +36,20 @@ A bar plot of top TFs from ChEA3 TF enrichment analysis
 Barplot of top TFs from ChEA3 TF enrichment analysis
 }
 \examples{
-data(scExp)
-plot_top_TF_scExp(scExp, group = "C1", set = "Differential", type = "Score", n_top = 10)
+data("scExp")
+
+plot_top_TF_scExp(
+ scExp,
+ group = "C1",
+  set = "Differential",
+   type = "Score",
+    n_top = 10)
+    
+plot_top_TF_scExp(
+ scExp,
+ group = "C1",
+  set = "Enriched",
+   type = "nTargets_over_genes",
+    n_top = 20)
+    
 }

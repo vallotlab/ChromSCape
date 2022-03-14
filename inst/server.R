@@ -1028,7 +1028,7 @@ shinyServer(function(input, output, session) {
     req(scExp(), input$pc_select_x)
     if("PCA" %in% SingleCellExperiment::reducedDimNames(scExp())){
       if(input$pc_select_x %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
-        shinydashboard::box(title=tagList(shiny::icon("fas fa-chart-bar"), " Contribution to PCA"), width = NULL, status="success", solidHeader=TRUE,
+        shinydashboard::box(title=tagList(shiny::icon("fas fa-chart-bar"), " Contribution to PCA"), collapsible = TRUE, collapsed = TRUE, width = NULL, status="success", solidHeader=TRUE,
                             column(12, align="left",
                                    selectInput("n_features_contributing", label =  "Top features",
                                                choices = 5:100,
@@ -1313,7 +1313,7 @@ shinyServer(function(input, output, session) {
 
   output$clustering_method_UI <- renderUI({
     req(scExp_cf())
-    if("Cor" %in% reducedDimNames(scExp_cf())) {
+    if("Cor" %in% SingleCellExperiment::reducedDimNames(scExp_cf())) {
       selectInput("clustering_method", br("Clustering:"), choices=c("louvain", "hierarchical"))
       
     } else{
@@ -2558,6 +2558,34 @@ shinyServer(function(input, output, session) {
                                            BPPARAM = CS_options.BPPARAM())) 
       
       gc()
+      
+      scExp_cf. = scExp_cf()
+      
+      scExp_cf.@metadata$DA_parameters$logFC.th = input$logFC.th
+      scExp_cf.@metadata$DA_parameters$qval.th = input$qval.th
+      scExp_cf.@metadata$DA_parameters$min.percent = input$min.percent
+      
+      scExp_cf(scExp_cf.)
+      data = list("scExp_cf" = getMainExperiment(scExp_cf()))
+      
+      DA_GSA_suffix = scExp_cf()@metadata$DA_parameters$de_type
+      if(DA_GSA_suffix == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
+                                                           gsub("[^[:alnum:]|_]","",input$name_ref))
+      
+      suffix = paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
+                      "_", input$qval.th, "_", input$logFC.th, "_", DA_GSA_suffix, ".qs")
+
+      qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
+                                       suffix), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
+      rm(data)
+      gc()
+      init$available_DA_GSA_datasets = get.available.DA_GSEA.datasets(analysis_name(), input$selected_reduced_dataset, set_numclust())
+      
+      updateSelectInput(session = session, inputId = "selected_DA_GSA_dataset",
+                        label =  "Select set with Differential Analysis:",
+                        choices = DA_GSA_datasets(),
+                        selected =  gsub(".qs$","",suffix))
+      
       updateActionButton(session = session, inputId = "run_DA", label = "Start analysis ", icon = icon("check-circle"))
       updateActionButton(session = session, inputId = "apply_DA_filters", label = "Apply filters")
       # incProgress(amount = 0.2, detail = paste("Saving DA"))
@@ -2680,7 +2708,7 @@ shinyServer(function(input, output, session) {
                                   input$qval.th, "_", input$logFC.th, "_",
                                   input$de_type, ".csv")},
     content = function(file){
-      write.table(rowData(scExp_cf()), file, row.names = FALSE, quote = FALSE, sep=",")
+      write.table(SingleCellExperiment::rowData(scExp_cf()), file, row.names = FALSE, quote = FALSE, sep=",")
     })
   
   output$da_visu_box <- renderUI({
@@ -2739,7 +2767,7 @@ shinyServer(function(input, output, session) {
     })
   
   DA_groups <- reactive({
-      gsub(".*\\.","", grep("qval",colnames(rowData(scExp_cf())), value = TRUE))
+      gsub(".*\\.","", grep("qval",colnames(SingleCellExperiment::rowData(scExp_cf())), value = TRUE))
   })
   
     observeEvent(unlocked$list, {
@@ -2748,7 +2776,7 @@ shinyServer(function(input, output, session) {
     }) 
     
     observeEvent(scExp_cf(), {
-      if(any(grepl("qval",colnames(rowData(scExp_cf()))))){
+      if(any(grepl("qval",colnames(SingleCellExperiment::rowData(scExp_cf()))))){
         unlocked$list$diff_my_res = TRUE 
         } else{
           unlocked$list$diff_my_res = FALSE
@@ -2938,7 +2966,7 @@ shinyServer(function(input, output, session) {
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
         s = selectizeInput(inputId = "gene_sel", label = "Select gene:", choices = NULL)
-        most_diff = as.data.frame(rowData(scExp_cf())) %>% dplyr::select(ID, starts_with("qval."))
+        most_diff = as.data.frame(SingleCellExperiment::rowData(scExp_cf())) %>% dplyr::select(ID, starts_with("qval."))
         most_diff[,"qval"] = Matrix::rowMeans(as.matrix(most_diff[,-1]))
         most_diff = dplyr::left_join(most_diff[order(most_diff$qval),], annotFeat_long(),by = c("ID"))
         most_diff = most_diff %>% dplyr::filter(!is.na(Gene)) %>%
@@ -3114,7 +3142,7 @@ shinyServer(function(input, output, session) {
                                      paste0(input$selected_DA_GSA_dataset, ".qs")), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
     rm(data)
     gc()
-    progress$inc(detail='Done !', amount = 0.5)
+    progress$inc(detail='Done !', amount = 0.1)
     
   })
   
@@ -3187,14 +3215,6 @@ shinyServer(function(input, output, session) {
       zip(zipfile = fname, files = fis)},
     contentType = "application/zip"
   )
-  
-  output$TF_set <- renderUI({ 
-    if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$TF_enrichment)){
-        
-      }
-    }
-  })
 
   TF_barplot_p <- reactive({
     req(scExp_cf(), input$TF_set, input$TF_group_sel, input$TF_set, input$TF_plot_y_axis,
@@ -3235,7 +3255,7 @@ shinyServer(function(input, output, session) {
           if(length(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]]) > 0){
             shinydashboard::box(title="Results TF analysis per cluster", width = NULL, status="success", solidHeader = TRUE,
                                 column(4, align="left", selectInput("TF_set", "Select set:", choices = c("Differential", "Enriched", "Depleted"))),
-                                column(4, align="left", selectInput("TF_plot_y_axis", "Select Y axis:", choices = c("Score", "nTargets"))),
+                                column(4, align="left", selectInput("TF_plot_y_axis", "Select Y axis:", choices = c("Score", "nTargets", "nTargets_over_TF", "nTargets_over_genes"))),
                                 column(4, align="left", sliderInput("TF_plot_n_top", "Select set:",min = 1, max = 200, value = 25), br()),
                                 column(12, align="left", plotOutput("TF_plot", height = "500px", width = "100%"))
                                 )

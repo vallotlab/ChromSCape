@@ -2,6 +2,10 @@
 title: "Analysis of scCUT&TAG in the mouse brain in different histone marks"
 date: "`r Sys.Date()`"
 output: html_document
+vignette: >
+    %\VignetteIndexEntry{Example_scCutTag}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}
 ---
 
 ## Introduction
