@@ -335,9 +335,7 @@ generate_analysis <- function(input_data_folder,
         if(doBatchCorr) block = TRUE else block = FALSE
         scExp_cf = differential_analysis_scExp(scExp = scExp_cf,
                                                method= "wilcox",
-                                               de_type = "one_vs_rest",
-                                               logFC.th = logFC.th,
-                                               qval.th = qval.th,
+                                               de_type = "one_vs_rest_fast",
                                                block = block)
         gc()
     }
@@ -352,7 +350,8 @@ generate_analysis <- function(input_data_folder,
                           "c5_GO","c6_oncogenic","c7_immunologic","hallmark")
         scExp_cf = gene_set_enrichment_analysis_scExp(
             scExp_cf,
-            enrichment_qval = 0.01, qval.th = qval.th,
+            enrichment_qval = 0.01,
+            qval.th = qval.th,
             ref = ref_genome,
             logFC.th = logFC.th,
             peak_distance = 1000,
@@ -595,7 +594,7 @@ preprocessing_filtering_and_reduction <- function(
     
     ### 2.bis Optional subsampling ###
     if(length(subsample_n)>0){
-        scExp = subsample_scExp(scExp, n_cells = subsample_n)
+        scExp = subsample_scExp(scExp,n_cell_per_sample = subsample_n)
         gc()
         
     }
