@@ -78,7 +78,7 @@ variable with the path where you downloaded the computed analysis).
   
 ```{r, eval=TRUE, echo=TRUE}
 # Load the preprocessed data (in the 'Filtering_Normalize_Reduce' folder)
-ChromScape_path = "/media/pacome/Depic_bioinfo_1/InstitutCurie/Documents/Data/ChromSCape_Data/ChromSCape_3.13_3/ChromSCape_analyses/"
+ChromScape_path = "/media/pprompsy/Depic_bioinfo_1/InstitutCurie/Documents/Data/ChromSCape_Data/ChromSCape_3.13_3/ChromSCape_analyses/"
 
 scExp = qs::qread(file.path(ChromScape_path,"Bartosovic_scCutTag_H3K27me3", "Filtering_Normalize_Reduce","Bartosovic_scCutTag_H3K27me3_100_40000_99.88_uncorrected.qs"))
 ```
@@ -213,7 +213,6 @@ gridExtra::grid.arrange(grobs = p[4:6], ncol = 3, nrow = 1)
 gridExtra::grid.arrange(grobs = p[7:9], ncol = 3, nrow = 1)
 ```
 
-
   
 ## Clustering and correlations
 
@@ -253,11 +252,8 @@ as shown above the heatmap.
 ```{r, eval=TRUE, echo=TRUE, fig.height= 7}
 set.seed(48)
 scExp_cf = choose_cluster_scExp(scExp_cf, nclust = 8)
-pdf("~/UMAP_cluster.pdf")
 plot_reduced_dim_scExp(scExp_cf, color_by = "cell_cluster", reduced_dim = "UMAP", downsample = 10e6, size = 0.7, transparency = 0.2) +
   theme(legend.position = "none")
-dev.off()
-
 plot_heatmap_scExp(scExp_cf)
 ```
 
@@ -291,17 +287,12 @@ scExp_cf = scExp_cf[,which(scExp_cf$barcode %in% metadata$Cell)]
 scExp_cf$cell_cluster = metadata$cell_type[match(scExp_cf$barcode, metadata$Cell)]
 scExp_cf = colors_scExp(scExp_cf, annotCol = "cell_cluster") # Assign replicate to sample_id
 
-pdf("~/UMAP_annot.png")
 plot_reduced_dim_scExp(scExp_cf, color_by = "cell_cluster", reduced_dim = "UMAP", downsample = 10e6, size = 0.7, transparency = 0.2) +
   theme(legend.position = "none")
-dev.off()
 
 
-pdf("~/UMAP_annot.pdf")
 plot_reduced_dim_scExp(scExp_cf, color_by = "cell_cluster", reduced_dim = "UMAP", downsample = 10e6, size = 0.7, transparency = 0.2) +
   theme(legend.position = "none")
-dev.off()
-
 ```
   
 The labels assigned by the authors do match the clusters observed in the UMAP,
@@ -339,6 +330,80 @@ Let's now plot correlation between C1 and the rest:
 ```{r, eval=TRUE, echo=TRUE, fig.width=15}
 plot_inter_correlation_scExp(scExp_cf, by = "cell_cluster", reference_group = "VLMC")
 ```
+
+## Intra and Inter-cluster correlation
+
+```{r, eval=TRUE, echo=TRUE, fig.width=15}
+
+plot_inter_correlation_scExp(
+    scExp_cf,
+    by = "cell_cluster",
+    reference_group = "VLMC"
+)
+
+```
+
+## Differential Analysis and TF Enrichment 
+
+Knowing that H3K27me3 mark might repress active enhancer in vincinity to genes,
+we will try to find the TF that are enriched in regions depleted of H3K27me3 in
+each of the cell cluster using [ChEA3](https://maayanlab.cloud/chea3/). Since
+enhancers can be at a long distance from genes TSS, we will take in account all 
+regions closer to 100kbp from any genes TSS for the differential analysis.
+
+```{r, eval=TRUE, echo=TRUE, fig.width=15}
+scExp_cf = differential_analysis_scExp(scExp_cf,
+                                       de_type = "one_vs_rest_fast",
+                                       prioritize_genes = TRUE,
+                                       max_distanceToTSS = 100000
+                                       )
+
+plot_differential_summary_scExp(scExp_cf,
+                                qval.th = 0.01,
+                                logFC.th = 1,
+                                min.percent = 0.01)
+```
+
+We observe that mOL show increased levels of H3K27me3 overall compared to other
+groups. Let's find enriched TF in the differentialy depleted regions of each cell 
+cluster.
+
+
+```{r, eval=TRUE, echo=TRUE, fig.width=15}
+scExp_cf = enrich_TF_ChEA3_scExp(scExp_cf,
+                                 ref = "mm10",
+                                 qval.th = 0.01,
+                                 logFC.th = 1,
+                                 min.percent = 0.01
+)
+
+```
+
+Top TF enriched in genes depleted in Astrocyte vs all clusters
+
+```{r, eval=TRUE, echo=TRUE, fig.width=5}
+plot_top_TF_scExp(scExp_cf,
+                  group = "Astrocytes",
+                  set = "Depleted",
+                  type = "Score",
+                  n_top = 10
+)
+```
+
+Percentage of significantly depleted genes targeted by the TFs in Astrocyte vs all clusters
+
+
+```{r, eval=TRUE, echo=TRUE, fig.width=5}
+plot_top_TF_scExp(scExp_cf,
+                  group = "Astrocytes",
+                  set = "Depleted",
+                  type = "nTargets_over_genes",
+                  n_top = 10
+)
+```
+
+It seems that SOX2/SOX1 regulons are strongly de-repressed because devoid of H3K27me3
+specifically in Astrocytes vs all other clusters.
 
 ## Session information
 
