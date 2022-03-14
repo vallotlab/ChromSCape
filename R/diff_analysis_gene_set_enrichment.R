@@ -950,8 +950,8 @@ table_enriched_genes_scExp <- function(
 #' data("scExp")
 #' 
 #' #Usually recommanding qval.th = 0.01 & logFC.th = 1 or 2
-#' \dontrun{scExp_cf = gene_set_enrichment_analysis_scExp(scExp,
-#'  qval.th = 0.4, logFC.th = 0.3)}
+#' scExp_cf = enrich_TF_ChEA3_scExp(scExp,
+#'  qval.th = 0.4, logFC.th = 0.3)
 #' 
 enrich_TF_ChEA3_scExp = function(
     scExp, ref = "hg38", qval.th = 0.01, logFC.th = 1,

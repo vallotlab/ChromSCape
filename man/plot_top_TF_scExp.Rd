@@ -7,7 +7,7 @@
 plot_top_TF_scExp(
   scExp,
   group = unique(scExp$cell_cluster)[1],
-  set = c("Both", "Overexpressed", "Underexpressed")[1],
+  set = c("Differential", "Enriched", "Depleted")[1],
   type = c("nTargets", "Score")[1],
   n_top = 25
 )
@@ -34,5 +34,5 @@ Barplot of top TFs from ChEA3 TF enrichment analysis
 }
 \examples{
 data(scExp)
-plot_top_TF_scExp(scExp, group = "C1", set = "Both", type = "Score", n_top = 10)
+plot_top_TF_scExp(scExp, group = "C1", set = "Differential", type = "Score", n_top = 10)
 }

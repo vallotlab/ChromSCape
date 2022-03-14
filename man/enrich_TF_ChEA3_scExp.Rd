@@ -49,7 +49,7 @@ Find the TF that are enriched in the differential genes using ChEA3 database
 data("scExp")
 
 #Usually recommanding qval.th = 0.01 & logFC.th = 1 or 2
-\dontrun{scExp_cf = gene_set_enrichment_analysis_scExp(scExp,
- qval.th = 0.4, logFC.th = 0.3)}
+scExp_cf = enrich_TF_ChEA3_scExp(scExp,
+ qval.th = 0.4, logFC.th = 0.3)
 
 }
