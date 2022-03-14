@@ -9,6 +9,7 @@ combine_enrichmentTests(
   enrichment_qval,
   qval.th,
   logFC.th,
+  min.percent,
   annotFeat_long,
   peak_distance,
   refined_annotation,
@@ -27,6 +28,9 @@ considered significative list}
 \item{qval.th}{Differential analysis adjusted p.value threshold}
 
 \item{logFC.th}{Differential analysis log-fold change threshold}
+
+\item{min.percent}{Minimum fraction of cells having the feature active to
+consider it as significantly differential. (0.01)}
 
 \item{annotFeat_long}{Long annotation}
 

@@ -6,19 +6,23 @@
 \usage{
 plot_differential_volcano_scExp(
   scExp_cf,
-  cell_cluster = "C1",
-  cdiff.th = 1,
-  qval.th = 0.01
+  group = "C1",
+  logFC.th = 1,
+  qval.th = 0.01,
+  min.percent = 0.01
 )
 }
 \arguments{
 \item{scExp_cf}{A SingleCellExperiment object}
 
+\item{logFC.th}{Fold change threshold. (1)}
+
+\item{qval.th}{Adjusted p-value threshold. (0.01)}
+
+\item{min.percent}{Minimum fraction of cells having the feature active to
+consider it as significantly differential. (0.01)}
+
 \item{cell_cluster}{Which cluster to plot}
-
-\item{cdiff.th}{Fold change threshold}
-
-\item{qval.th}{Adjusted p.value threshold}
 }
 \value{
 A volcano plot of differential analysis of a specific cluster

@@ -4,7 +4,7 @@
 \alias{warning_DA}
 \title{Warning for differential_analysis_scExp}
 \usage{
-warning_DA(scExp, de_type, method, qval.th, logFC.th, block, group, ref)
+warning_DA(scExp, de_type, method, block, group, ref)
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment object containing consclust with selected
@@ -15,10 +15,6 @@ cluster against all others, or 'pairwise' to make 1 to 1 comparisons.
 ('one_vs_rest')}
 
 \item{method}{Wilcoxon or edgerGLM}
-
-\item{qval.th}{Adjusted p-value threshold. (0.01)}
-
-\item{logFC.th}{Fold change threshold. (1)}
 
 \item{block}{Use batches as blocking factors ?}
 

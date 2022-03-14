@@ -220,6 +220,22 @@ read_sparse_matrix <- function(files_dir_list,
                     round(t1[3],3), " sec.")
     }
 
+    common_features = sapply(feature_indexes, rownames) 
+    
+    if(!isTRUE(all.equal(max(sapply(common_features, length)), min(sapply(common_features, length))))){
+      common_features = Reduce(intersect,common_features)
+      percent_in_common =  100 * length(common_features) / max(sapply(feature_indexes, nrow))
+      warning("ChromSCape::read_sparse_matrix - ",
+              "Not all features are found in all the samples - found ",
+              round(percent_in_common,2), " % common features.")
+      if(percent_in_common < 5) stop("ChromSCape::read_sparse_matrix - ",
+                                     "Not enough features in common.")
+    }
+      
+    feature_indexes = sapply(feature_indexes, function(i) {
+      df = i[match(common_features,rownames(i)),] 
+      return(df)
+      }) 
     tryCatch({mat <- do.call("cbind", feature_indexes)}, error = function(e){
         paste0("ChromSCape::read_sparse_matrix - All feature file do not have ",
                "the same number of features", e)})
@@ -2418,7 +2434,10 @@ num_cell_after_QC_filt_scExp <- function(scExp, annot, datamatrix)
 #' subsampled.
 #'
 #' @param scExp A SingleCellExperiment
-#' @param n_cells An integer number of cells to subsample for each sample (500)
+#' @param n_cell_per_sample An integer number of cells to subsample for each sample.
+#'  Exclusive with n_cells_total. (500)
+#' @param n_cells_total An integer number of cells to subsample in total. Exclusive
+#' with n_cell_per_sample (NULL).
 #'
 #' @return A subsampled SingleCellExperiment
 #' @export
@@ -2431,28 +2450,42 @@ num_cell_after_QC_filt_scExp <- function(scExp, annot, datamatrix)
 #' scExp_sub = subsample_scExp(scExp,50)
 #' \dontrun{num_cell_scExp(scExp_sub)}
 #' 
-subsample_scExp <- function(scExp, n_cells = 500) {
-    stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(n_cells))
+subsample_scExp <- function(scExp, n_cell_per_sample = 500, n_cell_total = NULL) {
+    stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(n_cell_per_sample))
     
+    if(!is.null(n_cell_total) & !is.numeric(n_cell_total)) stop(
+      "ChromSCape::subsample_scExp - n_cell_total must be numeric.")
+  
     annot = as.data.frame(SingleCellExperiment::colData(scExp))
     counts = SingleCellExperiment::counts(scExp)
     samples = as.character(unique(annot$sample_id))
     counts. = NULL
     annot. = NULL
     
-    for (samp in samples) {
+    if(is.numeric(n_cell_total)){
+      message("ChromSCape::subsample_scExp - Subsampling cells to a total of ",
+              n_cell_total)
+      cells = as.character(annot$cell_id)
+      cells = sample(cells, min(n_cell_total, length(cells)), replace = FALSE)
+      counts. = counts[, cells]
+      annot. = annot[cells,]
+
+    } else{
+      message("ChromSCape::subsample_scExp - Subsampling each sample to ", n_cell_per_sample)
+      for (samp in samples) {
         cells = as.character(annot$cell_id[which(annot$sample_id == samp)])
-        cells = sample(cells, min(n_cells, length(cells)), replace = FALSE)
+        cells = sample(cells, min(n_cell_per_sample, length(cells)), replace = FALSE)
         if (is.null(counts.))
-            counts. = counts[, cells]
+          counts. = counts[, cells]
         else
-            counts. = Matrix::cbind2(counts., counts[, cells])
+          counts. = Matrix::cbind2(counts., counts[, cells])
         if (is.null(annot.))
-            annot. = annot[cells,]
+          annot. = annot[cells,]
         else
-            annot. = Matrix::rbind2(annot., annot[cells,])
+          annot. = Matrix::rbind2(annot., annot[cells,])
+      }
     }
-    message("ChromSCape::subsample_scExp - Subsampling each sample to ",n_cells)
+    
     ord = order(colnames(counts.))
     ord2 = order(rownames(annot.))
     counts. = counts.[, ord]

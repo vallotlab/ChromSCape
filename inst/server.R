@@ -21,7 +21,8 @@ shinyServer(function(input, output, session) {
                  "coverage",
                  "peak_calling",
                  "diff_analysis",
-                 "enrich_analysis") #list of all lockable tabs
+                 "enrich_analysis",
+                 "TF_analysis") #list of all lockable tabs
   unlocked = reactiveValues(list = list(selected_analysis = FALSE,
                                         selected_reduced_dataset = FALSE,
                                         pca = FALSE,
@@ -1083,6 +1084,71 @@ shinyServer(function(input, output, session) {
     }
      })
   
+  output$UMAP_popup_plot <- renderPlot({
+    req(scExp(), annotCol(), input$color_by_popup)
+    if(input$color_by_popup %in% colnames(SingleCellExperiment::colData(scExp()))){
+    p = plot_reduced_dim_scExp(scExp(), input$color_by_popup, "UMAP",
+                               transparency = input$options.dotplot_transparency,
+                               size = input$options.dotplot_size,
+                               max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
+                               downsample = input$options.dotplot_downsampling,
+                               min_quantile = input$options.dotplot_min_quantile,
+                               max_quantile = input$options.dotplot_max_quantile)
+    p
+    }
+  })
+  
+  output$UMAP_popup_plot_cf <- renderPlot({
+    req(scExp_cf(), annotCol_cf(), input$color_by_popup_cf)
+    if(input$color_by_popup_cf %in% colnames(SingleCellExperiment::colData(scExp_cf()))){
+      p = plot_reduced_dim_scExp(scExp_cf(), input$color_by_popup_cf, "UMAP",
+                                 transparency = input$options.dotplot_transparency,
+                                 size = input$options.dotplot_size,
+                                 max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
+                                 downsample = input$options.dotplot_downsampling,
+                                 min_quantile = input$options.dotplot_min_quantile,
+                                 max_quantile = input$options.dotplot_max_quantile)
+      p
+    }
+  })
+  output$popup_UI <- renderUI({
+    req(annotCol())
+    selectInput("color_by_popup", "Color by", choices = annotCol())})
+  
+  output$popup_UI_cf <- renderUI({
+    req(annotCol_cf())
+    selectInput("color_by_popup_cf", "Color by", choices = annotCol_cf())})
+  
+  observeEvent(input$popupUMAP, {
+    req(scExp(), annotCol())
+    if(!is.null(scExp_cf())){
+        if(!is.null(annotCol_cf())){
+          showModal(modalDialog(
+            shinydashboard::box(title=tagList(shiny::icon("fas fa-image"), " UMAP colored by sample"), width = NULL, status="success", solidHeader=TRUE,
+                                column(4, align = "left", uiOutput("popup_UI_cf")),
+                                column(12, align = "center", plotOutput("UMAP_popup_plot_cf", width = "800px", height = "600px") %>% 
+                                         shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75))),
+            footer = NULL,
+            easyClose = TRUE,
+            size = "l" 
+          ))
+        }
+    } else{
+      if(!is.null(scExp())){
+        showModal(modalDialog(
+          shinydashboard::box(title=tagList(shiny::icon("fas fa-image"), " UMAP colored by sample"), width = NULL, status="success", solidHeader=TRUE,
+                              column(3, align = "left", uiOutput("popup_UI")),
+                              column(12, align = "center", plotOutput("UMAP_popup_plot", width = "800px", height = "600px") %>% 
+                                       shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75))),
+          footer = NULL,
+          easyClose = TRUE,
+          size = "l" 
+        ))
+      }
+    }
+
+  })
+  
   output$color_box <- renderUI({
     req(input$color_by)
     if(!grepl("counts",input$color_by)){
@@ -1091,11 +1157,11 @@ shinyServer(function(input, output, session) {
           column(6, htmlOutput("color_picker")),
           column(6 , br(), actionButton("col_reset", "Default colours", icon = icon("undo")),
                  br(), br(), actionButton("save_color", "Save colors & apply to all", icon = icon("save")),
-                 br(), br(), actionButton("save_plots_PCA", "Save HQ plots", icon = icon("fa-picture-o"))))
+                 br(), br(), actionButton("save_plots_PCA", "Save HQ plots", icon = icon("fas fa-image"))))
     } else{
       shinydashboard::box(title = tagList(shiny::icon("palette"), " Color settings"),
                           width = NULL, status = "success", solidHeader = TRUE,
-                          column(6 ,br(), br(), actionButton("save_plots_PCA", "Save HQ plots", icon = icon("fa-picture-o"))))
+                          column(6 ,br(), br(), actionButton("save_plots_PCA", "Save HQ plots", icon = icon("fas fa-image"))))
     }
   })
   
@@ -1244,8 +1310,33 @@ shinyServer(function(input, output, session) {
     }
     
   })
-  output$nclust_UI = renderUI({
-    selectInput("nclust", br("Number of Clusters:"), choices=c(2:30))
+
+  output$clustering_method_UI <- renderUI({
+    req(scExp_cf())
+    if("Cor" %in% reducedDimNames(scExp_cf())) {
+      selectInput("clustering_method", br("Clustering:"), choices=c("louvain", "hierarchical"))
+      
+    } else{
+      selectInput("clustering_method", br("Clustering:"), choices=c("louvain"))
+    }
+  })
+  
+  output$clustering_UI = renderUI({
+    req(input$clustering_method)
+    if(input$clustering_method == "hierarchical") {
+      selectInput("nclust", br("Number of Clusters:"), choices=c(2:30))
+      
+    } else{
+      sliderInput("k_SNN", br("Number of neighbors:"), min = 5, max = 200, step = 1, value = 10)
+    }
+  })
+  
+  output$consensus_clustering_UI = renderUI({
+    req(input$clustering_method)
+    if(input$clustering_method == "hierarchical") {
+      checkboxInput("cluster_type",label = shiny::HTML("<b>Use consensus</b>"),value = FALSE)
+      
+    }
   })
   
   observeEvent(input$feature_select,{
@@ -1262,47 +1353,72 @@ shinyServer(function(input, output, session) {
   
   observeEvent({input$choose_cluster},{
     
-                 req(input$nclust, scExp_cf())
-                 if(input$nclust != ""){
-                   scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust),
-                                                 consensus = cluster_type()))
-                   unlocked$list$cor_clust_plot=TRUE;
-                   unlocked$list$affectation=TRUE;
-                   gc()
-                   file = file.path(init$data_folder, "ChromSCape_analyses",
-                                    analysis_name(), "correlation_clustering",
-                                    paste0(selected_filtered_dataset(),".qs"))
-                   if(!file.exists(file)){
-                     data = list("scExp_cf" = getMainExperiment(scExp_cf()))
-                     qs::qsave(data,file=file, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
-                     rm(data)
-                     gc()
-                   }
-                   odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", input$nclust))
-                   if(file.exists(file.path(odir,"refined_annotation.qs"))){
-                     # Loading refined peak annotation
-                     scExp_cf. = scExp_cf()
-                     scExp_cf.@metadata[["refined_annotation"]] = qs::qread(file = file.path(odir, "refined_annotation.qs"))
-                     scExp_cf(scExp_cf.)
-                     rm(scExp_cf.)
-                   } else{
-                     
-                     if("refined_annotation" %in% names(scExp_cf()@metadata)){
-                       # Reset any refined annotation found with other nclust
-                       scExp_cf. = scExp_cf()
-                       scExp_cf.@metadata[["refined_annotation"]] <- NULL
-                       scExp_cf(scExp_cf.)
-                       rm(scExp_cf.)
-                     } 
-                   }
-                 }
-               })
+    req(scExp_cf())
+    if(input$clustering_method == "louvain"){
+      withProgress(message='Running Louvain...', value = 0.1, {
+        incProgress(amount=0.3, detail=paste("Building SNN graph with k=", input$k_SNN))
+        print(CS_options.BPPARAM()$workers)
+      scExp_cf(find_clusters_louvain_scExp(scExp_cf(),
+                                           k = input$k_SNN, BPPARAM = CS_options.BPPARAM()))
+      odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", length(unique(scExp_cf()$cell_cluster))))
+      incProgress(amount=0.6, detail=paste("Finished graph with k=", input$k_SNN) )
+      shiny::showNotification(paste0("Found ", length(unique(scExp_cf()$cell_cluster))," clusters with Louvain clustering."),
+                              duration = 10, closeButton = TRUE, type="message")
+      })
+      } else {
+      if(input$nclust != ""){
+        scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust),
+                                      consensus = cluster_type()))
+        odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", length(unique(scExp_cf()$cell_cluster))))
+      } else{
+        return(NULL)
+      }
+    }
+
+    unlocked$list$cor_clust_plot=TRUE;
+    unlocked$list$affectation=TRUE;
+    gc()
+    file = file.path(init$data_folder, "ChromSCape_analyses",
+                     analysis_name(), "correlation_clustering",
+                     paste0(selected_filtered_dataset(),".qs"))
+    if(!file.exists(file)){
+      data = list("scExp_cf" = getMainExperiment(scExp_cf()))
+      qs::qsave(data, file=file, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
+      rm(data)
+      gc()
+    }
+    
+    if(file.exists(file.path(odir,"refined_annotation.qs"))){
+      # Loading refined peak annotation
+      scExp_cf. = scExp_cf()
+      scExp_cf.@metadata[["refined_annotation"]] = qs::qread(file = file.path(odir, "refined_annotation.qs"))
+      scExp_cf(scExp_cf.)
+      rm(scExp_cf.)
+    } else{
+      
+      if("refined_annotation" %in% names(scExp_cf()@metadata)){
+        # Reset any refined annotation found with other nclust
+        scExp_cf. = scExp_cf()
+        scExp_cf.@metadata[["refined_annotation"]] <- NULL
+        scExp_cf(scExp_cf.)
+        rm(scExp_cf.)
+      } 
+    }
+    
+  })
+  
+  set_numclust <- reactive({
+    req(scExp_cf())
+    if("cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp_cf()))){
+      length(unique(scExp_cf()$cell_cluster))
+    }
+  })
   
   observeEvent({
     input$choose_cluster
   }, { # application header (tells you which data set is selected)
-    req(analysis_name(), input$nclust)
-    header <- paste0('<b>Analysis:</b> ', analysis_name(), ' - ',input$feature_select, ' - k = ', input$nclust, ' ')
+    req(analysis_name(), scExp_cf(), set_numclust())
+    header <- paste0('<b>Analysis:</b> ', analysis_name(), ' - ',input$feature_select, ' - k = ', set_numclust(), ' ')
     shinyjs::html("pageHeader", header) 
   })
   
@@ -1314,6 +1430,56 @@ shinyServer(function(input, output, session) {
       plot_heatmap_scExp(scExp_cf(), downsample = input$options.heatmap_downsampling)
       grDevices::dev.off()
 
+  })
+  
+  output$consensus_clustering_box = renderUI({
+    if("Cor" %in% SingleCellExperiment::reducedDimNames(scExp_cf())){
+    shinydashboard::box(title = tagList(shiny::icon("cubes")," Consensus Hierarchical Clustering"),
+                      width=NULL, status="success", solidHeader=TRUE,
+                      collapsible = TRUE, collapsed = TRUE,
+                      column(12, align = "left", br()),
+                      column(12, offset = 0,
+                             div(style="display: inline-block;vertical-align:top; width: 200px;", sliderInput("maxK", "Max cluster :", min=2, max=30, value=10, step=1)),
+                             div(style="display: inline-block;vertical-align:top; width: 25px;",HTML("<br>")),
+                             div(style="display: inline-block;vertical-align:top; width: 200px;", sliderInput("consclust_iter", "Number of iterations:", min=10, max=1000, value=100, step=10)),
+                             div(style="display: inline-block;vertical-align:top; width: 25px;",HTML("<br>")),
+                             div(style="display: inline-block;vertical-align:top; width: 200px;", selectInput("clusterAlg", "Cluster Algorithm:", choices = c("Hierarchical","Partitioning Medoids"))),
+                             br()),
+                      column(3, align="left", actionButton("do_cons_clust", "Launch Consensus Clustering"),
+                             br()),
+                      column(12, align = "left",
+                             hr()),
+                      column(12, align ="center", uiOutput("cons_corr_clust_pca_UI")),
+                      column(12, align="left", uiOutput("cluster_consensus_plot")),
+                      column(12,hr()),
+                      column(12, align="left", textOutput("cluster_consensus_info")),
+                      column(12, align="left", uiOutput("cons_clust_pdf"))
+  )
+    }
+  })
+  
+  output$correlation_filtering_box = renderUI({
+    if("Cor" %in% SingleCellExperiment::reducedDimNames(scExp_cf())){
+      shinydashboard::box(title=tagList(shiny::icon("fas fa-filter", verify_fa = FALSE)," Filter lowly correlated cells"),
+                          width=NULL, status="success", solidHeader=TRUE,
+                          collapsible = TRUE, collapsed = TRUE,
+                          column(12, align="center",
+                                 plotOutput("cell_cor_hist_plot", height=300, width=500) %>%
+                                   shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75) %>%
+                                   shinyhelper::helper(type = 'markdown',  colour = "#434C5E", icon ="info-circle",
+                                                       content = "filter_correlation_distrib")),
+                          column(12, align = "left",
+                                 hr(),
+                                 sliderInput("corr_threshold", "Correlation threshold quantile:", min=75, max=99, value=99, step = 0.01),
+                                 sliderInput("percent_correlation", "Minimum percentage of cells to correlate with (%)", min=0, max=15, value=1, step=0.01)),
+                          column(3, align="left", br(),
+                                 actionButton("filter_corr_cells", "Filter & save")),
+                          column(3, align="left", br(),
+                                 actionButton("reset_corr_cells", "Reset filtering")),
+                          column(12,  uiOutput("table_cor_filtered")
+                          )
+      )
+    }
   })
   
   sample_cf <- reactive({
@@ -1370,7 +1536,7 @@ shinyServer(function(input, output, session) {
       scExp_cf(filter_correlated_cell_scExp(scExp_cf(), random_iter = 50, corr_threshold = input$corr_threshold,
                                             percent_correlation = input$percent_correlation,
                                             BPPARAM = CS_options.BPPARAM()))
-      scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust), consensus = cluster_type()))
+      scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(set_numclust()), consensus = cluster_type()))
       gc()
       incProgress(amount=0.2, detail=paste("Saving"))
       data = list("scExp_cf" = getMainExperiment(scExp_cf()))
@@ -1504,7 +1670,8 @@ shinyServer(function(input, output, session) {
   
   observeEvent(input$do_annotated_heatmap_plot,
                {
-                 if(input$nclust != ""){
+                 req(input$clustering_method)
+                 if("cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp_cf()))){
                    output$annotated_heatmap_UI <- renderUI({
                      output$annotated_heatmap_plot = renderPlot(plot_heatmap_scExp(scExp_cf(), downsample = input$options.heatmap_downsampling))
                      plotOutput("annotated_heatmap_plot",width = 500,height = 500) %>%
@@ -1666,7 +1833,7 @@ shinyServer(function(input, output, session) {
                                                choices = annotCol_cf())),
                             column(3, align = "left", actionButton(inputId = "save_plots_COR",
                                                                    label = "Save HQ plots",
-                                                                   icon = icon("fa-picture-o"))),
+                                                                   icon = icon("fas fa-image"))),
                             column(12, align="left", plotOutput("plot_CF_UMAP")))
       }
     }
@@ -1803,11 +1970,11 @@ shinyServer(function(input, output, session) {
   has_available_coverage <- reactiveVal(FALSE)
   
   observe({
-    req(input$tabs, scExp_cf(), input$nclust, analysis_name(), selected_filtered_dataset())
+    req(input$tabs, scExp_cf(), set_numclust(), analysis_name(), selected_filtered_dataset())
 
     if(input$tabs == "coverage"){
       if(!is.null(scExp_cf())){
-        nclust = input$nclust
+        nclust = set_numclust()
         odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
         if(length(list.files(odir, pattern = ".bw|.bigWig|.bigwig")) > 0){
           has_available_coverage(TRUE)
@@ -1836,7 +2003,7 @@ shinyServer(function(input, output, session) {
       warning("Can't find any input single-cell BED files. Please make sure you selected the root of a directory",
               " containing one folder per sample. Each folder should contain single-cell raw reads as .bed or .bed.gz file (one file per cell).")
     } else{
-      nclust = length(unique(scExp_cf()$cell_cluster))
+      nclust = set_numclust()
       dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage"), showWarnings = FALSE)
       dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
       odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
@@ -1880,7 +2047,7 @@ shinyServer(function(input, output, session) {
         shinydashboard::box(title="Coverage visualization", width = NULL, status="success", solidHeader = TRUE,
                             column(12, align="left", plotOutput("coverage_region_plot") %>%
                                      shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75)),
-                            column(3, actionButton("save_plots_coverage", "Save HQ plot", icon =  icon("fa-picture-o")))) 
+                            column(3, actionButton("save_plots_coverage", "Save HQ plot", icon =  icon("fas fa-image")))) 
       }
     }
   })
@@ -1900,7 +2067,7 @@ shinyServer(function(input, output, session) {
       req(has_available_coverage(), scExp_cf())
       display_coverage_plot(TRUE)
       if(has_available_coverage()){
-        nclust = input$nclust
+        nclust = set_numclust()
         odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
                           "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
         BigWig_filenames <- list.files(odir, pattern = "*.bw", full.names = TRUE)
@@ -1942,7 +2109,7 @@ shinyServer(function(input, output, session) {
       updateSelectInput(session, "select_cov_gene", selected = "Enter Gene...")
     }
     label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
-    nclust = input$nclust
+    nclust = set_numclust()
     odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
                       "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
     if(file.exists(file.path(odir, "merged_peaks.bed"))){
@@ -1964,7 +2131,7 @@ shinyServer(function(input, output, session) {
   
   observeEvent(input$save_plots_coverage, {
     label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
-    nclust = input$nclust
+    nclust = set_numclust()
     odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
                       "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
     if(file.exists(file.path(odir, "merged_peaks.bed"))){
@@ -2109,7 +2276,7 @@ shinyServer(function(input, output, session) {
     if(length(input_files_pc)==0){
       warning("Can't find any input BAM / BED files.")
     } else{
-      nclust = input$nclust
+      nclust = set_numclust()
       
       dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks"), showWarnings = FALSE)
       dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
@@ -2162,15 +2329,27 @@ shinyServer(function(input, output, session) {
   # 6. Differential analysis
   ###############################################################
     
-  get.available.DA_GSEA.datasets <- function(name, preproc){
+  get.available.DA_GSEA.datasets <- function(name, preproc, numclust){
+    print(list.files(path = file.path(init$data_folder, "ChromSCape_analyses", name, "Diff_Analysis_Gene_Sets"),
+                     full.names = FALSE, recursive = FALSE))
     l = list.files(path = file.path(init$data_folder, "ChromSCape_analyses", name, "Diff_Analysis_Gene_Sets"),
                full.names = FALSE, recursive = FALSE, pattern = paste0(preproc, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_"))
-    l = l[grep(paste0("orrected_",input$nclust),l)]
+    
+    l = l[grep(paste0("orrected_", numclust),l)]
   }
   
-  observeEvent(c(input$qval.th, input$tabs, input$cdiff.th, input$de_type, selected_filtered_dataset()), priority = 10,{
+  observeEvent(c(input$qval.th, input$tabs, input$logFC.th, input$de_type, selected_filtered_dataset()), priority = 10,{
     if(input$tabs == "diff_analysis"){
-    init$available_DA_GSA_datasets = get.available.DA_GSEA.datasets(analysis_name(), input$selected_reduced_dataset)
+      print("Set num clust:")
+      print(set_numclust())
+      init$available_DA_GSA_datasets = get.available.DA_GSEA.datasets(analysis_name(), input$selected_reduced_dataset, set_numclust())
+      print("Analysis name:")
+      print(analysis_name())
+      print("Selected reduced datasets")
+      print(input$selected_reduced_dataset)
+      print("Available analyses :")
+      print(init$available_DA_GSA_datasets)
+    
     }
   })
   
@@ -2187,7 +2366,7 @@ shinyServer(function(input, output, session) {
   }, { # application header (tells you which data set is selected)
     req(analysis_name(), scExp_cf(), input$selected_DA_GSA_dataset)
     if(!is.null(input$selected_DA_GSA_dataset)){
-      if(input$tabs %in% c("diff_analysis","enrich_analysis")){
+      if(input$tabs %in% c("diff_analysis","enrich_analysis", "TF_analysis")){
         pattern = paste0(input$selected_reduced_dataset, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_")
         suffix = gsub(pattern,"", input$selected_DA_GSA_dataset)
         header <- paste0('<b>Analysis : ', analysis_name(), ' - ',input$feature_select, ' - k = ', length(unique(scExp_cf()$cell_cluster)), ' - ', suffix, ' </b>')
@@ -2205,9 +2384,6 @@ shinyServer(function(input, output, session) {
                               init$available_DA_GSA_datasets[file_index])
     t1 = system.time({
       data = qs::qread(filename_sel, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
-      # if(is.reactive(data)) {
-      #   data = isolate(data())
-      # }
       scExp_cf(NULL)
       if(input$feature_select %in% getExperimentNames(data$scExp_cf))
          scExp_cf. = swapAltExp_sameColData(data$scExp_cf,input$feature_select) else
@@ -2261,7 +2437,7 @@ shinyServer(function(input, output, session) {
   observeEvent(c(input$tabs, selected_filtered_dataset()), priority = 10,{
     if(input$tabs == "diff_analysis"){
       req(input$selected_DA_GSA_dataset)
-      if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$cdiff.th) &
+      if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$logFC.th) &
          length(input$selected_DA_GSA_dataset) > 0){
         
         filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
@@ -2375,39 +2551,62 @@ shinyServer(function(input, output, session) {
       scExp_cf(differential_analysis_scExp(scExp = scExp_cf(),
                                            method= input$da_method,
                                            de_type = input$de_type,
-                                           cdiff.th = input$cdiff.th,
-                                           qval.th = input$qval.th,
                                            block = block,
                                            group = group,
                                            ref = ref,
                                            progress = progress,
                                            BPPARAM = CS_options.BPPARAM())) 
-      gc()
-      data = list("scExp_cf" = getMainExperiment(scExp_cf()))
-      DA_GSA_suffix = input$de_type
-      if(input$de_type == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
-                                                           gsub("[^[:alnum:]|_]","",input$name_ref))
       
-      suffix = paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
-             "_", input$qval.th, "_", input$cdiff.th, "_", DA_GSA_suffix, ".qs")
-      
-      qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
-                                       suffix), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
-      rm(data)
       gc()
-      init$available_DA_GSA_datasets = get.available.DA_GSEA.datasets(analysis_name(), input$selected_reduced_dataset)
-
-      updateSelectInput(session = session, inputId = "selected_DA_GSA_dataset",
-                        label =  "Select set with Differential Analysis:",
-                        choices = DA_GSA_datasets(),
-                        selected =  gsub(".qs$","",suffix))
+      updateActionButton(session = session, inputId = "run_DA", label = "Start analysis ", icon = icon("check-circle"))
+      updateActionButton(session = session, inputId = "apply_DA_filters", label = "Apply filters")
       # incProgress(amount = 0.2, detail = paste("Saving DA"))
     # })
   })
   
+  observeEvent(input$apply_DA_filters,
+               {
+                 
+                 # Add Differential Analysis parameter to the DA 
+                 scExp_cf. = scExp_cf()
+
+                 scExp_cf.@metadata$DA_parameters$logFC.th = input$logFC.th
+                 scExp_cf.@metadata$DA_parameters$qval.th = input$qval.th
+                 scExp_cf.@metadata$DA_parameters$min.percent = input$min.percent
+
+                 scExp_cf(scExp_cf.)
+                 data = list("scExp_cf" = getMainExperiment(scExp_cf()))
+                 
+                 DA_GSA_suffix = scExp_cf()@metadata$DA_parameters$de_type
+                 if(DA_GSA_suffix == "custom") DA_GSA_suffix = paste0(gsub("[^[:alnum:]|_]","",input$name_group),"_vs_",
+                                                                      gsub("[^[:alnum:]|_]","",input$name_ref))
+                 
+                 suffix = paste0(selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)),
+                                 "_", input$qval.th, "_", input$logFC.th, "_", DA_GSA_suffix, ".qs")
+                 
+                 qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
+                                                  suffix), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
+                 rm(data)
+                 gc()
+                 init$available_DA_GSA_datasets = get.available.DA_GSEA.datasets(analysis_name(), input$selected_reduced_dataset, set_numclust())
+                 
+                 updateSelectInput(session = session, inputId = "selected_DA_GSA_dataset",
+                                   label =  "Select set with Differential Analysis:",
+                                   choices = DA_GSA_datasets(),
+                                   selected =  gsub(".qs$","",suffix))
+                 updateActionButton(session = session, inputId = "apply_DA_filters", label = "Saved ", icon = icon("check-circle"))
+                 
+               })
+  
+  observeEvent({input$logFC.th; input$qval.th; input$min.percent},{
+    updateActionButton(session = session, inputId = "apply_DA_filters", label = "Apply filters ")
+    
+  })
+  
   output$da_summary_box <- renderUI({
     if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$diff)){
+      if(!is.null(scExp_cf()@metadata$DA_parameters)){
+        input$logFC.th; input$qval.th; input$min.percent
         shinydashboard::box(title="Number of differentially enriched regions", width = NULL, status="success", solidHeader = TRUE,
             column(5, align="left", br(), tableOutput("da_summary_kable")),
             column(7, align="left", plotOutput("da_barplot", height = 270, width = 250)),
@@ -2419,51 +2618,52 @@ shinyServer(function(input, output, session) {
   
   output$da_summary_kable <- function(){
     if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$diff)){
-        scExp_cf()@metadata$diff$summary %>%
+      if(!is.null(scExp_cf()@metadata$DA_parameters)){
+        summary_DA(scExp_cf(), qval.th = input$qval.th, 
+                   logFC.th = input$logFC.th, min.percent = input$min.percent) %>%
           kableExtra::kable(escape = FALSE, align="c") %>%
           kableExtra::kable_styling(c("striped", "condensed"), full_width = FALSE)
       }
     }
   }
+  
   output$da_barplot <- renderPlot({
     if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$diff)){
-        plot_differential_summary_scExp(scExp_cf())
+      if(!is.null(scExp_cf()@metadata$DA_parameters)){
+        plot_differential_summary_scExp(scExp_cf(), qval.th = input$qval.th, 
+                                        logFC.th = input$logFC.th, min.percent = input$min.percent)
       }
     }
   })
   
   output$download_da_barplot <- downloadHandler(
-    filename = function(){ paste0("diffAnalysis_numRegions_barplot_", selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)), "_", input$qval.th, "_", input$cdiff.th, "_", input$de_type, ".png")},
+    filename = function(){ paste0("diffAnalysis_numRegions_barplot_", selected_filtered_dataset(), "_", length(unique(scExp_cf()$cell_cluster)), "_", input$qval.th, "_", input$logFC.th, "_", input$de_type, ".png")},
     content = function(file){
       grDevices::png(file, width = 800, height = 600, res = 150)
-      plot_differential_summary_scExp(scExp_cf())
+      plot_differential_summary_scExp(scExp_cf(), qval.th = input$qval.th, 
+                                      logFC.th = input$logFC.th, min.percent = input$min.percent)
       grDevices::dev.off()
     })
   
   output$da_table <- DT::renderDataTable({
     req(input$gpsamp, scExp_cf())
     if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$diff)){
-        if(input$gpsamp %in% scExp_cf()@metadata$diff$groups){
-        diff = scExp_cf()@metadata$diff$res[,-grep("Rank|pval|ID",colnames(scExp_cf()@metadata$diff$res))]
+      if(!is.null(scExp_cf()@metadata$DA_parameters)){
+        rowD = as.data.frame(SingleCellExperiment::rowData(scExp_cf()))
+        if(any(grepl(input$gpsamp,colnames(rowD))) ){
+        diff = rowD[,-grep("ID",colnames(rowD))]
         if(!is.null(SummarizedExperiment::rowRanges(scExp_cf())$Gene)){
           rowD = SummarizedExperiment::rowRanges(scExp_cf())
           rowD = rowD[which(SummarizedExperiment::rowData(scExp_cf())$top_feature)]
-          diff = cbind(rowD$distanceToTSS, diff)
-          diff = cbind(rowD$Gene, diff)
-          colnames(diff)[1:2] = c("Gene","distanceToTSS")
         }
         rownames(diff) <- NULL
-        # for(i in seq(from = 0, to=(dim(diff)[2]-8)/5, by = 1)){
-        #   diff[, (5*i+5)] <- round(diff[, (5*i+5)], 3) #counts
-        #   diff[, (5*i+6)] <- round(diff[, (5*i+6)], 3) #cdiff
-        # }
         
-        diff = diff[,c("Gene","distanceToTSS", "chr","start","end",
-                       colnames(diff)[grep(input$gpsamp,colnames(diff))] )]
-        diff <- diff[order(diff[,paste0("cdiff.",input$gpsamp)]),]
+        diff = diff[,c("Gene", 
+                       colnames(diff)[grep(input$gpsamp, colnames(diff))], "distanceToTSS")]
+        diff <- diff[order(diff[,paste0("logFC.",input$gpsamp)]),]
+        diff[,paste0("logFC.",input$gpsamp)] = round(diff[,paste0("logFC.",input$gpsamp)],3)
+        diff[,paste0("group_activation.",input$gpsamp)] = round(diff[,paste0("group_activation.",input$gpsamp)],3)
+        diff[,paste0("reference_activation.",input$gpsamp)] = round(diff[,paste0("reference_activation.",input$gpsamp)],3)
         DT::datatable(diff, options = list(dom='tpi'), class = "display",
                       rownames = FALSE)
       }
@@ -2477,24 +2677,21 @@ shinyServer(function(input, output, session) {
   output$download_da_table <- downloadHandler(
     filename = function(){ paste0("diffAnalysis_data_", selected_filtered_dataset(),
                                   "_", length(unique(scExp_cf()$cell_cluster)), "_",
-                                  input$qval.th, "_", input$cdiff.th, "_",
+                                  input$qval.th, "_", input$logFC.th, "_",
                                   input$de_type, ".csv")},
     content = function(file){
-      write.table(scExp_cf()@metadata$diff$res, file, row.names = FALSE, quote = FALSE, sep=",")
+      write.table(rowData(scExp_cf()), file, row.names = FALSE, quote = FALSE, sep=",")
     })
   
   output$da_visu_box <- renderUI({
     if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$diff)){
+      if(!is.null(scExp_cf()@metadata$DA_parameters)){
         shinydashboard::box(title="Detailed differential analysis per cluster", width = NULL, status="success", solidHeader = TRUE,
-            column(4, align="left", selectInput("gpsamp", "Select group:", choices = scExp_cf()@metadata$diff$groups)),
+            column(4, align="left", selectInput("gpsamp", "Select group:", choices = DA_groups())),
             column(4, align="left", downloadButton("download_da_table", "Download table")),
             column(12, align="left", div(style = 'overflow-x: scroll', DT::dataTableOutput('da_table')), br()),
-            column(12, align="left", plotOutput("h1_prop", height = 300, width = 500),
-                   plotOutput("da_volcano", height = 500, width = 500)),
-            column(4, align="left", downloadButton("download_h1_plot", "Download histogram")),
-            column(4, align="left", downloadButton("download_da_volcano", "Download volcano plot")),
-            column(4, align="left", actionButton("save_plots_DA", "Save HQ plots", icon = icon("fa-picture-o"))
+            column(12, align="left", plotOutput("da_volcano", height = "500px", width = "100%")),
+            column(4, align="left", actionButton("save_plots_DA", "Save HQ plots", icon = icon("fas fa-image"))
             ))
       }
     }
@@ -2503,42 +2700,24 @@ shinyServer(function(input, output, session) {
   observeEvent(input$save_plots_DA,{
     if(!dir.exists(plot_dir())) dir.create(plot_dir())
     pdf(file.path(plot_dir(), paste0("differential_analysis_", input$gpsamp,".pdf")))
-    plot_differential_volcano_scExp(scExp_cf(),cell_cluster = input$gpsamp,
-                                    cdiff.th = input$cdiff.th, qval.th = input$qval.th)
+    plot_differential_volcano_scExp(scExp_cf(), group = input$gpsamp,
+                                    logFC.th = input$logFC.th, qval.th = input$qval.th,
+                                    min.percent = input$min.percent)
     dev.off()
     shiny::showNotification(paste0("Plots saved in '",plot_dir(),"' !"),
                             duration = 15, closeButton = TRUE, type="message")
     updateActionButton(session = session, inputId = "save_plots_DA", label = "Save HQ plots", icon = icon("check-circle"))
   })
-  
-  output$h1_prop <- renderPlot({
-    req(scExp_cf())
-    if(!is.null(scExp_cf())){
-      if(input$gpsamp %in% scExp_cf()@metadata$diff$groups){
-        if(!is.null(scExp_cf()@metadata$diff)){
-          plot_differential_H1_scExp(scExp_cf(), input$gpsamp)
-        }  
-      }
-    }
-  })
-  
-  output$download_h1_plot <- downloadHandler(
-    filename = function(){ paste0("diffAnalysis_numRegions_barplot_", selected_filtered_dataset(),
-                                  "_", length(unique(scExp_cf()$cell_cluster)), "_", input$qval.th,
-                                  "_", input$cdiff.th, "_", input$de_type, "_", input$gpsamp, ".png")},
-    content = function(file){
-      grDevices::png(file, width = 1000, height = 600, res = 300)
-      plot_differential_H1_scExp(scExp_cf(), input$gpsamp)
-      grDevices::dev.off()
-  })
-  
+
   output$da_volcano <- renderPlot({
     req(scExp_cf())
     if(!is.null(scExp_cf())){
-      if(input$gpsamp %in% scExp_cf()@metadata$diff$groups){
-        if(!is.null(scExp_cf()@metadata$diff)){
-          plot_differential_volcano_scExp(scExp_cf(),cell_cluster = input$gpsamp,
-                                          cdiff.th = input$cdiff.th, qval.th = input$qval.th)
+      if(input$gpsamp %in% DA_groups()){
+        if(!is.null(scExp_cf()@metadata$DA_parameters)){
+          plot_differential_volcano_scExp(scExp_cf(), group = input$gpsamp,
+                                          logFC.th = input$logFC.th, 
+                                          qval.th = input$qval.th, 
+                                          min.percent = input$min.percent)
         }
       }
     }
@@ -2547,23 +2726,29 @@ shinyServer(function(input, output, session) {
   output$download_da_volcano <- downloadHandler(
     filename = function(){ paste0("diffAnalysis_numRegions_barplot_", selected_filtered_dataset(),
                                   "_", length(unique(scExp_cf()$cell_cluster)), "_",
-                                  input$qval.th, "_", input$cdiff.th, "_", 
+                                  input$qval.th, "_", input$logFC.th, "_", 
                                   input$de_type, "_", input$gpsamp, ".png")},
         content = function(file){
         grDevices::png(file, width = 900, height = 900, res = 300)
           plot_differential_volcano_scExp(scExp_cf(),
-                                          cell_cluster = input$gpsamp,
-                                          cdiff.th = input$cdiff.th,
-                                          qval.th = input$qval.th)
+                                          group = input$gpsamp,
+                                          logFC.th = input$logFC.th,
+                                          qval.th = input$qval.th,
+                                          min.percent = input$min.percent)
         grDevices::dev.off()
     })
   
+  DA_groups <- reactive({
+      gsub(".*\\.","", grep("qval",colnames(rowData(scExp_cf())), value = TRUE))
+  })
+  
     observeEvent(unlocked$list, {
       able_disable_tab(c("diff_my_res"),"enrich_analysis")
+      able_disable_tab(c("diff_my_res"),"TF_analysis")
     }) 
     
     observeEvent(scExp_cf(), {
-      if(!is.null(scExp_cf()@metadata$diff)){
+      if(any(grepl("qval",colnames(rowData(scExp_cf()))))){
         unlocked$list$diff_my_res = TRUE 
         } else{
           unlocked$list$diff_my_res = FALSE
@@ -2628,9 +2813,10 @@ shinyServer(function(input, output, session) {
     progress$set(message='Performing Gene Set Analysis...', value = 0.05)
     progress$set(detail='Initialization...', value = 0.15)
     scExp_cf(gene_set_enrichment_analysis_scExp(scExp_cf(), enrichment_qval = 0.01, qval.th = input$qval.th,
-                                                ref = annotation_id(), cdiff.th = input$cdiff.th,
+                                                ref = annotation_id(), logFC.th = input$logFC.th,
+                                                min.percent = input$min.percent,
                                                 peak_distance = 1000, use_peaks = input$use_peaks,
-                                                GeneSetClasses = MSIG.classes(),progress = progress))
+                                                GeneSetClasses = MSIG.classes(), progress = progress))
     gc()
     progress$inc(detail='Finished Gene Set Analysis - Saving...', amount = 0.0)
     data = list("scExp_cf" = getMainExperiment(scExp_cf()) )
@@ -2645,8 +2831,9 @@ shinyServer(function(input, output, session) {
   
   output$GSA_group_sel <- renderUI({ 
     if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$diff)){
-      selectInput("GSA_group_sel", "Select group:", choices = scExp_cf()@metadata$diff$groups) 
+      if(!is.null(DA_groups())){
+      selectInput("GSA_group_sel", "Select group:",
+                  choices = DA_groups()) 
       }
     }
     })
@@ -2662,12 +2849,17 @@ shinyServer(function(input, output, session) {
   
   output$all_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
-      if(!is.null(scExp_cf()@metadata$enr) && !is.null(input$GSA_group_sel) && !is.null(input$enr_class_sel)){
-        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups){
+      if(!is.null(scExp_cf()@metadata$enr) && !is.null(input$GSA_group_sel) && !is.null(input$enr_class_sel) &&
+         !is.null(input$pathway_size_GSA)){
+        if(input$GSA_group_sel %in% DA_groups()){
           if(length(scExp_cf()@metadata$enr$Both)>0){
             DT::datatable(table_enriched_genes_scExp(
               scExp_cf(), set = 'Both',  group = input$GSA_group_sel,
-              enr_class_sel = input$enr_class_sel),
+              enr_class_sel = input$enr_class_sel) %>%
+                dplyr::filter(as.numeric(gsub(".*/","",Num_deregulated_genes)) >
+                                           input$pathway_size_GSA[1] &
+                                           as.numeric(gsub(".*/","",Num_deregulated_genes)) < 
+                                                        input$pathway_size_GSA[2]),
               options = list(pageLength = 10,  dom = 'tpi'), class = 'display', rownames = FALSE)
           }
         }
@@ -2678,11 +2870,15 @@ shinyServer(function(input, output, session) {
   output$over_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
-        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups){
+        if(input$GSA_group_sel %in% DA_groups()){
           if(length(scExp_cf()@metadata$enr$Overexpressed)>0){
             DT::datatable(table_enriched_genes_scExp(
               scExp_cf(), set = 'Overexpressed',  group = input$GSA_group_sel,
-              enr_class_sel = input$enr_class_sel),
+              enr_class_sel = input$enr_class_sel) %>%
+                dplyr::filter(as.numeric(gsub(".*/","",Num_deregulated_genes)) >
+                                input$pathway_size_GSA[1] &
+                                as.numeric(gsub(".*/","",Num_deregulated_genes)) < 
+                                input$pathway_size_GSA[2]),
               options = list(pageLength = 10,  dom = 'tpi'), class = 'display', rownames = FALSE)
           }
         }
@@ -2694,11 +2890,15 @@ shinyServer(function(input, output, session) {
   output$under_enrich_table <- DT::renderDataTable({
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
-        if(input$GSA_group_sel %in% scExp_cf()@metadata$diff$groups){
+        if(input$GSA_group_sel %in% DA_groups()){
           if(length(scExp_cf()@metadata$enr$Underexpressed)>0){
             DT::datatable(table_enriched_genes_scExp(
               scExp_cf(), set = 'Underexpressed',  group = input$GSA_group_sel,
-              enr_class_sel = input$enr_class_sel),
+              enr_class_sel = input$enr_class_sel) %>%
+                dplyr::filter(as.numeric(gsub(".*/","",Num_deregulated_genes)) >
+                                input$pathway_size_GSA[1] &
+                                as.numeric(gsub(".*/","",Num_deregulated_genes)) < 
+                                input$pathway_size_GSA[2]),
               options = list(pageLength = 10,  dom = 'tpi'), class = 'display', rownames = FALSE)
           }
         }
@@ -2708,22 +2908,22 @@ shinyServer(function(input, output, session) {
   })
   
   output$download_enr_data <- downloadHandler(
-    filename = paste(selected_filtered_dataset(), length(unique(scExp_cf()$cell_cluster)), input$qval.th, input$cdiff.th, "enrichment_tables.zip", sep="_"),
+    filename = paste(selected_filtered_dataset(), length(unique(scExp_cf()$cell_cluster)), input$qval.th, input$logFC.th, "enrichment_tables.zip", sep="_"),
     content = function(fname){
       fis <- c()
-      for(i in 1:length(scExp_cf()@metadata$diff$groups)){
+      for(i in 1:length(DA_groups())){
         if(!is.null(scExp_cf()@metadata$enr$Both[[i]])){
-          filename <- paste0(scExp_cf()@metadata$diff$groups[i], "_significant_gene_sets.csv")
+          filename <- paste0(DA_groups()[i], "_significant_gene_sets.csv")
           fis <- c(fis, filename)
           write.table(scExp_cf()@metadata$enr$Both[[i]], file = filename, quote = FALSE, row.names = FALSE, sep=",")
         }
         if(!is.null(scExp_cf()@metadata$enr$Overexpressed[[i]])){
-          filename <- paste0(scExp_cf()@metadata$diff$groups[i], "_enriched_gene_sets.csv")
+          filename <- paste0(DA_groups()[i], "_enriched_gene_sets.csv")
           fis <- c(fis, filename)
           write.table(scExp_cf()@metadata$enr$Overexpressed[[i]], file = filename, quote = FALSE, row.names = FALSE, sep=",")
         }
         if(!is.null(scExp_cf()@metadata$enr$Underexpressed[[i]])){
-          filename <- paste0(scExp_cf()@metadata$diff$groups[i], "_depleted_gene_sets.csv")
+          filename <- paste0(DA_groups()[i], "_depleted_gene_sets.csv")
           fis <- c(fis, filename)
           write.table(scExp_cf()@metadata$enr$Underexpressed[[i]], file = filename, quote = FALSE, row.names = FALSE, sep=",")
         }
@@ -2738,7 +2938,7 @@ shinyServer(function(input, output, session) {
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$enr)){
         s = selectizeInput(inputId = "gene_sel", label = "Select gene:", choices = NULL)
-        most_diff = scExp_cf()@metadata$diff$res %>% dplyr::select(ID,starts_with("qval."))
+        most_diff = as.data.frame(rowData(scExp_cf())) %>% dplyr::select(ID, starts_with("qval."))
         most_diff[,"qval"] = Matrix::rowMeans(as.matrix(most_diff[,-1]))
         most_diff = dplyr::left_join(most_diff[order(most_diff$qval),], annotFeat_long(),by = c("ID"))
         most_diff = most_diff %>% dplyr::filter(!is.na(Gene)) %>%
@@ -2771,7 +2971,7 @@ shinyServer(function(input, output, session) {
   pathways <- reactive({
     req(scExp_cf())
     if(!is.null(scExp_cf()@metadata$enr)){
-      all_paths <- unique(as.character(unlist(sapply(1:length(scExp_cf()@metadata$diff$groups), 
+      all_paths <- unique(as.character(unlist(sapply(1:length(DA_groups()), 
                           function(i) {
                             all = c()
                             if(length(scExp_cf()@metadata$enr$Overexpressed)>=i) 
@@ -2878,9 +3078,174 @@ shinyServer(function(input, output, session) {
 
   })
   
+  ###############################################################
+  # 8. TF Enrichment using ChEA3
+  ###############################################################
+  
+  output$use_peaks <- renderUI({
+    if(canUsePeaks()){ checkboxInput("use_peaks", "use peak calling results to refine analysis", value = TRUE) }
+  })
+  
+  output$TF_group_sel <- renderUI({ 
+    if(!is.null(scExp_cf())){
+      if(!is.null(DA_groups())){
+        selectInput("TF_group_sel", "Select group:",
+                    choices = DA_groups()) 
+      }
+    }
+  })
+  
+  observeEvent(input$do_enrich_TF, {
+    
+    progress <- shiny::Progress$new(session, min=0, max=1)
+    on.exit(progress$close())
+    progress$set(message='Performing TF Analysis...', value = 0.05)
+    progress$set(detail='Initialization...', value = 0.15)
+    scExp_cf(enrich_TF_ChEA3_scExp(scExp_cf(), qval.th = input$qval.th,
+                                                ref = annotation_id(), logFC.th = input$logFC.th,
+                                                min.percent = input$min.percent,
+                                                peak_distance = 1000, use_peaks = input$use_peaks,
+                                                progress = progress))
+    gc()
+    progress$inc(detail='Finished TF Analysis - Saving...', amount = 0.0)
+    data = list("scExp_cf" = getMainExperiment(scExp_cf()) )
+    
+    qs::qsave(data, file = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
+                                     paste0(input$selected_DA_GSA_dataset, ".qs")), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
+    rm(data)
+    gc()
+    progress$inc(detail='Done !', amount = 0.5)
+    
+  })
+  
+  output$all_enrich_table_TF <- DT::renderDataTable({
+    if(!is.null(scExp_cf())){
+      if(!is.null(scExp_cf()@metadata$TF_enrichment) && !is.null(input$TF_group_sel)){
+        if(input$TF_group_sel %in% DA_groups()){
+          if(length(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]])>0){
+            if(!is.null(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]]$Differential)){
+            DT::datatable(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]]$Differential,
+              options = list(pageLength = 10,  dom = 'tpi'), class = 'display', rownames = FALSE)
+            }
+          }
+        }
+      }
+    }
+  })
+  
+  output$over_enrich_table_TF <- DT::renderDataTable({
+    if(!is.null(scExp_cf())){
+      if(!is.null(scExp_cf()@metadata$TF_enrichment) && !is.null(input$TF_group_sel)){
+        if(input$TF_group_sel %in% DA_groups()){
+          if(length(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]])>0){
+            if(!is.null(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]]$Enriched)){
+              DT::datatable(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]]$Enriched,
+                            options = list(pageLength = 10,  dom = 'tpi'), class = 'display', rownames = FALSE)
+            }
+          }
+        }
+      }
+    }
+  })
+  
+  output$under_enrich_table_TF <- DT::renderDataTable({
+    if(!is.null(scExp_cf())){
+      if(!is.null(scExp_cf()@metadata$TF_enrichment) && !is.null(input$TF_group_sel)){
+        if(input$TF_group_sel %in% DA_groups()){
+          if(length(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]])>0){
+            if(!is.null(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]]$Depleted)){
+              DT::datatable(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]]$Depleted,
+                            options = list(pageLength = 10,  dom = 'tpi'), class = 'display', rownames = FALSE)
+            }
+          }
+        }
+      }
+    }
+  })
+  
+  output$download_enr_data_TF <- downloadHandler(
+    filename = paste(selected_filtered_dataset(), length(unique(scExp_cf()$cell_cluster)), input$qval.th, input$logFC.th, "TF_enrichment_tables.zip", sep="_"),
+    content = function(fname){
+      fis <- c()
+      for(i in 1:length(DA_groups())){
+        if(!is.null(scExp_cf()@metadata$TF_enrichment[[i]]$Differential)){
+          filename <- paste0(DA_groups()[i], "_significant_gene_sets.csv")
+          fis <- c(fis, filename)
+          write.table(scExp_cf()@metadata$TF_enrichment[[i]]$Differential, file = filename, quote = FALSE, row.names = FALSE, sep=",")
+        }
+        if(!is.null(scExp_cf()@metadata$TF_enrichment[[i]]$Enriched)){
+          filename <- paste0(DA_groups()[i], "_enriched_gene_sets.csv")
+          fis <- c(fis, filename)
+          write.table(scExp_cf()@metadata$TF_enrichment[[i]]$Enriched, file = filename, quote = FALSE, row.names = FALSE, sep=",")
+        }
+        if(!is.null(scExp_cf()@metadata$TF_enrichment[[i]]$Depleted)){
+          filename <- paste0(DA_groups()[i], "_depleted_gene_sets.csv")
+          fis <- c(fis, filename)
+          write.table(scExp_cf()@metadata$TF_enrichment[[i]]$Depleted, file = filename, quote = FALSE, row.names = FALSE, sep=",")
+        }
+      }
+      zip(zipfile = fname, files = fis)},
+    contentType = "application/zip"
+  )
+  
+  output$TF_set <- renderUI({ 
+    if(!is.null(scExp_cf())){
+      if(!is.null(scExp_cf()@metadata$TF_enrichment)){
+        
+      }
+    }
+  })
+
+  TF_barplot_p <- reactive({
+    req(scExp_cf(), input$TF_set, input$TF_group_sel, input$TF_set, input$TF_plot_y_axis,
+        input$TF_plot_n_top)
+    if(!is.null(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]][[input$TF_set]])){
+      if(length(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]][[input$TF_set]]) > 1){
+      if(nrow(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]][[input$TF_set]]) > 1){
+        p <- plot_top_TF_scExp(scExp_cf(),
+                               group = input$TF_group_sel,
+                               set = input$TF_set,
+                               type = input$TF_plot_y_axis,
+                               n_top = input$TF_plot_n_top)
+        p
+      } else{
+        NULL
+      }
+      } else{
+        NULL
+      }
+    } else{
+      NULL
+    }
+    
+
+  })
+  
+  output$TF_plot <- renderPlot({
+    TF_barplot_p()
+  })
+  
+  shiny::plotOutput("TF_plot") %>% 
+    shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75)
+  
+  output$TF_results_UI = renderUI({
+    req(scExp_cf(), input$TF_group_sel, input$TF_group_sel, DA_groups())
+      if(!is.null(scExp_cf()@metadata$TF_enrichment)){
+        if(input$TF_group_sel %in% DA_groups()){
+          if(length(scExp_cf()@metadata$TF_enrichment[[input$TF_group_sel]]) > 0){
+            shinydashboard::box(title="Results TF analysis per cluster", width = NULL, status="success", solidHeader = TRUE,
+                                column(4, align="left", selectInput("TF_set", "Select set:", choices = c("Differential", "Enriched", "Depleted"))),
+                                column(4, align="left", selectInput("TF_plot_y_axis", "Select Y axis:", choices = c("Score", "nTargets"))),
+                                column(4, align="left", sliderInput("TF_plot_n_top", "Select set:",min = 1, max = 200, value = 25), br()),
+                                column(12, align="left", plotOutput("TF_plot", height = "500px", width = "100%"))
+                                )
+          }
+        }
+      }
+  })
   
   ###############################################################
-  # 8. Close app
+  # 9. Close app
   ###############################################################
   
   output$analysis_deletion_info <- renderText({"The selected data set will be fully deleted from the computer, including all reduced data versions that have been produced so far for this set."})
@@ -2918,7 +3283,7 @@ shinyServer(function(input, output, session) {
                          "Diff_Analysis_Gene_Sets", paste0(
                            selected_filtered_dataset(), "_",
                            length(unique(scExp_cf()$cell_cluster)),
-                           "_", input$qval.th, "_", input$cdiff.th, "_",
+                           "_", input$qval.th, "_", input$logFC.th, "_",
                            input$de_type, ".qs"))
         } else{
           dir = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),

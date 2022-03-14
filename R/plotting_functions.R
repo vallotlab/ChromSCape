@@ -488,20 +488,25 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
     grDevices::colorRampPalette(c("royalblue", "white", "indianred1")))(256),
     color_by = NULL, downsample = 1000, hc_linkage = "ward.D")
 {
-    
+    fullCor = TRUE
     stopifnot(is(scExp, "SingleCellExperiment"))
-    if (!"Cor" %in% SingleCellExperiment::reducedDimNames(scExp)) 
+    if (!"Cor" %in% SingleCellExperiment::reducedDimNames(scExp)){
+      fullCor = FALSE
+      if(!"cormat" %in% names(scExp@metadata)){
         stop(paste0("ChromSCape::plot_heatmap_scExp - No correlation, run ",
                     "correlation_and_hierarchical_clust_scExp before filtering."))
+      }
+    } 
+        
     
     if (!name_hc %in% names(scExp@metadata)) 
         stop(paste0("ChromSCape::plot_heatmap_scExp - No dendrogram, run ",
                     "correlation_and_hierarchical_clust_scExp before filtering."))
     
-    if (length(scExp@metadata[[name_hc]]$order) != ncol(scExp)) 
+    if (fullCor & length(scExp@metadata[[name_hc]]$order) != ncol(scExp)) 
         stop(paste0("ChromSCape::plot_heatmap_scExp - Dendrogram has different",
                     " number of cells than dataset."))
-    if(ncol(scExp) > downsample) {
+    if(fullCor & ncol(scExp) > downsample) {
         samp = sample(ncol(scExp),downsample, replace = FALSE)
         scExp = scExp[,samp]
         SingleCellExperiment::reducedDim(scExp, "Cor") = 
@@ -524,17 +529,36 @@ plot_heatmap_scExp <- function(scExp, name_hc = "hc_cor", corColors = (
             anocol = anocol[,color_by,drop=FALSE]
     }
     
-    return(
+    if(fullCor){
+      return(
         hclustAnnotHeatmapPlot(
-            x = as.matrix(SingleCellExperiment::reducedDim(scExp, "Cor"))[
-                scExp@metadata[[name_hc]]$order, 
-                scExp@metadata[[name_hc]]$order], hc = scExp@metadata[[name_hc]],
-            hmColors = corColors,
-            anocol = anocol[scExp@metadata[[name_hc]]$order, ,drop=FALSE],
-            xpos = c(0.15, 0.9, 0.164, 0.885),
-            ypos = c(0.1, 0.5, 0.5, 0.6, 0.62, 0.95), dendro.cex = 0.04, 
-            xlab.cex = 0.8, hmRowNames = FALSE)
-    )
+          x = as.matrix(SingleCellExperiment::reducedDim(scExp, "Cor"))[
+            scExp@metadata[[name_hc]]$order, 
+            scExp@metadata[[name_hc]]$order], hc = scExp@metadata[[name_hc]],
+          hmColors = corColors,
+          anocol = anocol[scExp@metadata[[name_hc]]$order, ,drop=FALSE],
+          xpos = c(0.15, 0.9, 0.164, 0.885),
+          ypos = c(0.1, 0.5, 0.5, 0.6, 0.62, 0.95), dendro.cex = 0.04, 
+          xlab.cex = 0.8, hmRowNames = FALSE)
+      )
+    } else{
+      anocol = anocol[match(rownames(scExp@metadata$cormat), 
+                            rownames(anocol)),]
+      return(
+        hclustAnnotHeatmapPlot(
+          x = as.matrix(scExp@metadata$cormat)[
+            scExp@metadata[[name_hc]]$order, 
+            scExp@metadata[[name_hc]]$order],
+          hc = scExp@metadata[[name_hc]],
+          hmColors = corColors,
+          anocol = anocol[scExp@metadata[[name_hc]]$order, ,drop=FALSE],
+          xpos = c(0.15, 0.9, 0.164, 0.885),
+          ypos = c(0.1, 0.5, 0.5, 0.6, 0.62, 0.95), dendro.cex = 0.04, 
+          xlab.cex = 0.8, hmRowNames = FALSE)
+      )
+    }
+      
+    
 }
 
 
@@ -556,47 +580,55 @@ plot_intra_correlation_scExp <- function(
     scExp_cf, by = c("sample_id", "cell_cluster")[1], jitter_by = NULL,
     downsample = 5000){
     
-    if(ncol(scExp_cf) > downsample) scExp_cf = scExp_cf[,sample(ncol(scExp_cf),
-                                                       downsample,
-                                                       replace = FALSE)]
-    
-    samp = intra_correlation_scExp(scExp_cf, by)
-    annot = SingleCellExperiment::colData(scExp_cf)
-    if(!is.null(jitter_by)){
-        if(jitter_by != by) samp[,jitter_by] = 
-                annot[,jitter_by][match(rownames(samp),annot$cell_id)]
+  fullCor = TRUE
+  if (!"Cor" %in% SingleCellExperiment::reducedDimNames(scExp_cf)){
+    fullCor = FALSE
+    if(!"cormat" %in% names(scExp_cf@metadata)){
+      stop(paste0("ChromSCape::plot_intra_correlation_scExp - No correlation, run ",
+                  "correlation_and_hierarchical_clust_scExp before filtering."))
     }
-    p <- ggplot(samp) + geom_violin(aes(x=.data[[by]], y=.data$intra_corr,
-                                        fill=.data[[by]]), alpha=0.8) +
-        theme_classic() +
-        theme(axis.text.x = element_text(angle=90)) + 
-        ylab(paste0("Intra-",by," correlation")) + xlab("")
-    
-    cols = unique(as.character(annot[,paste0(by,"_color")][
-        match(rownames(samp),annot$cell_id)]))
-    names(cols) = unique(as.character(annot[,by][match(
-        rownames(samp),annot$cell_id)]))
-    p <- p + scale_fill_manual(values = cols)
-    
-    if(!is.null(jitter_by)){
-        if(grepl("counts", jitter_by)){
-            p <- p + geom_jitter(
-                aes(x=.data[[by]], y=.data$intra_corr,
-                    color = .data[[jitter_by]]),
-                alpha = 0.45) +
-                scale_color_gradientn(colours = matlab.like(100))
-            
-        } else{
-            p <- p + geom_jitter(
-                aes(x=.data[[by]], y=.data$intra_corr,
-                    color = forcats::fct_inorder(.data[[jitter_by]])),
-                alpha = 0.45) +
-                scale_color_manual(
-                    values = unique(annot[,paste0(jitter_by,"_color")][
-                        match(rownames(samp),annot$cell_id)]))
-        }
+  } 
+  if(ncol(scExp_cf) > downsample) scExp_cf = scExp_cf[,sample(ncol(scExp_cf),
+                                                              downsample,
+                                                              replace = FALSE)]
+
+  samp = intra_correlation_scExp(scExp_cf, by, fullCor)
+  annot = SingleCellExperiment::colData(scExp_cf)
+  if(!is.null(jitter_by)){
+    if(jitter_by != by) samp[,jitter_by] = 
+        annot[,jitter_by][match(rownames(samp),annot$cell_id)]
+  }
+  p <- ggplot(samp) + geom_violin(aes(x=.data[[by]], y=.data$intra_corr,
+                                      fill=.data[[by]]), alpha=0.8) +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle=90)) + 
+    ylab(paste0("Intra-",by," correlation")) + xlab("")
+  
+  cols = unique(as.character(annot[,paste0(by,"_color")][
+    match(rownames(samp),annot$cell_id)]))
+  names(cols) = unique(as.character(annot[,by][match(
+    rownames(samp),annot$cell_id)]))
+  p <- p + scale_fill_manual(values = cols)
+  
+  if(!is.null(jitter_by)){
+    if(grepl("counts", jitter_by)){
+      p <- p + geom_jitter(
+        aes(x=.data[[by]], y=.data$intra_corr,
+            color = .data[[jitter_by]]),
+        alpha = 0.45) +
+        scale_color_gradientn(colours = matlab.like(100))
+      
+    } else{
+      p <- p + geom_jitter(
+        aes(x=.data[[by]], y=.data$intra_corr,
+            color = forcats::fct_inorder(.data[[jitter_by]])),
+        alpha = 0.45) +
+        scale_color_manual(
+          values = unique(annot[,paste0(jitter_by,"_color")][
+            match(rownames(samp),annot$cell_id)]))
     }
-    return(p + theme(legend.title = element_text("")))
+  }
+  return(p + theme(legend.title = element_text("")))
 }
 
 #' Violin plot of inter-correlation distribution between one or multiple groups
@@ -625,49 +657,56 @@ plot_inter_correlation_scExp <- function(
     reference_group = unique(scExp_cf[[by]])[1],
     other_groups = unique(scExp_cf[[by]]),
     downsample = 5000){
-    
-    if(ncol(scExp_cf) > downsample) scExp_cf =
-            scExp_cf[,sample(ncol(scExp_cf),downsample,replace = FALSE)]
-    
-    samp = inter_correlation_scExp(scExp_cf, by, reference_group, other_groups)
-    annot = SingleCellExperiment::colData(scExp_cf)
-    if(!is.null(jitter_by)){
-        samp[,jitter_by] = 
-                annot[,jitter_by][match(rownames(samp),annot$cell_id)]
+  fullCor = TRUE
+  if (!"Cor" %in% SingleCellExperiment::reducedDimNames(scExp_cf)){
+    fullCor = FALSE
+    if(!"cormat" %in% names(scExp_cf@metadata)){
+      stop(paste0("ChromSCape::plot_intra_correlation_scExp - No correlation, run ",
+                  "correlation_and_hierarchical_clust_scExp before filtering."))
     }
-    p <- ggplot(samp) + geom_violin(aes(
-        x=.data[[paste0(by,"_i")]], y=.data[["inter_corr"]],
-                    fill=.data[[paste0(by,"_i")]]), alpha=0.8) +
-        theme_classic() +
-        theme(axis.text.x = element_text(angle=90)) + 
-        ylab(paste0("Inter-",by," correlation")) + xlab("")
-    
-    cols = unique(as.character(annot[,paste0(by,"_color")][
-        match(rownames(samp),annot$cell_id)]))
-    names(cols) = unique(as.character(annot[,by][match(
-        rownames(samp),annot$cell_id)]))
-    
-    p <- p + scale_fill_manual(values = cols)
-    
-    if(!is.null(jitter_by)){
-        if(grepl("counts_", jitter_by)){
-            p <- p + geom_jitter(
-                aes(x=.data[[paste0(by,"_i")]], y=.data$inter_corr,
-                    color = .data[[jitter_by]]),
-                alpha = 0.45) +
-                scale_color_gradientn(colours = matlab.like(100))
-        } else{
-            p <- p + geom_jitter(
-                aes(x=.data[[paste0(by,"_i")]], y=.data$inter_corr,
-                    color = forcats::fct_inorder(
-                        .data[[jitter_by]])),
-                alpha = 0.45) +
-                scale_color_manual(
-                    values = unique(annot[,paste0(jitter_by,"_color")][
-                        match(rownames(samp),annot$cell_id)]))
-        }
+  } 
+  if(ncol(scExp_cf) > downsample) scExp_cf =
+      scExp_cf[,sample(ncol(scExp_cf),downsample,replace = FALSE)]
+  
+  samp = inter_correlation_scExp(scExp_cf, by, reference_group, other_groups, fullCor)
+  annot = SingleCellExperiment::colData(scExp_cf)
+  if(!is.null(jitter_by)){
+    samp[,jitter_by] = 
+      annot[,jitter_by][match(rownames(samp),annot$cell_id)]
+  }
+  p <- ggplot(samp) + geom_violin(aes(
+    x=.data[[paste0(by,"_i")]], y=.data[["inter_corr"]],
+    fill=.data[[paste0(by,"_i")]]), alpha=0.8) +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle=90)) + 
+    ylab(paste0("Inter-",by," correlation")) + xlab("")
+  
+  cols = unique(as.character(annot[,paste0(by,"_color")][
+    match(rownames(samp),annot$cell_id)]))
+  names(cols) = unique(as.character(annot[,by][match(
+    rownames(samp),annot$cell_id)]))
+  
+  p <- p + scale_fill_manual(values = cols)
+  
+  if(!is.null(jitter_by)){
+    if(grepl("counts_", jitter_by)){
+      p <- p + geom_jitter(
+        aes(x=.data[[paste0(by,"_i")]], y=.data$inter_corr,
+            color = .data[[jitter_by]]),
+        alpha = 0.45) +
+        scale_color_gradientn(colours = matlab.like(100))
+    } else{
+      p <- p + geom_jitter(
+        aes(x=.data[[paste0(by,"_i")]], y=.data$inter_corr,
+            color = forcats::fct_inorder(
+              .data[[jitter_by]])),
+        alpha = 0.45) +
+        scale_color_manual(
+          values = unique(annot[,paste0(jitter_by,"_color")][
+            match(rownames(samp),annot$cell_id)]))
     }
-    return(p + theme(legend.title = element_text("")))
+  }
+  return(p + theme(legend.title = element_text("")))
 }
 
 #' Coverage plot 
@@ -813,25 +852,31 @@ plot_coverage_BigWig <- function(
 #' Differential summary barplot
 #'
 #' @param scExp_cf A SingleCellExperiment object
-#'
+#' @param qval.th Adjusted p-value threshold. (0.01)
+#' @param logFC.th Fold change threshold. (1)
+#' @param min.percent Minimum fraction of cells having the feature active to
+#' consider it as significantly differential. (0.01)
+#' 
 #' @return A barplot summary of differential analysis
 #' @export
 #'
 #' @examples
 #' data("scExp")
 #' plot_differential_summary_scExp(scExp)
-plot_differential_summary_scExp <- function(scExp_cf)
+plot_differential_summary_scExp <- function(scExp_cf, qval.th = 0.01, 
+                                            logFC.th = 1, min.percent = 0.01)
 {
     
     stopifnot(is(scExp_cf, "SingleCellExperiment"))
-    if (is.null(scExp_cf@metadata$diff)) 
+    if(!any(grepl("logFC", colnames(SingleCellExperiment::rowData(scExp_cf)))) ) 
         stop(paste0("ChromSCape::differential_barplot_scExp - ",
                     "No DA, please run differential_analysis_scExp first."))
     
-    summary = scExp_cf@metadata$diff$summary
+    summary = summary_DA(scExp_cf, qval.th = qval.th, 
+                         logFC.th = logFC.th, min.percent = min.percent)
     myylim <- range(c(summary["over", ], -summary["under", ]))
     barplot(summary["over", ], col = "red", las = 1, ylim = myylim,
-            main = "Number of differentially enriched regions", 
+            main = "Differentially enriched regions", 
             ylab = "Number of regions", axes = FALSE)
     barplot(-summary["under", ], col = "forestgreen", ylim = myylim,
             add = TRUE, axes = FALSE, names.arg = "")
@@ -839,47 +884,15 @@ plot_differential_summary_scExp <- function(scExp_cf)
     axis(2, at = z, labels = abs(z), las = 1)
 }
 
-#' Differential H1 distribution plot
-#'
-#' @param scExp_cf A SingleCellExperiment object
-#' @param cell_cluster Which cluster to plot
-#'
-#' @return A barplot of H1 distribution
-#' @export
-#'
-#' @importFrom graphics hist barplot axis plot abline
-#' @examples
-#' data("scExp")
-#' plot_differential_H1_scExp(scExp)
-plot_differential_H1_scExp <- function(scExp_cf, cell_cluster = "C1")
-{
-    
-    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(cell_cluster))
-    if (is.null(scExp_cf@metadata$diff)) 
-        stop(paste0("ChromSCape::differential_H1_plot_scExp - No DA, please ",
-                    "run differential_analysis_scExp first."))
-    
-    if (!cell_cluster %in% scExp_cf@metadata$diff$groups) 
-        stop(paste0("ChromSCape::differential_H1_plot_scExp - Chromatin group ",
-                    "specified doesn't correspond to differential analysis, please rerun ",
-                    "run_differential_analysis_scExp first with correct parameters."))
-    
-    res = scExp_cf@metadata$diff$res
-    
-    tmp <- H1proportion(res[, paste("pval", cell_cluster, sep = ".")])
-    hist(res[, paste("pval", cell_cluster, sep = ".")],
-         breaks = seq(0, 1, by = 0.05), xlab = "P-value", ylab = "Frequency",
-         main = paste(cell_cluster, "vs the rest", "\n", "H1 proportion:",
-                      round(tmp, 3)))
-}
-
 #' Volcano plot of differential features
 #'
 #' @param scExp_cf A SingleCellExperiment object
 #' @param cell_cluster Which cluster to plot
-#' @param cdiff.th Fold change threshold
-#' @param qval.th Adjusted p.value threshold
-#'
+#' @param qval.th Adjusted p-value threshold. (0.01)
+#' @param logFC.th Fold change threshold. (1)
+#' @param min.percent Minimum fraction of cells having the feature active to
+#' consider it as significantly differential. (0.01)
+#' 
 #' @return A volcano plot of differential analysis of a specific cluster
 #' @export
 #'
@@ -887,45 +900,71 @@ plot_differential_H1_scExp <- function(scExp_cf, cell_cluster = "C1")
 #' data("scExp")
 #' plot_differential_volcano_scExp(scExp,"C1")
 plot_differential_volcano_scExp <- function(
-    scExp_cf, cell_cluster = "C1", cdiff.th = 1, qval.th = 0.01)
+    scExp_cf, group = "C1", logFC.th = 1, qval.th = 0.01, 
+    min.percent = 0.01)
 {
     
-    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(cell_cluster), 
-              is.numeric(qval.th), is.numeric(cdiff.th))
+    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(group), 
+              is.numeric(qval.th), is.numeric(logFC.th), is.numeric(min.percent))
     
-    if (is.null(scExp_cf@metadata$diff)) 
-        stop(paste0("ChromSCape::differential_volcano_plot_scExp - No DA, ",
-                    "please run differential_analysis_scExp first."))
+  if(!any(grepl("logFC", colnames(SingleCellExperiment::rowData(scExp_cf)))) ) 
+    stop(paste0("ChromSCape::plot_differential_volcano_scExp - ",
+                "No DA, please run differential_analysis_scExp first."))
     
-    if (!cell_cluster %in% scExp_cf@metadata$diff$groups) 
+    if (!any(grepl(group, colnames(SingleCellExperiment::rowData(scExp_cf))))) 
         stop(paste0("ChromSCape::differential_volcano_plot_scExp - Chromatin ",
                     "group specified doesn't correspond to differential analysis, please ",
                     "rerun differential_analysis_scExp first with correct parameters."))
     
-    res = scExp_cf@metadata$diff$res
-    summary = scExp_cf@metadata$diff$summary
+    res = SingleCellExperiment::rowData(scExp_cf)
+    summary = summary_DA(scExp = scExp_cf, qval.th = qval.th,
+                         logFC.th = logFC.th, min.percent = min.percent)
     
     mycol <- rep("black", nrow(res))
-    mycol[which(res[, paste("qval", cell_cluster, sep = ".")]
+    mycol[which(res[, paste("qval", group, sep = ".")]
                 <= qval.th & res[, 
-                                 paste("cdiff", cell_cluster, sep = ".")] > cdiff.th)] <- "red"
-    mycol[which(res[, paste("qval", cell_cluster, sep = ".")]
+                                 paste("logFC", group, sep = ".")] > logFC.th)] <- "red"
+    mycol[which(res[, paste("qval", group, sep = ".")]
                 <= qval.th & res[, 
-                                 paste("cdiff", cell_cluster, sep = ".")] < -cdiff.th)] <- "forestgreen"
+                                 paste("logFC", group, sep = ".")] < -logFC.th)] <- "forestgreen"
+
+    pch = rep(1, nrow(res))
+    pch[which(res[, paste("logFC", group, sep = ".")] > 0 &  
+                res[, paste("group_activation", group, sep = ".")] > 
+                  min.percent)]  = 16
+    pch[which(res[, paste("logFC", group, sep = ".")] < 0 &  
+                res[, paste("reference_activation", group, sep = ".")] > 
+                  min.percent)]  = 16
     
-    idx = which(scExp_cf@metadata$diff$groups == cell_cluster)
+    opar <- par(no.readonly = TRUE)
+    par(mar = c(12, 5, 5, 5))
     
-    plot(res[, paste("cdiff", cell_cluster, sep = ".")],
-         -log10(res[, paste("qval", cell_cluster, sep = ".")]), col = mycol,
-         cex = 0.7, pch = 16, xlab = "count difference", 
+    plot(res[, paste("logFC", group, sep = ".")],
+         -log10(res[, paste("qval", group, sep = ".")]), col = mycol,
+         cex = 1.3 , xlab = "log2-FC", 
+         pch = pch,
          ylab = "-log10(adjusted p-value)", las = 1,
-         main = paste(cell_cluster, "vs", scExp_cf@metadata$diff$refs[idx] , "\n",
-                      summary["over", cell_cluster],
-                      "enriched,", summary["under", cell_cluster], "depleted"))
-    abline(v = cdiff.th, lty = 2)
+         main = paste(group, "\n",
+                      summary["over", group],
+                      "enriched,", summary["under", group], "depleted"))
+    abline(v = logFC.th, lty = 2)
     abline(h = -log10(qval.th), lty = 2)
-    abline(v = -cdiff.th, lty = 2)
+    abline(v = -logFC.th, lty = 2)
     
+    legend(x = "bottom",
+           inset = c(-1, -1.15),
+           legend = c(paste0("Region activated in > ",
+                             100 * min.percent, "% cells of ", group),
+                      paste0("Region activated in < ",
+                             100 * min.percent, "% cells of ", group),
+                      paste0("Region activated in > ",
+                             100 * min.percent, "% cells of ref."),
+                      paste0("Region activated in < ",
+                             100 * min.percent, "% cells of ref.")), 
+           pch = c(16, 1), col = c("red", "red",
+                                   "forestgreen", "forestgreen"), xpd = TRUE
+    )
+    par(opar)
 }
 
 #' gg_fill_hue
@@ -997,4 +1036,54 @@ plot_cluster_consensus_scExp <- function(scExp)
                                 axis.text.x = element_blank()) +
         scale_fill_manual(values=unique(colors)) + ylab("Consensus Score")
     return(p)
+}
+
+
+#' Barplot of top TFs from ChEA3 TF enrichment analysis
+#'
+#' @param scExp A SingleCellExperiment
+#' @param group A character string specifying the differential group to display
+#' the top TFs
+#' @param set A character string specifying the set of genes in which the TF 
+#' were enriched, either 'Both', 'Overexpressed' or 'Underexpressed'. 
+#' @param type A character string specifying the Y axis of the plot, either the
+#' number of differential targets or the ChEA3 integrated mean score.  
+#' @param n_top An integer specifying the number of top TF to display
+#'
+#' @return A bar plot of top TFs from ChEA3 TF enrichment analysis
+#' @export
+#' @examples 
+#' data(scExp)
+#' plot_top_TF_scExp(scExp, group = "C1", set = "Differential", type = "Score", n_top = 10)
+plot_top_TF_scExp <- function(
+    scExp, group = unique(scExp$cell_cluster)[1], 
+    set = c("Differential",'Enriched','Depleted')[1],
+    type = c("nTargets", "Score")[1], n_top = 25){
+  stopifnot(!is.null(scExp), type %in% c("nTargets", "Score"),
+            set %in% c("Differential","Enriched","Depleted"))
+  if (!"TF_enrichment" %in% names(scExp@metadata)){
+      stop(paste0("ChromSCape::plot_top_TF - No TF enrichment, run ",
+                  "enrich_TF_ChEA3_scExp before filtering."))
+    }
+
+  TF_enrichment = scExp@metadata$TF_enrichment[[group]][[set]]
+  if(type == "nTargets"){
+    p = TF_enrichment %>% dplyr::arrange(.data[["Score"]]) %>%
+      dplyr::mutate(TF = forcats::fct_reorder(TF, .data[["Score"]])) %>%
+      head(n_top) %>% 
+      ggplot(aes(x=TF, y= .data[["nTargets"]])) + geom_bar(fill = "#009688", stat="identity") +
+      theme_classic() + theme(axis.text.x = element_text(size = 15, angle=90),
+                              axis.text.y = element_text(size = 14)) + xlab("") +
+      ylab("Number of genes targeted by TF")
+  } else{
+    p = TF_enrichment %>% dplyr::arrange(.data[["Score"]]) %>%
+      dplyr::mutate(TF = forcats::fct_reorder(TF, .data[["Score"]])) %>%
+      head(n_top) %>% 
+      ggplot(aes(x=TF, y= .data[["Score"]])) + geom_bar(fill = "#009688", stat="identity") +
+      theme_classic() + theme(axis.text.x = element_text(size = 15, angle=90),
+                              axis.text.y = element_text(size = 14)) + xlab("") +
+      ylab("ChEA3 Mean-Rank Score")
+  }
+ 
+  return(p)
 }

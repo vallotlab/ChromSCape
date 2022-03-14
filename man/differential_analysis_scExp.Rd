@@ -6,10 +6,8 @@
 \usage{
 differential_analysis_scExp(
   scExp,
-  de_type = "one_vs_rest",
+  de_type = c("one_vs_rest_fast", "one_vs_rest", "pairwise")[1],
   method = "wilcox",
-  qval.th = 0.01,
-  logFC.th = 1,
   block = NULL,
   group = NULL,
   ref = NULL,
@@ -29,10 +27,6 @@ cluster against all others, or 'pairwise' to make 1 to 1 comparisons.
 
 \item{method}{Differential testing method, either 'wilcox' for Wilcoxon non-
 parametric testing or 'neg.binomial' for edgerGLM based testing. ('wilcox')}
-
-\item{qval.th}{Adjusted p-value threshold. (0.01)}
-
-\item{logFC.th}{Fold change threshold. (1)}
 
 \item{block}{Use batches as blocking factors ? If TRUE, block will be taken
 as the column "batch_id" from the SCE. Cells will be compared only within

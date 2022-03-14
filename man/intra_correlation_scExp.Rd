@@ -4,13 +4,20 @@
 \alias{intra_correlation_scExp}
 \title{Calculate intra correlation between cluster or samples}
 \usage{
-intra_correlation_scExp(scExp_cf, by = c("sample_id", "cell_cluster")[1])
+intra_correlation_scExp(
+  scExp_cf,
+  by = c("sample_id", "cell_cluster")[1],
+  fullCor = TRUE
+)
 }
 \arguments{
 \item{scExp_cf}{A SingleCellExperiment}
 
 \item{by}{On which feature to calculate correlation ("sample_id" or
 "cell_cluster")}
+
+\item{fullCor}{Logical specifying if the correlation matrix was run on the
+entire number of cells or on a subset.}
 }
 \value{
 A data.frame of cell average intra-correlation

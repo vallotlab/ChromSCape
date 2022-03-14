@@ -27,7 +27,7 @@ Returns a SingleCellExperiment object with each cell assigned to a
 correlation cluster in colData.
 }
 \description{
-This functions takes as input a SingleCellExperiment object with consclust
+This functions takes as input a SingleCellExperiment object
 and a number of cluster to select. It outputs a SingleCellExperiment object
 with each cell assigned to a correlation cluster in colData. Also calculates
 a hierarchical clustering of the consensus associations calculated by

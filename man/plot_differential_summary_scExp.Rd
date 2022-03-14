@@ -4,10 +4,22 @@
 \alias{plot_differential_summary_scExp}
 \title{Differential summary barplot}
 \usage{
-plot_differential_summary_scExp(scExp_cf)
+plot_differential_summary_scExp(
+  scExp_cf,
+  qval.th = 0.01,
+  logFC.th = 1,
+  min.percent = 0.01
+)
 }
 \arguments{
 \item{scExp_cf}{A SingleCellExperiment object}
+
+\item{qval.th}{Adjusted p-value threshold. (0.01)}
+
+\item{logFC.th}{Fold change threshold. (1)}
+
+\item{min.percent}{Minimum fraction of cells having the feature active to
+consider it as significantly differential. (0.01)}
 }
 \value{
 A barplot summary of differential analysis

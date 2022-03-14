@@ -52,6 +52,43 @@ correlation_and_hierarchical_clust_scExp <- function(
     return(scExp)
 }
 
+#' Build SNN graph and find cluster using Louvain Algorithm
+#'
+#' @param scExp A SingleCellExperiment with PCA calculated
+#' @param k An integer scalar specifying the number of nearest neighbors to 
+#' consider during graph construction.
+#' @param use.dimred A string specifying the dimensionality reduction to use.
+#' @param type A string specifying the type of weighting scheme to use for 
+#' shared neighbors.
+#' @param BPPARAM 
+#'
+#' @return A SingleCellExperiment containing the vector of clusters
+#'  (named C1, C2 ....)
+#' @export
+#' 
+#' @importFrom scran buildSNNGraph
+#' @importFrom igraph cluster_louvain
+#' @examples
+#' data('scExp')
+#' scExp = find_clusters_louvain_scExp(scExp, k = 10)
+find_clusters_louvain_scExp <- function(scExp, k = 10, use.dimred = "PCA",
+                                        type = c("rank", "number", "jaccard")[3],
+                                        BPPARAM = BiocParallel::bpparam()){
+  # g = scran::buildSNNGraph(scExp, type = type, k= k, use.dimred = use.dimred,
+  #                          BPPARAM = BPPARAM)
+  # input <- scran:::.setup_knn_data(x = counts(scExp), subset.row = NULL, 
+                           # d = 50, transposed = F,  BSPARAM = BiocSingular::bsparam(),
+  #                          BPPARAM = BPPARAM)
+  g = bluster::makeSNNGraph(reducedDim(scExp,"PCA"), BPPARAM = BPPARAM)
+  clust <- igraph::cluster_louvain(g)$membership
+  cell_clusters = paste0("C",clust)
+  scExp$cell_cluster = cell_clusters
+  SummarizedExperiment::colData(scExp)[,paste0("cluster_",SingleCellExperiment::mainExpName(scExp))] =
+    cell_clusters
+  scExp = colors_scExp(scExp, annotCol = "cell_cluster")
+  return(scExp)
+}
+
 #' Filter lowly correlated cells
 #'
 #' Remove cells that have a correlation score lower than what would be expected
@@ -289,6 +326,8 @@ num_cell_before_cor_filt_scExp <- function(scExp)
 #' @param scExp_cf A SingleCellExperiment
 #' @param by On which feature to calculate correlation ("sample_id" or 
 #' "cell_cluster")
+#' @param fullCor Logical specifying if the correlation matrix was run on the
+#' entire number of cells or on a subset.
 #'
 #' @return A data.frame of cell average intra-correlation
 #' @export
@@ -298,20 +337,25 @@ num_cell_before_cor_filt_scExp <- function(scExp)
 #' intra_correlation_scExp(scExp, by = "sample_id")
 #' intra_correlation_scExp(scExp, by = "cell_cluster")
 intra_correlation_scExp <- function(scExp_cf, by = c("sample_id",
-                                                     "cell_cluster")[1]){
-    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(by))
-    if (is.null(SingleCellExperiment::reducedDim(scExp_cf, "Cor")))
+                                                     "cell_cluster")[1],
+                                    fullCor = TRUE){
+    stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(by),
+              is.logical(fullCor))
+  
+    if (fullCor & !("Cor" %in%  SingleCellExperiment::reducedDimNames(scExp_cf)))
         stop("ChromSCape::intra_correlation_scExp - 
                 No correlation, run correlation_and_hierarchical_clust_scExp")
-    if (is.null(SingleCellExperiment::reducedDim(scExp_cf, "PCA")))
-        stop("ChromSCape::intra_correlation_scExp - No PCA, 
-                run reduced_dim before filtering.")
-    
-    # By sample
+  if (!fullCor & !("cormat" %in%  names(scExp_cf@metadata)))
+    stop("ChromSCape::intra_correlation_scExp - 
+                No correlation, run correlation_and_hierarchical_clust_scExp")
+
     annot = SingleCellExperiment::colData(scExp_cf)
-    
-    pca_t = SingleCellExperiment::reducedDim(scExp_cf,"PCA")
-    cor_mat = reducedDim(scExp_cf,"Cor")
+    if(!fullCor){
+      cor_mat = scExp_cf@metadata$cormat
+    } else{
+      cor_mat = reducedDim(scExp_cf,"Cor")
+    }
+    annot = annot[match(colnames(cor_mat), annot$cell_id),]
     
     intra_corr=data.frame()
     for(i in unique(annot[,by])){
@@ -345,14 +389,15 @@ intra_correlation_scExp <- function(scExp_cf, by = c("sample_id",
 inter_correlation_scExp <- function(
     scExp_cf, by = c("sample_id","cell_cluster")[1],
     reference_group = unique(scExp_cf[[by]])[1],
-    other_groups = unique(scExp_cf[[by]])){
+    other_groups = unique(scExp_cf[[by]]), fullCor = TRUE){
     stopifnot(is(scExp_cf, "SingleCellExperiment"), is.character(by))
-    if (is.null(SingleCellExperiment::reducedDim(scExp_cf, "Cor")))
-        stop("ChromSCape::inter_correlation_scExp - 
+  
+  if (fullCor & !("Cor" %in%  SingleCellExperiment::reducedDimNames(scExp_cf)))
+    stop("ChromSCape::intra_correlation_scExp - 
                 No correlation, run correlation_and_hierarchical_clust_scExp")
-    if (is.null(SingleCellExperiment::reducedDim(scExp_cf, "PCA")))
-        stop("ChromSCape::inter_correlation_scExp - No PCA, 
-                run reduced_dim before filtering.")
+  if (!fullCor & !("cormat" %in%  names(scExp_cf@metadata)))
+    stop("ChromSCape::intra_correlation_scExp - 
+                No correlation, run correlation_and_hierarchical_clust_scExp")
     
     if (! (reference_group %in% unique(scExp_cf[[by]])) )
         stop("ChromSCape::inter_correlation_scExp - Wrong reference_group.")
@@ -365,9 +410,14 @@ inter_correlation_scExp <- function(
     
     # By sample
     annot = SingleCellExperiment::colData(scExp_cf)
-    pca_t = SingleCellExperiment::reducedDim(scExp_cf,"PCA")
-    cor_mat = reducedDim(scExp_cf,"Cor")
     
+    if(!fullCor){
+      cor_mat = scExp_cf@metadata$cormat
+    } else{
+      cor_mat = reducedDim(scExp_cf,"Cor")
+    }
+    annot = annot[match(colnames(cor_mat), annot$cell_id),]
+
     inter_corr = data.frame()
     for(i in unique(annot[,by])){
         cells_i = as.character(annot$cell_id[which(annot[,by]==i)])
@@ -543,7 +593,7 @@ consensus_clustering_scExp <- function(scExp, prefix = NULL, maxK = 10,
 
 #' Choose a number of clusters
 #'
-#' This functions takes as input a SingleCellExperiment object with consclust
+#' This functions takes as input a SingleCellExperiment object
 #' and a number of cluster to select. It outputs a SingleCellExperiment object
 #' with each cell assigned to a correlation cluster in colData. Also calculates
 #' a hierarchical clustering of the consensus associations calculated by

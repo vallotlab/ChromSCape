@@ -115,6 +115,8 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL,
                         BPPARAM = BiocParallel::bpparam())
 {
     res = featureTab
+    mat = Matrix::Matrix((dataMat > 0) + 0, sparse = TRUE)
+    
     for (k in seq_along(groups)){
     if (length(ref_group) == 1) refsamp <- ref_group[[1]] else
         refsamp <- ref_group[[k]]
@@ -123,6 +125,15 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL,
     refidx = match(refsamp,colnames(dataMat))
     gpidx = match(gpsamp,colnames(dataMat))
     
+    cluster_bin_mat = mat[, gpidx]
+    reference_bin_mat = mat[, refidx]
+    
+    group_sum = Matrix::rowSums(cluster_bin_mat)
+    group_activation = group_sum / ncol(cluster_bin_mat)
+    
+    reference_sum = Matrix::rowSums(reference_bin_mat) 
+    reference_activation = reference_sum / ncol(reference_bin_mat)
+      
     if (!is.null(block))
     {
         testWilc <- scran::pairwiseWilcox(
@@ -148,29 +159,29 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL,
         })
         testWilc = do.call("rbind", testWilc)
         pval.gpsamp <- testWilc$pvalue
-        
         dataMat = t(dataMat)
     }
     
     qval.gpsamp <- stats::p.adjust(pval.gpsamp, method = "BH")
     Count.gpsamp <- rowMeans(dataMat[,gpidx])
     Count.refsamp <- rowMeans(dataMat[,refidx])
-    cdiff.gpsamp <- log(Count.gpsamp/Count.refsamp,2)
-    Rank.gpsamp <- rank(qval.gpsamp,ties.method = "first")
-    res <- data.frame(res, Rank.gpsamp, Count.gpsamp, cdiff.gpsamp,
-                    pval.gpsamp, qval.gpsamp)
-    if(length(which(res$cdiff.gpsamp == Inf))>0)
-        res$cdiff.gpsamp[which(res$cdiff.gpsamp == Inf)] = 
-        max(res$cdiff.gpsamp[is.finite(res$cdiff.gpsamp)])
-    if(length(which(res$cdiff.gpsamp == -Inf))>0) 
-        res$cdiff.gpsamp[which(res$cdiff.gpsamp == -Inf)] = 
-        min(res$cdiff.gpsamp[is.finite(res$cdiff.gpsamp)])
-    colnames(res) <- sub("ref", names(
-    ref_group)[min(c(k, length(ref_group)))], sub("gpsamp", 
-                                                    names(groups)[k],
-                                                    colnames(res)))
+    logFC.gpsamp <- log(Count.gpsamp/Count.refsamp,2)
+    
+    if(length(which(logFC.gpsamp == Inf))>0)
+      logFC.gpsamp[which(logFC.gpsamp == Inf)] = 
+      max(logFC.gpsamp[is.finite(logFC.gpsamp)])
+    if(length(which(logFC.gpsamp == -Inf))>0) 
+      logFC.gpsamp[which(logFC.gpsamp == -Inf)] = 
+      min(logFC.gpsamp[is.finite(logFC.gpsamp)])
+    
+    res <- cbind(res, data.frame(logFC.gpsamp = logFC.gpsamp,
+                                 qval.gpsamp = qval.gpsamp,
+                                 group_activation.gpsamp = group_activation,
+                                 reference_activation.gpsamp = reference_activation)
+    )
+    colnames(res) = gsub("gpsamp", names(groups)[k], colnames(res))
     }
-    res
+    return(res)
 }
 
 
@@ -208,17 +219,30 @@ CompareedgeRGLM <- function(
     dataMat=NULL, annot=NULL, ref_group=NULL, groups=NULL, featureTab=NULL, 
     norm_method="TMMwsp"){
     res <- featureTab
+    mat = Matrix::Matrix((dataMat > 0) + 0, sparse = TRUE)
+    
     for(k in seq_along(groups)){
         print(
             paste("Comparing",names(ref_group)[min(c(k,length(ref_group)))],
                         "versus",names(groups)[k]))
-        if(length(ref_group)==1){refsamp <- ref_group[[1]]
+        if(length(ref_group)==1){
+          refsamp <- ref_group[[1]]
         }else {refsamp <- ref_group[[k]]}
         gpsamp <- groups[[k]]
         annot. <- annot[c(refsamp,gpsamp),seq_len(2)]
         annot.$Condition <- c(
             rep("ref",length(refsamp)),rep("gpsamp",length(gpsamp)))
-        mat.<-dataMat [,c(as.character(refsamp),as.character(gpsamp))]
+        mat. <- dataMat[,c(as.character(refsamp), as.character(gpsamp))]
+        
+        cluster_bin_mat = mat[, as.character(gpsamp)]
+        reference_bin_mat = mat[, as.character(refsamp)]
+        
+        group_sum = Matrix::rowSums(cluster_bin_mat)
+        group_activation = group_sum / ncol(cluster_bin_mat)
+        
+        reference_sum = Matrix::rowSums(reference_bin_mat) 
+        reference_activation = reference_sum / ncol(reference_bin_mat)
+        
         edgeRgroup <- c(rep(1,length(refsamp)),rep(2,length(gpsamp)))
         y <- edgeR::DGEList(counts=mat.,group=edgeRgroup)
         y <- edgeR::calcNormFactors(y,method=norm_method)
@@ -228,13 +252,13 @@ CompareedgeRGLM <- function(
         comp <- edgeR::glmLRT(fit, coef=2)
         pvals <- comp$table
         colnames(pvals) <- c(
-            "log2FC.gpsamp","logCPM.gpsamp","LR.gpsamp","pval.gpsamp")
+            "logFC.gpsamp","logCPM.gpsamp","LR.gpsamp","pval.gpsamp")
         pvals$qval.gpsamp <- stats::p.adjust(pvals$pval.gpsamp, method = "BH")
         res <- data.frame(res,pvals[,c(
-            "log2FC.gpsamp","logCPM.gpsamp","pval.gpsamp","qval.gpsamp")])
-        colnames(res) <- sub(
-            "ref",names(ref_group)[min(c(k,length(ref_group)))],
-            sub("gpsamp",names(groups)[k],colnames(res)))
+            "logFC.gpsamp","qval.gpsamp")])
+        colnames(res) <-sub("gpsamp", names(groups)[k],colnames(res))
+        res[,paste0("group_activation.", names(groups)[k])] = group_activation
+        res[,paste0("reference_activation.", names(groups)[k])] = reference_activation
     }
     
     res

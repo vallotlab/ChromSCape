@@ -71,7 +71,7 @@ Module_preprocessing_filtering_and_reduction <- function(
         if(is_main){
             if(length(subsample_n())>0){
                 print("Doing subsampling")
-                scExp = subsample_scExp(scExp, n_cells = subsample_n())
+                scExp = subsample_scExp(scExp, n_cell_per_sample = subsample_n())
                 gc()
                 
             }
@@ -123,12 +123,29 @@ Module_preprocessing_filtering_and_reduction <- function(
         print(system.time({scExp = colors_scExp(scExp, annotCol.)}))
         
         ### 8. Running hierarchical clustering ###
-        print("Running correlation & hierarchical clustering...")
-        print(system.time(
-            {scExp = correlation_and_hierarchical_clust_scExp(scExp,
+        if(ncol(scExp) < 2000){
+          
+          print("Less than 2000 cells, running correlation & hierarchical clustering on the entire object...")
+          print(system.time(
+            {
+              scExp = correlation_and_hierarchical_clust_scExp(scExp,
                                                               hc_linkage = "ward.D")
             }))
-
+          
+        } else{
+          print("More than 2000 cells, running correlation & hierarchical clustering on the entire object...")
+          scExp. = subsample_scExp(scExp, n_cell_total = 2000)
+          SingleCellExperiment::reducedDim(scExp., "PCA") <-
+            SingleCellExperiment::reducedDim(scExp, "PCA")[match(colnames(scExp.), colnames(scExp)),]
+          print(system.time(
+            {
+              scExp. = correlation_and_hierarchical_clust_scExp(scExp.,
+                                                               hc_linkage = "ward.D")
+            }))
+          scExp@metadata$hc_cor = scExp.@metadata$hc_cor
+          scExp@metadata$cormat = SingleCellExperiment::reducedDim(scExp., "Cor")
+        }
+        
         ### 8. Save data ###
         
         if(is_main){

@@ -8,7 +8,8 @@ inter_correlation_scExp(
   scExp_cf,
   by = c("sample_id", "cell_cluster")[1],
   reference_group = unique(scExp_cf[[by]])[1],
-  other_groups = unique(scExp_cf[[by]])
+  other_groups = unique(scExp_cf[[by]]),
+  fullCor = TRUE
 )
 }
 \arguments{

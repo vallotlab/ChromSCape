@@ -41,7 +41,15 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                           shinydashboard::menuItem("Peak Calling", tabName = "peak_calling", icon=icon("fab fa-mountain", verify_fa = FALSE)), #mountain
                                           shinydashboard::menuItem("Differential Analysis", tabName = "diff_analysis", icon=icon("sort-amount-up")),
                                           shinydashboard::menuItem("Gene Set Analysis", tabName = "enrich_analysis", icon=icon("code-branch")),
-                                          shinydashboard::menuItem("Close App & Save Analysis", tabName = "close_and_save", icon=icon("close", verify_fa = FALSE))
+                                          shinydashboard::menuItem("TF analysis", tabName = "TF_analysis", icon=icon("bezier-curve")),
+                                          shinydashboard::menuItem("Close App & Save Analysis", tabName = "close_and_save", icon=icon("close", verify_fa = FALSE)),
+                                          shinydashboard::menuItem(
+                                            badgeColor = "green",
+                                            expandedName = "hello",
+                                            startExpanded = TRUE, 
+                                            " ", column(width = 12, actionButton("popupUMAP", width = "70%", class = "btn-default",
+                                                                                 label = "UMAP", icon = icon("fas fa-image")))
+                                          )
                               )
                             ),
                             controlbar = shinydashboardPlus::dashboardControlbar(
@@ -279,53 +287,16 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                                                         shinyhelper::helper(type = 'markdown',  colour = "#434C5E", icon ="info-circle",
                                                                                             content = "correlation_clustering"))
                                          ),
-                                         shinydashboard::box(title = tagList(shiny::icon("cubes")," Consensus Hierarchical Clustering"),
-                                                             width=NULL, status="success", solidHeader=TRUE,
-                                                             collapsible = TRUE, collapsed = TRUE,
-                                                             column(12, align = "left", br()),
-                                                             column(12, offset = 0,
-                                                                    div(style="display: inline-block;vertical-align:top; width: 200px;", sliderInput("maxK", "Max cluster :", min=2, max=30, value=10, step=1)),
-                                                                    div(style="display: inline-block;vertical-align:top; width: 25px;",HTML("<br>")),
-                                                                    div(style="display: inline-block;vertical-align:top; width: 200px;", sliderInput("consclust_iter", "Number of iterations:", min=10, max=1000, value=100, step=10)),
-                                                                    div(style="display: inline-block;vertical-align:top; width: 25px;",HTML("<br>")),
-                                                                    div(style="display: inline-block;vertical-align:top; width: 200px;", selectInput("clusterAlg", "Cluster Algorithm:", choices = c("Hierarchical","Partitioning Medoids"))),
-                                                                    br()),
-                                                             column(3, align="left", actionButton("do_cons_clust", "Launch Consensus Clustering"),
-                                                                    br()),
-                                                             column(12, align = "left",
-                                                                    hr()),
-                                                             column(12, align ="center", uiOutput("cons_corr_clust_pca_UI")),
-                                                             column(12, align="left", uiOutput("cluster_consensus_plot")),
-                                                             column(12,hr()),
-                                                             column(12, align="left", textOutput("cluster_consensus_info")),
-                                                             column(12, align="left", uiOutput("cons_clust_pdf"))
-                                         ),
-                                         shinydashboard::box(title=tagList(shiny::icon("fas fa-filter", verify_fa = FALSE)," Filter lowly correlated cells"),
-                                                             width=NULL, status="success", solidHeader=TRUE,
-                                                             collapsible = TRUE, collapsed = TRUE,
-                                                             column(12, align="center",
-                                                                    plotOutput("cell_cor_hist_plot", height=300, width=500) %>%
-                                                                        shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75) %>%
-                                                                        shinyhelper::helper(type = 'markdown',  colour = "#434C5E", icon ="info-circle",
-                                                                                            content = "filter_correlation_distrib")),
-                                                             column(12, align = "left",
-                                                                    hr(),
-                                                                    sliderInput("corr_threshold", "Correlation threshold quantile:", min=75, max=99, value=99, step = 0.01),
-                                                                    sliderInput("percent_correlation", "Minimum percentage of cells to correlate with (%)", min=0, max=15, value=1, step=0.01)),
-                                                             column(3, align="left", br(),
-                                                                    actionButton("filter_corr_cells", "Filter & save")),
-                                                             column(3, align="left", br(),
-                                                                    actionButton("reset_corr_cells", "Reset filtering")),
-                                                             column(12,  uiOutput("table_cor_filtered")
-                                                             )
-                                         )
+                                         uiOutput("consensus_clustering_box"),
+                                         uiOutput("correlation_filtering_box")
                                   ),
    
                                   column(width=6,
-                                         shinydashboard::box(title=tagList(shiny::icon("project-diagram"), "Select Cluster Number"), width=NULL, status="success", solidHeader=TRUE,
+                                         shinydashboard::box(title=tagList(shiny::icon("project-diagram"), "Cluster Cells"), width=NULL, status="success", solidHeader=TRUE,
                                                              align="left",
-                                                             column(width=4, uiOutput("nclust_UI")),
-                                                             column(width=3, br(),br(), checkboxInput("cluster_type",label = shiny::HTML("<b>Use consensus</b>"),value = FALSE)),
+                                                             column(width=4, uiOutput("clustering_method_UI")),
+                                                             column(width=4, uiOutput("clustering_UI")),
+                                                             column(width=3, br(),br(), uiOutput("consensus_clustering_UI")),
                                                              column(width=3, br(),br(),actionButton(inputId = "choose_cluster", label = "Choose Cluster"))
                                          ),
                                          uiOutput("contingency_table_cluster"),
@@ -346,7 +317,7 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                                                     column(width=4,checkboxInput("add_jitter", shiny::HTML("<b>Add single-cells</b>"), value= FALSE),
                                                                     column(3, align = "left", actionButton(inputId = "save_plots_violins",
                                                                                                                   label = "Save HQ plots",
-                                                                                                                  icon = icon("fa-picture-o", verify_fa = FALSE))) %>%
+                                                                                                                  icon = icon("fas fa-image", verify_fa = FALSE))) %>%
                                                                                shinyhelper::helper(type = 'markdown',  colour = "#434C5E", icon ="info-circle",
                                                                                                    content = "intra_inter_correlation")),
                                                                     column(width=4,uiOutput("jitter_color")),  br(),br(),br(),br(),br(),
@@ -423,17 +394,19 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                         
                         shinydashboard::tabItem(tabName = "diff_analysis",
                                 fluidPage(
-                                  column(width=6,
-                                         shinydashboard::box(title= tagList(shiny::icon("sort-amount-up"), " Differential Analysis"), width=NULL, status="success", solidHeader=TRUE,
+                                  column(width=5,
+                                         shinydashboard::box(title= tagList(shiny::icon("sort-amount-up"), " Run Differential Analysis"), width=NULL, status="success", solidHeader=TRUE,
                                              column(12, align="left", textOutput("diff_analysis_info") %>%
                                                         shinyhelper::helper(type = 'markdown',  colour = "#434C5E", icon ="info-circle",
-                                                                            content = "differential_analysis"), br(),
-                                                    htmlOutput("selected_DA_GSA_dataset")),
+                                                                            content = "differential_analysis"), br()),
                                              column(8, align="left", uiOutput("selected_k"), br(), br()),
                                              column(5, align="left", selectInput("de_type", "Select type of comparison:",
-                                                                                 choices=c("one_vs_rest","pairwise","custom"))),
+                                                                                 choices=list("One vs Rest (activation)" = "one_vs_rest_fast",
+                                                                                              "One vs Rest (classic)" = "one_vs_rest",
+                                                                                               "Pairwise"  = "pairwise",
+                                                                                               "Custom" = "custom"))),
                                              column(2, offset = 0,align="left"),
-                                             column(4, align="left", selectInput("da_method", "Select type of DA method:",
+                                             column(4, align="left", selectInput("da_method", "Select method:",
                                                                                  choices=list("Wilcoxon" = "wilcox",
                                                                                               "edgeR GLM" = "neg.binomial"))),
                                              column(6, align="left", offset = 0, uiOutput("name_group")),
@@ -443,21 +416,19 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                              column(1, align="left", offset = 0, uiOutput("text_vs")),
                                              column(2, align="left", offset = 0, uiOutput("custom_da_ref")),
                                              column(3, align="left", offset = 0, uiOutput("ref_choice")),
-                                             column(12, align="left", sliderInput("qval.th", "Adjusted p-value to select significant features:", min=0.01, max=0.4, value=0.01, step=0.01),
-                                                    sliderInput("cdiff.th", "Minimum log-fold change to select significant locations:", min=0, max=3, value=1, step=0.01)),
-                                                    # plotOutput("distrib_norm_hist") %>%  shinyhelper::helper(type = 'markdown',
-                                                    #                                                          icon ="info-circle",
-                                                    #                                                          content = "distrib_norm_hist"
-                                                    #                                                          )),
-                                                    # uiOutput("only_contrib_cell_ui")),
-                                             # column(1, align="left", br()),
-                                             # column(11, align="left", uiOutput("contrib_thresh")),
-                                             # column(1, align="left", br()),
-                                             # column(8, align="left", uiOutput("contrib_hist")),
-                                             # column(3, align="left", br(), uiOutput("contrib_info")),
                                              column(12, align="left", hr(), actionButton("run_DA", "Start analysis"))),
                                          uiOutput("da_summary_box")),
-                                  column(width=6,
+                                  column(width=7,
+                                         shinydashboard::box(title= tagList(shiny::icon("bullseye"), " Find Significantly Differential Features"), width=NULL, status="success", solidHeader=TRUE,
+                                                             column(8, align="left", htmlOutput("selected_DA_GSA_dataset")),
+                                                             column(8, align="left",
+                                                shinyWidgets::sliderTextInput(inputId = "qval.th", label = "Adjusted p-value to select significant features:",
+                                                                                                choices =  c(1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 0.0001, 0.001, 0.01, 0.02, 0.03, 0.04, 0.04, 0.05, 0.1, 0.15, 0.20, 0.25),
+                                                                                                selected = 0.01, grid = TRUE), 
+                                                sliderInput("logFC.th", "Minimum log-fold change to select significant locations:", min=0, max=3, value=1, step=0.01),
+                                                sliderInput("min.percent", "Minimum percentage of activation:", min=0, max=0.5, value=0.01, step=0.005)),
+                                                column(4, align="center", br(), br(), br(),br(), br(), br(),
+                                                       shiny::actionButton("apply_DA_filters", label = "Apply filters"))),
                                          uiOutput("da_visu_box")))
                         ),
                         
@@ -475,6 +446,8 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                          shinydashboard::box(title=tagList(icon("th"), " Enriched Gene sets in differential features"), width=NULL, status="success", solidHeader=TRUE,
                                              column(4, align="left", uiOutput("GSA_group_sel"), br()),
                                              column(8, align="left", uiOutput("enr_class_sel"), br()),
+                                             column(8, align="left", sliderInput("pathway_size_GSA", label = "Select pathway size",
+                                                                                 min = 1, max = 2500, value = c(25, 1000), step = 1), br()),
                                              column(12, align="left",
                                                          mainPanel(tabsetPanel(id='enr_tables',
                                                                           tabPanel("In differential features", div(style = 'overflow-x: scroll', DT::dataTableOutput('all_enrich_table'))),
@@ -495,6 +468,32 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                                              column(12, align="left",uiOutput("pathways_umap_UI"))
                                          )
                                          ))
+                        ),
+                        
+                        ###############################################################
+                        # 8. TF analysis
+                        ###############################################################
+                        
+                        shinydashboard::tabItem(tabName = "TF_analysis",
+                                                fluidPage(
+                                                  column(width=6,
+                                                         shinydashboard::box(title=tagList(shiny::icon("bezier-curve"), " Transcription Factor Analysis using ChEA3"), width=NULL, status="success", solidHeader=TRUE,
+                                                                             column(12, align="left", htmlOutput("TF_info"), br(),
+                                                                                    uiOutput("use_peaks_TF"),
+                                                                                    actionButton("do_enrich_TF", "Start TF enrichment analysis"))),
+                                                         shinydashboard::box(title=tagList(icon("th"), " Enriched TF in differential features"), width=NULL, status="success", solidHeader=TRUE,
+                                                                             column(4, align="left", uiOutput("TF_group_sel"), br()),
+                                                                             column(12, align="left",
+                                                                                    mainPanel(tabsetPanel(id='enr_tables_TF',
+                                                                                                          tabPanel("In differential features", div(style = 'overflow-x: scroll', DT::dataTableOutput('all_enrich_table_TF'))),
+                                                                                                          tabPanel("In enriched features", div(style = 'overflow-x: scroll', DT::dataTableOutput('over_enrich_table_TF'))),
+                                                                                                          tabPanel("In depleted features", div(style = 'overflow-x: scroll', DT::dataTableOutput('under_enrich_table_TF')))), width=12),
+                                                                                    br(), br(), br(), br(), br(),
+                                                                                    downloadButton("download_enr_data_TF", "Download tables"))),
+                                                         ),
+                                                  column(width=6, uiOutput("TF_results_UI"))
+                                                  
+                                                  )
                         ),
                         
                         ###############################################################

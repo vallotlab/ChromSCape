@@ -14,6 +14,7 @@ gene_set_enrichment_analysis_scExp(
   GenePool = NULL,
   qval.th = 0.01,
   logFC.th = 1,
+  min.percent = 0.01,
   peak_distance = 1000,
   use_peaks = FALSE,
   GeneSetClasses = c("c1_positional", "c2_curated", "c3_motif", "c4_computational",
@@ -45,6 +46,9 @@ automatically load Gencode list of genes fro specified reference genome.
 (0.01)}
 
 \item{logFC.th}{Fold change threshold to define differential features. (1)}
+
+\item{min.percent}{Minimum fraction of cells having the feature active to
+consider it as significantly differential. (0.01)}
 
 \item{peak_distance}{Maximum distanceToTSS of feature to gene TSS to consider
 associated, in bp. (1000)}
