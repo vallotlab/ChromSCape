@@ -146,6 +146,10 @@ read_sparse_matrix <- function(files_dir_list,
     matrix_file = list.files(path = files_dir_list[1], full.names = TRUE,
                              pattern = pattern)
     
+    if(is.null(names(files_dir_list))){
+        names(files_dir_list) = gsub("[^[:alnum:]|^_|^\\. ]","", basename(files_dir_list))
+    }
+    
     if (length(c(feature_file, matrix_file, barcode_file)) != 3)
         stop(paste0(
             "ChromSCape::read_sparse_matrix - For ",
@@ -220,16 +224,19 @@ read_sparse_matrix <- function(files_dir_list,
                     round(t1[3],3), " sec.")
     }
 
-    common_features = sapply(feature_indexes, rownames) 
-    
+    common_features = lapply(feature_indexes, rownames) 
+
     if(!isTRUE(all.equal(max(sapply(common_features, length)), min(sapply(common_features, length))))){
-      common_features = Reduce(intersect,common_features)
-      percent_in_common =  100 * length(common_features) / max(sapply(feature_indexes, nrow))
+        common_features = Reduce(intersect,common_features)
+        percent_in_common =  100 * length(common_features) / max(sapply(feature_indexes, nrow))
       warning("ChromSCape::read_sparse_matrix - ",
               "Not all features are found in all the samples - found ",
               round(percent_in_common,2), " % common features.")
       if(percent_in_common < 5) stop("ChromSCape::read_sparse_matrix - ",
                                      "Not enough features in common.")
+      c
+    } else{
+        common_features = rownames(feature_indexes[[1]])
     }
       
     feature_indexes = sapply(feature_indexes, function(i) {
@@ -348,6 +355,7 @@ raw_counts_to_sparse_matrix <- function(
                 ))
         }
         mat <- do.call("cbind", mat)
+        
         
         # If Gene information is present in metadata, add it to the rownames
         is_gene = ifelse("Gene" %in% colnames(GenomicRanges::elementMetadata(which)),
