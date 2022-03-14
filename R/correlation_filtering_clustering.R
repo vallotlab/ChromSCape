@@ -67,7 +67,6 @@ correlation_and_hierarchical_clust_scExp <- function(
 #' @export
 #' 
 #' @importFrom scran buildSNNGraph
-#' @importFrom igraph cluster_louvain
 #' @examples
 #' data('scExp')
 #' 
@@ -75,7 +74,12 @@ correlation_and_hierarchical_clust_scExp <- function(
 find_clusters_louvain_scExp <- function(scExp, k = 10, use.dimred = "PCA",
                                         type = c("rank", "number", "jaccard")[3],
                                         BPPARAM = BiocParallel::bpparam()){
-
+    if(!requireNamespace("igraph", quietly=TRUE)){
+        warning("ChromSCape::find_clusters_louvain_scExp - In order to use",
+        "Louvain clustering algorithm, please install 'igraph' package.",
+                "Run install.packages('igraph') in console. Exiting.")
+        return()
+    }
   g = bluster::makeSNNGraph(reducedDim(scExp,"PCA"), BPPARAM = BPPARAM)
   clust <- igraph::cluster_louvain(g)$membership
   cell_clusters = paste0("C",clust)
