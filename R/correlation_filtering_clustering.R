@@ -80,7 +80,10 @@ find_clusters_louvain_scExp <- function(scExp, k = 10, use.dimred = "PCA",
                 "Run install.packages('igraph') in console. Exiting.")
         return()
     }
-  g = bluster::makeSNNGraph(reducedDim(scExp,"PCA"), BPPARAM = BPPARAM)
+  g = bluster::makeSNNGraph(reducedDim(scExp,"PCA"),
+                            k = k,
+                            type = type,
+                            BPPARAM = BPPARAM)
   clust <- igraph::cluster_louvain(g)$membership
   cell_clusters = paste0("C",clust)
   scExp$cell_cluster = cell_clusters

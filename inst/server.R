@@ -1357,7 +1357,7 @@ shinyServer(function(input, output, session) {
     if(input$clustering_method == "louvain"){
       withProgress(message='Running Louvain...', value = 0.1, {
         incProgress(amount=0.3, detail=paste("Building SNN graph with k=", input$k_SNN))
-        print(CS_options.BPPARAM()$workers)
+          print(input$k_SNN)
       scExp_cf(find_clusters_louvain_scExp(scExp_cf(),
                                            k = input$k_SNN, BPPARAM = CS_options.BPPARAM()))
       odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", length(unique(scExp_cf()$cell_cluster))))
@@ -1533,10 +1533,14 @@ shinyServer(function(input, output, session) {
   observeEvent(input$filter_corr_cells, {  # retreiveing cells with low correlation score
     withProgress(message='Filtering correlated cells...', value = 0, {
       incProgress(amount=0.6, detail=paste("Filtering"))
+        print("Filtering...")
       scExp_cf(filter_correlated_cell_scExp(scExp_cf(), random_iter = 50, corr_threshold = input$corr_threshold,
                                             percent_correlation = input$percent_correlation,
                                             BPPARAM = CS_options.BPPARAM()))
-      scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(set_numclust()), consensus = cluster_type()))
+      print("Choosing cluster...")
+      print(set_numclust())
+      scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = 3, consensus = cluster_type()))
+      print("Saving...")
       gc()
       incProgress(amount=0.2, detail=paste("Saving"))
       data = list("scExp_cf" = getMainExperiment(scExp_cf()))
