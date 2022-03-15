@@ -2,11 +2,12 @@
 % Please edit documentation in R/diff_analysis_gene_set_enrichment.R
 \name{differential_activation}
 \alias{differential_activation}
-\title{Find Differentialy Activated Features}
+\title{Find Differentialy Activated Features (One vs All)}
 \usage{
 differential_activation(
   scExp,
   group_by = c("cell_cluster", "sample_id")[1],
+  verbose = TRUE,
   progress = NULL
 )
 }
@@ -29,12 +30,36 @@ consider a feature close to a gene.}
 BPPARAM set in your R session.}
 }
 \value{
-Returns a dataframe of differential activation results.
+Returns a dataframe of differential activation results that contains
+the rowData of the SingleCellExperiment with additional logFC, q.value,
+group activation (fraction of cells active for each feature in the group cells),
+reference activation (fraction of cells active for each feature in the
+reference cells).
 }
 \description{
-Find Differentialy Activated Features
+Based on the statement that single-cell epigenomic dataset are very sparse,
+specifically when analysis small bins or peaks, we can define each feature as
+being 'active' or not simply by the presence or the absence of reads in this
+feature. This is the equivalent of binarize the data. When trying to find
+differences in signal for a feature between multiple cell groups, this
+function simply compare the percentage of cells 'activating' the feature
+in each of the group. The p.values are then calculated using a Pearson's
+Chi-squared Test for Count Data (comparing the number of active cells in one
+group vs the other) and corrected using Benjamini-Hochberg correction for
+multiple testing.
+}
+\details{
+To calculate the logFC, the percentage of activation of the features are
+corrected for total number of reads to correct for library size bias.
+For each cluster ('group') the function consider the rest of the cells as
+the reference.
 }
 \examples{
 data("scExp")
 res = differential_activation(scExp, group_by = "cell_cluster")
+res = differential_activation(scExp, group_by = "sample_id")
+}
+\seealso{
+For Pearson's Chi-squared Test for Count Data  \link[stats]{chisq.test}.
+For other differential analysis see \link[ChromSCape]{differential_analysis_scExp}.
 }

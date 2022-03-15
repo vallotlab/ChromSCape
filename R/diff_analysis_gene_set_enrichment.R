@@ -438,8 +438,21 @@ run_pairwise_tests <- function(affectation, nclust, counts,
                 "count_save" = count_save)
     return(out)}
 
-#' Find Differentialy Activated Features 
-#'
+#' Find Differentialy Activated Features (One vs All)
+#' 
+#' @description 
+#' 
+#' Based on the statement that single-cell epigenomic dataset are very sparse,
+#' specifically when analysis small bins or peaks, we can define each feature as
+#' being 'active' or not simply by the presence or the absence of reads in this 
+#' feature. This is the equivalent of binarize the data. When trying to find 
+#' differences in signal for a feature between multiple cell groups, this 
+#' function simply compare the percentage of cells 'activating' the feature 
+#' in each of the group. The p.values are then calculated using a Pearson's 
+#' Chi-squared Test for Count Data (comparing the number of active cells in one 
+#' group vs the other) and corrected using Benjamini-Hochberg correction for 
+#' multiple testing. 
+#' 
 #' @param scExp  A SingleCellExperiment object containing consclust with selected
 #'   number of cluster.
 #' @param group_by Which grouping to run the marker enrichment ?
@@ -452,7 +465,20 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #'  \link[BiocParallel]{bpparam} for more informations. Will take the default
 #'  BPPARAM set in your R session.
 #'  
-#' @return Returns a dataframe of differential activation results.
+#' @details 
+#' To calculate the logFC, the percentage of activation of the features are 
+#' corrected for total number of reads to correct for library size bias.  
+#' For each cluster ('group') the function consider the rest of the cells as
+#' the reference.
+#' @seealso
+#' For Pearson's Chi-squared Test for Count Data  \link[stats]{chisq.test}.
+#' For other differential analysis see \link[ChromSCape]{differential_analysis_scExp}.
+#' 
+#' @return Returns a dataframe of differential activation results that contains
+#' the rowData of the SingleCellExperiment with additional logFC, q.value, 
+#' group activation (fraction of cells active for each feature in the group cells),
+#' reference activation (fraction of cells active for each feature in the 
+#' reference cells).
 #' @export
 #'
 #' @importFrom Matrix rowSums colSums
@@ -462,8 +488,9 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #' @examples
 #' data("scExp")
 #' res = differential_activation(scExp, group_by = "cell_cluster")
+#' res = differential_activation(scExp, group_by = "sample_id")
 differential_activation <- function(scExp, group_by = c("cell_cluster","sample_id")[1],
-                                    progress = NULL){
+                                    verbose = TRUE, progress = NULL){
   .par_chisq = function(row) { return(chisq.test(
     matrix(c(row[1], row[2], row[3], row[4]), ncol = 2),
     simulate.p.value = FALSE)$p.value)}
@@ -483,7 +510,7 @@ differential_activation <- function(scExp, group_by = c("cell_cluster","sample_i
   for(group in groups){
     if (!is.null(progress)) progress$inc(
       detail = paste0("Calculating differential activation - ", group, "..."), amount = 0.9/length(groups))
-    
+    if(verbose) cat("ChromSCape::differential_activation - Calculating differential activation for", group,".\n")
     cluster_bin_mat = mat[,which(SingleCellExperiment::colData(scExp)[, group_by] %in% group)]
     reference_bin_mat = mat[,which(!SingleCellExperiment::colData(scExp)[, group_by] %in% group)]
     
@@ -501,12 +528,7 @@ differential_activation <- function(scExp, group_by = c("cell_cluster","sample_i
     other_ref = n_cell_reference - reference_sum
     
     chisq_mat = cbind(group_sum, other_group, reference_sum, other_ref)
-    
-    # parallel::clusterExport(cl, varlist = c("chisq_mat", ".par_chisq"), envir = environment())
-    
-    # system.time({l = BiocParallel::bplapply(new_env$chisq_mat,  par_chisq,
-    #                        BPPARAM = BPPARAM)})
-    # pvalues = parallel::parApply(cl = cl, chisq_mat, 1, .par_chisq)
+
     suppressWarnings({pvalues = apply(chisq_mat, 1, .par_chisq)})
     
     q.values = p.adjust(pvalues, method = "BH")
