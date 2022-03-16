@@ -562,6 +562,7 @@ preprocessing_filtering_and_reduction <- function(
     max_quantile_read_per_cell = 95,
     n_top_features = 40000,
     norm_type = "CPM",
+    remove_PC = ifelse(norm_type == "TFIDF", "Component_1", NULL),
     subsample_n = NULL,
     ref_genome = "hg38",
     exclude_regions = NULL,
@@ -612,7 +613,8 @@ preprocessing_filtering_and_reduction <- function(
     
     scExp = reduce_dims_scExp(
         scExp, dimension_reductions = c("PCA","UMAP"),
-        batch_correction = doBatchCorr, batch_list = batch_sels, 
+        batch_correction = doBatchCorr, batch_list = batch_sels,  
+        remove_PC = remove_PC,
         verbose = FALSE)
     gc()
     

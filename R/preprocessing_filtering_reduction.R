@@ -2156,8 +2156,10 @@ choose_perplexity <- function(dataset)
 #' @param batch_correction Do batch correction ? (FALSE)
 #' @param batch_list List of characters. Names are batch names, characters are
 #'  sample names.
-#' @param remove_PC1 Remove PC1 before UMAP & T-SNE, as probably correlated to 
-#' library size ? Recommended when using 'TFIDF' normalization method. (FALSE)
+#' @param remove_PC A vector of string indicating which principal components to 
+#' remove before downstream analysis as probably correlated to 
+#' library size. Should be under the form : 'Component_1', 'Component_2', ...
+#' Recommended when using 'TFIDF' normalization method. (NULL)
 #' @param verbose Print messages ?(TRUE)
 #'
 #' @return A SingleCellExperiment object containing feature spaces. See
@@ -2183,11 +2185,13 @@ choose_perplexity <- function(dataset)
 reduce_dims_scExp <-
     function(scExp, dimension_reductions = c("PCA", "UMAP"), n = 50,
             batch_correction = FALSE, batch_list = NULL,
-            remove_PC1 = FALSE, verbose = TRUE)
+            remove_PC = NULL, verbose = TRUE)
     {
         stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(n),
-            dimension_reductions[1] %in% c("PCA", "TSNE", "UMAP"),
-            is.logical(remove_PC1))
+            dimension_reductions[1] %in% c("PCA", "TSNE", "UMAP"))
+        
+        if(!is.null(remove_PC)) stopifnot(is.character(remove_PC), 
+                                          all(remove_PC %in% paste0("Component_",1:100)))
         if (!"normcounts" %in% names(SummarizedExperiment::assays(scExp))){
             warning("ChromSCape::reduce_dims_scExp - The raw counts are not
                 normalized, running dimensionality reduction on raw counts.")
@@ -2212,10 +2216,10 @@ reduce_dims_scExp <-
                 pca <- pca$x[, seq_len(n)]}}
         pca <- as.data.frame(as.matrix(pca))
         colnames(pca) <- paste0("Component_", seq_len(ncol(pca)))
-        if(remove_PC1) {
-            pca <- pca[,2:n]
+        if(!is.null(remove_PC)) {
+            pca <- pca[,-which(colnames(pca) %in% remove_PC)]
             if(verbose) message("ChromSCape::reduce_dims_scExp - removing ",
-                                "PC1... (probably correlated to library size)")
+                                paste(remove_PC, collapse = ", "), " as probably correlated to library size.")
         }
         rownames(pca) <- colnames(scExp)
         if ("TSNE" %in% dimension_reductions){

@@ -340,6 +340,104 @@ warning_plot_reduced_dim_scExp <- function(scExp, color_by , reduced_dim,
     }
 }
 
+#' Plotting correlation of PCs with a variable of interest
+#'
+#' @param scExp A SingleCellExperiment Object
+#' @param correlation_var A string specifying with which numeric variable from
+#' colData of scExp to calculate and plot the correlation of each PC with. 
+#' ('total_counts')
+#' @param color_by A string specifying with which categorical variable to
+#'  color the plot. ('NULL')
+#' @param topPC An integer specifying the number of PCs to plot correlation
+#' with 10
+#'
+#' @return A ggplot histogram representing the distribution of count per cell
+#' @export
+#'
+#' 
+#' @importFrom  ggplot2 ggplot
+#' @importFrom Matrix colSums
+#' @importFrom SingleCellExperiment reducedDimNames reducedDim colData
+#' 
+#' @examples
+#' data("scExp")
+#' plot_correlation_PCA_scExp(scExp, topPC = 25)
+#' plot_correlation_PCA_scExp(scExp, color_by = "cell_cluster")
+#' plot_correlation_PCA_scExp(scExp, color_by = "sample_id")
+plot_correlation_PCA_scExp <- function(
+    scExp, correlation_var = 'total_counts', color_by = NULL, topPC = 10)
+{
+    
+    stopifnot(is(scExp, "SingleCellExperiment"), is.numeric(topPC))
+    if (!("PCA" %in% SingleCellExperiment::reducedDimNames(scExp))) 
+        stop(paste0("ChromSCape::plot_correlation_PCA_scExp -",
+                    "'PCA' must not be empty - run reduce_dims_scExp() first."))
+    
+    if (!(correlation_var %in% colnames(SingleCellExperiment::colData(scExp))))
+        stop(paste0("ChromSCape::plot_correlation_PCA_scExp - correlation_var ",
+                    "is not present in scExp colData."))
+    
+    if (!is.null(color_by)  && !(color_by %in% colnames(SingleCellExperiment::colData(scExp))))
+        stop(paste0("ChromSCape::plot_correlation_PCA_scExp - color_by ",
+                    "is not present in scExp colData."))
+    
+    annot = as.data.frame(SingleCellExperiment::colData(scExp))
+    
+    if (!is.numeric(annot[,correlation_var]))
+        stop(paste0("ChromSCape::plot_correlation_PCA_scExp - If raw is false, ",
+                    "normcounts must not be empty - run normalize_scExp first."))
+
+    pca = SingleCellExperiment::reducedDim(scExp,"PCA")
+    
+
+    if(!is.null(color_by)) {
+        color_by_vector = unique(annot[,color_by])
+        correlation = sapply(seq_along(color_by_vector), function(group) {
+            pca. = pca[which(annot[,color_by] %in% color_by_vector[group]),]
+            annot. = annot[which( annot[,color_by] %in% color_by_vector[group]),]
+            cormat = apply(pca., 2, function(i){
+                cor(i, annot.[,correlation_var], method = "pearson")
+            })
+        })
+        df = as.data.frame(correlation)
+        colnames(df) = color_by_vector
+        df$Component = forcats::as_factor(rownames(df))
+        
+        df = df %>% tidyr::gather(-Component, key = "color_by_vector",
+                                  value = "correlation")
+        df = df[which(df$Component %in% df$Component[seq_len(topPC)]),]
+        p = df %>% ggplot(aes(x = .data[["Component"]] ,
+                                           y = .data[["correlation"]],
+                                           fill = .data[["color_by_vector"]])) + 
+        geom_bar(position = position_dodge2(), stat = "identity") + 
+        xlab("") + ylab(paste0("Pearson's correlation with '", correlation_var,"'")) +
+            labs(fill=color_by) + 
+        theme(panel.grid.major = element_blank(), panel.grid.minor = 
+                  element_blank(), panel.background = element_blank(),
+              axis.line = element_line(colour = "black"), 
+              panel.border = element_rect(colour = "black", fill = NA),
+                  axis.text.x = element_text(angle = 90, vjust = 0.5)) 
+    } else {
+        color_by_vector = unique(annot[,color_by])
+        correlation = apply(pca, 2, function(i){
+            cor(i, annot[,correlation_var], method = "pearson")
+        })
+        df = as.data.frame(correlation)
+        df$Component = forcats::as_factor(rownames(df))
+        
+        p = head(df, topPC) %>% ggplot(aes(x = .data[["Component"]] , y = .data[["correlation"]])) + 
+            geom_bar(color = "black", fill = "steelblue", stat = "identity") +
+            xlab("") + ylab(paste0("Pearson's correlation with '", correlation_var,"'")) +
+            theme(panel.grid.major = element_blank(), panel.grid.minor = 
+                      element_blank(), panel.background = element_blank(),
+                  axis.line = element_line(colour = "black"), 
+                  panel.border = element_rect(colour = "black", fill = NA),
+                  axis.text.x = element_text(angle = 90, vjust = 0.5))
+    
+        }
+    return(p)
+}
+
 #' Plot Top/Bottom most contributing features to PCA
 #'
 #' @details 

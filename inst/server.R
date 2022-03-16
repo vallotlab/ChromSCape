@@ -756,12 +756,24 @@ shinyServer(function(input, output, session) {
       textInput(paste0('batch_name_', i), paste0('Batch name ', i, ':'), value = paste0('batch', i))
     })
   }})
+  
   batch_choice <- reactive({ unique(init$annot_raw$sample_id) })
   output$batch_sel <- renderUI({ if(input$do_batch_corr & dim(init$annot_raw)[1] > 0 & !is.null(input$num_batches)){
     lapply(1:input$num_batches, function(i){
       selectInput(paste0('batch_sel_', i), paste0('Select samples for batch ', i, ':'), choices=batch_choice(), multiple=TRUE)
     })
   }})
+  
+  output$remove_PC_UI <- renderUI({ 
+      if(input$norm_type == "TFIDF"){
+          checkboxGroupInput(inputId = "remove_PC",
+                             label = "Remove First Components:",
+                             choices = paste0("Component_",1:3),
+                             selected = "Component_1", 
+                             inline = F )
+  }})
+  
+  
   output$do_subsample <- renderUI({ if(input$do_subsample){
     sliderInput("subsample_n", "Select number of cells to subsample for each sample:", min=100, max=5000, value=500, step=10) }})
   
@@ -808,7 +820,8 @@ shinyServer(function(input, output, session) {
                reactive({input$quant_removal}),
                reactive({init$datamatrix}), reactive({init$annot_raw}),
                reactive({init$data_folder}),reactive({annotationId}),
-               reactive({input$norm_type}), reactive({exclude_regions}),
+               reactive({input$norm_type}), reactive({input$remove_PC}),
+               reactive({exclude_regions}),
                reactive({input$do_batch_corr}), reactive({batch_sels}),
                reactive({input$run_tsne}), reactive({subsample_n}))
   
@@ -1005,12 +1018,12 @@ shinyServer(function(input, output, session) {
   output$pca_plot <- renderPlot(pca_plot())
   
   contrib_features_plot <- reactive({
-    req(scExp(),  input$pc_select_x)
-    if(input$pc_select_x %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
-      p = plot_most_contributing_features(scExp(), component = input$pc_select_x,
-                                          n_top_bot = as.numeric(input$n_features_contributing))
-      p
-    }
+      req(scExp(),  input$pc_select_x)
+      if(input$pc_select_x %in% colnames(SingleCellExperiment::reducedDim(scExp(), "PCA"))){
+          p = plot_most_contributing_features(scExp(), component = input$pc_select_x,
+                                              n_top_bot = as.numeric(input$n_features_contributing))
+          p
+      }
   })
   
   output$contrib_features_plot <- plotly::renderPlotly(contrib_features_plot())
@@ -1047,6 +1060,37 @@ shinyServer(function(input, output, session) {
       }
     }
   })
+  
+  
+  output$correlation_to_pca_UI <- renderUI({
+      req(scExp())
+      if("PCA" %in% SingleCellExperiment::reducedDimNames(scExp())){
+        n = ncol(SingleCellExperiment::reducedDim(scExp(), "PCA"))
+        choices_group_by = c("None",intersect(colnames(SingleCellExperiment::colData(scExp())), c("sample_id", "batch_id")))
+              shinydashboard::box(title=tagList(shiny::icon("fas fa-chart-bar"), " Correlation of library size to PCA"),
+                                  collapsible = TRUE, collapsed = TRUE, width = NULL, status="success", solidHeader=TRUE,
+                                  column(12, align="left",
+                                         selectInput("color_by_pca_cor", "Group by", choices = choices_group_by),
+                                         selectInput("n_PCA", label =  "Top Components",
+                                                     choices = 1:n, multiple = FALSE, selected = 10),
+                                         plotly::plotlyOutput("correlation_to_PCA_plot") %>% 
+                                             shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75)
+                                  ))
+
+      }
+  })
+  
+  correlation_to_PCA_plot <- reactive({
+      req(scExp(), input$color_by_pca_cor, input$n_PCA)
+          if(input$color_by_pca_cor == "None") color_by_pca_cor = NULL else color_by_pca_cor = input$color_by_pca_cor
+          p = plot_correlation_PCA_scExp(scExp(),correlation_var = "total_counts", color_by = color_by_pca_cor, topPC = as.numeric(input$n_PCA) )
+          p
+
+  })
+  
+  output$correlation_to_PCA_plot <- plotly::renderPlotly(correlation_to_PCA_plot())
+  
+  
   
   output$tsne_box <- renderUI({
     req(scExp(), annotCol(), input$color_by)

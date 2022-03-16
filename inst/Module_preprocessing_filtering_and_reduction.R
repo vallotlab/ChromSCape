@@ -10,7 +10,8 @@ Module_preprocessing_filtering_and_reduction <- function(
     min_cov_cell, n_top_features, quant_removal,
     datamatrix, annot_raw,
     data_folder, annotation_id,
-    norm_type, exclude_regions,
+    norm_type, remove_PC,
+    exclude_regions,
     doBatchCorr, batch_sels,
     run_tsne, subsample_n)
     {
@@ -103,7 +104,6 @@ Module_preprocessing_filtering_and_reduction <- function(
             "Performing Dimensionality Reduction..."))
         if(run_tsne()) methods = c("PCA","TSNE","UMAP") else 
             methods = c("PCA","UMAP")
-        remove_PC1 = ifelse(norm_type() == "TFIDF", TRUE, FALSE)
         print(system.time({
             scExp = reduce_dims_scExp(
                 scExp = scExp,
@@ -111,7 +111,7 @@ Module_preprocessing_filtering_and_reduction <- function(
                 dimension_reductions = methods,
                 batch_correction = doBatchCorr(),
                 batch_list = batch_sels(),
-                remove_PC1 = remove_PC1,
+                remove_PC = remove_PC(),
                 verbose = FALSE)
         }))
         gc()

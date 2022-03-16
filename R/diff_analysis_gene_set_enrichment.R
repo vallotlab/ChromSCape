@@ -533,6 +533,7 @@ differential_activation <- function(scExp, group_by = c("cell_cluster","sample_i
     
     q.values = p.adjust(pvalues, method = "BH")
     logFCs = log2(group_corrected_activation/reference_activation)
+    if(any(is.nan(logFCs))) logFCs[which(is.nan(logFCs))] = 0
     if(any(logFCs == Inf)) logFCs[which(logFCs == Inf)] = max(
       logFCs[which(!is.infinite(logFCs))])
     if(any(logFCs == -Inf)) logFCs[which(logFCs == -Inf)] = min(
