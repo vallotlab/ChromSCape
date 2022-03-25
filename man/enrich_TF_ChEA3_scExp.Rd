@@ -12,7 +12,8 @@ enrich_TF_ChEA3_scExp(
   min.percent = 0.01,
   peak_distance = 1000,
   use_peaks = FALSE,
-  progress = NULL
+  progress = NULL,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -36,6 +37,8 @@ associated, in bp. (1000)}
 (FALSE)}
 
 \item{progress}{A shiny Progress instance to display progress bar.}
+
+\item{verbose}{A logical to print message or not. (TRUE)}
 }
 \value{
 Returns a SingleCellExperiment object containing list of enriched

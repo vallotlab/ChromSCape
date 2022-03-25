@@ -425,7 +425,7 @@ plot_correlation_PCA_scExp <- function(
         df = as.data.frame(correlation)
         df$Component = forcats::as_factor(rownames(df))
         
-        p = head(df, topPC) %>% ggplot(aes(x = .data[["Component"]] , y = .data[["correlation"]])) + 
+        p = utils::head(df, topPC) %>% ggplot(aes(x = .data[["Component"]] , y = .data[["correlation"]])) + 
             geom_bar(color = "black", fill = "steelblue", stat = "identity") +
             xlab("") + ylab(paste0("Pearson's correlation with '", correlation_var,"'")) +
             theme(panel.grid.major = element_blank(), panel.grid.minor = 

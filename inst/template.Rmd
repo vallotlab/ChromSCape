@@ -116,13 +116,13 @@ Column {data-width=400}
 ### Most contributing features
 
 ```{r}
-if(any(c("filter") %in% run)) plot_most_contributing_features(scExp)
+if(any(c("filter") %in% run)) plot_most_contributing_features(scExp, component = colnames(SingleCellExperiment::reducedDim(scExp,"PCA"))[1])
 ```
 
 ### Most contributing chromosomes
 
 ```{r}
-if(any(c("filter") %in% run)) plot_pie_most_contributing_chr(scExp)
+if(any(c("filter") %in% run)) plot_pie_most_contributing_chr(scExp, component = colnames(SingleCellExperiment::reducedDim(scExp,"PCA"))[1])
 ```
 
 Correlation Clustering
@@ -208,8 +208,8 @@ Column
 ### Number of differential regions
 ```{r}
 if(any(c("DA") %in% run)){
-  if("diff" %in% names(scExp_cf@metadata)){
-    flexdashboard::valueBox(value = sum(scExp_cf@metadata$diff$summary["differential",]), caption = "Number of differential regons", icon ="fa-cube")
+  if( any(grepl("qval",colnames(SingleCellExperiment::rowData(scExp_cf)))) ){
+    flexdashboard::valueBox(value = sum(summary_DA(scExp_cf)["differential",]), caption = "Number of differential regons", icon ="fa-cube")
   }
 }
 ```
@@ -217,8 +217,9 @@ if(any(c("DA") %in% run)){
 ### Number unique gene sets
 ```{r}
 if(any(c("DA") %in% run)){
-  if("diff" %in% names(scExp_cf@metadata) & "enr" %in% names(scExp_cf@metadata)){
-    all_paths <- unique(as.character(unlist(sapply(1:length(scExp_cf@metadata$diff$groups), 
+  if(any(grepl("qval",colnames(SingleCellExperiment::rowData(scExp_cf)))) & "enr" %in% names(scExp_cf@metadata)){
+      groups = gsub(".*\\.","", grep("qval",colnames(SingleCellExperiment::rowData(scExp_cf)), value = TRUE))
+    all_paths <- unique(as.character(unlist(sapply(1:length(groups), 
                                                    function(i) {
                                                      all = c()
                                                      if(length(scExp_cf@metadata$enr$Overexpressed)>=i) 
@@ -251,52 +252,46 @@ Column
 
 ```{r, echo = FALSE, eval = TRUE}
 if(any(c("DA") %in% run)){
-  if("diff" %in% names(scExp_cf@metadata) & "enr" %in% names(scExp_cf@metadata)){
+  if(any(grepl("qval",colnames(SingleCellExperiment::rowData(scExp_cf)))) & "enr" %in% names(scExp_cf@metadata)){
     diff_list = list()
     if(!is.null(scExp_cf)){
-      if(!is.null(scExp_cf@metadata$diff)){
+        groups = gsub(".*\\.","", grep("qval",colnames(SingleCellExperiment::rowData(scExp_cf)), value = TRUE))
         
         
-        for(i in seq_along(scExp_cf@metadata$diff$groups)){
+        for(i in groups){
           
-          diff = scExp_cf@metadata$diff$res[,-grep("Rank|pval|ID|Count",colnames(scExp_cf@metadata$diff$res))]
+          diff = as.data.frame(
+              SummarizedExperiment::rowData(scExp_cf)[,-grep("Rank|pval|ID|Count",colnames(SummarizedExperiment::rowData(scExp_cf)))]
+          )
           if(nrow(diff)>0){
-            if(!is.null(SummarizedExperiment::rowRanges(scExp_cf)$Gene)){
-              diff = cbind(SummarizedExperiment::rowRanges(scExp_cf)$distanceToTSS, diff)
-              diff = cbind(SummarizedExperiment::rowRanges(scExp_cf)$Gene, diff)
-              colnames(diff)[1:2] = c("Gene","distanceToTSS")
-            }
-            rownames(diff) <- NULL
-            diff = diff[,c("Gene","distanceToTSS", "chr","start","end",
-                           colnames(diff)[grep(scExp_cf@metadata$diff$groups[i],colnames(diff))] )]
-            diff = diff[which(!is.infinite(diff[,grep("cdiff",colnames(diff))])),]
-            diff <- diff[order(diff[,paste0("qval.",scExp_cf@metadata$diff$groups[i])]),]
-            diff[,paste0("qval.",scExp_cf@metadata$diff$groups[i])] = round(diff[,paste0("qval.",scExp_cf@metadata$diff$groups[i])],8)
-            diff[,paste0("cdiff.",scExp_cf@metadata$diff$groups[i])] = round(diff[,paste0("cdiff.",scExp_cf@metadata$diff$groups[i])],4)
+              
+            diff = diff[,c("Gene","distanceToTSS", colnames(diff)[grep(i,colnames(diff))] )]
+            diff = diff[which(!is.infinite(diff[,grep("logFC.",colnames(diff))])),]
+            diff <- diff[order(diff[,paste0("qval.",i)]),]
+            diff[,paste0("qval.",i)] = round(diff[,paste0("qval.",i)],8)
+            diff[,paste0("logFC.",i)] = round(diff[,paste0("logFC.",i)],4)
             diff$Gene = substr(diff$Gene,1,20)
             diff_list[[i]] = diff
-            
           }
           # collapse together all lines with newline separator
         }
-        
-      }
+
     }
     
-    out_volcano <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
+    out_volcano <- lapply(seq_along(groups), function(i) {
       
-      a1 <- knitr::knit_expand(text = sprintf("### %s\n", scExp_cf@metadata$diff$groups[i])) 
+      a1 <- knitr::knit_expand(text = sprintf("### %s\n", groups[i])) 
       a2 <- knitr::knit_expand(text = "\n```{r fig.width=5, fig.height=5}") # start r chunk
-      a3 <- knitr::knit_expand(text = sprintf("\nplot_differential_volcano_scExp(scExp_cf, cell_cluster = scExp_cf@metadata$diff$groups[%d])", i)) 
+      a3 <- knitr::knit_expand(text = sprintf("\nplot_differential_volcano_scExp(scExp_cf, group = groups[%d])", i)) 
       a4 <- knitr::knit_expand(text = "\n```\n") 
       
       paste(a1, a2, a3, a4, collapse = '\n') # collapse together all lines with newline separator
       
     })
     
-    out_table <- lapply(seq_along(scExp_cf@metadata$diff$groups), function(i) {
+    out_table <- lapply(seq_along(groups), function(i) {
       
-      a1 <- knitr::knit_expand(text = sprintf("### %s\n", scExp_cf@metadata$diff$groups[i])) 
+      a1 <- knitr::knit_expand(text = sprintf("### %s\n", groups[i])) 
       a2 <- knitr::knit_expand(text = "\n```{r}") # start r chunk
       a3 <- knitr::knit_expand(text = sprintf("\nDT::datatable(diff_list[[%d]][1:min(20,nrow(diff_list[[%d]])),], options = list(pageLength = 5, bPaginate = FALSE,  dom = 'tip'), class = 'display', rownames = FALSE)", i,i)) 
       a4 <- knitr::knit_expand(text = "\n```\n") 
@@ -305,7 +300,7 @@ if(any(c("DA") %in% run)){
     })
     
     out = list()
-    for(i in seq_along(scExp_cf@metadata$diff$groups)){
+    for(i in seq_along(groups)){
       out = c(out, out_volcano[[i]], out_table[[i]])  
     }
   }
@@ -408,50 +403,55 @@ Coverage
     
     Column
 -----------------------------------------------------------------------
-    
-    ```{r include=FALSE}
-if(any(c("coverage") %in% run)){    
-  plot_list = coverage_chr = coverage_start = coverage_end = list()
-  coverage_color = setNames(unique(scExp_cf$cell_cluster_color), unique(scExp_cf$cell_cluster))
-  
-  for(i in seq_along(genes_to_plot)){
-    Gene = genes_to_plot[i]
-    eval(parse(text = paste0("data(", ref_genome, ".GeneTSS)")))
-    gene_annot = eval(parse(text = paste0(ref_genome, ".GeneTSS")))
-    if(grepl(":", Gene) ){
-      coverage_chr[[i]] = gsub(":.*","",Gene)
-      coverage_start[[i]] = as.numeric(gsub(".*:","",gsub("-.*","",Gene)))
-      coverage_end[[i]] = as.numeric(gsub(".*-","",Gene))
-    } else{
-      if(Gene %in% gene_annot$gene){
-        coverage_chr[[i]] = gene_annot$chr[which(gene_annot$gene == Gene)]
-        coverage_start[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] - 25000
-        coverage_end[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] + 25000
-      }
+```{r include=FALSE}
+if(any(c("coverage") %in% run)){
+    if(length(coverages)>0){
+        features = SummarizedExperiment::rowData(scExp_cf)
+        if(any(genes_to_plot %in% features$Gene)){
+            if(!is.null()){
+                plot_list = coverage_chr = coverage_start = coverage_end = list()
+                coverage_color = setNames(unique(scExp_cf$cell_cluster_color), unique(scExp_cf$cell_cluster))
+                
+                for(i in seq_along(genes_to_plot)){
+                    Gene = genes_to_plot[i]
+                    eval(parse(text = paste0("data(", ref_genome, ".GeneTSS)")))
+                    gene_annot = eval(parse(text = paste0(ref_genome, ".GeneTSS")))
+                    if(grepl(":", Gene) ){
+                        coverage_chr[[i]] = gsub(":.*","",Gene)
+                        coverage_start[[i]] = as.numeric(gsub(".*:","",gsub("-.*","",Gene)))
+                        coverage_end[[i]] = as.numeric(gsub(".*-","",Gene))
+                    } else{
+                        if(Gene %in% gene_annot$gene){
+                            coverage_chr[[i]] = gene_annot$chr[which(gene_annot$gene == Gene)]
+                            coverage_start[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] - 25000
+                            coverage_end[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] + 25000
+                        }
+                    }
+                    if(length(coverage_chr)>=i && !is.null(coverage_chr[[i]])){
+                        plot_coverage_BigWig(coverages, coverage_color, chrom = coverage_chr[[i]], start = coverage_start[[i]], end = coverage_end[[i]], ref = ref_genome)
+                        plot_list[[i]] <- grDevices::recordPlot()
+                        plot.new() ## clean up device
+                    }
+                }
+                
+                out_coverage <- lapply(seq_along(genes_to_plot), function(i) {
+                    
+                    if(length(coverage_chr)>=i && !is.null(coverage_chr[[i]])){
+                        a1 <- knitr::knit_expand(text = sprintf("### Coverage - %s \n", genes_to_plot[i]))
+                        a2 <- knitr::knit_expand(text = "\n```{r fig.width=15, echo = FALSE, eval = TRUE}") # start r chunk
+                        a3 <- knitr::knit_expand(text = sprintf("\nprint(plot_list[[%d]])", i))
+                        a4 <- knitr::knit_expand(text = "\n```\n")
+                        paste(a1, a2, a3, a4, collapse = '\n')
+                    }
+                })
+            }
+        }
     }
-    if(length(coverage_chr)>=i && !is.null(coverage_chr[[i]])){
-      plot_coverage_BigWig(coverages, coverage_color, chrom = coverage_chr[[i]], start = coverage_start[[i]], end = coverage_end[[i]], ref = ref_genome)
-      plot_list[[i]] <- grDevices::recordPlot()
-      plot.new() ## clean up device
-    }
-  }
-  
-  
-  out_coverage <- lapply(seq_along(genes_to_plot), function(i) {
-    
-    if(length(coverage_chr)>=i && !is.null(coverage_chr[[i]])){
-      a1 <- knitr::knit_expand(text = sprintf("### Coverage - %s \n", genes_to_plot[i]))
-      a2 <- knitr::knit_expand(text = "\n```{r fig.width=15, echo = FALSE, eval = TRUE}") # start r chunk
-      a3 <- knitr::knit_expand(text = sprintf("\nprint(plot_list[[%d]])", i))
-      a4 <- knitr::knit_expand(text = "\n```\n")
-      paste(a1, a2, a3, a4, collapse = '\n')
-    }
-  })
 }
 
 ```
 
-`r if(any(c("coverage") %in% run)) paste(knitr::knit(text = paste(out_coverage, collapse = '\n')))`
+`r if(any(c("coverage") %in% run) & length(coverages)>0) paste(knitr::knit(text = paste(out_coverage, collapse = '\n')))`
 
 
 Copy Number

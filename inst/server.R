@@ -3330,6 +3330,16 @@ shinyServer(function(input, output, session) {
     showNotification("Data set successfully deleted.", duration=5, closeButton=TRUE, type="warning")
   })
   
+  observeEvent(input$generate_report, {  # delete selected dataset
+      withProgress(message='Creating HTML report', value = 0, {
+          incProgress(amount=0.5, detail=paste("..."))
+          print(file.path(init$data_folder, "ChromSCape_analyses", analysis_name()))
+          generate_report(ChromSCape_directory = file.path(init$data_folder, "ChromSCape_analyses", analysis_name()))
+          incProgress(amount=0.5, detail=paste("... finished"))
+      })
+      showNotification("Data set successfully deleted.", duration=5, closeButton=TRUE, type="warning")
+  })
+  
   observeEvent(input$close_and_save, {
     unlink(file.path("www", "images", "*"))
     unlink(file.path(".", "*.csv"))

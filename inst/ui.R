@@ -507,13 +507,15 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                           # extendShinyjs(text = jscode, functions = c("closeWindow")),
                                           column(width=6,
                                                  shinydashboard::box(title='Close App & Save Analysis', solidHeader=TRUE, status='danger', width=NULL,
-                                                     column(12, actionButton("close_and_save", "Close App & Save Analysis")))
+                                                     column(12, actionButton("generate_report", "Generate HTML Report")), br(), br(),
+                                                     column(12, actionButton("close_and_save", "Close App & Save Analysis"))
+                                                     )
                                           ),
                                           column(width=6,
                                                  shinydashboard::box(title="Delete analysis", width = NULL, status="success", solidHeader=TRUE,
                                                                      column(9, align="left", uiOutput("selected_delete_analysis")),
                                                                      column(3, align="left", br(), actionButton("delete_analysis", "Delete")),
-                                                                     column(12, align="left", textOutput("analysis_deletion_info"))))
+                                                                     column(12, align="left", textOutput("analysis_deletion_info")))),
                                 )
                         )
                         

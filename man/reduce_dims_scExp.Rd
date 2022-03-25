@@ -10,7 +10,7 @@ reduce_dims_scExp(
   n = 50,
   batch_correction = FALSE,
   batch_list = NULL,
-  remove_PC1 = FALSE,
+  remove_PC = NULL,
   verbose = TRUE
 )
 }
@@ -27,8 +27,10 @@ reduce_dims_scExp(
 \item{batch_list}{List of characters. Names are batch names, characters are
 sample names.}
 
-\item{remove_PC1}{Remove PC1 before UMAP & T-SNE, as probably correlated to
-library size ? Recommended when using 'TFIDF' normalization method. (FALSE)}
+\item{remove_PC}{A vector of string indicating which principal components to
+remove before downstream analysis as probably correlated to
+library size. Should be under the form : 'Component_1', 'Component_2', ...
+Recommended when using 'TFIDF' normalization method. (NULL)}
 
 \item{verbose}{Print messages ?(TRUE)}
 }

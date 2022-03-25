@@ -961,6 +961,7 @@ table_enriched_genes_scExp <- function(
 #' @param use_peaks Use peak calling method (must be calculated beforehand).
 #'   (FALSE)
 #' @param progress A shiny Progress instance to display progress bar. 
+#' @param verbose A logical to print message or not. (TRUE)
 #' 
 #' @return Returns a SingleCellExperiment object containing list of enriched
 #'   Gene Sets for each cluster, either in depleted features, enriched features
@@ -985,7 +986,7 @@ table_enriched_genes_scExp <- function(
 enrich_TF_ChEA3_scExp = function(
     scExp, ref = "hg38", qval.th = 0.01, logFC.th = 1,
     min.percent = 0.01, peak_distance = 1000, use_peaks = FALSE,
-    progress=NULL){
+    progress=NULL, verbose = TRUE){
   stopifnot(is(scExp, "SingleCellExperiment"), is.character(ref),
             is.numeric(peak_distance), is.numeric(qval.th),
             is.numeric(logFC.th), is.numeric(min.percent))
@@ -1019,12 +1020,14 @@ enrich_TF_ChEA3_scExp = function(
   annotFeat_long = as.data.frame(tidyr::separate_rows(
     as.data.frame(SummarizedExperiment::rowRanges(scExp)), 
     .data$Gene, sep = ", "))
-  df = results = data.frame("Rank" = 0,
-                            "TF" = 0,
-                            "Score" = 0,
-                            "Library" = NA,
-                            "Overlapping_Genes" = 0,
-                            "nTargets" = 0)
+  df = data.frame("Rank" = 0,
+                  "TF" = 0,
+                  "Score" = 0,
+                  "Library" = NA,
+                  "Overlapping_Genes" = 0,
+                  "nTargets" = 0,
+                  "totalTargetsTF" = 0,
+                  'totalGenesInSet' = 0)
   res <- annotFeat_long
   groups <- gsub(".*\\.","", grep("qval",colnames(res), value = TRUE))
   TF_enrichment = list()
@@ -1034,6 +1037,8 @@ enrich_TF_ChEA3_scExp = function(
     if (!is.null(progress)) progress$inc(
       detail = paste0("TF enrichment for ",gp, "..."),
       amount =(0.7 / length(groups)))
+    
+    if(verbose) cat(paste0("TF enrichment for ",gp, "...\n"))
     qval.col <- paste("qval", gp, sep = ".")
     logFC.col <- paste("logFC", gp, sep = ".")
     group_activation.col <- paste("group_activation", gp, sep = ".")
@@ -1121,6 +1126,15 @@ enrich_TF_ChEA3_genes = function(genes){
     return()
   }
   
+    return_df = data.frame("Rank" = 0,
+                          "TF" = 0,
+                          "Score" = 0,
+                          "Library" = NA,
+                          "Overlapping_Genes" = 0,
+                          "nTargets" = 0,
+                          "totalTargetsTF" = 0,
+                          'totalGenesInSet' = 0)
+    
   if(length(genes) >= 10){
   utils::data("CheA3_TF_nTargets")
   
@@ -1135,23 +1149,21 @@ enrich_TF_ChEA3_genes = function(genes){
   json =  httr::content(response, "text")
   
   #results as list of R dataframes
-  results = jsonlite::fromJSON(json)
-  
-  results = results$`Integrated--meanRank`
-  results$nTargets = sapply(results$Overlapping_Genes,
-                            function(x) length(unlist(strsplit(x, split = ","))))
-  results$Score = as.numeric(results$Score)
-  results = results[,-1]
-  results$totalTargetsTF = CheA3_TF_nTargets$nTargets_TF[
-      match(results$TF,CheA3_TF_nTargets$TF)]
-  results$totalGenesInSet = length(genes)
+  results =  tryCatch({  jsonlite::fromJSON(json)},
+                      error = function(e) return_df) 
+  if(nrow(results) > 1){
+      results = results$`Integrated--meanRank`
+      results$nTargets = sapply(results$Overlapping_Genes,
+                                function(x) length(unlist(strsplit(x, split = ","))))
+      results$Score = as.numeric(results$Score)
+      results = results[,-1]
+      results$totalTargetsTF = CheA3_TF_nTargets$nTargets_TF[
+          match(results$TF,CheA3_TF_nTargets$TF)]
+      results$totalGenesInSet = length(genes)
+  }
+
   } else {
-    results = data.frame("Rank" = 0,
-                         "TF" = 0,
-                         "Score" = 0,
-                         "Library" = NA,
-                         "Overlapping_Genes" = 0,
-                         "nTargets" = 0)
+    results = return_df
     
   }
   return(results)
