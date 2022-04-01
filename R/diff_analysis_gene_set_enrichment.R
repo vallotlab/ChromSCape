@@ -1151,7 +1151,7 @@ enrich_TF_ChEA3_genes = function(genes){
   #results as list of R dataframes
   results =  tryCatch({  jsonlite::fromJSON(json)},
                       error = function(e) return_df) 
-  if(nrow(results) > 1){
+  if(length(results) > 1){
       results = results$`Integrated--meanRank`
       results$nTargets = sapply(results$Overlapping_Genes,
                                 function(x) length(unlist(strsplit(x, split = ","))))

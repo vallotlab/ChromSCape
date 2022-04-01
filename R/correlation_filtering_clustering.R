@@ -692,6 +692,8 @@ num_cell_in_cluster_scExp <- function(scExp){
     table_raw <- as.data.frame.matrix(t(table(as.data.frame(
         SingleCellExperiment::colData(scExp))[, c("cell_cluster", "sample_id")
                                             ])))
+    
+    table_raw = table_raw[,order(as.numeric(gsub("C","",colnames(table_raw)))) ]
     ord =  as.character(unique(SingleCellExperiment::colData(
         scExp)[, "sample_id"]))
     table_raw = table_raw[match(ord, rownames(table_raw)), , drop = FALSE]

@@ -233,16 +233,16 @@ shinyServer(function(input, output, session) {
       <br>
       Example of folder structure (for scBED, but applies in a similar manner for Fragment File & scBAM) : <br>
       <u>scChIPseq</u><br>
-          ├── <b>Sample_1</b><br>
-          │   ├── cell_1.bed<br>
-          │   ├── cell_2.bed<br>
-          │   ├── cell_3.bed<br>
-          │   └── cell_4.bed<br>
-          ├── <b>Sample_2</b><br>
-          │   ├── cell_1.bed<br>
-          │   ├── cell_2.bed<br>
-          │   ├── cell_3.bed<br>
-          │   └── cell_4.bed<br>
+          ????????? <b>Sample_1</b><br>
+          ???   ????????? cell_1.bed<br>
+          ???   ????????? cell_2.bed<br>
+          ???   ????????? cell_3.bed<br>
+          ???   ????????? cell_4.bed<br>
+          ????????? <b>Sample_2</b><br>
+          ???   ????????? cell_1.bed<br>
+          ???   ????????? cell_2.bed<br>
+          ???   ????????? cell_3.bed<br>
+          ???   ????????? cell_4.bed<br>
 
       <br>
       You're almost there !
@@ -728,9 +728,10 @@ shinyServer(function(input, output, session) {
   
   output$min_coverage_cell_ui <- renderUI({
     req(input$feature_select)
+    req(init$datamatrix)
     if(input$feature_select == "main"){
       sliderInput("min_coverage_cell", shiny::HTML("<p><span style='color: green'>Select minimum number of reads per cell :</span></p>"),
-                  min=50, max=5000, value=1600, step=50) %>%
+                  min=min(ncol(init$datamatrix),50), max=ncol(init$datamatrix), value=min(200,ncol(init$datamatrix)), step=50) %>%
         shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                             content = "filtering_parameters")
     }
@@ -740,11 +741,18 @@ shinyServer(function(input, output, session) {
     req(input$feature_select)
     if(input$feature_select == "main"){
       sliderInput("quant_removal", shiny::HTML("<p><span style='color: red'>Select the upper percentile of cells to remove (potential doublets):</span></p>"),
-                  min=90, max=100, value=95, step=0.01) 
+                  min=90, max=100, value=99, step=0.01) 
     } else{
       column(12, align = "middle", br(),h4("Filtering features only, keeping same cells as in 'main' features."),br())
     }
+  }) 
+  
+  output$n_feature_UI <- renderUI({
+    req(init$datamatrix)
+    sliderInput("n_top_features", shiny::HTML("<p><span style='color: #A020F0'>Select number of top covered features to keep:</span></p>"), 
+                min=min(500,nrow(init$datamatrix)), max=nrow(init$datamatrix), value=nrow(init$datamatrix), step=100)
   })
+  
   output$exclude_file <- renderUI({ if(input$exclude_regions){
     fileInput("exclude_file", ".bed / .bed.gz / .txt file containing the feature to exclude from data set:", multiple = FALSE, accept = c(".bed",".txt", ".bed.gz"))
   }})
@@ -1151,17 +1159,23 @@ shinyServer(function(input, output, session) {
                                  max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
                                  downsample = input$options.dotplot_downsampling,
                                  min_quantile = input$options.dotplot_min_quantile,
-                                 max_quantile = input$options.dotplot_max_quantile)
+                                 max_quantile = input$options.dotplot_max_quantile,
+                                 annotate_clusters = input$label_cluster_umap_popup,)
       p
     }
   })
   output$popup_UI <- renderUI({
     req(annotCol())
-    selectInput("color_by_popup", "Color by", choices = annotCol())})
-  
+    
+    selectInput("color_by_popup", "Color by", choices = annotCol())
+    })
+
   output$popup_UI_cf <- renderUI({
     req(annotCol_cf())
-    selectInput("color_by_popup_cf", "Color by", choices = annotCol_cf())})
+    column(12,selectInput("color_by_popup_cf", "Color by", choices = annotCol_cf()),
+           checkboxInput("label_cluster_umap_popup", "Label cluster", TRUE)
+    )
+           })
   
   observeEvent(input$popupUMAP, {
     req(scExp(), annotCol())
@@ -1854,7 +1868,8 @@ shinyServer(function(input, output, session) {
                                  max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
                                  downsample = input$options.dotplot_downsampling,
                                  min_quantile = input$options.dotplot_min_quantile,
-                                 max_quantile = input$options.dotplot_max_quantile)
+                                 max_quantile = input$options.dotplot_max_quantile,
+                                 annotate_clusters = input$label_cluster_umap)
       p
     }
   })
@@ -1879,6 +1894,7 @@ shinyServer(function(input, output, session) {
                                    selectInput("color_by_cf", "Color by",
                                                selected = annotCol_cf()[max(grep("cluster",annotCol_cf())[1],1)],
                                                choices = annotCol_cf())),
+                            column(4, align = "left", checkboxInput("label_cluster_umap", "Label cluster", TRUE)),
                             column(3, align = "left", actionButton(inputId = "save_plots_COR",
                                                                    label = "Save HQ plots",
                                                                    icon = icon("fas fa-image"))),
@@ -2208,7 +2224,7 @@ shinyServer(function(input, output, session) {
   # 5. Peak calling [optional]
   ###############################################################
 
-  output$peak_calling_info <- renderText({"This module is optional, but recommended in order to obtain the most meaningful results for pathway enrichment analysis. Peaks will be called from the BAM files of the samples selected in your project, using MACS2 [only works on unix systems] so that counts can be assigned more specifically to genes TSS . If you have MACS2 installed but ChromSCape can’t find these softwares, try relaunching R from the terminal and start ChromSCape again."})
+  output$peak_calling_info <- renderText({"This module is optional, but recommended in order to obtain the most meaningful results for pathway enrichment analysis. Peaks will be called from the BAM files of the samples selected in your project, using MACS2 [only works on unix systems] so that counts can be assigned more specifically to genes TSS . If you have MACS2 installed but ChromSCape can???t find these softwares, try relaunching R from the terminal and start ChromSCape again."})
   
   can_run = reactiveVal({FALSE})
   
@@ -2722,7 +2738,7 @@ shinyServer(function(input, output, session) {
     })
   
   output$da_table <- DT::renderDataTable({
-    req(input$gpsamp, scExp_cf())
+    req(input$gpsamp, scExp_cf(), input$logFC.th, input$qval.th, input$min.percent)
     if(!is.null(scExp_cf())){
       if(!is.null(scExp_cf()@metadata$DA_parameters)){
         rowD = as.data.frame(SingleCellExperiment::rowData(scExp_cf()))
@@ -2740,6 +2756,19 @@ shinyServer(function(input, output, session) {
         diff[,paste0("logFC.",input$gpsamp)] = round(diff[,paste0("logFC.",input$gpsamp)],3)
         diff[,paste0("group_activation.",input$gpsamp)] = round(diff[,paste0("group_activation.",input$gpsamp)],3)
         diff[,paste0("reference_activation.",input$gpsamp)] = round(diff[,paste0("reference_activation.",input$gpsamp)],3)
+        diff_up = diff %>% 
+          filter(
+            .data[[paste0("logFC.",input$gpsamp)]] >  input$logFC.th &
+            .data[[paste0("qval.",input$gpsamp)]]  <  input$qval.th &
+            .data[[paste0("group_activation.",input$gpsamp)]] > input$min.percent
+          )
+        diff_down = diff %>% 
+          filter(
+            .data[[paste0("logFC.",input$gpsamp)]] <  -input$logFC.th &
+              .data[[paste0("qval.",input$gpsamp)]]  <  input$qval.th &
+              .data[[paste0("reference_activation.",input$gpsamp)]] > input$min.percent
+          )
+        diff = rbind(diff_down, diff_up)
         DT::datatable(diff, options = list(dom='tpi'), class = "display",
                       rownames = FALSE)
       }
@@ -2747,16 +2776,13 @@ shinyServer(function(input, output, session) {
     }
   })
   
-  
-  
-  
   output$download_da_table <- downloadHandler(
     filename = function(){ paste0("diffAnalysis_data_", selected_filtered_dataset(),
                                   "_", length(unique(scExp_cf()$cell_cluster)), "_",
                                   input$qval.th, "_", input$logFC.th, "_",
-                                  input$de_type, ".csv")},
+                                  input$de_type, ".tsv")},
     content = function(file){
-      write.table(SingleCellExperiment::rowData(scExp_cf()), file, row.names = FALSE, quote = FALSE, sep=",")
+      write.table(SingleCellExperiment::rowData(scExp_cf()), file, row.names = FALSE, quote = FALSE, sep="\t")
     })
   
   output$da_visu_box <- renderUI({
@@ -3138,7 +3164,8 @@ shinyServer(function(input, output, session) {
                                   max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
                                   downsample = input$options.dotplot_downsampling,
                                   min_quantile = input$options.dotplot_min_quantile,
-                                  max_quantile = input$options.dotplot_max_quantile
+                                  max_quantile = input$options.dotplot_max_quantile,
+                                  annotate_clusters = input$label_cluster_umap_GSA
                                   )
       p
   })
