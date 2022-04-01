@@ -1420,7 +1420,6 @@ shinyServer(function(input, output, session) {
           print(input$k_SNN)
       scExp_cf(find_clusters_louvain_scExp(scExp_cf(),
                                            k = input$k_SNN, BPPARAM = CS_options.BPPARAM()))
-      odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", length(unique(scExp_cf()$cell_cluster))))
       incProgress(amount=0.6, detail=paste("Finished graph with k=", input$k_SNN) )
       shiny::showNotification(paste0("Found ", length(unique(scExp_cf()$cell_cluster))," clusters with Louvain clustering."),
                               duration = 10, closeButton = TRUE, type="message")
@@ -1429,12 +1428,12 @@ shinyServer(function(input, output, session) {
       if(input$nclust != ""){
         scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust),
                                       consensus = cluster_type()))
-        odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", length(unique(scExp_cf()$cell_cluster))))
       } else{
         return(NULL)
       }
     }
-
+    odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", length(unique(scExp_cf()$cell_cluster))))
+    
     unlocked$list$cor_clust_plot=TRUE;
     unlocked$list$affectation=TRUE;
     gc()
@@ -1465,6 +1464,8 @@ shinyServer(function(input, output, session) {
       } 
     }
     
+    cat("New number of clusters:", set_numclust(),"\n")
+    cat("New number of clusters:", length(unique(scExp_cf()$cell_cluster)),"\n")
   })
   
   set_numclust <- reactive({
@@ -2404,7 +2405,7 @@ shinyServer(function(input, output, session) {
     l = l[grep(paste0("orrected_", numclust),l)]
   }
   
-  observeEvent(c(set_numclust(), input$qval.th, input$tabs, input$logFC.th, input$de_type, selected_filtered_dataset()), priority = 10,{
+  observeEvent(c(set_numclust(), input$qval.th, input$tabs, input$logFC.th, input$de_type, selected_filtered_dataset()), {
     if(input$tabs == "diff_analysis"){
       print("Set num clust:")
       print(set_numclust())
@@ -2444,7 +2445,10 @@ shinyServer(function(input, output, session) {
   
   observeEvent(input$selected_DA_GSA_dataset, { # load reduced data set to work with on next pages
     req(input$selected_DA_GSA_dataset)
-   
+    
+    cat("Loading ", input$selected_DA_GSA_dataset)
+    cat("num clust ", set_numclust())
+    
     file_index <- match(c(input$selected_DA_GSA_dataset), DA_GSA_datasets())
     filename_sel <- file.path(init$data_folder, "ChromSCape_analyses",
                               analysis_name(),"Diff_Analysis_Gene_Sets",
@@ -2500,31 +2504,35 @@ shinyServer(function(input, output, session) {
   #   paste("Selected top", sel_cells, "cells out of", total_cells)
   # })
   # 
-  observeEvent(c(input$tabs, selected_filtered_dataset()), priority = 10,{
-    if(input$tabs == "diff_analysis"){
-      req(input$selected_DA_GSA_dataset)
-      if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$logFC.th) &
-         length(input$selected_DA_GSA_dataset) > 0){
-        
-        filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
-                              paste0(input$selected_DA_GSA_dataset, ".qs"))
-        if(file.exists(filename)){
-          data = qs::qread(filename, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
-          
-          if(input$feature_select %in% getExperimentNames(data$scExp_cf))
-            scExp_cf. = swapAltExp_sameColData(data$scExp_cf,input$feature_select) else
-              scExp_cf. = data$scExp_cf
-          
-          scExp_cf(NULL)
-          scExp_cf(scExp_cf.)
-          rm(data)
-          gc()
-        } else {
-          NULL
-        }
-      }
-    }
-    })
+  # observeEvent(c(input$tabs, selected_filtered_dataset()),{
+  #   if(input$tabs == "diff_analysis"){
+  #     req(input$selected_DA_GSA_dataset)
+  #     cat("WTF ", input$selected_DA_GSA_dataset, "\n")
+  #     cat("WTF ", set_numclust(), "\n")
+  #     if(!is.null(selected_filtered_dataset()) && !is.null(input$qval.th) && !is.null(input$logFC.th) &
+  #        length(input$selected_DA_GSA_dataset) > 0){
+  #       
+  #       filename <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "Diff_Analysis_Gene_Sets",
+  #                             paste0(input$selected_DA_GSA_dataset, ".qs"))
+  #       cat(filename,"\n")
+  #       if(file.exists(filename)){
+  #         data = qs::qread(filename, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
+  #         
+  #         if(input$feature_select %in% getExperimentNames(data$scExp_cf))
+  #           scExp_cf. = swapAltExp_sameColData(data$scExp_cf,input$feature_select) else
+  #             scExp_cf. = data$scExp_cf
+  #         
+  #         scExp_cf(NULL)
+  #         scExp_cf(scExp_cf.)
+  #         rm(data)
+  #         gc()
+  #       } else {
+  #         NULL
+  #       }
+  #     }
+  #   }
+  #   })
+  # 
   output$custom_da_ref <- renderUI({
     req(input$de_type)
     if(input$de_type == "custom"){
