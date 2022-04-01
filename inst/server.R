@@ -1334,15 +1334,17 @@ shinyServer(function(input, output, session) {
                                   analysis_name(), "correlation_clustering",
                                   paste0(selected_filtered_dataset(),".qs"))
                  if(file.exists(file)){
-                   data = qs::qread(file, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
-                   scExp_cf(data$scExp_cf)
-                   rm(data)
-                   gc()
-
-                   if(length(setdiff(get.available.alternative.datasets(input$selected_analysis),
-                              getExperimentNames(scExp_cf()))) > 0 ){
-                     scExp_cf(scExp())
-                     gc()  
+                   if(is.null(scExp_cf())){
+                     data = qs::qread(file, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
+                     scExp_cf(data$scExp_cf)
+                     rm(data)
+                     gc()
+                     
+                     if(length(setdiff(get.available.alternative.datasets(input$selected_analysis),
+                                       getExperimentNames(scExp_cf()))) > 0 ){
+                       scExp_cf(scExp())
+                       gc()  
+                     }
                    }
                  } else {
                    scExp_cf(scExp())
@@ -2402,10 +2404,11 @@ shinyServer(function(input, output, session) {
     l = l[grep(paste0("orrected_", numclust),l)]
   }
   
-  observeEvent(c(input$qval.th, input$tabs, input$logFC.th, input$de_type, selected_filtered_dataset()), priority = 10,{
+  observeEvent(c(set_numclust(), input$qval.th, input$tabs, input$logFC.th, input$de_type, selected_filtered_dataset()), priority = 10,{
     if(input$tabs == "diff_analysis"){
       print("Set num clust:")
       print(set_numclust())
+      print(length(unique(scExp_cf()$cell_cluster)))
       init$available_DA_GSA_datasets = get.available.DA_GSEA.datasets(analysis_name(), input$selected_reduced_dataset, set_numclust())
       print("Analysis name:")
       print(analysis_name())
@@ -2466,9 +2469,8 @@ shinyServer(function(input, output, session) {
     User can choose either a non-parametric test (Wilcoxon) or a parametric test
     (here edgeR GLM) depending on the observed distribution of the reads."})
   output$selected_k <- renderUI({
-    req(scExp_cf())
-    n = as.character(dplyr:::n_distinct(SummarizedExperiment::colData(scExp_cf())$cell_cluster))
-    HTML(paste0("<h5><b>Number of clusters selected  = ", n,"</b></h5>"))
+    req(set_numclust())
+    HTML(paste0("<h5><b>Number of clusters selected  = ", set_numclust(),"</b></h5>"))
   })
   # output$only_contrib_cell_ui <- renderUI({
   #   if("icl" %in% names(scExp_cf()@metadata) && !is.null(scExp_cf()@metadata$icl)){
@@ -2775,6 +2777,8 @@ shinyServer(function(input, output, session) {
       }
     }
   })
+  
+  
   
   output$download_da_table <- downloadHandler(
     filename = function(){ paste0("diffAnalysis_data_", selected_filtered_dataset(),
