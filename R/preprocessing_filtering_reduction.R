@@ -2183,7 +2183,7 @@ choose_perplexity <- function(dataset)
 #' scExp = normalize_scExp(scExp)
 #' scExp = reduce_dims_scExp(scExp,dimension_reductions=c("PCA","UMAP"))
 reduce_dims_scExp <-
-    function(scExp, dimension_reductions = c("PCA", "UMAP"), n = 50,
+    function(scExp, dimension_reductions = c("PCA", "UMAP"), n = 10,
             batch_correction = FALSE, batch_list = NULL,
             remove_PC = NULL, verbose = TRUE)
     {

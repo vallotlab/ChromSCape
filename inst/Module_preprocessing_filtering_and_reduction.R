@@ -107,7 +107,7 @@ Module_preprocessing_filtering_and_reduction <- function(
         print(system.time({
             scExp = reduce_dims_scExp(
                 scExp = scExp,
-                n = 50,
+                n = 10,
                 dimension_reductions = methods,
                 batch_correction = doBatchCorr(),
                 batch_list = batch_sels(),
