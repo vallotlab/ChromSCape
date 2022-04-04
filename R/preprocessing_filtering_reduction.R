@@ -2451,7 +2451,7 @@ num_cell_after_QC_filt_scExp <- function(scExp, annot, datamatrix)
 #' @param scExp A SingleCellExperiment
 #' @param n_cell_per_sample An integer number of cells to subsample for each sample.
 #'  Exclusive with n_cells_total. (500)
-#' @param n_cells_total An integer number of cells to subsample in total. Exclusive
+#' @param n_cell_total An integer number of cells to subsample in total. Exclusive
 #' with n_cell_per_sample (NULL).
 #'
 #' @return A subsampled SingleCellExperiment

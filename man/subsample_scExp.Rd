@@ -12,7 +12,7 @@ subsample_scExp(scExp, n_cell_per_sample = 500, n_cell_total = NULL)
 \item{n_cell_per_sample}{An integer number of cells to subsample for each sample.
 Exclusive with n_cells_total. (500)}
 
-\item{n_cells_total}{An integer number of cells to subsample in total. Exclusive
+\item{n_cell_total}{An integer number of cells to subsample in total. Exclusive
 with n_cell_per_sample (NULL).}
 }
 \value{

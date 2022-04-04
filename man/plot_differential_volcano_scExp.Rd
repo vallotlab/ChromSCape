@@ -15,14 +15,15 @@ plot_differential_volcano_scExp(
 \arguments{
 \item{scExp_cf}{A SingleCellExperiment object}
 
+\item{group}{A character indicating the group for which to plot the
+differential volcano plot. ("C1")}
+
 \item{logFC.th}{Fold change threshold. (1)}
 
 \item{qval.th}{Adjusted p-value threshold. (0.01)}
 
 \item{min.percent}{Minimum fraction of cells having the feature active to
 consider it as significantly differential. (0.01)}
-
-\item{cell_cluster}{Which cluster to plot}
 }
 \value{
 A volcano plot of differential analysis of a specific cluster

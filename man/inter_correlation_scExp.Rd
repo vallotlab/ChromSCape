@@ -23,6 +23,9 @@ Must be in accordance with "by".}
 
 \item{other_groups}{Groups on which to calculate correlation (can contain
 multiple groups, and also reference_group). Must be in accordance with "by".}
+
+\item{fullCor}{A logical specifying if the correlation matrix was calculated
+on the entire set of cells (TRUE).}
 }
 \value{
 A data.frame of average inter-correlation of cells in other_groups

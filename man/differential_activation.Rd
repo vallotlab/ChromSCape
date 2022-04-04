@@ -17,17 +17,9 @@ number of cluster.}
 
 \item{group_by}{Which grouping to run the marker enrichment ?}
 
+\item{verbose}{Print ?}
+
 \item{progress}{A shiny Progress instance to display progress bar.}
-
-\item{prioritize_genes}{First filter by loci being close to genes ? E.g. for
-differential analysis, it is more relevant to keep features close to genes}
-
-\item{max_distanceToTSS}{If prioritize_genes is TRUE, the maximum distance to
-consider a feature close to a gene.}
-
-\item{BPPARAM}{BPPARAM object for multiprocessing. See
-\link[BiocParallel]{bpparam} for more informations. Will take the default
-BPPARAM set in your R session.}
 }
 \value{
 Returns a dataframe of differential activation results that contains

@@ -456,14 +456,8 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #' @param scExp  A SingleCellExperiment object containing consclust with selected
 #'   number of cluster.
 #' @param group_by Which grouping to run the marker enrichment ?
-#' @param prioritize_genes First filter by loci being close to genes ? E.g. for
-#' differential analysis, it is more relevant to keep features close to genes
-#' @param max_distanceToTSS If prioritize_genes is TRUE, the maximum distance to 
-#' consider a feature close to a gene.
 #' @param progress A shiny Progress instance to display progress bar. 
-#' @param BPPARAM BPPARAM object for multiprocessing. See
-#'  \link[BiocParallel]{bpparam} for more informations. Will take the default
-#'  BPPARAM set in your R session.
+#' @param verbose Print ? 
 #'  
 #' @details 
 #' To calculate the logFC, the percentage of activation of the features are 
@@ -1084,18 +1078,7 @@ enrich_TF_ChEA3_scExp = function(
 #'
 #' @param scExp A SingleCellExperiment object containing list of differential
 #'   features.
-#' @param ref A reference annotation, either 'hg38' or 'mm10'. ('hg38')
-#' @param top_TF The number of TF to show.
-#' @param qval.th Adjusted p-value threshold to define differential features.
-#'   (0.01)
-#' @param logFC.th Fold change threshold to define differential features. (1)
-#' @param min.percent Minimum fraction of cells having the feature active to
-#' consider it as significantly differential. (0.01)
-#' @param peak_distance Maximum distanceToTSS of feature to gene TSS to consider
-#'   associated, in bp. (1000)
-#' @param use_peaks Use peak calling method (must be calculated beforehand).
-#'   (FALSE)
-#' @param progress A shiny Progress instance to display progress bar. 
+#' @param genes A character vector with the name of genes to enrich for TF.
 #' 
 #' @return Returns a SingleCellExperiment object containing list of enriched
 #'   Gene Sets for each cluster, either in depleted features, enriched features

@@ -546,6 +546,10 @@ create_project_folder <- function(output_directory,
 #' @param subsample_n Number of cells to subsample.
 #' @param ref_genome Reference genome ("hg38" or "mm10").
 #' @param exclude_regions GenomicRanges with regions to remove from the object.
+#' @param remove_PC A vector of string indicating which principal components to 
+#' remove before downstream analysis as probably correlated to 
+#' library size. Should be under the form : 'Component_1', 'Component_2', ...
+#' Recommended when using 'TFIDF' normalization method. (NULL)
 #' @param doBatchCorr Run batch correction ? TRUE or FALSE
 #' @param batch_sels If doBatchCorr is TRUE, List of characters.
 #'  Names are batch names, characters are sample names. 

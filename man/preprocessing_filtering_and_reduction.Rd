@@ -32,6 +32,11 @@ preprocessing_filtering_and_reduction(
 
 \item{norm_type}{Normalization type c("CPM", "TFIDF", "RPKM", "TPM", "feature_size_only")}
 
+\item{remove_PC}{A vector of string indicating which principal components to
+remove before downstream analysis as probably correlated to
+library size. Should be under the form : 'Component_1', 'Component_2', ...
+Recommended when using 'TFIDF' normalization method. (NULL)}
+
 \item{subsample_n}{Number of cells to subsample.}
 
 \item{ref_genome}{Reference genome ("hg38" or "mm10").}

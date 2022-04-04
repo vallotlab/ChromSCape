@@ -27,7 +27,9 @@ Suggests:
     BiocStyle,
     Signac,
     future,
-    igraph
+    igraph,
+    bluster,
+    httr
 RoxygenNote: 7.1.2
 Roxygen: list(markdown = TRUE)
 Imports: 

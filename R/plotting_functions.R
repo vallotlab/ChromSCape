@@ -985,7 +985,8 @@ plot_differential_summary_scExp <- function(scExp_cf, qval.th = 0.01,
 #' Volcano plot of differential features
 #'
 #' @param scExp_cf A SingleCellExperiment object
-#' @param cell_cluster Which cluster to plot
+#' @param group A character indicating the group for which to plot the 
+#' differential volcano plot. ("C1")
 #' @param qval.th Adjusted p-value threshold. (0.01)
 #' @param logFC.th Fold change threshold. (1)
 #' @param min.percent Minimum fraction of cells having the feature active to

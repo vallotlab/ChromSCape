@@ -60,7 +60,9 @@ correlation_and_hierarchical_clust_scExp <- function(
 #' @param use.dimred A string specifying the dimensionality reduction to use.
 #' @param type A string specifying the type of weighting scheme to use for 
 #' shared neighbors.
-#' @param BPPARAM 
+#'  @param BPPARAM BPPARAM object for multiprocessing. See
+#'  \link[BiocParallel]{bpparam} for more informations. Will take the default
+#'  BPPARAM set in your R session. 
 #'
 #' @return A SingleCellExperiment containing the vector of clusters
 #'  (named C1, C2 ....)
@@ -382,7 +384,8 @@ intra_correlation_scExp <- function(scExp_cf, by = c("sample_id",
 #' Must be in accordance with "by".
 #' @param other_groups Groups on which to calculate correlation (can contain
 #' multiple groups, and also reference_group). Must be in accordance with "by".
-#'
+#' @param fullCor A logical specifying if the correlation matrix was calculated
+#' on the entire set of cells (TRUE).
 #' @return A data.frame of average inter-correlation of cells in other_groups
 #' with cells in reference_group
 #' @export

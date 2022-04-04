@@ -7,28 +7,10 @@
 enrich_TF_ChEA3_genes(genes)
 }
 \arguments{
+\item{genes}{A character vector with the name of genes to enrich for TF.}
+
 \item{scExp}{A SingleCellExperiment object containing list of differential
 features.}
-
-\item{ref}{A reference annotation, either 'hg38' or 'mm10'. ('hg38')}
-
-\item{top_TF}{The number of TF to show.}
-
-\item{qval.th}{Adjusted p-value threshold to define differential features.
-(0.01)}
-
-\item{logFC.th}{Fold change threshold to define differential features. (1)}
-
-\item{min.percent}{Minimum fraction of cells having the feature active to
-consider it as significantly differential. (0.01)}
-
-\item{peak_distance}{Maximum distanceToTSS of feature to gene TSS to consider
-associated, in bp. (1000)}
-
-\item{use_peaks}{Use peak calling method (must be calculated beforehand).
-(FALSE)}
-
-\item{progress}{A shiny Progress instance to display progress bar.}
 }
 \value{
 Returns a SingleCellExperiment object containing list of enriched
