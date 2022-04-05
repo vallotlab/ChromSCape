@@ -21,8 +21,9 @@ consider during graph construction.}
 \item{use.dimred}{A string specifying the dimensionality reduction to use.}
 
 \item{type}{A string specifying the type of weighting scheme to use for
-shared neighbors.
-@param BPPARAM BPPARAM object for multiprocessing. See
+shared neighbors.}
+
+\item{BPPARAM}{BPPARAM object for multiprocessing. See
 \link[BiocParallel]{bpparam} for more informations. Will take the default
 BPPARAM set in your R session.}
 }
