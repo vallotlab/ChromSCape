@@ -1076,8 +1076,6 @@ enrich_TF_ChEA3_scExp = function(
 
 #' Find the TF that are enriched in the differential genes using ChEA3 API
 #'
-#' @param scExp A SingleCellExperiment object containing list of differential
-#'   features.
 #' @param genes A character vector with the name of genes to enrich for TF.
 #' 
 #' @return Returns a SingleCellExperiment object containing list of enriched
@@ -1088,16 +1086,15 @@ enrich_TF_ChEA3_scExp = function(
 #' Jagodnik K, Kropiwnicki E, Wang Z, Ma'ayan A (2019)
 #'  ChEA3: transcription factor enrichment analysis by orthogonal omics integration. 
 #'  Nucleic Acids Research. doi: 10.1093/nar/gkz446
-#'  
+#'  +
 #' @export
 #' @importFrom utils data
 #' @examples
-#' 
-#' enrich_TF_ChEA3_genes(c("LY6L", "GPIHBP1","RP11-1055B8.2", "RP11-1055B8.3",
-#'   "RP11-1055B8.10", "RP11-1055B8.4", "BAHCC1", "RP11-1055B8.8" ))
+#' data(scExp)
+#' enrich_TF_ChEA3_genes(head(unlist(strsplit(SummarizedExperiment::rowData(scExp)$Gene, split = ",", fixed = TRUE)), 15))
 #' 
 enrich_TF_ChEA3_genes = function(genes){
-  
+  response = NULL
   if(!requireNamespace("httr", quietly=TRUE)){
     warning("ChromSCape::enrich_TF_ChEA3_genes - In order to access ChEA3 database, you must install httr Package first.",
                             "Run install.packages('httr') in console. Exiting.")
@@ -1128,7 +1125,10 @@ enrich_TF_ChEA3_genes = function(genes){
   payload = list(query_name = "myQuery", gene_set = genes)
   
   #POST to ChEA3 server
-  response = httr::POST(url = url, body = payload, encode = encode)
+  tryCatch({response = httr::POST(url = url, body = payload, encode = encode)},
+           error = function(e) e)
+  
+  if(is.null(response)) return(return_df)
   json =  httr::content(response, "text")
   
   #results as list of R dataframes

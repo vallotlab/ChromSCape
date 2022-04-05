@@ -3068,9 +3068,11 @@ shinyServer(function(input, output, session) {
   })
   
   observeEvent(input$save_plot_GSA,{
-    req(gene_umap_p(), input$gene_sel)
+    req(gene_umap_p(), input$gene_sel, gene_violin_p())
     if(!dir.exists(plot_dir())) dir.create(plot_dir())
     pdf(file.path(plot_dir(), paste0("UMAP_", input$gene_sel,".pdf")))
+    print(gene_umap_p())
+    print(gene_violin_p())
     if(!is.null(pathways_mat())) print(pathways_umap_p())
     dev.off()
     shiny::showNotification(paste0("Plots saved in '",plot_dir(),"' !"),
@@ -3191,6 +3193,27 @@ shinyServer(function(input, output, session) {
       shiny::plotOutput("gene_umap_plot") %>% 
         shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75)
 
+  })
+  
+  gene_violin_p <- reactive({
+    req(input$gene_sel, input$color_by_violin_GSA)
+    p <- plot_violin_feature_scExp(scExp_cf(),
+                                gene = input$gene_sel,
+                                by = input$color_by_violin_GSA, 
+                                max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
+                                downsample = input$options.dotplot_downsampling
+    )
+    p
+  })
+  output$gene_violin_UI <- renderUI({
+    req(input$gene_sel)
+    
+    output$gene_violin_plot <- renderPlot({
+      gene_violin_p()
+    })
+    shiny::plotOutput("gene_violin_plot") %>% 
+      shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75)
+    
   })
   
   ###############################################################

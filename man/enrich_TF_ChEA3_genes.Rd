@@ -8,9 +8,6 @@ enrich_TF_ChEA3_genes(genes)
 }
 \arguments{
 \item{genes}{A character vector with the name of genes to enrich for TF.}
-
-\item{scExp}{A SingleCellExperiment object containing list of differential
-features.}
 }
 \value{
 Returns a SingleCellExperiment object containing list of enriched
@@ -21,9 +18,8 @@ or simply differential features (both).
 Find the TF that are enriched in the differential genes using ChEA3 API
 }
 \examples{
-
-enrich_TF_ChEA3_genes(c("LY6L", "GPIHBP1","RP11-1055B8.2", "RP11-1055B8.3",
-  "RP11-1055B8.10", "RP11-1055B8.4", "BAHCC1", "RP11-1055B8.8" ))
+data(scExp)
+enrich_TF_ChEA3_genes(head(unlist(strsplit(SummarizedExperiment::rowData(scExp)$Gene, split = ",", fixed = TRUE)), 15))
 
 }
 \references{
@@ -31,4 +27,5 @@ Keenan AB, Torre D, Lachmann A, Leong AK, Wojciechowicz M, Utti V,
 Jagodnik K, Kropiwnicki E, Wang Z, Ma'ayan A (2019)
 ChEA3: transcription factor enrichment analysis by orthogonal omics integration.
 Nucleic Acids Research. doi: 10.1093/nar/gkz446
++
 }

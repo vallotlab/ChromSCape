@@ -124,7 +124,7 @@
 #' plot_reduced_dim_scExp(scExp)
 #' plot_reduced_dim_scExp(scExp,color_by = "cell_cluster")
 #' plot_heatmap_scExp(scExp)
-#' plot_differential_volcano_scExp(scExp,cell_cluster = "C1")
+#' plot_differential_volcano_scExp(scExp,  "C1")
 #' plot_differential_summary_scExp(scExp)
 "scExp"
 

@@ -11,7 +11,7 @@ preprocessing_filtering_and_reduction(
   max_quantile_read_per_cell = 95,
   n_top_features = 40000,
   norm_type = "CPM",
-  remove_PC = ifelse(norm_type == "TFIDF", "Component_1", NULL),
+  remove_PC = NULL,
   subsample_n = NULL,
   ref_genome = "hg38",
   exclude_regions = NULL,

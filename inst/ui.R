@@ -463,9 +463,11 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                   column(width=6,
                                          shinydashboard::box(title=tagList(icon("image"), " UMAP of enrichment near TSS"), width=NULL, status="success", solidHeader=TRUE,
                                              column(3, align="left", uiOutput("gene_sel")),
-                                             column(6, align="left", checkboxInput("label_cluster_umap_GSA", "Label cluster", value = T) ),
+                                             column(3, align="left", checkboxInput("label_cluster_umap_GSA", "Label cluster", value = T) ),
+                                             column(3, align="left", selectInput("color_by_violin_GSA", "Color by", choices = c("cell_cluster","sample_id")) ),
                                              column(3, align="left", actionButton("save_plot_GSA", "Save HQ plot")),
-                                             column(12, align="left", uiOutput("gene_umap_UI"))
+                                             column(12, align="left", uiOutput("gene_umap_UI")), br(),
+                                             column(12, align="left", uiOutput("gene_violin_UI"))
                                              ),
                                          shinydashboard::box(title=tagList(icon("image"), " Enrichment in Gene Sets"), width=NULL, status="success", solidHeader=TRUE,
                                                              column(4, align="left", actionButton("plot_pathways", "Plot pathways")), 

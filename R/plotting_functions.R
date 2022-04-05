@@ -1232,3 +1232,65 @@ plot_top_TF_scExp <- function(
  
   return(p)
 }
+
+
+#' Violin plot of features 
+#'
+#' @param scExp A SingleCellExperiment
+#' @param gene A character specifying the gene to plot 
+#' @param by Color violin by cell_cluster or sample_id  ("cell_cluster")
+#' @param max_distanceToTSS Numeric. Maximum distance to a gene's TSS to consider
+#' a region linked to a gene. (1000)
+#' @param downsample Downsample for plotting (5000)
+#' 
+#' @return A violin plot of intra-correlation
+#' @export
+#' @importFrom forcats fct_inorder
+#' @examples 
+#' data(scExp)
+#' plot_violin_feature_scExp(scExp, "UBXN10")
+#' 
+plot_violin_feature_scExp <- function(
+    scExp, gene, by = c( "cell_cluster", "sample_id")[1], downsample = 5000,
+    max_distanceToTSS = 1000){
+  
+  if(ncol(scExp) > downsample) scExp = scExp[,sample(ncol(scExp),
+                                                     downsample,
+                                                     replace = FALSE)]
+  
+  annot = as.data.frame(SingleCellExperiment::colData(scExp))
+  annot_feature = as.data.frame(SummarizedExperiment::rowRanges(scExp))
+  annot_feature = annot_feature %>% 
+    tidyr::separate_rows(.data[["Gene"]], sep = ", ") %>% 
+    dplyr::group_by(.data[["Gene"]]) %>%
+    dplyr::slice_min(.data[["distanceToTSS"]])
+  annot_feature = annot_feature %>%
+    dplyr::filter( .data[["distanceToTSS"]] < max_distanceToTSS)
+  
+  if(!gene %in% annot_feature$Gene) stop(
+    "ChromSCape::plot_reduced_dim_scExp - The gene chosen, ",
+    gene, ", is not closer than ", max_distanceToTSS, " to any", 
+    "loci. Consider increasing max_distanceToTSS to take in account ",
+    "this gene.")
+  
+  counts = SingleCellExperiment::counts(scExp[annot_feature$ID[which(
+    annot_feature$Gene == gene)],])
+  
+  if(!is.null(counts) & nrow(counts) > 1 ){
+    counts = Matrix::rowSums(counts)
+  }
+  annot[,gene] = as.numeric(counts)
+
+  p <- ggplot(annot) + geom_violin(aes(x=.data[[by]], y= .data[[gene]],
+                                      fill=.data[[by]]), alpha=0.8) + 
+    geom_jitter(aes(x=.data[[by]], y= .data[[gene]]), height = 0.05, size = 0.3) +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle=90)) + 
+    ylab(paste0(gene)) + xlab("") 
+  
+  cols = unique(as.character(annot[,paste0(by,"_color")]))
+  names(cols) = unique(as.character(annot[,by]))
+  p <- p + scale_fill_manual(values = cols)
+  
+  return(p + theme(legend.title = element_text("")))
+}

@@ -566,7 +566,7 @@ preprocessing_filtering_and_reduction <- function(
     max_quantile_read_per_cell = 95,
     n_top_features = 40000,
     norm_type = "CPM",
-    remove_PC = ifelse(norm_type == "TFIDF", "Component_1", NULL),
+    remove_PC = NULL,
     subsample_n = NULL,
     ref_genome = "hg38",
     exclude_regions = NULL,
@@ -624,8 +624,11 @@ preprocessing_filtering_and_reduction <- function(
     
     ### 7. Add default colors ###
     
-    if(doBatchCorr){ annotCol. = c("sample_id","total_counts", "batch_name")} 
-    else{annotCol. = c("sample_id","total_counts")}
+    if(doBatchCorr){
+      annotCol. = c("sample_id","total_counts", "batch_name")
+    }  else{
+      annotCol. = c("sample_id","total_counts")
+    }
     scExp = colors_scExp(scExp, annotCol.)
     
     ### 8. Running hierarchical clustering ###

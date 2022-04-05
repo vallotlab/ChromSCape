@@ -2179,9 +2179,9 @@ choose_perplexity <- function(dataset)
 #' 
 #' raw <- create_scDataset_raw()
 #' scExp = create_scExp(raw$mat, raw$annot)
+#' scExp =  normalize_scExp(scExp, "CPM")
 #' scExp = reduce_dims_scExp(scExp,dimension_reductions=c("PCA","UMAP"))
-#' scExp = normalize_scExp(scExp)
-#' scExp = reduce_dims_scExp(scExp,dimension_reductions=c("PCA","UMAP"))
+#' 
 reduce_dims_scExp <-
     function(scExp, dimension_reductions = c("PCA", "UMAP"), n = 10,
             batch_correction = FALSE, batch_list = NULL,
