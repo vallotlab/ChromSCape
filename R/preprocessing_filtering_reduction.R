@@ -854,13 +854,14 @@ beds_to_matrix_indexes <- function(dir, which,
     return(out)
 }
 
-#' Transforms a peaks x cells count matrix into a bins x cells count matrix.
-#'
-#' This functions is best used to re-count large number of small peaks (e.g. <=
-#' 5000bp) into equal or larger bins. The genome is either cut in fixed bins
-#' (e.g. 50,000bp) or into an user defined number of bins. Bins are calculated
-#' based on the canconical chromosomes. Note that if peaks are larger than bins,
-#' or if peaks are overlapping multiple bins, the signal is added to each bin.
+#' Transforms a bins x cells count matrix into a larger bins x cells count matrix.
+#' #'
+#' This functions is best used to re-count large number of small bins or peaks
+#'  (e.g. <= 5000bp) into equal or larger sized bins. The genome is either cut in
+#'   fixed bins (e.g. 50,000bp) or into an user defined number of bins. Bins are
+#'  calculated  based on the canconical chromosomes. Note that if peaks are larger
+#'   than bins,  or if peaks are overlapping multiple bins, the signal is added 
+#'   to each bin.
 #' Users can increase the minimum overlap to consider peaks overlapping bins (by
 #' default 150bp, size of a nucleosome) to disminish the number of peaks
 #' overlapping multiple region. Any peak smaller than the minimum overlapp
@@ -869,77 +870,116 @@ beds_to_matrix_indexes <- function(dir, which,
 #' ommitted due to peaks smaller than minimum overlap.
 #'
 #' @param mat A matrix of peaks x cells
-#' @param bin_width width of bins to produce in base pairs (minimum 500) (50000)
-#' @param ref reference genome to use (hg38)
-#' @param n_bins number of bins (exclusive with bin_width)
-#' @param minoverlap Minimum overlap between a peak and a bin to consider the
-#'   peak as overlapping the bin (150).
+#' @param bin_width Width of bins to produce in base pairs (minimum 500) (50000)
+#' @param ref Reference genome to use (hg38)
+#' @param minoverlap Minimum overlap between the original bins and the new features
+#'  to consider the peak as overlapping the bin . We recommand to put this
+#'  number at exactly half of the original bin size (e.g. 500bp for original bin
+#'  size of 1000bp) so that no original bins are counted twice. (500)
+#' @param custom_annotation A GenomicRanges object specifying the new features 
+#' to count the matrix on instead of recounting on genomic bins. If not NULL,
+#' takes predecency over bin_width.
 #' @param verbose Verbose
 #'
-#' @return A sparse matrix of bins instead of peaks
+#' @return A sparse matrix of larger bins or peaks.
 #' @export
 #'
 #' @importFrom IRanges IRanges
-#' @importFrom BiocParallel bpaggregate
-#' @importFrom GenomicRanges GRanges tileGenome width seqnames GRangesList
-#'   sort.GenomicRanges findOverlaps
+#' @importFrom dplyr group_by summarise
+#' @importFrom GenomicRanges GRanges tileGenome width seqnames findOverlaps start
+#' end
 #'
 #' @examples
 #' mat = create_scDataset_raw()$mat
-#' binned_mat = peaks_to_bins(mat,bin_width = 10e6)
+#' binned_mat = rebin_matrix(mat,bin_width = 10e6)
 #' dim(binned_mat)
 #' 
-peaks_to_bins <- function(mat, bin_width = 50000, n_bins = NULL,
-                        minoverlap = 150, verbose = TRUE,ref = "hg38"){
+rebin_matrix <- function(mat,
+                  bin_width = 50000,
+                  custom_annotation = NULL,
+                  minoverlap = 500,
+                  verbose = TRUE,
+                  ref = "hg38"){
+    
     stopifnot(!is.null(mat), ref %in% c("mm10", "hg38"))
+    
     if (is.matrix(mat)) mat = as(mat, "dgCMatrix")
-    if (is.null(n_bins) & is.null(bin_width)) 
-        stop("One of bin_width or n_bins must be set")
+    mat = as(mat, "CsparseMatrix")
+    
+    if (is.null(bin_width) & is.null(custom_annotation)) stop("One of bin_width or custom_annotation must be set")
+    
     eval(parse(text = paste0("data(", ref, ".chromosomes)")))
     chr <- eval(parse(text = paste0("", ref, ".chromosomes")))
-    
     chr <- GenomicRanges::GRanges(chr)
-    if (!is.null(n_bins)) {
-        bin_ranges <- unlist(GenomicRanges::tileGenome(
-            setNames(GenomicRanges::width(chr), GenomicRanges::seqnames(chr)),
-            ntile = n_bins))} else {
+    
+    if(is.null(custom_annotation)){
         bin_ranges <- unlist(GenomicRanges::tileGenome(
             setNames( GenomicRanges::width(chr), GenomicRanges::seqnames(chr)),
-            tilewidth = bin_width )) }
-    peaks = rownames(mat)
-    peaks_chr = as.character(lapply(strsplit(peaks, ":|-|_"), function(x) x[1]))
-    peaks_start = as.numeric(lapply(strsplit(peaks, ":|-|_"), function(x) x[2]))
-    peaks_end = as.numeric(lapply(strsplit(peaks, ":|-|_"), function(x) x[3]))
-    if (anyNA(peaks_start) | anyNA(peaks_end))
+            tilewidth = bin_width )) 
+    } else{
+        bin_ranges <- custom_annotation
+        if(!is(bin_ranges, "GenomicRanges")) stop("ChromSCape::rebin_matrix",
+        "custom_annotation must be a GenomicRanges object.")
+    }
+    
+    original_bins = rownames(mat)
+    original_bins =  strsplit(original_bins, "_", fixed = T)
+    original_bins_chr = as.character(lapply(original_bins, function(x) x[1]))
+    original_bins_start = as.numeric(lapply(original_bins, function(x) x[2]))
+    original_bins_end = as.numeric(lapply(original_bins, function(x) x[3]))
+    
+    if (anyNA(original_bins_start) | anyNA(original_bins_end))
         stop("The rows of mat should be regions in format chr_start_end or",
-            "chr:start-end, without non canonical chromosomes")
+             "chr:start-end, without non canonical chromosomes")
     if (verbose) {
-        message("ChromSCape::peaks_to_bins - converting ", dim(mat)[1],
-                " peaks into ", length(bin_ranges)[1], " bins of ",
-                mean(bin_ranges@ranges@width), " bp in average.") }
-    peaks = GenomicRanges::GRanges(
-        seqnames = peaks_chr, ranges = IRanges::IRanges(peaks_start, peaks_end))
+        message("ChromSCape::rebin_matrix - converting ", dim(mat)[1],
+                " original_bins into ", length(bin_ranges)[1], " bins of ",
+                floor(mean(bin_ranges@ranges@width)), " bp in average.") }
+    
+    original_bins = GenomicRanges::GRanges(
+        seqnames = original_bins_chr, ranges = IRanges::IRanges(original_bins_start, original_bins_end))
+    
     hits <- GenomicRanges::findOverlaps(
-        bin_ranges, peaks, minoverlap = minoverlap)
-    bins_names = paste0(bin_ranges@seqnames, ":", 
-                        GenomicRanges::start(bin_ranges), "-",
+        bin_ranges, original_bins, minoverlap = minoverlap)
+    
+    bins_names = paste0(bin_ranges@seqnames, "_", 
+                        GenomicRanges::start(bin_ranges), "_",
                         GenomicRanges::end(bin_ranges))
-    bin_mat = NULL
-    hits = as.matrix(hits)
-    hits = cbind(hits, mat[hits[, "subjectHits"], ])
-    print("Running aggregation of peaks to bins in parallel")
-    hits = as.matrix(hits)
-    t = system.time({ bin_mat = BiocParallel::bpaggregate(
-        x = hits[, 3:dim(hits)[2]],
-        by = list(bins = hits[, 1, drop = FALSE]), FUN = sum) })
-    message("ChromSCape::peaks_to_bins - From peaks to bins in ",t[3]," sec.")
-    bin_mat = as(as.matrix(bin_mat[, 2:ncol(bin_mat)]), "dgCMatrix")
-    rownames(bin_mat) = bins_names[unique(hits[, 1])]
+    hits = as.data.frame(hits)
+    hits$bins_names = bins_names[hits$queryHits]
+    
+    mat_df = data.frame(origin_row = mat@i+1, col = 0, origin_value = mat@x)
+    sizes = mat@p[2:length(mat@p)] - mat@p[1:(length(mat@p)-1)]
+    mat_df$col = as.numeric(unlist(lapply(1:(length(mat@p)-1), function(i) rep(i,sizes[i]))))
+    
+    match_hits = match(mat_df$origin_row, hits$subjectHits)
+    
+    if(length(which(is.na(match_hits)))>0){
+        message("ChromSCape::rebin_matrix - Warning ! ", length(unique((mat@i+1)[which(is.na(match_hits))])),
+                " original features were not found in the new bins, e.g.:\n",
+                paste(head(mat@Dimnames[[1]][unique((mat@i+1)[which(is.na(match_hits))])],3),collapse = " "),
+                ".\nContinuing without these features...\n")
+        mat_df = mat_df[-which(is.na(match_hits)),]
+        gc()
+    }
+    mat_df$bins_names = hits$bins_names[match(mat_df$origin_row, hits$subjectHits)]
+    mat_df$new_row = hits$queryHits[match(mat_df$origin_row, hits$subjectHits)]
+    mat_df$new_row= seq_along(unique(mat_df$new_row))[match(mat_df$new_row, sort(unique(mat_df$new_row)))]
+    
+    mat_df_grouped = mat_df %>% dplyr::group_by(col, new_row) %>%
+        dplyr::summarise(new_value = sum(origin_value))
     gc()
-    if (verbose) message("ChromSCape::peaks_to_bins - removed ",
-                    length(bin_ranges) - nrow(bin_mat),
-                    " empty bins from the binned matrix.")
-    return(bin_mat)}
+
+    new_mat = Matrix::sparseMatrix(i = mat_df_grouped$new_row, j = mat_df_grouped$col, 
+                           x = mat_df_grouped$new_value,
+                           dimnames = list(unique(mat_df$bins_names), colnames(mat)))
+    
+    gc()
+    if (verbose) message("ChromSCape::rebin_matrix - Generated ",
+                         nrow(new_mat) ," new non-zero features from ", length(original_bins),
+                         " original features.")
+    return(new_mat)  
+}
 
 #' Create a simulated single cell datamatrix & cell annotation
 #'

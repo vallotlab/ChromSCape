@@ -163,6 +163,10 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                                                       uiOutput("input_data_ui")),
                                                                       column(12,
                                                                       uiOutput("advanced_data_input")),
+                                                                      column(3, uiOutput("rebin_matrices_checkbox_ui") %>%
+                                                                                 shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
+                                                                                                     content = "rebin_matrices")) ,
+                                                                      column(12,uiOutput("rebin_matrices_ui")),
                                                                       column(3, actionButton("create_analysis", "Create analysis")),
                                                                       column(4, uiOutput("add_to_current_analysis_checkbox_UI"))
                                                                       )) 

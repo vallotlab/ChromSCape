@@ -333,6 +333,21 @@ shinyServer(function(input, output, session) {
     }
   })
   
+  output$rebin_matrices_checkbox_ui <- renderUI({
+      req(input$data_choice_box)
+      if(input$data_choice_box %in% c("DenseMatrix", "SparseMatrix")) 
+          checkboxInput("rebin_matrices", label = "Rebin matrices", value = FALSE)
+  })
+  
+  output$rebin_matrices_ui <- renderUI({
+      req(input$rebin_matrices)
+      if(isTRUE(input$rebin_matrices)){
+          column(6, textInput("rebin_bin_size", label = "Re-count on genomic bins (bp)", value = 50000),
+          fileInput("rebin_custom_annotation", label = "Re-count on features (BED)"),  multiple = FALSE, accept = c(".bed",".txt", ".bed.gz"),
+          textInput("minoverlap", label = "Minimum Overlap (bp)", value = 500))
+      }
+  })
+  
   output$add_to_current_analysis_checkbox_UI <- renderUI({
     req(input$feature_select)
    column(12, 
@@ -516,6 +531,46 @@ shinyServer(function(input, output, session) {
           
           datamatrix = out$datamatrix
           annot_raw = out$annot_raw
+          
+          if(input$rebin_matrices == TRUE){
+              scExp. = create_scExp(datamatrix[1:min(nrow(datamatrix),100),1:10], annot_raw[1:10,], FALSE, FALSE, FALSE, FALSE,verbose = FALSE)
+              original_bin_size = mean(GenomicRanges::width(get_genomic_coordinates(scExp.)))
+              rm(scExp.)
+
+              if(!is.na(as.numeric(input$rebin_bin_size)) & !is.na(as.numeric(input$minoverlap))){
+                  if(as.numeric(input$minoverlap) > as.numeric(input$rebin_bin_size) | as.numeric(input$minoverlap) > original_bin_size) {
+                      showNotification(paste0("Warning : To rebin the matrices, 
+                                      'The minimum overlap of original matrices should be smaller than both
+                                      the original and new bin sizes."),
+                                       duration = 10, closeButton = TRUE, type="warning")
+                      return()
+                  } 
+                  if(as.numeric(input$rebin_bin_size) < original_bin_size){
+                      showNotification(paste0("Warning : To rebin the matrices, 
+                                      'The new bin size must be larger than the
+                                      the original bin size."),
+                                       duration = 10, closeButton = TRUE, type="warning")
+                      return()
+                  }
+                  if(!is.null(input$rebin_custom_annotation) && file.exists(as.character(input$rebin_custom_annotation$datapath))){
+                      tmp_file = tempfile(fileext = ".bed.gz")
+                      file.copy(input$rebin_custom_annotation$datapath, tmp_file, overwrite = TRUE)
+                      rebin_custom_annotation <- rtracklayer::import(tmp_file)
+                  } else {
+                      rebin_custom_annotation = NULL
+                  }
+                  progress$set(message='Rebinning data set into new bins..', detail = "", value = 0.3)
+                  print(input$rebin_bin_size)
+                  datamatrix = rebin_matrix(mat = datamatrix,
+                                            bin_width = as.numeric(input$rebin_bin_size),
+                                            custom_annotation = rebin_custom_annotation,
+                                            minoverlap = as.numeric(input$minoverlap),
+                                            ref = input$annotation,
+                                            verbose = T)
+                  progress$set(message='Finished rebinning data set..', value = 0.8)
+              }
+          }
+
         }
         progress$inc(detail=paste0("Finished creating matrix. Saving..."), amount = 0.1)
         
@@ -780,6 +835,11 @@ shinyServer(function(input, output, session) {
                              choices = paste0("Component_",1:3),
                              selected = "Component_1", 
                              inline = F )
+  } else{
+      checkboxGroupInput(inputId = "remove_PC",
+                         label = "Remove First Components:",
+                         choices = paste0("Component_",1:3),
+                         inline = F )
   }})
   
   
@@ -1081,7 +1141,7 @@ shinyServer(function(input, output, session) {
                                   column(12, align="left",
                                          selectInput("color_by_pca_cor", "Group by", choices = choices_group_by),
                                          selectInput("n_PCA", label =  "Top Components",
-                                                     choices = 1:n, multiple = FALSE, selected = 10),
+                                                     choices = 1:n, multiple = FALSE, selected = n),
                                          plotly::plotlyOutput("correlation_to_PCA_plot") %>% 
                                              shinycssloaders::withSpinner(type=8,color="#434C5E",size = 0.75)
                                   ))
