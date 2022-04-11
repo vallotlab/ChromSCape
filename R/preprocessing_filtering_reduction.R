@@ -513,7 +513,7 @@ define_feature <- function(ref = c("hg38","mm10")[1], peak_file = NULL,
 #' install Signac package first (future will be installed as a dependency).  
 #' For the simplicity of the application & optimization, the function
 #' by defaults sets future::plan("multisession") with workers = 
-#' future::availableCores() - 1 in order to allow parallel processing
+#' future::availableCores(omit = 1) in order to allow parallel processing
 #' with Signac. On exit the plan is re-set to the previously set future plan.
 #' Note that future multisession may have trouble running when VPN is on. To 
 #' run in parallel, first deactivate your VPN if you encounter long runtimes.
@@ -540,7 +540,7 @@ wrapper_Signac_FeatureMatrix <- function(files_dir_list, which, ref = "hg38",
     
     # Number of workers equal to number of workers in BPPARAM
     if(set_future_plan){
-        cl <- future::availableCores() - 1
+        cl <- future::availableCores(omit = 1)
         oplan <- future::plan("multisession", workers = cl,  gc = TRUE)
     }
     

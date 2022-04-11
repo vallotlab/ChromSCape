@@ -46,7 +46,7 @@ required only for the fragment matrix calculations. To use this function,
 install Signac package first (future will be installed as a dependency).
 For the simplicity of the application & optimization, the function
 by defaults sets future::plan("multisession") with workers =
-future::availableCores() - 1 in order to allow parallel processing
+future::availableCores(omit = 1) in order to allow parallel processing
 with Signac. On exit the plan is re-set to the previously set future plan.
 Note that future multisession may have trouble running when VPN is on. To
 run in parallel, first deactivate your VPN if you encounter long runtimes.

@@ -80,7 +80,7 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                         title = "Parallel Settings",
                                         icon = icon("align-left"),
                                     selectInput("options.nb_workers","Select number of workers for parallel computation",
-                                                choices= seq_len(parallel::detectCores()), selected = BiocParallel::bpworkers(BiocParallel::bpparam())),
+                                                choices= seq_len(future::availableCores()), selected = BiocParallel::bpworkers(BiocParallel::bpparam())),
                                     selectInput("options.bpparam_class","Select parallel computation type",
                                                 choices = names(BiocParallel::registered()), selected = 1)
                                     )
