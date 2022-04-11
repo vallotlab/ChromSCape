@@ -231,18 +231,18 @@ shinyServer(function(input, output, session) {
       <p> Here, simply pick the <u>directory</u> containing the samples folders, and
       ChromSCape will automatically detect your <b>samples</b>. </p>
       <br>
-      Example of folder structure (for scBED, but applies in a similar manner for Fragment File & scBAM) : <br>
+      Example of folder structure (for scBED, but applies in a similar manner for SparseMatrix, Fragment File & scBAM) : <br>
       <u>scChIPseq</u><br>
-          ????????? <b>Sample_1</b><br>
-          ???   ????????? cell_1.bed<br>
-          ???   ????????? cell_2.bed<br>
-          ???   ????????? cell_3.bed<br>
-          ???   ????????? cell_4.bed<br>
-          ????????? <b>Sample_2</b><br>
-          ???   ????????? cell_1.bed<br>
-          ???   ????????? cell_2.bed<br>
-          ???   ????????? cell_3.bed<br>
-          ???   ????????? cell_4.bed<br>
+          * <b>Sample_1</b><br>
+                 - cell_1.bed<br>
+                 - cell_2.bed<br>
+                 - cell_3.bed<br>
+                 - cell_4.bed<br>
+          * <b>Sample_2</b><br>
+                 - cell_1.bed<br>
+                 - cell_2.bed<br>
+                 - cell_3.bed<br>
+                 - cell_4.bed<br>
 
       <br>
       You're almost there !
@@ -335,11 +335,12 @@ shinyServer(function(input, output, session) {
   
   output$add_to_current_analysis_checkbox_UI <- renderUI({
     req(input$feature_select)
-   
+   column(12, 
       shinyWidgets::materialSwitch(inputId = "add_to_current_analysis", value = FALSE,
-                    label = "Add to current analysis", status = "primary") %>%
+                    label = "Add to current analysis",width = "80%", inline = F, status = "primary") %>%
         shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                             content = "add_to_current_analysis", size = "l")
+   )
   })
   
   add_to_current_analysis_Modal <- function(failed = FALSE){
@@ -1463,9 +1464,7 @@ shinyServer(function(input, output, session) {
         rm(scExp_cf.)
       } 
     }
-    
     cat("New number of clusters:", set_numclust(),"\n")
-    cat("New number of clusters:", length(unique(scExp_cf()$cell_cluster)),"\n")
   })
   
   set_numclust <- reactive({
@@ -2397,8 +2396,7 @@ shinyServer(function(input, output, session) {
   ###############################################################
     
   get.available.DA_GSEA.datasets <- function(name, preproc, numclust){
-    print(list.files(path = file.path(init$data_folder, "ChromSCape_analyses", name, "Diff_Analysis_Gene_Sets"),
-                     full.names = FALSE, recursive = FALSE))
+
     l = list.files(path = file.path(init$data_folder, "ChromSCape_analyses", name, "Diff_Analysis_Gene_Sets"),
                full.names = FALSE, recursive = FALSE, pattern = paste0(preproc, "_[[:digit:]]+_[[:digit:]]+(.[[:digit:]]+)?_[[:digit:]]+(.[[:digit:]]+)?_"))
     
@@ -2407,16 +2405,7 @@ shinyServer(function(input, output, session) {
   
   observeEvent(c(set_numclust(), input$qval.th, input$tabs, input$logFC.th, input$de_type, selected_filtered_dataset()), {
     if(input$tabs == "diff_analysis"){
-      print("Set num clust:")
-      print(set_numclust())
-      print(length(unique(scExp_cf()$cell_cluster)))
       init$available_DA_GSA_datasets = get.available.DA_GSEA.datasets(analysis_name(), input$selected_reduced_dataset, set_numclust())
-      print("Analysis name:")
-      print(analysis_name())
-      print("Selected reduced datasets")
-      print(input$selected_reduced_dataset)
-      print("Available analyses :")
-      print(init$available_DA_GSA_datasets)
     
     }
   })
@@ -2447,8 +2436,7 @@ shinyServer(function(input, output, session) {
     req(input$selected_DA_GSA_dataset)
     
     cat("Loading ", input$selected_DA_GSA_dataset)
-    cat("num clust ", set_numclust())
-    
+
     file_index <- match(c(input$selected_DA_GSA_dataset), DA_GSA_datasets())
     filename_sel <- file.path(init$data_folder, "ChromSCape_analyses",
                               analysis_name(),"Diff_Analysis_Gene_Sets",

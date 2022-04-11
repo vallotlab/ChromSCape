@@ -29,16 +29,16 @@ directory as follows :
 
 Example of folder structure : <br>
       <u>scChIPseq</u><br>
-          ├── <b>Sample_1</b><br>
-          │   ├── cell_1.bed<br>
-          │   ├── cell_2.bed<br>
-          │   ├── cell_3.bed<br>
-          │   └── cell_4.bed<br>
-          ├── <b>Sample_2</b><br>
-          │   ├── cell_1.bed<br>
-          │   ├── cell_2.bed<br>
-          │   ├── cell_3.bed<br>
-          │   └── cell_4.bed<br>
+         * <b>Sample_1</b><br>
+                - cell_1.bed<br>
+                - cell_2.bed<br>
+                - cell_3.bed<br>
+                - cell_4.bed<br>
+         * <b>Sample_2</b><br>
+                - cell_1.bed<br>
+                - cell_2.bed<br>
+                - cell_3.bed<br>
+                - cell_4.bed<br>
 
 In this case, select the <u>scChIPseq</u> directory and ChromSCape will recognize Sample_1 and 
 Sample_2 folders.

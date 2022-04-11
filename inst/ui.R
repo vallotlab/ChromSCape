@@ -150,7 +150,7 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                                                       selectInput("annotation","Select reference genome:", choices=c("hg38", "mm10")),
                                                                       textOutput("data_matrices_info") %>%
                                                                           shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
-                                                                                              content = "filtering_parameters")),
+                                                                                              content = "datamatrix_input")),
                                                                       column(6,
                                                                       radioButtons("data_choice_box", label = "Input data type",
                                                                                    choices = list("Dense Matrix"="DenseMatrix",

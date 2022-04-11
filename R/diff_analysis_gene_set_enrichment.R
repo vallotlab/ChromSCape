@@ -910,6 +910,10 @@ table_enriched_genes_scExp <- function(
         stop("ChromSCape::table_enriched_genes_scExp - set variable",
         "must be 'Both', 'Overexpressed' or 'Underexpressed'.")
     
+    return_df = setNames(
+        data.frame(matrix(ncol = 6, nrow = 0)),
+        c("Gene_set", "Class", "Num_deregulated_genes", "p.value",
+          "adj.p.value", "Deregulated_genes"))
   groups = gsub(".*\\.","",grep("qval",
                                 colnames(SingleCellExperiment::rowData(scExp)),
                                 value = TRUE))
@@ -917,15 +921,15 @@ table_enriched_genes_scExp <- function(
         stop("ChromSCape::table_enriched_genes_scExp - Group is not in ",
         "differential analysis")
     
-    table <- scExp@metadata$enr[[set]][[match(group, groups)]]
+    n = match(group, groups)
+    if(n > length(scExp@metadata$enr[[set]]) || 
+       is.null(scExp@metadata$enr[[set]][[n]])) return(return_df)
+    
+    table <- scExp@metadata$enr[[set]][[n]]
     table <- table[which(table[, "Class"] %in% enr_class_sel), ]
     if (is.null(table))
     {
-        return(
-            setNames(
-                data.frame(matrix(ncol = 6, nrow = 0)),
-                c("Gene_set", "Class", "Num_deregulated_genes", "p.value",
-                "adj.p.value", "Deregulated_genes")))
+        return(return_df)
     }
     table <- tidyr::unite(table, "dereg_genes", c(
         "Nb_of_deregulated_genes", "Nb_of_genes"), sep = "/")

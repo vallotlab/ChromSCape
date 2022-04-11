@@ -2271,21 +2271,10 @@ reduce_dim_batch_correction <- function(scExp, mat, batch_list, n){
     adj_annot <- data.frame()
     b_names <- unique(scExp.$batch_name)
     scExp.$batch_id <- as.factor(as.numeric(as.factor(scExp.$batch_name)))
-    if (is(mat,"dgCMatrix") | is(mat, "dgTMatrix"))
-    {
-        pca <- pca_irlba_for_sparseMatrix(Matrix::t(mat), n)
-    } else
-    {
-        pca <- stats::prcomp(Matrix::t(mat),
-                            center = TRUE,
-                            scale. = FALSE)
-        pca <- pca$x[, seq_len(n)]
-    }
     for (i in seq_along(b_names))
     {
         b_name <- b_names[i]
-        batches[[i]] <-
-            as.matrix(mat[,which(scExp.$batch_name == b_name)])
+        batches[[i]] <- mat[,which(scExp.$batch_name == b_name)]
         adj_annot <- rbind(adj_annot, as.data.frame(
             SummarizedExperiment::colData(
                 scExp.)[scExp.$batch_name ==b_name, ]))

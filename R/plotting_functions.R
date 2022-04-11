@@ -857,11 +857,23 @@ plot_coverage_BigWig <- function(
     
     if(sum(sapply(coverage_list, length)) >0){
         
+        # Tile on region
+        bin_width = floor(mean(width(coverage_list[[1]])))
+        bins <- unlist(GenomicRanges::tile(roi, width = bin_width))
+        
+        for(i in seq_along(coverage_list)){
+            bins. = bins
+            bins.$score = 0
+            matches = GenomicRanges::findOverlaps(coverage_list[[i]], bins., select = "first")
+            bins.$score[matches] = coverage_list[[i]]$score
+            coverage_list[[i]] = bins.
+        }
+        
         max = round(max(sapply(coverage_list, function(tab) max(tab$score))),3)
         
         n = length(coverage_list)
         layout.matrix <- matrix(
-            c(sort(rep(seq_len(n),4)), n+1,n+1), ncol = 1)
+            c(sort(rep(seq_len(n),4)), rep(n+1,8)), ncol = 1)
         peaks_roi=data.frame()
         if(!is.null(peaks)){
             peaks_roi = peaks[S4Vectors::subjectHits(
@@ -878,7 +890,7 @@ plot_coverage_BigWig <- function(
                 ggplot(mapping = aes(x = start, y = score)) +
                 geom_area(stat = "identity", fill = label_color_list[i]) + 
                 geom_hline(yintercept = 0, size = 0.1) +
-                ylab(label = names(label_color_list)[i]) + ylim(c(0, max)) + 
+                ylab(label = names(label_color_list)[i]) +  ylim(c(0, max)) + 
                 theme_classic() + 
                 theme(panel.spacing.y = unit(x = 0, units = "line"),
                       axis.title.x = element_blank(),
@@ -915,10 +927,10 @@ plot_coverage_BigWig <- function(
                                         genebed$start > start  & 
                                         genebed$end < end),]
         
-        genebed_tmp$orientation = ifelse(genebed_tmp$strand=="+", 1, -1)
-                genebed_tmp$molecule = 
-            rep(c(1,2.35),length(genebed_tmp$start))[1:length(genebed_tmp$start)]
         if(nrow(genebed_tmp) > 0) { 
+            genebed_tmp$orientation = ifelse(genebed_tmp$strand=="+", 1, -1)
+            genebed_tmp$molecule = 
+                rep(c(1,2.35),length(genebed_tmp$start))[1:length(genebed_tmp$start)]
         list_plot[[length(list_plot) + 1 ]] = genebed_tmp %>% 
             ggplot(aes(xmin = start, xmax = end, y = molecule, forward = orientation)) +
             gggenes::geom_gene_arrow(fill = "black", 
@@ -937,7 +949,7 @@ plot_coverage_BigWig <- function(
                   axis.text.y = element_blank(), axis.ticks.y = element_blank(),
                   axis.line.y = element_blank()) + xlab(chrom)
         } else{
-            list_plot[[length(list_plot) + 1 ]] == NULL
+            list_plot[[length(list_plot) + 1 ]] = NULL
         }
         print(gridExtra::grid.arrange(grobs = list_plot, layout_matrix = layout.matrix))
         
