@@ -2,20 +2,7 @@
 % Please edit documentation in R/preprocessing_filtering_reduction.R
 \name{rebin_matrix}
 \alias{rebin_matrix}
-\title{Transforms a bins x cells count matrix into a larger bins x cells count matrix.
-#'
-This functions is best used to re-count large number of small bins or peaks
-(e.g. <= 5000bp) into equal or larger sized bins. The genome is either cut in
-fixed bins (e.g. 50,000bp) or into an user defined number of bins. Bins are
-calculated  based on the canconical chromosomes. Note that if peaks are larger
-than bins,  or if peaks are overlapping multiple bins, the signal is added
-to each bin.
-Users can increase the minimum overlap to consider peaks overlapping bins (by
-default 150bp, size of a nucleosome) to disminish the number of peaks
-overlapping multiple region. Any peak smaller than the minimum overlapp
-threshold will be dismissed. Therefore, library size might be slightly
-different from peaks to bins if signal was duplicated into multiple bins or
-ommitted due to peaks smaller than minimum overlap.}
+\title{Transforms a bins x cells count matrix into a larger bins x cells count matrix.}
 \usage{
 rebin_matrix(
   mat,
@@ -48,8 +35,6 @@ size of 1000bp) so that no original bins are counted twice. (500)}
 A sparse matrix of larger bins or peaks.
 }
 \description{
-Transforms a bins x cells count matrix into a larger bins x cells count matrix.
-#'
 This functions is best used to re-count large number of small bins or peaks
 (e.g. <= 5000bp) into equal or larger sized bins. The genome is either cut in
 fixed bins (e.g. 50,000bp) or into an user defined number of bins. Bins are

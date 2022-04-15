@@ -532,10 +532,15 @@ shinyServer(function(input, output, session) {
           datamatrix = out$datamatrix
           annot_raw = out$annot_raw
           
+          scExp. = create_scExp(datamatrix[1:min(nrow(datamatrix),100),1:10], annot_raw[1:10,], FALSE, FALSE, FALSE, FALSE,verbose = FALSE)
+          original_bin_size = mean(GenomicRanges::width(get_genomic_coordinates(scExp.)))
+          rm(scExp.)
+          
+          if(original_bin_size < 300 & input$rebin_matrices == TRUE){
+              print("Saving raw matrix as average bin size is lesser than 300bp, for later use (coverage)...")
+              raw_mat = datamatrix
+          }
           if(input$rebin_matrices == TRUE){
-              scExp. = create_scExp(datamatrix[1:min(nrow(datamatrix),100),1:10], annot_raw[1:10,], FALSE, FALSE, FALSE, FALSE,verbose = FALSE)
-              original_bin_size = mean(GenomicRanges::width(get_genomic_coordinates(scExp.)))
-              rm(scExp.)
 
               if(!is.na(as.numeric(input$rebin_bin_size)) & !is.na(as.numeric(input$minoverlap))){
                   if(as.numeric(input$minoverlap) > as.numeric(input$rebin_bin_size) | as.numeric(input$minoverlap) > original_bin_size) {
@@ -608,6 +613,11 @@ shinyServer(function(input, output, session) {
           init$datamatrix <- datamatrix
           init$annot_raw <- annot_raw
           
+          if(!is.null(raw_mat)) qs::qsave(raw_mat, file = file.path(init$data_folder, 
+                                                 "ChromSCape_analyses", input$new_analysis_name,
+                                                 paste0("raw_mat.qs")), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
+          rm(raw_mat)
+          gc()
         }
         
         progress$inc(detail=paste0("Import successfully finished! "), amount = 0.1)
@@ -1394,8 +1404,10 @@ shinyServer(function(input, output, session) {
                  file = file.path(init$data_folder, "ChromSCape_analyses",
                                   analysis_name(), "correlation_clustering",
                                   paste0(selected_filtered_dataset(),".qs"))
+                 print(file)
                  if(file.exists(file)){
                    if(is.null(scExp_cf())){
+                     cat("Loading scExp_cf - ", selected_filtered_dataset(),"...\n")
                      data = qs::qread(file, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
                      scExp_cf(data$scExp_cf)
                      rm(data)
@@ -1403,10 +1415,13 @@ shinyServer(function(input, output, session) {
                      
                      if(length(setdiff(get.available.alternative.datasets(input$selected_analysis),
                                        getExperimentNames(scExp_cf()))) > 0 ){
+                       cat("scExp_cf - to scExp...\n")
                        scExp_cf(scExp())
                        gc()  
                      }
                    }
+                   unlocked$list$cor_clust_plot=TRUE;
+                   unlocked$list$affectation=TRUE;
                  } else {
                    scExp_cf(scExp())
                    gc()
@@ -1448,7 +1463,12 @@ shinyServer(function(input, output, session) {
       selectInput("nclust", br("Number of Clusters:"), choices=c(2:30))
       
     } else{
-      sliderInput("k_SNN", br("Number of neighbors:"), min = 5, max = 200, step = 1, value = 10)
+      column(12,
+             shinyWidgets::sliderTextInput(inputId = "resolution", label = "Resolution:",
+                                           choices =  c(1e-5, 1e-4, 1e-3, 0.0001, 0.001, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.20, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2),
+                                           selected = 1, grid = TRUE),
+             sliderInput("k_SNN", br("Number of neighbors:"), min = 2, max = 500, step = 1, value = 10)
+      )
     }
   })
   
@@ -1480,7 +1500,9 @@ shinyServer(function(input, output, session) {
         incProgress(amount=0.3, detail=paste("Building SNN graph with k=", input$k_SNN))
           print(input$k_SNN)
       scExp_cf(find_clusters_louvain_scExp(scExp_cf(),
-                                           k = input$k_SNN, BPPARAM = CS_options.BPPARAM()))
+                                           k = input$k_SNN,
+                                           resolution = input$resolution,
+                                           BPPARAM = CS_options.BPPARAM()))
       incProgress(amount=0.6, detail=paste("Finished graph with k=", input$k_SNN) )
       shiny::showNotification(paste0("Found ", length(unique(scExp_cf()$cell_cluster))," clusters with Louvain clustering."),
                               duration = 10, closeButton = TRUE, type="message")
@@ -1794,6 +1816,7 @@ shinyServer(function(input, output, session) {
   
   observeEvent(input$do_annotated_heatmap_plot,
                {
+                 print("Doing annotated heatmap")
                  req(input$clustering_method)
                  if("cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp_cf()))){
                    output$annotated_heatmap_UI <- renderUI({
@@ -1949,7 +1972,7 @@ shinyServer(function(input, output, session) {
   })
   
   output$UMAP_box <- renderUI({
-    if(! is.null(scExp_cf())){
+    if(!is.null(scExp_cf())){
       if("cell_cluster" %in% colnames(SummarizedExperiment::colData(scExp_cf())) ){
         shinydashboard::box(title= tagList(shiny::icon("fas fa-image"), " UMAP"), width = NULL, status="success", solidHeader = TRUE,
                             column(4, align="left",
@@ -2045,8 +2068,17 @@ shinyServer(function(input, output, session) {
   # 5. Coverage plot [optional]
   ###############################################################
   
-  output$coverage_info <- renderText({"In order to visualize the cumulative signal of each subpopulation (cluster), create & plot the coverage tracks of some loci of interest. 
-    The coverage tracks are saved as bigwig files in the analysis directory (under peaks/). This can be ressource & time heavy depending on the number of cells & clusters."})
+  output$coverage_info <- renderUI({
+      HTML(paste0("In order to visualize the cumulative signal of each subpopulation (cluster), create & plot the coverage tracks of some loci of interest.",
+             "The coverage tracks are saved as bigwig files in the analysis directory (under coverage/). <br/>",
+             "The recommended way to create the coverage tracks is to start your analysis from genomic bins <300bp (with re-binning to larger bin sizes). If this",
+             " is the case, the raw matrix has been saved and the coverage tracks will be created ith this bin size for each cluster",
+             " directly from the raw matrix. <br/>",
+             "If you did not start with a small bin size you have to upload the root directory containing the folders of scBED files of each sample.",
+             " The names of the folders placed in the selected directory must exactly match the sample names and the scBED must be named as in the SingleCellExperiment object. <br/>" 
+      )
+      )
+  })
   
   shinyFiles::shinyDirChoose(input, "coverage_folder", roots = volumes, session = session)
   
@@ -2073,6 +2105,23 @@ shinyServer(function(input, output, session) {
     }
   })
   
+  raw_mat_generated <- reactive({
+      req(init$data_folder, analysis_name())
+      odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name())
+      ifelse("raw_mat.qs" %in% list.files(odir),TRUE,FALSE)
+  })
+  
+  coverage_folder_ui <- renderUI({
+      if(!raw_mat_generated()){
+          shinyFiles::shinyDirButton("coverage_folder", icon = icon("folder-open"), 
+                                     "Browse directory of raw signal (scBED)" ,
+                                     title = "Please select a folder:",
+                                     buttonType = "default", class = NULL) %>%
+              shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
+                                  content = "coverage")
+      }
+
+  })
   observeEvent(input$coverage_folder,
                {
                  req(input$coverage_folder)
@@ -2113,38 +2162,52 @@ shinyServer(function(input, output, session) {
   })
   
   observeEvent(input$do_coverage, {
-    req(scExp_cf(), input$coverage_selection)
+    req(scExp_cf(), set_numclust())
     progress <- shiny::Progress$new(session, min=0, max=1)
     on.exit(progress$close())
     progress$set(message='Generating coverage tracks...', value = 0.0)
-
-      if(is.null(input$coverage_selection) | length(input$coverage_selection) ==0 ) {
-        warning("Can't find any input BED files.")
-        return()
-      }
-    input_files_coverage = lapply(list_dirs_coverage()[input$coverage_selection], function(i) list.files(i, full.names = TRUE, pattern = ".bed|.bed.gz"))
-    names(input_files_coverage) = basename(list_dirs_coverage()[input$coverage_selection])
-    
-    if(length(input_files_coverage)==0){
-      warning("Can't find any input single-cell BED files. Please make sure you selected the root of a directory",
-              " containing one folder per sample. Each folder should contain single-cell raw reads as .bed or .bed.gz file (one file per cell).")
-    } else{
-      nclust = set_numclust()
-      dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage"), showWarnings = FALSE)
-      dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
-      odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
-      sample_ids <- unique(SummarizedExperiment::colData(scExp_cf())$sample_id)
-
-      checkFiles = 0
-      if(sum(checkFiles)==0){
+    nclust = set_numclust()
+    if(raw_mat_generated()){
+        dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage"), showWarnings = FALSE)
+        dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
+        odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
+        raw_mat =  qs::qread(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "raw_mat.qs"))
         generate_coverage_tracks(scExp_cf = scExp_cf(),
-                                 input_files_coverage = input_files_coverage,
+                                 input = raw_mat,
                                  odir = odir,
+                                 format = "raw_mat",
                                  ref_genome = annotation_id(),
                                  progress = progress)
         has_available_coverage(TRUE)
         updateActionButton(session, "do_coverage", label="Finished successfully", icon = icon("check-circle"))
-      }
+    } else{
+        if(is.null(input$coverage_selection) | length(input$coverage_selection) ==0 ) {
+            warning("Can't find any input BED files.")
+            return()
+        }
+        input_files_coverage = lapply(list_dirs_coverage()[input$coverage_selection], function(i) list.files(i, full.names = TRUE, pattern = ".bed|.bed.gz"))
+        names(input_files_coverage) = basename(list_dirs_coverage()[input$coverage_selection])
+        
+        if(length(input_files_coverage)==0){
+            warning("Can't find any input single-cell BED files. Please make sure you selected the root of a directory",
+                    " containing one folder per sample. Each folder should contain single-cell raw reads as .bed or .bed.gz file (one file per cell).")
+        } else{
+            dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage"), showWarnings = FALSE)
+            dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
+            odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
+
+            checkFiles = 0
+            if(sum(checkFiles)==0){
+                generate_coverage_tracks(scExp_cf = scExp_cf(),
+                                         input = input_files_coverage,
+                                         odir = odir,
+                                         format = "raw_mat",
+                                         ref_genome = annotation_id(),
+                                         progress = progress)
+                has_available_coverage(TRUE)
+                updateActionButton(session, "do_coverage", label="Finished successfully", icon = icon("check-circle"))
+            }
+        }
     }
   })
   
@@ -2833,8 +2896,6 @@ shinyServer(function(input, output, session) {
       }
     }
   })
-  
-  
   
   output$download_da_table <- downloadHandler(
     filename = function(){ paste0("diffAnalysis_data_", selected_filtered_dataset(),

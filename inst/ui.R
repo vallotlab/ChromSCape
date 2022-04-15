@@ -350,16 +350,11 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                                 fluidPage(
                                                     column(width=4,
                                                            shinydashboard::box(title=tagList(shiny::icon("chart-area"), " Generate Coverage Plots"), width=NULL, status="success", solidHeader=TRUE,
-                                                                               column(12, align="left", textOutput("coverage_info"), hr()),
+                                                                               column(12, align="left", htmlOutput("coverage_info"), hr()),
                                                                                tags$style(HTML(".large_icon { font-size: 70px; }")),
                                                                                
                                                                                column(12, align="left",
-                                                                                      shinyFiles::shinyDirButton("coverage_folder", icon = icon("folder-open"), 
-                                                                                                                 "Browse directory of raw signal (scBED)" ,
-                                                                                                                 title = "Please select a folder:",
-                                                                                                                 buttonType = "default", class = NULL) %>%
-                                                                                          shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
-                                                                                                              content = "coverage"),
+                                                                                      uiOutput("coverage_folder_ui"),
                                                                                       br(),hr(),br(),
                                                                                       uiOutput("coverage_upload")),
                                                                                column(12, align="left", hr(), actionButton("do_coverage", "Create coverage")))),

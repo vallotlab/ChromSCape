@@ -6,8 +6,9 @@
 \usage{
 generate_coverage_tracks(
   scExp_cf,
-  input_files_coverage,
+  input,
   odir,
+  input_type = "scBED",
   ref_genome = c("hg38", "mm10")[1],
   bin_width = 150,
   n_smoothBin = 5,
@@ -20,9 +21,10 @@ generate_coverage_tracks(
 (see \code{\link{choose_cluster_scExp}}). It is recommended having a minimum
 of ~100 cells per cluster in order to obtain smooth tracks.}
 
-\item{input_files_coverage}{A named list of character vector of path towards
-single-cell BED files. The names MUST correspond to the 'sample_id' column in
-your SingleCellExperiment object. The single-cell BED files names MUST
+\item{input}{Either a named list of character vector of path towards
+single-cell BED files or a sparse raw matrix of small bins (<<500bp). If
+a named list specifying scBEDn the names MUST correspond to the 'sample_id'
+column in your SingleCellExperiment object. The single-cell BED files names MUST
 match the  barcode names in your SingleCellExperiment (column 'barcode'). The
 scBED files can be gzipped or not.}
 

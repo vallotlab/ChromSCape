@@ -855,7 +855,8 @@ beds_to_matrix_indexes <- function(dir, which,
 }
 
 #' Transforms a bins x cells count matrix into a larger bins x cells count matrix.
-#' #'
+#' 
+#' 
 #' This functions is best used to re-count large number of small bins or peaks
 #'  (e.g. <= 5000bp) into equal or larger sized bins. The genome is either cut in
 #'   fixed bins (e.g. 50,000bp) or into an user defined number of bins. Bins are

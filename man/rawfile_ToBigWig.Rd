@@ -6,7 +6,7 @@
 normalized and smoothed}
 \usage{
 rawfile_ToBigWig(
-  filename,
+  input,
   BigWig_filename,
   format = "BAM",
   bin_width = 150,
@@ -16,7 +16,8 @@ rawfile_ToBigWig(
 )
 }
 \arguments{
-\item{filename}{Path to the BAM file (with index) or BED file}
+\item{input}{Path to the BAM file (with index) or BED file or raw_matrix from
+which to generate coverage (must be small bins).}
 
 \item{BigWig_filename}{Path to write the output BigWig file}
 

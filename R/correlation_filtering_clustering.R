@@ -55,6 +55,8 @@ correlation_and_hierarchical_clust_scExp <- function(
 #' Build SNN graph and find cluster using Louvain Algorithm
 #'
 #' @param scExp A SingleCellExperiment with PCA calculated
+#' @param resolution A numeric specifying the resolution of clustering to pass to 
+#' igraph::cluster_louvain function.
 #' @param k An integer scalar specifying the number of nearest neighbors to 
 #' consider during graph construction.
 #' @param use.dimred A string specifying the dimensionality reduction to use.
@@ -73,7 +75,8 @@ correlation_and_hierarchical_clust_scExp <- function(
 #' data('scExp')
 #' 
 #' scExp = find_clusters_louvain_scExp(scExp, k = 10)
-find_clusters_louvain_scExp <- function(scExp, k = 10, use.dimred = "PCA",
+find_clusters_louvain_scExp <- function(scExp, k = 10, resolution = 1,
+                                        use.dimred = "PCA",
                                         type = c("rank", "number", "jaccard")[3],
                                         BPPARAM = BiocParallel::bpparam()){
     if(!requireNamespace("igraph", quietly=TRUE)){
@@ -86,7 +89,7 @@ find_clusters_louvain_scExp <- function(scExp, k = 10, use.dimred = "PCA",
                             k = k,
                             type = type,
                             BPPARAM = BPPARAM)
-  clust <- igraph::cluster_louvain(g)$membership
+  clust <- igraph::cluster_louvain(g, resolution = resolution)$membership
   cell_clusters = paste0("C",clust)
   scExp$cell_cluster = cell_clusters
   SummarizedExperiment::colData(scExp)[,paste0("cluster_",SingleCellExperiment::mainExpName(scExp))] =

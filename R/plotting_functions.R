@@ -1306,3 +1306,86 @@ plot_violin_feature_scExp <- function(
   
   return(p + theme(legend.title = element_text("")))
 }
+
+#' Barplot of the % of active cells for a given features 
+#'
+#' @param scExp A SingleCellExperiment
+#' @param gene A character specifying the gene to plot 
+#' @param by Color violin by cell_cluster or sample_id  ("cell_cluster")
+#' @param max_distanceToTSS Numeric. Maximum distance to a gene's TSS to consider
+#' a region linked to a gene. (1000)
+#' @param downsample Downsample for plotting (5000)
+#' 
+#' @return A violin plot of intra-correlation
+#' @export
+#' @importFrom forcats fct_inorder
+#' @examples 
+#' data(scExp)
+#' plot_percent_active_feature_scExp(scExp, "UBXN10")
+#' 
+plot_percent_active_feature_scExp <- function(
+    scExp, gene, by = c( "cell_cluster", "sample_id")[1], highlight = NULL,
+    downsample = 5000, max_distanceToTSS = 1000){
+    
+    if(ncol(scExp) > downsample) scExp = scExp[,sample(ncol(scExp),
+                                                       downsample,
+                                                       replace = FALSE)]
+    
+    annot = as.data.frame(SingleCellExperiment::colData(scExp))
+    annot_feature = as.data.frame(SummarizedExperiment::rowRanges(scExp))
+    annot_feature = annot_feature %>% 
+        tidyr::separate_rows(.data[["Gene"]], sep = ", ") %>% 
+        dplyr::group_by(.data[["Gene"]]) %>%
+        dplyr::slice_min(.data[["distanceToTSS"]])
+    annot_feature = annot_feature %>%
+        dplyr::filter( .data[["distanceToTSS"]] < max_distanceToTSS)
+    
+    if(!gene %in% annot_feature$Gene) stop(
+        "ChromSCape::plot_reduced_dim_scExp - The gene chosen, ",
+        gene, ", is not closer than ", max_distanceToTSS, " to any", 
+        "loci. Consider increasing max_distanceToTSS to take in account ",
+        "this gene.")
+    
+    counts = SingleCellExperiment::counts(scExp[annot_feature$ID[which(
+        annot_feature$Gene == gene)],])
+    
+    if(!is.null(counts) & nrow(counts) > 1 ){
+        counts = Matrix::rowSums(counts)
+    }
+    annot[,gene] = as.numeric(counts)
+    
+    cols = unique(as.character(annot[,paste0(by,"_color")]))
+    names(cols) = unique(as.character(annot[,by]))
+    
+    if(!is.null(highlight)){
+         df <- annot %>% mutate(group = ifelse(.data[[by]] == highlight, .data[[by]], "Other")) %>%
+             group_by(group) %>% 
+            summarise(percent_active = 100*sum(.data[[gene]]) / n())
+         p <- df %>%
+             ggplot() + geom_bar(aes(x=group, y= percent_active,
+                                     fill=group),color ="black", stat = "identity", alpha=0.8) + 
+             theme_classic() +
+             theme(axis.text.x = element_text(angle=90)) + 
+             ylab(paste0("% cell active - ",gene)) + xlab("") 
+         cols = c(cols[highlight],"grey85")
+         names(cols)[2] = "Other"
+    } else{
+        df <- annot %>% group_by(.data[[by]]) %>% 
+            summarise(percent_active = 100*sum(.data[[gene]]) / n())
+        p <- df %>%
+            ggplot() + geom_bar(aes(x=.data[[by]], y= percent_active,
+                                    fill=.data[[by]]),color ="black", stat = "identity", alpha=0.8) + 
+            theme_classic() +
+            theme(axis.text.x = element_text(angle=90)) + 
+            ylab(paste0("% cell active - ",gene)) + xlab("") 
+        
+    }
+    p <- p + scale_fill_manual(values = cols)
+    
+    
+    
+    return(p + theme(legend.title = element_text("")))
+}
+
+
+
