@@ -408,7 +408,6 @@ shinyServer(function(input, output, session) {
   })
   
   observeEvent(input$add_to_current_analysis, {
-
     if(!is.null(input$selected_analysis) & nchar(input$selected_analysis) > 1){
     if(input$add_to_current_analysis){
       showModal(add_to_current_analysis_Modal())
@@ -424,7 +423,8 @@ shinyServer(function(input, output, session) {
   
   observeEvent(input$create_analysis, {  # save new dataset
     req(input$new_analysis_name, input$annotation)
-
+    raw_mat = NULL
+    
     if(is.null(input$datafile_folder) && is.null(input$datafile_matrix)) return()
     if(!is.null(input$datafile_folder) && is.null(input$datafile_matrix)){
       if(is.null(files_dir())) return()

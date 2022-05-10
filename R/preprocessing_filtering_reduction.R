@@ -971,9 +971,10 @@ rebin_matrix <- function(mat,
         dplyr::summarise(new_value = sum(origin_value))
     gc()
 
+    bins_names = mat_df$bins_names[match(sort(unique(mat_df$new_row)), mat_df$new_row)]
     new_mat = Matrix::sparseMatrix(i = mat_df_grouped$new_row, j = mat_df_grouped$col, 
                            x = mat_df_grouped$new_value,
-                           dimnames = list(unique(mat_df$bins_names), colnames(mat)))
+                           dimnames = list(bins_names, colnames(mat)))
     
     gc()
     if (verbose) message("ChromSCape::rebin_matrix - Generated ",
