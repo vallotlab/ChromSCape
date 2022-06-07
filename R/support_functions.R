@@ -78,6 +78,24 @@ distPearson <- function(m)
     stats::as.dist(1 - stats::cor(t(m), method = "pearson"))
 }
 
+#' Find comparable variable scExp
+#'
+#' @param scExp A SingleCellExperiment
+#'
+#' @return A character vector with the comparable variable names
+#'
+comparable_variables <- function(scExp)
+{
+    annot = SingleCellExperiment::colData(scExp)
+    comparable = names(which(unlist(lapply(annot, class)) %in% c("character", "factor") &
+                    unlist(lapply(lapply(annot, table), length)) > 1 &
+                    unlist(lapply(lapply(annot, table), length)) < 100 &
+                    !grepl("_color", colnames(annot))))    
+    return(comparable)
+}
+
+
+
 #' CompareWilcox
 #'
 #' @param dataMat A raw count matrix
