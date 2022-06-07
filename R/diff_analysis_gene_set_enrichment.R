@@ -79,7 +79,7 @@ differential_analysis_scExp = function(
             max_distanceToTSS = max_distanceToTSS)
     }
     if(de_type == "one_vs_rest_fast"){
-      res = differential_activation(scExp, group_by = by,
+      res = differential_activation(scExp, by = by,
                                     progress = progress)
     } else {
 
