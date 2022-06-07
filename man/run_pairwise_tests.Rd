@@ -6,7 +6,7 @@
 \usage{
 run_pairwise_tests(
   affectation,
-  nclust,
+  by,
   counts,
   feature,
   method,
@@ -16,9 +16,10 @@ run_pairwise_tests(
 }
 \arguments{
 \item{affectation}{An annotation data.frame with cell_cluster and cell_id
-columins}
+columns}
 
-\item{nclust}{Number of clusters}
+\item{by}{= A character specifying the column of the object containing
+the groups of cells to compare.}
 
 \item{counts}{Count matrix}
 

@@ -6,7 +6,7 @@
 \usage{
 DA_pairwise(
   affectation,
-  nclust,
+  by,
   counts,
   method,
   feature,
@@ -19,7 +19,8 @@ DA_pairwise(
 \item{affectation}{An annotation data.frame with cell_cluster and cell_id
 columns}
 
-\item{nclust}{Number of clusters}
+\item{by}{= A character specifying the column of the object containing
+the groups of cells to compare.}
 
 \item{counts}{Count matrix}
 

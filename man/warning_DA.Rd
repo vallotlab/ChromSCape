@@ -4,11 +4,14 @@
 \alias{warning_DA}
 \title{Warning for differential_analysis_scExp}
 \usage{
-warning_DA(scExp, de_type, method, block, group, ref)
+warning_DA(scExp, by, de_type, method, block, group, ref)
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment object containing consclust with selected
 number of cluster.}
+
+\item{by}{= A character specifying the column of the object containing
+the groups of cells to compare. Exclusive with de_type == custom}
 
 \item{de_type}{Type of comparisons. Either 'one_vs_rest', to compare each
 cluster against all others, or 'pairwise' to make 1 to 1 comparisons.

@@ -7,6 +7,7 @@
 differential_analysis_scExp(
   scExp,
   de_type = c("one_vs_rest_fast", "one_vs_rest", "pairwise")[1],
+  by = "cell_cluster",
   method = "wilcox",
   block = NULL,
   group = NULL,
@@ -24,6 +25,9 @@ number of cluster.}
 \item{de_type}{Type of comparisons. Either 'one_vs_rest', to compare each
 cluster against all others, or 'pairwise' to make 1 to 1 comparisons.
 ('one_vs_rest')}
+
+\item{by}{= A character specifying the column of the object containing
+the groups of cells to compare. Exclusive with de_type == custom}
 
 \item{method}{Differential testing method, either 'wilcox' for Wilcoxon non-
 parametric testing or 'neg.binomial' for edgerGLM based testing. ('wilcox')}

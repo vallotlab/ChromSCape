@@ -8,7 +8,7 @@ generate_coverage_tracks(
   scExp_cf,
   input,
   odir,
-  input_type = "scBED",
+  format = "scBED",
   ref_genome = c("hg38", "mm10")[1],
   bin_width = 150,
   n_smoothBin = 5,

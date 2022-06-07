@@ -6,7 +6,7 @@
 \usage{
 differential_activation(
   scExp,
-  group_by = c("cell_cluster", "sample_id")[1],
+  by = c("cell_cluster", "sample_id")[1],
   verbose = TRUE,
   progress = NULL
 )
@@ -15,7 +15,7 @@ differential_activation(
 \item{scExp}{A SingleCellExperiment object containing consclust with selected
 number of cluster.}
 
-\item{group_by}{Which grouping to run the marker enrichment ?}
+\item{by}{Which grouping to run the marker enrichment ?}
 
 \item{verbose}{Print ?}
 
@@ -48,8 +48,8 @@ the reference.
 }
 \examples{
 data("scExp")
-res = differential_activation(scExp, group_by = "cell_cluster")
-res = differential_activation(scExp, group_by = "sample_id")
+res = differential_activation(scExp, by = "cell_cluster")
+res = differential_activation(scExp, by = "sample_id")
 }
 \seealso{
 For Pearson's Chi-squared Test for Count Data  \link[stats]{chisq.test}.

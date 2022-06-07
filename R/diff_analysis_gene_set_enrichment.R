@@ -20,6 +20,8 @@
 #'
 #' @param scExp A SingleCellExperiment object containing consclust with selected
 #'   number of cluster.
+#' @param by = A character specifying the column of the object containing
+#' the groups of cells to compare. Exclusive with de_type == custom
 #' @param de_type Type of comparisons. Either 'one_vs_rest', to compare each
 #'   cluster against all others, or 'pairwise' to make 1 to 1 comparisons.
 #'   ('one_vs_rest')
@@ -57,11 +59,12 @@
 #' 
 differential_analysis_scExp = function(
     scExp, de_type = c("one_vs_rest_fast", "one_vs_rest", "pairwise")[1],
+    by = "cell_cluster",
     method = "wilcox", block = NULL, group = NULL, ref = NULL,
     prioritize_genes = nrow(scExp) > 20000, max_distanceToTSS = 1000, 
     progress = NULL, BPPARAM = BiocParallel::bpparam())
 {
-    warning_DA(scExp, de_type, method, block, group, ref)
+    warning_DA(scExp, by, de_type, method, block, group, ref)
     if (!is.null(progress)) progress$set(detail = "Retrieving counts...", value = 0.15)
     if (isFALSE(block)) block = NULL
     if(prioritize_genes){
@@ -76,11 +79,10 @@ differential_analysis_scExp = function(
             max_distanceToTSS = max_distanceToTSS)
     }
     if(de_type == "one_vs_rest_fast"){
-      res = differential_activation(scExp, group_by = "cell_cluster",
+      res = differential_activation(scExp, group_by = by,
                                     progress = progress)
     } else {
-      if(de_type != "custom")
-        nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
+
       if(method == "wilcox"){
         counts = SingleCellExperiment::normcounts(
           scExp[SingleCellExperiment::rowData(scExp)$top_feature,])
@@ -95,11 +97,11 @@ differential_analysis_scExp = function(
       affectation = as.data.frame(SingleCellExperiment::colData(scExp))
       
       if (de_type == "one_vs_rest"){
-        res <- DA_one_vs_rest(affectation, nclust, counts,
+        res <- DA_one_vs_rest(affectation, by, counts,
                               method, feature, block, progress,
                               BPPARAM = BPPARAM)
       } else if(de_type == "pairwise"){
-        res <- DA_pairwise(affectation, nclust, counts, method, feature, block,
+        res <- DA_pairwise(affectation, by, counts, method, feature, block,
                            progress, BPPARAM = BPPARAM)
       } else if(de_type == "custom"){
         res <- DA_custom(affectation, counts, method, feature, block,
@@ -123,6 +125,8 @@ differential_analysis_scExp = function(
 #'
 #' @param scExp A SingleCellExperiment object containing consclust with selected
 #'   number of cluster.
+#' @param by = A character specifying the column of the object containing
+#' the groups of cells to compare. Exclusive with de_type == custom
 #' @param de_type Type of comparisons. Either 'one_vs_rest', to compare each
 #'   cluster against all others, or 'pairwise' to make 1 to 1 comparisons.
 #'   ('one_vs_rest')
@@ -136,7 +140,7 @@ differential_analysis_scExp = function(
 #' rows
 #'
 #' @return Warnings or Errors if the input are not correct
-warning_DA <- function(scExp, de_type, method, block, group, ref){
+warning_DA <- function(scExp, by, de_type, method, block, group, ref){
     stopifnot(is(scExp, "SingleCellExperiment"), is.character(de_type))
   
     if (!de_type %in% c("one_vs_rest_fast","one_vs_rest", "pairwise", "custom")) 
@@ -145,7 +149,7 @@ warning_DA <- function(scExp, de_type, method, block, group, ref){
     if (!method %in% c("wilcox", "neg.binomial")) 
         stop("ChromSCape::run_differential_analysis_scExp - method must",
                     "be 'wilcox' or 'neg.binomial'.")
-    if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))
+    if (!by %in% colnames(SingleCellExperiment::colData(scExp))
         & de_type != "custom") 
         stop("ChromSCape::run_differential_analysis_scExp - scExp ",
                     "object must have selected number of clusters.")
@@ -207,7 +211,8 @@ summary_DA <- function(scExp, qval.th = 0.01,
 #'
 #' @param affectation An annotation data.frame with cell_id and cell_cluster
 #'   columns
-#' @param nclust Number of clusters
+#' @param by = A character specifying the column of the object containing
+#' the groups of cells to compare.
 #' @param counts Count matrix
 #' @param method DA method : Wilcoxon or EdgeR
 #' @param feature Feature tables
@@ -219,28 +224,28 @@ summary_DA <- function(scExp, qval.th = 0.01,
 #'  
 #' @return A list of results, groups compared and references
 #'   
-DA_one_vs_rest <- function(affectation, nclust, counts, method, feature,
+DA_one_vs_rest <- function(affectation, by, counts, method, feature,
                             block, progress = NULL,
                             BPPARAM = BiocParallel::bpparam()){
-    stopifnot(is.data.frame(affectation),is.integer(nclust),
+    stopifnot(is.data.frame(affectation),
                 is(counts,"dgCMatrix")|is.matrix(counts), is.character(method),
                 is.data.frame(feature))
+    groups = unique(affectation[,by])
     # compare each cluster to all the rest
-    mygps = lapply(seq_len(nclust), function(i)
+    mygps = lapply(groups, function(i)
     {
-        affectation[which(affectation$cell_cluster == paste0("C", i)),
-                    "cell_id"]
+        affectation[which(affectation[,by] == i), "cell_id"]
     })
-    names(mygps) = paste0("C", seq_len(nclust))
-    groups = names(mygps)
-    myrefs = lapply(seq_len(nclust), function(i)
+    names(mygps) = groups
+    
+    myrefs =  lapply(groups, function(i)
     {
-        affectation[which(affectation$cell_cluster != paste0("C", i)),
-                    "cell_id"]
+        affectation[which(affectation[,by] != i), "cell_id"]
     })
     
-    names(myrefs) = paste0("notC", seq_len(nclust))
+    names(myrefs) = paste0("not_", groups)
     refs = names(myrefs)
+    
     if (!is.null(progress)) progress$inc(
         detail = paste0("Comparing Group vs Refs"), amount = 0.2)
     if(method == "wilcox"){ 
@@ -261,7 +266,8 @@ DA_one_vs_rest <- function(affectation, nclust, counts, method, feature,
 #'
 #' @param affectation An annotation data.frame with cell_cluster and cell_id 
 #' columns
-#' @param nclust Number of clusters 
+#' @param by = A character specifying the column of the object containing
+#' the groups of cells to compare.
 #' @param counts Count matrix
 #' @param feature Feature data.frame
 #' @param method DA method, Wilcoxon or edgeR
@@ -273,24 +279,24 @@ DA_one_vs_rest <- function(affectation, nclust, counts, method, feature,
 #'  
 #' @return A list of results, groups compared and references
 #'
-DA_pairwise <- function(affectation, nclust, counts,
+DA_pairwise <- function(affectation, by, counts,
                         method, feature, block, progress = NULL,
                         BPPARAM = BiocParallel::bpparam()){
-    stopifnot(is.data.frame(affectation),is.integer(nclust),
+    stopifnot(is.data.frame(affectation),
                 is(counts,"dgCMatrix")|is.matrix(counts), is.character(method),
                 is.data.frame(feature))
     res = feature
-    out <- run_pairwise_tests(affectation, nclust, counts, feature, method,
+    out <- run_pairwise_tests(affectation, by, counts, feature, method,
                               progress = progress, BPPARAM = BPPARAM)
     if (!is.null(progress)) progress$inc(detail = "Merging results...",
                                          amount = 0.1)
     count_save <- out$count_save
     pairs <- out$pairs
     single_results <- out$single_results
-    
+    all_groups = unique(affectation[, by])
     tmp.gp = list(affectation[which(
-        affectation$cell_cluster == paste0("C", nclust)), "cell_id"])
-    count_save[, paste0("C", nclust)] = apply(
+        affectation[, by] == all_groups[length(all_groups)]), "cell_id"])
+    count_save[, all_groups[length(all_groups)]] = apply(
         counts, 1, function(x) mean(x[as.character(tmp.gp[[1]])]))
     
     names = c("ID",  "chr", "start", "end", "logFC",
@@ -303,21 +309,21 @@ DA_pairwise <- function(affectation, nclust, counts,
         log.p.out = FALSE, output.field = "stats", full.stats = TRUE,
         sorted = FALSE)
     
-    for (i in seq_len(as.integer(nclust)))
+    for (i in all_groups)
     {
-        logFCs = vapply(seq_len((as.integer(nclust) - 1)), function(k){
-            combinedTests[[paste0("C", i)]][,k + 4]$logFC
+        logFCs = vapply(seq_len(all_groups[-length(all_groups)]), function(k){
+            combinedTests[[i]][,k + 4]$logFC
         }, FUN.VALUE = rep(0,nrow(feature)))
-        group_activation = vapply(seq_len((as.integer(nclust) - 1)), function(k){
-          combinedTests[[paste0("C", i)]][,k + 4]$group_activation
+        group_activation = vapply(seq_len(all_groups[-length(all_groups)]), function(k){
+          combinedTests[[i]][,k + 4]$group_activation
         }, FUN.VALUE = rep(0,nrow(feature)))
-        reference_activation = vapply(seq_len((as.integer(nclust) - 1)), function(k){
-          combinedTests[[paste0("C", i)]][,k + 4]$reference_activation
+        reference_activation = vapply(seq_len(all_groups[-length(all_groups)]), function(k){
+          combinedTests[[i]][,k + 4]$reference_activation
         }, FUN.VALUE = rep(0,nrow(feature)))
-        res[, paste0("logFC.C", i)] = Matrix::rowMeans(logFCs)
-        res[, paste0("qval.C", i)] =  combinedTests[[paste0("C", i)]]$p.value
-        res[, paste0("group_activation.C", i)] = Matrix::rowMeans(group_activation)
-        res[, paste0("reference_activation.C", i)] = Matrix::rowMeans(reference_activation)
+        res[, paste0("logFC.", i)] = Matrix::rowMeans(logFCs)
+        res[, paste0("qval.", i)] =  combinedTests[[i]]$p.value
+        res[, paste0("group_activation.", i)] = Matrix::rowMeans(group_activation)
+        res[, paste0("reference_activation.", i)] = Matrix::rowMeans(reference_activation)
         
     }
     return(res)
@@ -381,8 +387,9 @@ DA_custom <- function(affectation, counts, method, feature,
 #' Run pairwise tests
 #'
 #' @param affectation An annotation data.frame with cell_cluster and cell_id 
-#' columins
-#' @param nclust Number of clusters 
+#' columns
+#' @param by = A character specifying the column of the object containing
+#' the groups of cells to compare.
 #' @param counts Count matrix
 #' @param feature Feature data.frame
 #' @param method DA method, Wilcoxon or edgeR
@@ -393,28 +400,28 @@ DA_custom <- function(affectation, counts, method, feature,
 #'  
 #' @return A list containing objects for DA function
 #'
-run_pairwise_tests <- function(affectation, nclust, counts, 
+run_pairwise_tests <- function(affectation, by, counts, 
                             feature, method, progress = NULL,
                             BPPARAM = BiocParallel::bpparam()){
-    stopifnot(is.data.frame(affectation),is.integer(nclust),
+    stopifnot(is.data.frame(affectation),
                 is(counts,"dgCMatrix")|is.matrix(counts), is.character(method))
     count_save = data.frame(ID = feature$ID)
     single_results = list()
     pairs = setNames(data.frame(matrix(ncol = 2, nrow = 0)),
                     c("group", "ref"))
-    for (i in seq_len((as.integer(nclust) - 1))){
-        mygps = list(affectation[which(
-            affectation$cell_cluster == paste0("C", i)), "cell_id"])
-        names(mygps) = paste0("C", i)
+    all_groups = unique(affectation[,by])
+    for (i in all_groups){
+        mygps = list(affectation[which(affectation[,by] == i), "cell_id"])
+        names(mygps) = i
         groups = names(mygps)
-        for (j in (i + 1):as.integer(nclust)){
+        for (j in setdiff(all_groups, groups)){
             myrefs = list(affectation[which(
-                affectation$cell_cluster == paste0("C",j)), "cell_id"])
-            names(myrefs) = paste0("C", j)
+                affectation[,by] == j), "cell_id"])
+            names(myrefs) = j
             refs = names(myrefs)
             if (!is.null(progress)) progress$set(
                 detail = paste0(groups, " vs ",refs),
-                value = 0.15 + (0.85 / ((as.integer(nclust) - 1) * (as.integer(nclust) - 1) )))
+                value = 0.15 + (0.85 / ((length(all_groups) - 1) * (length(all_groups) - 1) )))
             if(method == "wilcox"){ tmp_result = CompareWilcox(
                 dataMat = counts, annot = affectation, ref_group = myrefs, 
                 groups = mygps, featureTab = feature, BPPARAM =BPPARAM)
@@ -429,9 +436,9 @@ run_pairwise_tests <- function(affectation, nclust, counts,
             single_results = rlist::list.append(single_results, tmp_result)
             pairs[nrow(pairs) + 1, ] = list(groups[1], refs[1])
             tmp_mirror = tmp_result
-            tmp_mirror[,paste0("logFC.",groups)] = tmp_result[,paste0("logFC.",groups)] * (-1)
-            tmp_mirror[,paste0("group_activation.",groups)] = tmp_result[,paste0("reference_activation.",groups)]
-            tmp_mirror[,paste0("reference_activation.",groups)] =  tmp_result[,paste0("group_activation.",groups)]
+            tmp_mirror[, paste0("logFC.", groups)] = tmp_result[,paste0("logFC.", groups)] * (-1)
+            tmp_mirror[, paste0("group_activation.", groups)] = tmp_result[, paste0("reference_activation.", groups)]
+            tmp_mirror[, paste0("reference_activation.", groups)] =  tmp_result[, paste0("group_activation.", groups)]
             single_results = rlist::list.append(single_results, tmp_mirror)
             pairs[nrow(pairs) + 1, ] = list(refs[1], groups[1])}}
     out <- list("single_results" = single_results, "pairs" = pairs,
@@ -455,7 +462,7 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #' 
 #' @param scExp  A SingleCellExperiment object containing consclust with selected
 #'   number of cluster.
-#' @param group_by Which grouping to run the marker enrichment ?
+#' @param by Which grouping to run the marker enrichment ?
 #' @param progress A shiny Progress instance to display progress bar. 
 #' @param verbose Print ? 
 #'  
@@ -481,15 +488,15 @@ run_pairwise_tests <- function(affectation, nclust, counts,
 #'
 #' @examples
 #' data("scExp")
-#' res = differential_activation(scExp, group_by = "cell_cluster")
-#' res = differential_activation(scExp, group_by = "sample_id")
-differential_activation <- function(scExp, group_by = c("cell_cluster","sample_id")[1],
+#' res = differential_activation(scExp, by = "cell_cluster")
+#' res = differential_activation(scExp, by = "sample_id")
+differential_activation <- function(scExp, by = c("cell_cluster","sample_id")[1],
                                     verbose = TRUE, progress = NULL){
   .par_chisq = function(row) { return(chisq.test(
     matrix(c(row[1], row[2], row[3], row[4]), ncol = 2),
     simulate.p.value = FALSE)$p.value)}
   
-  groups = unique(colData(scExp)[, group_by])
+  groups = unique(colData(scExp)[, by])
   list_res = list()
   
   mat = Matrix::Matrix(SingleCellExperiment::counts(
@@ -505,8 +512,8 @@ differential_activation <- function(scExp, group_by = c("cell_cluster","sample_i
     if (!is.null(progress)) progress$inc(
       detail = paste0("Calculating differential activation - ", group, "..."), amount = 0.9/length(groups))
     if(verbose) cat("ChromSCape::differential_activation - Calculating differential activation for", group,".\n")
-    cluster_bin_mat = mat[,which(SingleCellExperiment::colData(scExp)[, group_by] %in% group)]
-    reference_bin_mat = mat[,which(!SingleCellExperiment::colData(scExp)[, group_by] %in% group)]
+    cluster_bin_mat = mat[,which(SingleCellExperiment::colData(scExp)[, by] %in% group)]
+    reference_bin_mat = mat[,which(!SingleCellExperiment::colData(scExp)[, by] %in% group)]
     
     rectifier = mean(Matrix::colSums(cluster_bin_mat)) / mean(Matrix::colSums(reference_bin_mat))
     group_sum = Matrix::rowSums(cluster_bin_mat)
@@ -633,17 +640,11 @@ gene_set_enrichment_analysis_scExp = function(
     refined_annotation = NULL
     if(use_peaks) refined_annotation = scExp@metadata$refined_annotation
     
-    if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))) 
-        stop("ChromSCape::gene_set_enrichment_analysis_scExp - scExp ",
-        "object must have selected number of clusters.")
-    
     database_MSIG <- load_MSIGdb(ref,GeneSetClasses)
     GeneSets = database_MSIG$GeneSets
     GeneSetsDf = database_MSIG$GeneSetsDf
     GenePool = database_MSIG$GenePool
     GeneSets <- lapply(GeneSets, function(x) unique(intersect(x, GenePool)))
-    
-    nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
     
     annotFeat_long = as.data.frame(tidyr::separate_rows(
         as.data.frame(SummarizedExperiment::rowRanges(scExp)), 
@@ -784,7 +785,8 @@ combine_enrichmentTests <- function(
     annotFeat_long, peak_distance, refined_annotation, GeneSets, GeneSetsDf, 
     GenePool, progress = NULL)
     {
-    stopifnot(is.data.frame(diff), is.numeric(enrichment_qval), is.numeric(qval.th),
+    stopifnot(is.data.frame(diff),
+              is.numeric(enrichment_qval), is.numeric(qval.th),
                 is.numeric(logFC.th), is.data.frame(annotFeat_long),
                 is.numeric(peak_distance), is.list(GeneSets),
                 is.data.frame(GeneSetsDf), is.character(GenePool))
@@ -1012,9 +1014,7 @@ enrich_TF_ChEA3_scExp = function(
   if (!"cell_cluster" %in% colnames(SingleCellExperiment::colData(scExp))) 
     stop("ChromSCape::enrich_for_TF_ChEA3 - scExp ",
          "object must have selected number of clusters.")
-  
-  nclust = length(unique(SingleCellExperiment::colData(scExp)$cell_cluster))
-  
+
   annotFeat_long = as.data.frame(tidyr::separate_rows(
     as.data.frame(SummarizedExperiment::rowRanges(scExp)), 
     .data$Gene, sep = ", "))

@@ -6,18 +6,17 @@
 given a bin GenomicRanges object (same as deepTools bamCoverage)}
 \usage{
 count_coverage(
-  filename,
+  input,
   format = "BAM",
   bins,
   canonical_chr,
   n_smoothBin = 5,
   ref = "hg38",
-  read_size = 101
+  read_size = 101,
+  original_bins = NULL
 )
 }
 \arguments{
-\item{filename}{Path towards the BAM to create coverage from}
-
 \item{format}{File format, either "BAM" or "BED"}
 
 \item{bins}{A GenomicRanges object of binned genome}
@@ -29,6 +28,11 @@ count_coverage(
 \item{ref}{Genomic reference}
 
 \item{read_size}{Length of the reads}
+
+\item{original_bins}{Original bins GenomicRanges in case the format is raw
+matrix.}
+
+\item{filename}{Path towards the BAM to create coverage from}
 }
 \value{
 A binned GenomicRanges that can be readily exported into bigwig file.

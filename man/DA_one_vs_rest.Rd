@@ -6,7 +6,7 @@
 \usage{
 DA_one_vs_rest(
   affectation,
-  nclust,
+  by,
   counts,
   method,
   feature,
@@ -19,7 +19,8 @@ DA_one_vs_rest(
 \item{affectation}{An annotation data.frame with cell_id and cell_cluster
 columns}
 
-\item{nclust}{Number of clusters}
+\item{by}{= A character specifying the column of the object containing
+the groups of cells to compare.}
 
 \item{counts}{Count matrix}
 

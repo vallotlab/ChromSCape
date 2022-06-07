@@ -7,6 +7,7 @@
 find_clusters_louvain_scExp(
   scExp,
   k = 10,
+  resolution = 1,
   use.dimred = "PCA",
   type = c("rank", "number", "jaccard")[3],
   BPPARAM = BiocParallel::bpparam()
@@ -17,6 +18,9 @@ find_clusters_louvain_scExp(
 
 \item{k}{An integer scalar specifying the number of nearest neighbors to
 consider during graph construction.}
+
+\item{resolution}{A numeric specifying the resolution of clustering to pass to
+igraph::cluster_louvain function.}
 
 \item{use.dimred}{A string specifying the dimensionality reduction to use.}
 

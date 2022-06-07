@@ -12,7 +12,8 @@ rawfile_ToBigWig(
   bin_width = 150,
   n_smoothBin = 5,
   ref = "hg38",
-  read_size = 101
+  read_size = 101,
+  original_bins = NULL
 )
 }
 \arguments{
@@ -30,6 +31,9 @@ which to generate coverage (must be small bins).}
 \item{ref}{Reference genome.}
 
 \item{read_size}{Length of the reads.}
+
+\item{original_bins}{Original bins GenomicRanges in case the format is raw
+matrix.}
 }
 \value{
 Writes a BigWig file as output
