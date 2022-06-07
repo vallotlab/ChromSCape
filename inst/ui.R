@@ -24,7 +24,10 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                 title = tagList(
                                     span(class = "logo-lg", "ChromSCape"), 
                                     icon("ellipsis-h")),
-                                leftUi = tagList(uiOutput("dropdown_feature_select_ui"))
+                                leftUi = tagList(uiOutput("dropdown_feature_select_ui"),
+                                                 br(),
+                                                 br(),
+                                                 uiOutput("download_scExp_UI"))
                                 ),
                             sidebar = shinydashboardPlus::dashboardSidebar(
                                   shinydashboard::sidebarUserPanel(

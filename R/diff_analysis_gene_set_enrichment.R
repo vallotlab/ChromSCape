@@ -104,7 +104,7 @@ differential_analysis_scExp = function(
         res <- DA_pairwise(affectation, by, counts, method, feature, block,
                            progress, BPPARAM = BPPARAM)
       } else if(de_type == "custom"){
-        res <- DA_custom(affectation, counts, method, feature, block,
+        res <- DA_custom(affectation, by, counts, method, feature, block,
                          ref, group, progress, BPPARAM = BPPARAM)
       }
     }
@@ -149,7 +149,7 @@ warning_DA <- function(scExp, by, de_type, method, block, group, ref){
     if (!method %in% c("wilcox", "neg.binomial")) 
         stop("ChromSCape::run_differential_analysis_scExp - method must",
                     "be 'wilcox' or 'neg.binomial'.")
-    if (!by %in% colnames(SingleCellExperiment::colData(scExp))
+    if (any(!by %in% colnames(SingleCellExperiment::colData(scExp)))
         & de_type != "custom") 
         stop("ChromSCape::run_differential_analysis_scExp - scExp ",
                     "object must have selected number of clusters.")
@@ -329,10 +329,11 @@ DA_pairwise <- function(affectation, by, counts,
     return(res)
 }
 
-#' Differential Analysis in 'One vs Rest' mode
+#' Differential Analysis Custom in 'One vs One' mode
 #'
-#' @param affectation An annotation data.frame with cell_id and cell_cluster
-#'   columns
+#' @param affectation An annotation data.frame with cell_id and
+#' @param by = A character specifying the column of the object containing
+#' the groups of cells to compare.
 #' @param counts Count matrix
 #' @param method DA method : Wilcoxon or EdgeR
 #' @param feature Feature tables
@@ -350,7 +351,7 @@ DA_pairwise <- function(affectation, by, counts,
 #'  
 #' @return A list of results, groups compared and references
 #'   
-DA_custom <- function(affectation, counts, method, feature,
+DA_custom <- function(affectation, by, counts, method, feature,
                       block, ref, group, progress = NULL,
                       BPPARAM = BiocParallel::bpparam()){
     stopifnot(is.data.frame(affectation),
@@ -360,13 +361,11 @@ DA_custom <- function(affectation, counts, method, feature,
                                          amount = 0.1)
     # compare each cluster to all the rest
     groups = colnames(group)
-    mygps = unique(c(affectation[which(affectation$cell_cluster %in% group[,1]
-                        | affectation$sample_id %in% group[,1]), "cell_id"]))
+    mygps = unique(c(affectation[which(affectation[,by[1]] %in% group[,1]), "cell_id"]))
     mygps = list( "a" = mygps)
     names(mygps) = groups
     refs = colnames(ref)
-    myrefs = unique(c(affectation[which(affectation$cell_cluster %in% ref[,1]
-                        | affectation$sample_id %in% ref[,1]), "cell_id"]))
+    myrefs = unique(c(affectation[which(affectation[,by[2]]  %in% ref[,1]), "cell_id"]))
     myrefs = list("a" = myrefs)
     names(myrefs) = refs
 

@@ -81,17 +81,30 @@ distPearson <- function(m)
 #' Find comparable variable scExp
 #'
 #' @param scExp A SingleCellExperiment
+#' @param allExp A logical indicating wether alternative experiments comparable
+#' variables should also be fetch.
 #'
 #' @return A character vector with the comparable variable names
 #'
-comparable_variables <- function(scExp)
+comparable_variables <- function(scExp, allExp = TRUE)
 {
-    annot = SingleCellExperiment::colData(scExp)
-    comparable = names(which(unlist(lapply(annot, class)) %in% c("character", "factor") &
-                    unlist(lapply(lapply(annot, table), length)) > 1 &
-                    unlist(lapply(lapply(annot, table), length)) < 100 &
-                    !grepl("_color", colnames(annot))))    
-    return(comparable)
+    comparable = c()
+    exps = SingleCellExperiment::mainExpName(scExp)
+    if(allExp) exps = c(exps, SingleCellExperiment::altExpNames(scExp))
+    
+    for(exp in exps){
+        if(exp == exps[1]) scExp. = scExp else
+            scExp. = SingleCellExperiment::swapAltExp(scExp, exp)
+        annot = SingleCellExperiment::colData(scExp.)
+        comparable = c(comparable,
+                       names(which(unlist(lapply(annot, class)) %in% c("character", "factor") &
+                                       unlist(lapply(lapply(annot, table), length)) > 1 &
+                                       unlist(lapply(lapply(annot, table), length)) < 100 &
+                                       !grepl("_color", colnames(annot))))
+        )
+    }
+    
+    return(unique(comparable))
 }
 
 

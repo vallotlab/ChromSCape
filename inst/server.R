@@ -624,6 +624,29 @@ shinyServer(function(input, output, session) {
         }
     })
     
+    output$download_scExp_UI <- renderUI({
+        if(!is.null(scExp()) | !is.null(scExp_cf())){
+           
+            shinyWidgets::downloadBttn(outputId = "download_scExp", size = "sm",
+                                          label = "Download Object", color = "default",
+                                       style = "minimal")
+        } 
+    })
+    
+    output$download_scExp <- downloadHandler(
+        filename = function() {
+            paste('scExp_', gsub(":| |-", "_", gsub(":.. ", "",Sys.time())), '.qs', sep='')
+        },
+        content = function(con) {
+            if(!is.null(scExp_cf())){
+                scExp. = isolate(scExp_cf())
+            } else {
+                scExp. = isolate(scExp())
+            }
+            qs::qsave(scExp., con)
+        }
+    )
+    
     output$dropdown_feature_select_ui <- renderUI({
         if(!is.null(input$selected_analysis) && input$selected_analysis != ""){
             shinydashboardPlus::dropdownBlock(
@@ -2646,11 +2669,11 @@ shinyServer(function(input, output, session) {
     output$custom_da_ref <- renderUI({
         req(input$de_type)
         if(input$de_type == "custom"){
-            shiny::radioButtons("ref_type","Reference type", choices = comparable_variables(scExp_cf()))
+            shiny::selectInput("ref_type","Reference type", choices = comparable_variables(scExp_cf()))
         }
     })
     output$da_group <- renderUI({
-            shiny::radioButtons("group_type","Group type", choices = comparable_variables(scExp_cf()))
+            shiny::selectInput("group_type","Group type", choices = comparable_variables(scExp_cf()))
     })
     
     output$ref_choice <- renderUI({
@@ -2669,9 +2692,8 @@ shinyServer(function(input, output, session) {
                 choices = unique(unlist(SingleCellExperiment::colData(scExp_cf())[[input$group_type]]))
                 selectInput("ref_choice","Reference sample(s)", choices= choices, 
                             multiple = TRUE)
-            else{
-                
-            }
+        } else{
+            NULL
         }
     })
     
@@ -2710,7 +2732,9 @@ shinyServer(function(input, output, session) {
         gc()
         group = ""
         ref = ""
+        by = input$group_type
         if(input$de_type == "custom"){
+            by = c(by, input$ref_type)
             group = data.frame(input$group_choice)
             ref = data.frame(input$ref_choice)
             colnames(group) = gsub("[^[:alnum:]|_]","",input$name_group)
@@ -2722,7 +2746,7 @@ shinyServer(function(input, output, session) {
             scExp_cf(scExp_cf.)
         } 
         scExp_cf(differential_analysis_scExp(scExp = scExp_cf(),
-                                             by = input$group_type,
+                                             by = by,
                                              method= input$da_method,
                                              de_type = input$de_type,
                                              block = block,
