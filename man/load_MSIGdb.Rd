@@ -4,7 +4,11 @@
 \alias{load_MSIGdb}
 \title{Load and format MSIGdb pathways using msigdbr package}
 \usage{
-load_MSIGdb(ref, GeneSetClasses)
+load_MSIGdb(
+  ref,
+  GeneSetClasses = c("c1_positional", "c2_curated", "c3_motif", "c4_computational",
+    "c5_GO", "c6_oncogenic", "c7_immunologic", "hallmark")
+)
 }
 \arguments{
 \item{ref}{Reference genome, either mm10 or hg38}

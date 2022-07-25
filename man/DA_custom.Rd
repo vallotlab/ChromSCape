@@ -2,10 +2,11 @@
 % Please edit documentation in R/diff_analysis_gene_set_enrichment.R
 \name{DA_custom}
 \alias{DA_custom}
-\title{Differential Analysis in 'One vs Rest' mode}
+\title{Differential Analysis Custom in 'One vs One' mode}
 \usage{
 DA_custom(
   affectation,
+  by,
   counts,
   method,
   feature,
@@ -17,8 +18,10 @@ DA_custom(
 )
 }
 \arguments{
-\item{affectation}{An annotation data.frame with cell_id and cell_cluster
-columns}
+\item{affectation}{An annotation data.frame with cell_id and}
+
+\item{by}{= A character specifying the column of the object containing
+the groups of cells to compare.}
 
 \item{counts}{Count matrix}
 
@@ -46,5 +49,5 @@ BPPARAM set in your R session.}
 A list of results, groups compared and references
 }
 \description{
-Differential Analysis in 'One vs Rest' mode
+Differential Analysis Custom in 'One vs One' mode
 }

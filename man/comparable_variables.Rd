@@ -4,10 +4,13 @@
 \alias{comparable_variables}
 \title{Find comparable variable scExp}
 \usage{
-comparable_variables(scExp)
+comparable_variables(scExp, allExp = TRUE)
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment}
+
+\item{allExp}{A logical indicating wether alternative experiments comparable
+variables should also be fetch.}
 }
 \value{
 A character vector with the comparable variable names

@@ -6,7 +6,7 @@
 \usage{
 differential_analysis_scExp(
   scExp,
-  de_type = c("one_vs_rest_fast", "one_vs_rest", "pairwise")[1],
+  de_type = c("one_vs_rest_fast", "one_vs_rest", "pairwise", "custom")[1],
   by = "cell_cluster",
   method = "wilcox",
   block = NULL,
