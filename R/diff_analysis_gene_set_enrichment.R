@@ -58,7 +58,7 @@
 #' scExp_cf = differential_analysis_scExp(scExp)
 #' 
 differential_analysis_scExp = function(
-    scExp, de_type = c("one_vs_rest_fast", "one_vs_rest", "pairwise")[1],
+    scExp, de_type = c("one_vs_rest_fast", "one_vs_rest", "pairwise", "custom")[1],
     by = "cell_cluster",
     method = "wilcox", block = NULL, group = NULL, ref = NULL,
     prioritize_genes = nrow(scExp) > 20000, max_distanceToTSS = 1000, 
@@ -498,9 +498,9 @@ differential_activation <- function(scExp, by = c("cell_cluster","sample_id")[1]
   groups = unique(colData(scExp)[, by])
   list_res = list()
   
-  mat = Matrix::Matrix(SingleCellExperiment::counts(
-    scExp[SingleCellExperiment::rowData(scExp)$top_feature,]) > 0 + 0, sparse = TRUE)
-  
+  mat = SingleCellExperiment::counts(
+    scExp[SingleCellExperiment::rowData(scExp)$top_feature,])
+  bin_mat = Matrix::Matrix( mat > 0 + 0, sparse = TRUE)
   feature <- as.data.frame(SummarizedExperiment::rowRanges(
     scExp[SingleCellExperiment::rowData(scExp)$top_feature,]))
   feature = data.frame(ID = feature[, "ID"], chr = feature[, "seqnames"],
@@ -511,10 +511,12 @@ differential_activation <- function(scExp, by = c("cell_cluster","sample_id")[1]
     if (!is.null(progress)) progress$inc(
       detail = paste0("Calculating differential activation - ", group, "..."), amount = 0.9/length(groups))
     if(verbose) cat("ChromSCape::differential_activation - Calculating differential activation for", group,".\n")
-    cluster_bin_mat = mat[,which(SingleCellExperiment::colData(scExp)[, by] %in% group)]
-    reference_bin_mat = mat[,which(!SingleCellExperiment::colData(scExp)[, by] %in% group)]
+    cluster_bin_mat = bin_mat[,which(SingleCellExperiment::colData(scExp)[, by] %in% group)]
+    cluster_mat = mat[,which(SingleCellExperiment::colData(scExp)[, by] %in% group)]
+    reference_bin_mat = bin_mat[,which(!SingleCellExperiment::colData(scExp)[, by] %in% group)]
+    reference_mat = mat[,which(!SingleCellExperiment::colData(scExp)[, by] %in% group)]
     
-    rectifier = mean(Matrix::colSums(cluster_bin_mat)) / mean(Matrix::colSums(reference_bin_mat))
+    rectifier = mean(Matrix::colSums(cluster_mat)) / mean(Matrix::colSums(reference_mat))
     group_sum = Matrix::rowSums(cluster_bin_mat)
     group_activation = group_sum / ncol(cluster_bin_mat)
     group_corrected_activation =  group_activation / rectifier
@@ -669,9 +671,12 @@ gene_set_enrichment_analysis_scExp = function(
 #' @return A list containing the GeneSet (list), GeneSetDf (data.frame) and 
 #' GenePool character vector of all possible genes
 #'
-load_MSIGdb <- function(ref, GeneSetClasses){
-    if ((!ref %in% c("hg38", "mm10")) ) 
-        stop("ChromSCape::gene_set_enrichment_analysis_scExp - ",
+load_MSIGdb <- function(ref, 
+                        GeneSetClasses = c("c1_positional", "c2_curated", "c3_motif", 
+                                           "c4_computational", "c5_GO", "c6_oncogenic",
+                                           "c7_immunologic", "hallmark") ){
+  if ((!ref %in% c("hg38", "mm10")) ) 
+    stop("ChromSCape::gene_set_enrichment_analysis_scExp - ",
                     "Reference genome (ref) must be ",
                 "'hg38' or 'mm10' if gene sets not specified.")
     stopifnot(is.character(GeneSetClasses))
