@@ -2690,7 +2690,7 @@ shinyServer(function(input, output, session) {
         if(input$de_type == "custom"){ 
             
                 choices = unique(unlist(SingleCellExperiment::colData(scExp_cf())[[input$group_type]]))
-                selectInput("ref_choice","Reference sample(s)", choices= choices, 
+                selectInput("group_choice","Reference sample(s)", choices= choices, 
                             multiple = TRUE)
         } else{
             NULL
@@ -2713,9 +2713,9 @@ shinyServer(function(input, output, session) {
     })
     
     observeEvent(input$run_DA, {  # perform differential analysis based on wilcoxon test
-        
+        print("run_DA")
         if(input$de_type == "custom"){
-            
+          print("input$de_type == custom")
             if(TRUE %in% all.equal(input$group_choice, input$ref_choice)){
                 showNotification(paste0("Warning : Please select different group and references."),
                                  duration = 7, closeButton = TRUE, type="warning")
@@ -2734,6 +2734,7 @@ shinyServer(function(input, output, session) {
         ref = ""
         by = input$group_type
         if(input$de_type == "custom"){
+          print("input$de_type == custom")
             by = c(by, input$ref_type)
             group = data.frame(input$group_choice)
             ref = data.frame(input$ref_choice)
