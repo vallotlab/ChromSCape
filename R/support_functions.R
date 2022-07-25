@@ -85,7 +85,8 @@ distPearson <- function(m)
 #' variables should also be fetch.
 #'
 #' @return A character vector with the comparable variable names
-#'
+#' 
+#' @export
 comparable_variables <- function(scExp, allExp = TRUE)
 {
     comparable = c()
