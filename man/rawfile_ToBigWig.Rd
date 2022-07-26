@@ -17,8 +17,12 @@ rawfile_ToBigWig(
 )
 }
 \arguments{
-\item{input}{Path to the BAM file (with index) or BED file or raw_matrix from
-which to generate coverage (must be small bins).}
+\item{input}{Either a named list of character vector of path towards
+single-cell BED files or a sparse raw matrix of small bins (<<500bp). If
+a named list specifying scBEDn the names MUST correspond to the 'sample_id'
+column in your SingleCellExperiment object. The single-cell BED files names MUST
+match the  barcode names in your SingleCellExperiment (column 'barcode'). The
+scBED files can be gzipped or not.}
 
 \item{BigWig_filename}{Path to write the output BigWig file}
 

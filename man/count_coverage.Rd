@@ -17,6 +17,13 @@ count_coverage(
 )
 }
 \arguments{
+\item{input}{Either a named list of character vector of path towards
+single-cell BED files or a sparse raw matrix of small bins (<<500bp). If
+a named list specifying scBEDn the names MUST correspond to the 'sample_id'
+column in your SingleCellExperiment object. The single-cell BED files names MUST
+match the  barcode names in your SingleCellExperiment (column 'barcode'). The
+scBED files can be gzipped or not.}
+
 \item{format}{File format, either "BAM" or "BED"}
 
 \item{bins}{A GenomicRanges object of binned genome}
@@ -30,9 +37,8 @@ count_coverage(
 \item{read_size}{Length of the reads}
 
 \item{original_bins}{Original bins GenomicRanges in case the format is raw
-matrix.}
 
-\item{filename}{Path towards the BAM to create coverage from}
+matrix.}
 }
 \value{
 A binned GenomicRanges that can be readily exported into bigwig file.

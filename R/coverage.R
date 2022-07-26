@@ -24,6 +24,7 @@
 #' scBED files can be gzipped or not. 
 #' @param odir The output directory to write the cumulative BED and BigWig
 #'  files.
+#' @param format  File format, either "BAM" or "BED"
 #' @param ref_genome The genome of reference, used to constrain to canonical 
 #' chromosomes. Either 'hg38' or 'mm10'. 'hg38' per default. 
 #' @param bin_width The width of the bin to create the coverage track. The 
@@ -197,8 +198,12 @@ smoothBin <- function(bin_score, nb_bins = 10){
 #' rawfile_ToBigWig : reads in BAM file and write out BigWig coverage file, 
 #' normalized and smoothed
 #'
-#' @param input Path to the BAM file (with index) or BED file or raw_matrix from
-#' which to generate coverage (must be small bins).
+#' @param input Either a named list of character vector of path towards 
+#' single-cell BED files or a sparse raw matrix of small bins (<<500bp). If 
+#' a named list specifying scBEDn the names MUST correspond to the 'sample_id' 
+#' column in your SingleCellExperiment object. The single-cell BED files names MUST 
+#' match the  barcode names in your SingleCellExperiment (column 'barcode'). The
+#' scBED files can be gzipped or not.
 #' @param BigWig_filename Path to write the output BigWig file
 #' @param format File format, either "BAM" or "BED"
 #' @param bin_width Bin size for coverage
@@ -216,8 +221,7 @@ rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
                              bin_width = 150, n_smoothBin = 5, ref = "hg38",
                              read_size = 101, original_bins = NULL){
     bins = NULL
-    canonical_chr <- eval(parse(text = paste0("ChromSCape::",
-                                              ref, ".chromosomes")))
+    canonical_chr <- eval(parse(text = paste0("data(",ref, ".chromosomes)")))
     canonical_chr$start = 1
     canonical_chr <- GenomicRanges::GRanges(seqnames = canonical_chr$chr,
                                             ranges = IRanges::IRanges(
@@ -263,7 +267,12 @@ rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
 #' Normalization is CPM, smoothing is done by averaging on n_smoothBin regions
 #' left and right of any given region.
 #' 
-#' @param filename Path towards the BAM to create coverage from
+#' @param input Either a named list of character vector of path towards 
+#' single-cell BED files or a sparse raw matrix of small bins (<<500bp). If 
+#' a named list specifying scBEDn the names MUST correspond to the 'sample_id' 
+#' column in your SingleCellExperiment object. The single-cell BED files names MUST 
+#' match the  barcode names in your SingleCellExperiment (column 'barcode'). The
+#' scBED files can be gzipped or not.
 #' @param format File format, either "BAM" or "BED"
 #' @param bins A GenomicRanges object of binned genome
 #' @param canonical_chr GenomicRanges of the chromosomes to read the BAM file.
@@ -271,6 +280,7 @@ rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
 #' @param ref Genomic reference
 #' @param read_size Length of the reads
 #' @param original_bins Original bins GenomicRanges in case the format is raw
+#' 
 #' matrix.
 #' @importFrom Rsamtools ScanBamParam scanBam scanBamWhat
 #' @importFrom GenomicRanges tileGenome width seqnames findOverlaps

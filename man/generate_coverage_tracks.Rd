@@ -31,6 +31,8 @@ scBED files can be gzipped or not.}
 \item{odir}{The output directory to write the cumulative BED and BigWig
 files.}
 
+\item{format}{File format, either "BAM" or "BED"}
+
 \item{ref_genome}{The genome of reference, used to constrain to canonical
 chromosomes. Either 'hg38' or 'mm10'. 'hg38' per default.}
 
