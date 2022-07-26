@@ -221,7 +221,8 @@ rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
                              bin_width = 150, n_smoothBin = 5, ref = "hg38",
                              read_size = 101, original_bins = NULL){
     bins = NULL
-    canonical_chr <- eval(parse(text = paste0("data(",ref, ".chromosomes)")))
+    eval(parse(text = paste0("data(",ref, ".chromosomes)")))
+    canonical_chr <-  eval(parse(text = paste0(ref, ".chromosomes")))
     canonical_chr$start = 1
     canonical_chr <- GenomicRanges::GRanges(seqnames = canonical_chr$chr,
                                             ranges = IRanges::IRanges(
