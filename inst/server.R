@@ -3320,7 +3320,7 @@ shinyServer(function(input, output, session) {
     
     gene_violin_p <- reactive({
         req(input$gene_sel, input$color_by_violin_GSA)
-        p <- plot_violin_feature_scExp(scExp_cf(),
+        p <- plot_percent_active_feature_scExp(scExp_cf(),
                                        gene = input$gene_sel,
                                        by = input$color_by_violin_GSA, 
                                        max_distanceToTSS = input$options.dotplot_max_distanceToTSS,
