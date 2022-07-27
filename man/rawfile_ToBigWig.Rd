@@ -10,6 +10,7 @@ rawfile_ToBigWig(
   BigWig_filename,
   format = "BAM",
   bin_width = 150,
+  norm_factor,
   n_smoothBin = 5,
   ref = "hg38",
   read_size = 101,
@@ -29,6 +30,9 @@ scBED files can be gzipped or not.}
 \item{format}{File format, either "BAM" or "BED"}
 
 \item{bin_width}{Bin size for coverage}
+
+\item{norm_factor}{Then number of cells or total number of reads in the given
+sample, for normalization.}
 
 \item{n_smoothBin}{Number of bins for smoothing values}
 

@@ -10,6 +10,7 @@ count_coverage(
   format = "BAM",
   bins,
   canonical_chr,
+  norm_factor,
   n_smoothBin = 5,
   ref = "hg38",
   read_size = 101,
@@ -29,6 +30,9 @@ scBED files can be gzipped or not.}
 \item{bins}{A GenomicRanges object of binned genome}
 
 \item{canonical_chr}{GenomicRanges of the chromosomes to read the BAM file.}
+
+\item{norm_factor}{Then number of cells or total number of reads in the given
+sample, for normalization.}
 
 \item{n_smoothBin}{Number of bins left and right to smooth the signal.}
 

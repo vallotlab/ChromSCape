@@ -91,15 +91,18 @@ generate_coverage_tracks <- function(scExp_cf, input, odir,
         if (!is.null(progress)) progress$set(detail = paste0("Coverage ",class,"..."),
                                              value = 0.4 + n * (0.6/length(unique(scExp_cf$cell_cluster))) )
         out_bw = file.path(odir, paste0(class,".bw"))
+        norm_factor = sum(scExp_cf$total_counts[scExp_cf$cell_cluster == class])
         if(format == "scBED") {
             input = file.path(odir, paste0(class,suffix))
             rawfile_ToBigWig(input, out_bw, "BED", bin_width = bin_width,
+                             norm_factor = norm_factor,
                              n_smoothBin = n_smoothBin,  ref = ref_genome,
                              read_size = read_size)
         } else{
             input. = input[,which(scExp_cf$cell_cluster %in% class)]
             rawfile_ToBigWig(input = input., BigWig_filename = out_bw,
                              format = "raw_mat", bin_width = bin_width,
+                             norm_factor = norm_factor,
                              n_smoothBin = n_smoothBin,  ref = ref_genome,
                              read_size = read_size,
                              original_bins = original_bins)
@@ -207,6 +210,8 @@ smoothBin <- function(bin_score, nb_bins = 10){
 #' @param BigWig_filename Path to write the output BigWig file
 #' @param format File format, either "BAM" or "BED"
 #' @param bin_width Bin size for coverage
+#' @param norm_factor Then number of cells or total number of reads in the given 
+#' sample, for normalization.
 #' @param n_smoothBin Number of bins for smoothing values
 #' @param ref Reference genome.
 #' @param read_size Length of the reads.
@@ -218,7 +223,8 @@ smoothBin <- function(bin_score, nb_bins = 10){
 #' @return Writes a BigWig file as output
 #' 
 rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
-                             bin_width = 150, n_smoothBin = 5, ref = "hg38",
+                             bin_width = 150, norm_factor,
+                             n_smoothBin = 5, ref = "hg38",
                              read_size = 101, original_bins = NULL){
     bins = NULL
     eval(parse(text = paste0("data(",ref, ".chromosomes)")))
@@ -253,8 +259,8 @@ rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
         return()
     }
     
-    bins <- count_coverage(input, format, bins, canonical_chr, n_smoothBin,
-                           ref, read_size, original_bins)
+    bins <- count_coverage(input, format, bins, canonical_chr, norm_factor, 
+                           n_smoothBin, ref, read_size, original_bins)
     ## export as bigWig
     GenomeInfoDb::seqlengths(bins) = GenomeInfoDb::seqlengths(canonical_chr)[
       match(names(GenomeInfoDb::seqlengths(bins)),
@@ -277,6 +283,8 @@ rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
 #' @param format File format, either "BAM" or "BED"
 #' @param bins A GenomicRanges object of binned genome
 #' @param canonical_chr GenomicRanges of the chromosomes to read the BAM file.
+#' @param norm_factor Then number of cells or total number of reads in the given 
+#' sample, for normalization.
 #' @param n_smoothBin Number of bins left and right to smooth the signal.
 #' @param ref Genomic reference
 #' @param read_size Length of the reads
@@ -292,7 +300,7 @@ rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
 #'  
 #' @return A binned GenomicRanges that can be readily exported into bigwig file.
 #'
-count_coverage <-function(input, format = "BAM", bins, canonical_chr,
+count_coverage <-function(input, format = "BAM", bins, canonical_chr, norm_factor,
                           n_smoothBin = 5, ref = "hg38", read_size = 101,
                           original_bins = NULL)
 {
@@ -332,6 +340,7 @@ count_coverage <-function(input, format = "BAM", bins, canonical_chr,
     bins$score = 10^6* bins$score / length(bins)
     bins$score = smoothBin(bins$score, n_smoothBin)
     bins = bins[-which(bins$score==0)]
+    bins$score = 10^6 * bins$score / norm_factor
     gc()
     return(bins)
 }
