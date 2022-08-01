@@ -1545,12 +1545,12 @@ shinyServer(function(input, output, session) {
         file = file.path(init$data_folder, "ChromSCape_analyses",
                          analysis_name(), "correlation_clustering",
                          paste0(selected_filtered_dataset(),".qs"))
-        if(!file.exists(file)){
+        # if(!file.exists(file)){
             data = list("scExp_cf" = getMainExperiment(scExp_cf()))
             qs::qsave(data, file=file, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
             rm(data)
             gc()
-        }
+        # }
         
         if(file.exists(file.path(odir,"refined_annotation.qs"))){
             # Loading refined peak annotation
