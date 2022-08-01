@@ -4,14 +4,15 @@
 \alias{merge_MACS2_peaks}
 \title{Merge peak files from MACS2 peak caller}
 \usage{
-merge_MACS2_peaks(odir, class, peak_distance_to_merge, ref)
+merge_MACS2_peaks(peak_file, peak_distance_to_merge, min_peak_size = 200, ref)
 }
 \arguments{
-\item{odir}{Output directory}
-
-\item{class}{Cell cluster}
+\item{peak_file}{A character specifying the path towards the peak file (BED
+or bedGraph format)}
 
 \item{peak_distance_to_merge}{Maximum distance to merge two peaks}
+
+\item{min_peak_size}{An integer specifying the minimum size of peaks}
 
 \item{ref}{Reference genome}
 }

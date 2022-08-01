@@ -13,6 +13,7 @@ generate_coverage_tracks(
   bin_width = 150,
   n_smoothBin = 5,
   read_size = 101,
+  quantile_for_peak_calling = 0.85,
   progress = NULL
 )
 }
@@ -23,7 +24,7 @@ of ~100 cells per cluster in order to obtain smooth tracks.}
 
 \item{input}{Either a named list of character vector of path towards
 single-cell BED files or a sparse raw matrix of small bins (<<500bp). If
-a named list specifying scBEDn the names MUST correspond to the 'sample_id'
+a named list specifying scBED the names MUST correspond to the 'sample_id'
 column in your SingleCellExperiment object. The single-cell BED files names MUST
 match the  barcode names in your SingleCellExperiment (column 'barcode'). The
 scBED files can be gzipped or not.}
@@ -31,7 +32,7 @@ scBED files can be gzipped or not.}
 \item{odir}{The output directory to write the cumulative BED and BigWig
 files.}
 
-\item{format}{File format, either "BAM" or "BED"}
+\item{format}{File format, either "raw_mat", "BED" or "BAM"}
 
 \item{ref_genome}{The genome of reference, used to constrain to canonical
 chromosomes. Either 'hg38' or 'mm10'. 'hg38' per default.}
@@ -43,6 +44,9 @@ smaller the greater the resolution & runtime. Default to 150.}
 signal on. Default to 5.}
 
 \item{read_size}{The estimated size of reads. Default to 101.}
+
+\item{quantile_for_peak_calling}{The quantile to define the threshold above
+which signal is considered as a peak.}
 
 \item{progress}{A Progress object for Shiny. Default to NULL.}
 }

@@ -14,7 +14,8 @@ rawfile_ToBigWig(
   n_smoothBin = 5,
   ref = "hg38",
   read_size = 101,
-  original_bins = NULL
+  original_bins = NULL,
+  quantile_for_peak_calling = 0.85
 )
 }
 \arguments{
@@ -42,8 +43,15 @@ sample, for normalization.}
 
 \item{original_bins}{Original bins GenomicRanges in case the format is raw
 matrix.}
+
+\item{quantile_for_peak_calling}{The quantile to define the threshold above
+which signal is considered as a peak.}
 }
 \value{
+Writes in the output directory a bigwig file displaying the
+cumulative coverage of cells and a basic set of peaks called by taking all
+peaks above a given threshold
+
 Writes a BigWig file as output
 }
 \description{
