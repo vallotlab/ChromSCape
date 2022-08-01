@@ -18,7 +18,6 @@ shinyServer(function(input, output, session) {
                    "vizualize_dim_red",
                    "cons_clustering",
                    "coverage",
-                   "peak_calling",
                    "diff_analysis",
                    "enrich_analysis",
                    "TF_analysis") #list of all lockable tabs
@@ -1537,7 +1536,7 @@ shinyServer(function(input, output, session) {
                 return(NULL)
             }
         }
-        odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", length(unique(scExp_cf()$cell_cluster))))
+        odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", length(unique(scExp_cf()$cell_cluster))))
         
         unlocked$list$cor_clust_plot=TRUE;
         unlocked$list$affectation=TRUE;
@@ -2084,7 +2083,7 @@ shinyServer(function(input, output, session) {
     # }
     # )
     
-    observeEvent(unlocked$list, {able_disable_tab(c("selected_reduced_dataset","affectation"),c("coverage","peak_calling","diff_analysis"))}) 
+    observeEvent(unlocked$list, {able_disable_tab(c("selected_reduced_dataset","affectation"), c("coverage", "diff_analysis"))}) 
     
     ###############################################################
     # 5. Coverage plot [optional]
@@ -2165,7 +2164,7 @@ shinyServer(function(input, output, session) {
     })
     
     has_available_coverage <- reactiveVal(FALSE)
-    
+
     observe({
         req(input$tabs, scExp_cf(), set_numclust(), analysis_name(), selected_filtered_dataset())
         
@@ -2189,15 +2188,21 @@ shinyServer(function(input, output, session) {
         on.exit(progress$close())
         progress$set(message='Generating coverage tracks...', value = 0.0)
         nclust = set_numclust()
+        
+        dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage"), showWarnings = FALSE)
+        dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
+        odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
+        
         if(raw_mat_generated()){
-            dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage"), showWarnings = FALSE)
-            dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
-            odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
+
             raw_mat =  qs::qread(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "raw_mat.qs"))
             generate_coverage_tracks(scExp_cf = scExp_cf(),
                                      input = raw_mat,
                                      odir = odir,
                                      format = "raw_mat",
+                                     bin_width = as.numeric(input$coverage_bin_size),
+                                     n_smoothBin = as.numeric(input$coverage_n_smoothBin),
+                                     quantile_for_peak_calling =  as.numeric(input$quantile_for_peak_calling),
                                      ref_genome = annotation_id(),
                                      progress = progress)
             has_available_coverage(TRUE)
@@ -2214,16 +2219,16 @@ shinyServer(function(input, output, session) {
                 warning("Can't find any input single-cell BED files. Please make sure you selected the root of a directory",
                         " containing one folder per sample. Each folder should contain single-cell raw reads as .bed or .bed.gz file (one file per cell).")
             } else{
-                dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage"), showWarnings = FALSE)
-                dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
-                odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
-                
+
                 checkFiles = 0
                 if(sum(checkFiles)==0){
                     generate_coverage_tracks(scExp_cf = scExp_cf(),
                                              input = input_files_coverage,
                                              odir = odir,
-                                             format = "raw_mat",
+                                             format = "BED",
+                                             bin_width = as.numeric(input$coverage_bin_size),
+                                             n_smoothBin = as.numeric(input$coverage_n_smoothBin),
+                                             quantile_for_peak_calling =  as.numeric(input$quantile_for_peak_calling),
                                              ref_genome = annotation_id(),
                                              progress = progress)
                     has_available_coverage(TRUE)
@@ -2231,8 +2236,27 @@ shinyServer(function(input, output, session) {
                 }
             }
         }
+        # Move peaks to peaks folder. Create the folder if not existing
+        peak_files = list.files(path = odir, pattern = ".bed|.bed.gz", full.names = TRUE)
+        if(length(peak_files) > 0){
+            message("Creating consensus peak annotation by merging peaks called on each distinct cluster...")
+            merged_peaks = sapply(peak_files, rtracklayer::import.bed)
+            
+            eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
+            geneTSS_annotation = eval(parse(text = paste0("", annotation_id(), ".GeneTSS")))
+            geneTSS_annotation = as(geneTSS_annotation, "GRanges")
+            scExp_cf. = scExp_cf()
+            refined_annotation <- annotation_from_merged_peaks(scExp_cf(), odir, merged_peaks, geneTSS_annotation)
+            
+            scExp_cf.@metadata$refined_annotation = refined_annotation
+            scExp_cf(scExp_cf.)
+            rm(scExp_cf.)
+            gc()
+            qs::qsave(refined_annotation, file = file.path(odir, "refined_annotation.qs"))
+            
+        }
     })
-    
+
     
     output$coverage_UI <- renderUI({
         req(GenePool(),has_available_coverage())
@@ -2322,9 +2346,9 @@ shinyServer(function(input, output, session) {
         label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
         nclust = set_numclust()
         odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
-                          "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
-        if(file.exists(file.path(odir, "merged_peaks.bed"))){
-            peaks = rtracklayer::import.bed(file.path(odir, "merged_peaks.bed"))
+                          "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
+        if(file.exists(file.path(odir, "consensus_peaks.bed"))){
+            peaks = rtracklayer::import.bed(file.path(odir, "consensus_peaks.bed"))
         } else{peaks = NULL}
         
         output$coverage_region_plot <- renderPlot({
@@ -2344,9 +2368,9 @@ shinyServer(function(input, output, session) {
         label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
         nclust = set_numclust()
         odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
-                          "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
-        if(file.exists(file.path(odir, "merged_peaks.bed"))){
-            peaks = rtracklayer::import.bed(file.path(odir, "merged_peaks.bed"))
+                          "coverage", paste0(selected_filtered_dataset(), "_k", nclust))
+        if(file.exists(file.path(odir, "consensus_peaks.bed"))){
+            peaks = rtracklayer::import.bed(file.path(odir, "consensus_peaks.bed"))
         } else{peaks = NULL}
         
         if(!dir.exists(plot_dir())) dir.create(plot_dir())
@@ -2371,170 +2395,171 @@ shinyServer(function(input, output, session) {
     # 5. Peak calling [optional]
     ###############################################################
     
-    output$peak_calling_info <- renderText({"This module is optional, but recommended in order to obtain the most meaningful results for pathway enrichment analysis. Peaks will be called from the BAM files of the samples selected in your project, using MACS2 [only works on unix systems] so that counts can be assigned more specifically to genes TSS . If you have MACS2 installed but ChromSCape can???t find these softwares, try relaunching R from the terminal and start ChromSCape again."})
-    
-    can_run = reactiveVal({FALSE})
-    
-    output$peak_calling_system <- renderText({
-        platform = as.character(.Platform[1])
-        if(length(grep("nix",platform,ignore.case = TRUE)) ){
-            macs2=""
-            try({
-                macs2 = system2("which",args = "macs2",stdout = TRUE)
-            })
-            if(length(macs2)>0){
-                can_run(TRUE)
-                return(paste0("<b>You are running on an ", platform, " OS.<br>Found MACS2 at ", macs2))
-            }
-            if(length(macs2)==0)
-                return(paste0("<b>You are running on an ", platform, " OS.<br>Didn't find MACS2, please install MACS2 or skip this step."))
-        } else {
-            return(paste0("<b>You are running on a non unix system, peak calling is not available, you can move directly to differential analysis.</b> "))
-        }
-    })
-    
-    output$peak_calling_icon = renderText({
-        if(can_run()) {
-            return( as.character(icon("check-circle", class = "large_icon")))}
-        else{
-            return( as.character(icon("times-circle", class = "large_icon")))
-        }
-    })
-    
-    shinyFiles::shinyDirChoose(input, "pc_folder", roots = volumes, session = 
-                                   session)
-    
-    pc_folder = reactiveVal(NULL)
-    
-    observeEvent(input$pc_folder, priority = 10000, {
-        if(showHelpSC()) {
-            showModal(input_sc())
-            showHelpSC(FALSE)
-        } else { showHelpSC(TRUE)}
-    })
-    
-    list_files_pc = reactive({
-        req(pc_folder())
-        if(!is.null(pc_folder())){
-            list.files(pc_folder(), full.names = TRUE, pattern = "*.bam$|*.bed|*.bed.gz", recursive = TRUE)
-        }
-    })
-    
-    list_dirs_pc = reactive({
-        req(pc_folder())
-        if(!is.null(pc_folder())){
-            setNames(list.dirs(pc_folder(), full.names = TRUE, recursive = FALSE), basename(list.dirs(pc_folder(), recursive = FALSE)))
-        }
-    })
-    
-    bam_or_bed <- reactive({
-        req(list_files_pc())
-        nBAMs = length(grep(".*.bam$", list_files_pc()))
-        nBEDs = length(grep(".*.bed.gz$|.*.bed$", list_files_pc()))
-        ifelse(nBAMs>nBEDs,"BAM","BED")
-    })
-    
-    observeEvent(input$pc_folder,
-                 {
-                     req(input$pc_folder)
-                     if(!is.null(input$pc_folder)){
-                         # browser()
-                         pc_folder(shinyFiles::parseDirPath(volumes, input$pc_folder))
-                         output$pc_dir <- renderText(bam_or_bed())
-                     }
-                 })
-    
-    output$pc_upload <- renderUI({
-        req(list_files_pc(), bam_or_bed(), list_dirs_pc())
-        if(!is.null(list_files_pc()) & !is.null(bam_or_bed())){
-            if(bam_or_bed() == "BAM") {
-                files = list_files_pc()[grep(".bam$", list_files_pc())]
-                selectInput("bam_selection", label = "Selected samples:",
-                            choices = basename(files), multiple = TRUE,
-                            selected = basename(files) )
-            } else {
-                dirs = basename(list_dirs_pc())
-                selectInput("bed_selection", label = "Selected samples:",
-                            choices = dirs, multiple = TRUE,
-                            selected = dirs)
-            }
-        }
-    })
-    
-    observeEvent(input$do_pc, {
-        req(scExp_cf())
-        if(is.null(input$pc_folder) | length(input$pc_folder)==0 | length(input$bed_selection)==0){
-            shiny::showNotification(paste0("Please select a valid folder for ",
-                                           "the raw data before running peak_calling..."),
-                                    duration = 10, closeButton = TRUE, type="warning")
-            return()
-        }
-        
-        progress <- shiny::Progress$new(session, min=0, max=1)
-        on.exit(progress$close())
-        progress$set(message='Performing peak calling and coverage...', value = 0.0)
-        
-        if(bam_or_bed() == "BAM") {
-            input_files_pc <- as.character(file.path(dirname(list_files_pc()),input$bam_selection))
-        } else {
-            if(is.null(input$bed_selection) | length(input$bed_selection) ==0 ) {
-                warning("Can't find any input BED files.")
-                return()
-            }
-            input_files_pc = lapply(list_dirs_pc()[input$bed_selection], function(i) list.files(i, full.names = TRUE, pattern = ".bed|.bed.gz"))
-            names(input_files_pc) = basename(list_dirs_pc()[input$bed_selection])
-        }
-        if(length(input_files_pc)==0){
-            warning("Can't find any input BAM / BED files.")
-        } else{
-            nclust = set_numclust()
-            
-            dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks"), showWarnings = FALSE)
-            dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
-            odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
-            sample_ids <- unique(SummarizedExperiment::colData(scExp_cf())$sample_id)
-            
-            # checkFiles <- sapply(input_files_pc, function(x){ if(file.exists(x)){ 0 } else {
-            #   showNotification(paste0("Could not find file ", x, ". Please make sure to give a full path including the file name."),
-            #                    duration = 7, closeButton = TRUE, type="warning"); 1}
-            # })
-            checkFiles = 0
-            if(sum(checkFiles)==0){
-                
-                progress$set(message='Performing peak calling ...', value = 0.1)
-                scExp_cf(subset_bam_call_peaks(scExp_cf(), odir, input_files_pc, format = bam_or_bed(),
-                                               as.numeric(input$pc_stat_value), annotation_id(),
-                                               input$peak_distance_to_merge, progress = progress))
-                progress$set(detail = "Done !", value = 0.95)
-                
-                # Export rowRanges as peaks
-                refined_annotation = scExp_cf()@metadata$refined_annotation
-                qs::qsave(refined_annotation, file = file.path(odir, "refined_annotation.qs"), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
-                
-                pc$new <- Sys.time()
-                updateActionButton(session, "do_pc", label="Finished successfully", icon = icon("check-circle"))
-            }
-        }
-    })
-    
-    pc <- reactiveValues(new="")
-    
-    has_available_pc <- reactive({
-        if(!is.null(scExp_cf())){
-            if("refined_annotation" %in% names(scExp_cf()@metadata) ){
-                return(TRUE)
-            } else return(FALSE)
-        } else{
-            return(FALSE)
-        }
-    })
-    
-    observeEvent({selected_filtered_dataset()  # reset label on actionButtion when new peak calling should be performed
-        input$pc_stat
-        input$pc_stat_value}, {
-            pc$available_pc <- has_available_pc()
-            updateActionButton(session, "do_pc", label="Start", icon = character(0))
-        })
+    # output$peak_calling_info <- renderText({"This module is optional, but recommended in order to obtain the most meaningful results for pathway enrichment analysis. Peaks will be called from the BAM files of the samples selected in your project, using MACS2 [only works on unix systems] so that counts can be assigned more specifically to genes TSS . If you have MACS2 installed but ChromSCape can???t find these softwares, try relaunching R from the terminal and start ChromSCape again."})
+    # 
+    # can_run = reactiveVal({FALSE})
+    # 
+    # output$peak_calling_system <- renderText({
+    #     platform = as.character(.Platform[1])
+    #     if(length(grep("nix",platform,ignore.case = TRUE)) ){
+    #         macs2=""
+    #         try({
+    #             macs2 = system2("which",args = "macs2",stdout = TRUE)
+    #         })
+    #         if(length(macs2)>0){
+    #             can_run(TRUE)
+    #             return(paste0("<b>You are running on an ", platform, " OS.<br>Found MACS2 at ", macs2))
+    #         }
+    #         if(length(macs2)==0)
+    #             return(paste0("<b>You are running on an ", platform, " OS.<br>Didn't find MACS2, please install MACS2 or skip this step."))
+    #     } else {
+    #         return(paste0("<b>You are running on a non unix system, MACS2 peak calling is not available. If you ran coverage you",
+    #         "you can move directly to differential analysis.</b> "))
+    #     }
+    # })
+    # 
+    # output$peak_calling_icon = renderText({
+    #     if(can_run()) {
+    #         return( as.character(icon("check-circle", class = "large_icon")))}
+    #     else{
+    #         return( as.character(icon("times-circle", class = "large_icon")))
+    #     }
+    # })
+    # 
+    # shinyFiles::shinyDirChoose(input, "pc_folder", roots = volumes, session = 
+    #                                session)
+    # 
+    # pc_folder = reactiveVal(NULL)
+    # 
+    # observeEvent(input$pc_folder, priority = 10000, {
+    #     if(showHelpSC()) {
+    #         showModal(input_sc())
+    #         showHelpSC(FALSE)
+    #     } else { showHelpSC(TRUE)}
+    # })
+    # 
+    # list_files_pc = reactive({
+    #     req(pc_folder())
+    #     if(!is.null(pc_folder())){
+    #         list.files(pc_folder(), full.names = TRUE, pattern = "*.bam$|*.bed|*.bed.gz", recursive = TRUE)
+    #     }
+    # })
+    # 
+    # list_dirs_pc = reactive({
+    #     req(pc_folder())
+    #     if(!is.null(pc_folder())){
+    #         setNames(list.dirs(pc_folder(), full.names = TRUE, recursive = FALSE), basename(list.dirs(pc_folder(), recursive = FALSE)))
+    #     }
+    # })
+    # 
+    # bam_or_bed <- reactive({
+    #     req(list_files_pc())
+    #     nBAMs = length(grep(".*.bam$", list_files_pc()))
+    #     nBEDs = length(grep(".*.bed.gz$|.*.bed$", list_files_pc()))
+    #     ifelse(nBAMs>nBEDs,"BAM","BED")
+    # })
+    # 
+    # observeEvent(input$pc_folder,
+    #              {
+    #                  req(input$pc_folder)
+    #                  if(!is.null(input$pc_folder)){
+    #                      # browser()
+    #                      pc_folder(shinyFiles::parseDirPath(volumes, input$pc_folder))
+    #                      output$pc_dir <- renderText(bam_or_bed())
+    #                  }
+    #              })
+    # 
+    # output$pc_upload <- renderUI({
+    #     req(list_files_pc(), bam_or_bed(), list_dirs_pc())
+    #     if(!is.null(list_files_pc()) & !is.null(bam_or_bed())){
+    #         if(bam_or_bed() == "BAM") {
+    #             files = list_files_pc()[grep(".bam$", list_files_pc())]
+    #             selectInput("bam_selection", label = "Selected samples:",
+    #                         choices = basename(files), multiple = TRUE,
+    #                         selected = basename(files) )
+    #         } else {
+    #             dirs = basename(list_dirs_pc())
+    #             selectInput("bed_selection", label = "Selected samples:",
+    #                         choices = dirs, multiple = TRUE,
+    #                         selected = dirs)
+    #         }
+    #     }
+    # })
+    # 
+    # observeEvent(input$do_pc, {
+    #     req(scExp_cf())
+    #     if(is.null(input$pc_folder) | length(input$pc_folder)==0 | length(input$bed_selection)==0){
+    #         shiny::showNotification(paste0("Please select a valid folder for ",
+    #                                        "the raw data before running peak_calling..."),
+    #                                 duration = 10, closeButton = TRUE, type="warning")
+    #         return()
+    #     }
+    #     
+    #     progress <- shiny::Progress$new(session, min=0, max=1)
+    #     on.exit(progress$close())
+    #     progress$set(message='Performing peak calling and coverage...', value = 0.0)
+    #     
+    #     if(bam_or_bed() == "BAM") {
+    #         input_files_pc <- as.character(file.path(dirname(list_files_pc()),input$bam_selection))
+    #     } else {
+    #         if(is.null(input$bed_selection) | length(input$bed_selection) ==0 ) {
+    #             warning("Can't find any input BED files.")
+    #             return()
+    #         }
+    #         input_files_pc = lapply(list_dirs_pc()[input$bed_selection], function(i) list.files(i, full.names = TRUE, pattern = ".bed|.bed.gz"))
+    #         names(input_files_pc) = basename(list_dirs_pc()[input$bed_selection])
+    #     }
+    #     if(length(input_files_pc)==0){
+    #         warning("Can't find any input BAM / BED files.")
+    #     } else{
+    #         nclust = set_numclust()
+    #         
+    #         dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks"), showWarnings = FALSE)
+    #         dir.create(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust)), showWarnings = FALSE)
+    #         odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "peaks", paste0(selected_filtered_dataset(), "_k", nclust))
+    #         sample_ids <- unique(SummarizedExperiment::colData(scExp_cf())$sample_id)
+    #         
+    #         # checkFiles <- sapply(input_files_pc, function(x){ if(file.exists(x)){ 0 } else {
+    #         #   showNotification(paste0("Could not find file ", x, ". Please make sure to give a full path including the file name."),
+    #         #                    duration = 7, closeButton = TRUE, type="warning"); 1}
+    #         # })
+    #         checkFiles = 0
+    #         if(sum(checkFiles)==0){
+    #             
+    #             progress$set(message='Performing peak calling ...', value = 0.1)
+    #             scExp_cf(subset_bam_call_peaks(scExp_cf(), odir, input_files_pc, format = bam_or_bed(),
+    #                                            as.numeric(input$pc_stat_value), annotation_id(),
+    #                                            input$peak_distance_to_merge, progress = progress))
+    #             progress$set(detail = "Done !", value = 0.95)
+    #             
+    #             # Export rowRanges as peaks
+    #             refined_annotation = scExp_cf()@metadata$refined_annotation
+    #             qs::qsave(refined_annotation, file = file.path(odir, "refined_annotation.qs"), nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
+    #             
+    #             pc$new <- Sys.time()
+    #             updateActionButton(session, "do_pc", label="Finished successfully", icon = icon("check-circle"))
+    #         }
+    #     }
+    # })
+    # 
+    # pc <- reactiveValues(new="")
+    # 
+    # has_available_pc <- reactive({
+    #     if(!is.null(scExp_cf())){
+    #         if("refined_annotation" %in% names(scExp_cf()@metadata) ){
+    #             return(TRUE)
+    #         } else return(FALSE)
+    #     } else{
+    #         return(FALSE)
+    #     }
+    # })
+    # 
+    # observeEvent({selected_filtered_dataset()  # reset label on actionButtion when new peak calling should be performed
+    #     input$pc_stat
+    #     input$pc_stat_value}, {
+    #         pc$available_pc <- has_available_pc()
+    #         updateActionButton(session, "do_pc", label="Start", icon = character(0))
+    #     })
     
     ###############################################################
     # 6. Differential analysis

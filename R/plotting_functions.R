@@ -869,8 +869,9 @@ plot_coverage_BigWig <- function(
             bins.$score[matches] = coverage_list[[i]]$score
             coverage_list[[i]] = bins.
         }
-        
-        max = round(max(sapply(coverage_list, function(tab) max(tab$score))),3)
+        min_x = min(start(bins))
+        max_x = max(end(bins))
+        max_y = round(max(sapply(coverage_list, function(tab) max(tab$score))),3)
         
         n = length(coverage_list)
         layout.matrix <- matrix(
@@ -878,7 +879,7 @@ plot_coverage_BigWig <- function(
         peaks_roi=data.frame()
         if(!is.null(peaks)){
             peaks_roi = peaks[S4Vectors::subjectHits(
-                GenomicRanges::findOverlaps(roi,peaks)),]
+                GenomicRanges::findOverlaps(roi, peaks)),]
             peaks_roi = as.data.frame(peaks_roi)
             if(nrow(peaks_roi)>0) layout.matrix <- matrix(
                 c(sort(rep(seq_len(n),3)), n+1,n+1,n+2,n+2), ncol = 1)
@@ -891,9 +892,9 @@ plot_coverage_BigWig <- function(
                 ggplot(mapping = aes(x = start, y = score)) +
                 geom_area(stat = "identity", fill = label_color_list[i]) + 
                 geom_hline(yintercept = 0, size = 0.1) +
-                ylab(label = names(label_color_list)[i]) +  ylim(c(0, max)) + 
+                ylab(label = names(label_color_list)[i]) +  ylim(c(0, max_y)) + 
                 theme_classic() + 
-                theme(panel.spacing.y = unit(x = 0, units = "line"),
+                theme(
                       axis.title.x = element_blank(),
                       axis.text.x = element_blank(),
                       axis.ticks.x = element_blank(),
@@ -916,12 +917,14 @@ plot_coverage_BigWig <- function(
                                          arrow_body_height = grid::unit(2, "mm"),
                                          show.legend = FALSE) +
                 theme_classic() + ylim(c(0,2)) + 
-                theme(panel.spacing.y = unit(x = 0.5, units = "line"),
-                      axis.title.x = element_text(),
+                theme(axis.text.x = element_blank(),
+                      axis.title.x = element_blank(),
                       axis.text.y = element_blank(),
                       axis.ticks.y = element_blank(),
+                      axis.ticks.x = element_blank(),
+                      axis.line.x = element_blank(),
                       axis.line.y = element_blank()) +
-                ylab("Peaks")
+                ylab("Peaks") + xlim(c(min_x, max_x))
         }
         
         genebed_tmp = genebed[which(genebed$chr==chrom &
@@ -944,11 +947,11 @@ plot_coverage_BigWig <- function(
                                      aes(x = start, y = molecule, label = Gene),
                                      size = 4,   inherit.aes = FALSE,
                                      nudge_y = -0.1) + 
-            theme_classic() + ylim(c(0,2)) + 
-            theme(panel.spacing.y = unit(x = 0.5, units = "line"),
+            theme_classic() + ylim(c(0,2.5)) + 
+            theme(
                   axis.title.x = element_text(), axis.title = element_blank(),
                   axis.text.y = element_blank(), axis.ticks.y = element_blank(),
-                  axis.line.y = element_blank()) + xlab(chrom)
+                  axis.line.y = element_blank()) + xlab(chrom)  + xlim(c(min_x, max_x))
         } else{
             list_plot[[length(list_plot) + 1 ]] = NULL
         }

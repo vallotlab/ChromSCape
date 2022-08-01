@@ -40,8 +40,8 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                           shinydashboard::menuItem("Filter & Normalize", tabName = "filter_normalize", icon=icon("fas fa-filter", verify_fa = FALSE)),
                                           shinydashboard::menuItem("Visualize Cells", tabName = "vizualize_dim_red", icon=icon("fas fa-image")),
                                           shinydashboard::menuItem("Cluster Cells", tabName = "cons_clustering", icon=icon("th")),
-                                          shinydashboard::menuItem("Coverage", tabName = "coverage", icon=icon("chart-area")), #mountain
-                                          shinydashboard::menuItem("Peak Calling", tabName = "peak_calling", icon=icon("fab fa-mountain", verify_fa = FALSE)), #mountain
+                                          shinydashboard::menuItem("Coverage & Peak Calling", tabName = "coverage", icon=icon("chart-area")),
+                                          # shinydashboard::menuItem("Peak Calling", tabName = "peak_calling", icon=icon("fab fa-mountain", verify_fa = FALSE)), #mountain
                                           shinydashboard::menuItem("Differential Analysis", tabName = "diff_analysis", icon=icon("sort-amount-up")),
                                           shinydashboard::menuItem("Gene Set Analysis", tabName = "enrich_analysis", icon=icon("code-branch")),
                                           shinydashboard::menuItem("TF analysis", tabName = "TF_analysis", icon=icon("bezier-curve")),
@@ -360,7 +360,14 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                                                                       uiOutput("coverage_folder_ui"),
                                                                                       br(),hr(),br(),
                                                                                       uiOutput("coverage_upload")),
-                                                                               column(12, align="left", hr(), actionButton("do_coverage", "Create coverage")))),
+                                                                               column(12, align="left", sliderInput(
+                                                                                   inputId = "quantile_for_peak_calling", label = "Quantile of signal to define peak",
+                                                                                   min = 0, max = 1, value = 0.85, step = 0.005)),
+                                                                               column(4, align="left", textInput(
+                                                                                   inputId = "coverage_bin_size", label = "Resolution", value = 150)),
+                                                                               column(4, align="left", textInput(
+                                                                                   inputId = "coverage_n_smoothBin", label = "Smoothing", value = 5)),
+                                                                               column(12, align="left", actionButton("do_coverage", "Create coverage & Call Peaks")))),
                                                     column(width=8, uiOutput("coverage_UI"),
                                                            uiOutput("coverage_plot_UI"))
                                                 )
@@ -370,30 +377,30 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                         # 6. Peak calling [optional]
                         ###############################################################
                         
-                        shinydashboard::tabItem(tabName = "peak_calling",
-                                fluidPage(
-                                  column(width=6,
-                                         shinydashboard::box(title=tagList(shiny::icon("fab fa-mountain", verify_fa = FALSE), " Peak calling"), width=NULL, status="success", solidHeader=TRUE,
-                                             column(12, align="left", textOutput("peak_calling_info"), hr()),
-                                             tags$style(HTML(".large_icon { font-size: 70px; }")),
-                                             column(5, align="left",
-                                                    htmlOutput("peak_calling_system"), hr()),
-                                             column(5,offset = 1,align="center", htmlOutput("peak_calling_icon")),
-                                             column(12, align="left",
-                                                    sliderInput("peak_distance_to_merge", "Select distance of peaks to merge:", min=0, max=50000, value=5000, step=100),
-                                                    shinyFiles::shinyDirButton("pc_folder", "Browse folder of BAM / scBED files" ,
-                                                                               icon = icon("folder-open"),
-                                                                               title = "Please select a folder:",
-                                                                               buttonType = "default", class = NULL),
-                                                    uiOutput("pc_upload")),
-                                             br(), br(),
-                                             column(4, align="left", textOutput("pc_k_selection"),
-                                                    selectInput("pc_stat","Select statistic for cutoff:", choices=c("p.value", "q.value"), selected="p.value")),
-                                             column(12, align="left", br(), br(),
-                                                    sliderInput("pc_stat_value", "Select significance threshold:", min=0, max=0.25, value=0.05, step=0.01)),
-                                             column(12, align="left", hr(), actionButton("do_pc", "Start"))))
-                                  )
-                        ),
+                        # shinydashboard::tabItem(tabName = "peak_calling",
+                        #         fluidPage(
+                        #           column(width=6,
+                        #                  shinydashboard::box(title=tagList(shiny::icon("fab fa-mountain", verify_fa = FALSE), " Peak calling"), width=NULL, status="success", solidHeader=TRUE,
+                        #                      column(12, align="left", textOutput("peak_calling_info"), hr()),
+                        #                      tags$style(HTML(".large_icon { font-size: 70px; }")),
+                        #                      column(5, align="left",
+                        #                             htmlOutput("peak_calling_system"), hr()),
+                        #                      column(5,offset = 1,align="center", htmlOutput("peak_calling_icon")),
+                        #                      column(12, align="left",
+                        #                             sliderInput("peak_distance_to_merge", "Select distance of peaks to merge:", min=0, max=50000, value=5000, step=100),
+                        #                             shinyFiles::shinyDirButton("pc_folder", "Browse folder of BAM / scBED files" ,
+                        #                                                        icon = icon("folder-open"),
+                        #                                                        title = "Please select a folder:",
+                        #                                                        buttonType = "default", class = NULL),
+                        #                             uiOutput("pc_upload")),
+                        #                      br(), br(),
+                        #                      column(4, align="left", textOutput("pc_k_selection"),
+                        #                             selectInput("pc_stat","Select statistic for cutoff:", choices=c("p.value", "q.value"), selected="p.value")),
+                        #                      column(12, align="left", br(), br(),
+                        #                             sliderInput("pc_stat_value", "Select significance threshold:", min=0, max=0.25, value=0.05, step=0.01)),
+                        #                      column(12, align="left", hr(), actionButton("do_pc", "Call peaks / Create Consensus Peaks"))))
+                        #           )
+                        # ),
                         
                         ###############################################################
                         # 7. Differential analysis
@@ -418,7 +425,7 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                                                                               "edgeR GLM" = "neg.binomial"))),
                                              column(6, align="left", offset = 0, uiOutput("name_group")),
                                              column(6, align="left", offset = 0, uiOutput("name_ref")),
-                                             column(2, align="left", offset = 0, uiOutput("da_group")),
+                                             column(3, align="left", offset = 0, uiOutput("da_group")),
                                              column(3, align="left", offset = 0, uiOutput("group_choice")),
                                              column(1, align="left", offset = 0, uiOutput("text_vs")),
                                              column(2, align="left", offset = 0, uiOutput("custom_da_ref")),

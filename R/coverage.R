@@ -18,13 +18,13 @@
 #' of ~100 cells per cluster in order to obtain smooth tracks.
 #' @param input Either a named list of character vector of path towards 
 #' single-cell BED files or a sparse raw matrix of small bins (<<500bp). If 
-#' a named list specifying scBEDn the names MUST correspond to the 'sample_id' 
+#' a named list specifying scBED the names MUST correspond to the 'sample_id' 
 #' column in your SingleCellExperiment object. The single-cell BED files names MUST 
 #' match the  barcode names in your SingleCellExperiment (column 'barcode'). The
 #' scBED files can be gzipped or not. 
 #' @param odir The output directory to write the cumulative BED and BigWig
 #'  files.
-#' @param format  File format, either "BAM" or "BED"
+#' @param format  File format, either "raw_mat", "BED" or "BAM"
 #' @param ref_genome The genome of reference, used to constrain to canonical 
 #' chromosomes. Either 'hg38' or 'mm10'. 'hg38' per default. 
 #' @param bin_width The width of the bin to create the coverage track. The 
@@ -32,6 +32,8 @@
 #' @param n_smoothBin Number of bins left & right to average ('smooth') the 
 #' signal on. Default to 5.
 #' @param read_size The estimated size of reads. Default to 101.
+#' @param quantile_for_peak_calling The quantile to define the threshold above 
+#' which signal is considered as a peak.
 #' @param progress A Progress object for Shiny. Default to NULL.
 #'
 #' @return Generate coverage tracks (.bigwig) for each cluster in the 
@@ -52,13 +54,14 @@ generate_coverage_tracks <- function(scExp_cf, input, odir,
                                      ref_genome = c("hg38","mm10")[1],
                                      bin_width = 150,  n_smoothBin = 5,
                                      read_size = 101,
+                                     quantile_for_peak_calling = 0.85,
                                      progress = NULL){
     stopifnot(is(scExp_cf,"SingleCellExperiment"), is.character(format),
               dir.exists(odir), ref_genome %in% c("hg38","mm10"), 
               is.numeric(bin_width), is.numeric(n_smoothBin),
               is.numeric(read_size))
     
-    if(format == "scBED") stopifnot(length(intersect(scExp_cf$sample_id,names(input))) > 0)
+    if(format == "scBED") stopifnot(length(intersect(scExp_cf$sample_id, names(input))) > 0)
     
     nclust = length(unique(scExp_cf$cell_cluster))
     if (!is.null(progress)) progress$set(message=paste0('Generating coverage tracks for k= ', nclust,' clusters ...'), value = 0.1)
@@ -97,7 +100,8 @@ generate_coverage_tracks <- function(scExp_cf, input, odir,
             rawfile_ToBigWig(input, out_bw, "BED", bin_width = bin_width,
                              norm_factor = norm_factor,
                              n_smoothBin = n_smoothBin,  ref = ref_genome,
-                             read_size = read_size)
+                             read_size = read_size,
+                             quantile_for_peak_calling = quantile_for_peak_calling)
         } else{
             input. = input[,which(scExp_cf$cell_cluster %in% class)]
             rawfile_ToBigWig(input = input., BigWig_filename = out_bw,
@@ -105,7 +109,8 @@ generate_coverage_tracks <- function(scExp_cf, input, odir,
                              norm_factor = norm_factor,
                              n_smoothBin = n_smoothBin,  ref = ref_genome,
                              read_size = read_size,
-                             original_bins = original_bins)
+                             original_bins = original_bins,
+                             quantile_for_peak_calling = quantile_for_peak_calling)
         }
         }
     if (!is.null(progress)) progress$set(detail = "Done !", value = 0.95)
@@ -217,15 +222,22 @@ smoothBin <- function(bin_score, nb_bins = 10){
 #' @param read_size Length of the reads.
 #' @param original_bins Original bins GenomicRanges in case the format is raw
 #' matrix.
+#' @param quantile_for_peak_calling The quantile to define the threshold above 
+#' which signal is considered as a peak.
 #'
-#' @importFrom rtracklayer export.bw
+#' @return Writes in the output directory a bigwig file displaying the 
+#' cumulative coverage of cells and a basic set of peaks called by taking all 
+#' peaks above a given threshold
+#' 
+#' @importFrom rtracklayer export.bw export.bed
 #' @importFrom GenomicRanges tileGenome width seqnames
 #' @return Writes a BigWig file as output
 #' 
 rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
                              bin_width = 150, norm_factor,
                              n_smoothBin = 5, ref = "hg38",
-                             read_size = 101, original_bins = NULL){
+                             read_size = 101, original_bins = NULL,
+                             quantile_for_peak_calling = 0.85){
     bins = NULL
     eval(parse(text = paste0("data(",ref, ".chromosomes)")))
     canonical_chr <-  eval(parse(text = paste0(ref, ".chromosomes")))
@@ -238,7 +250,7 @@ rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
     GenomeInfoDb::seqlengths(canonical_chr) = end(canonical_chr)
     if(format != "raw_mat") {
         message("ChromSCape:::rawfile_ToBigWig - generating bigwig for  ",
-             basename(filename), " file...")
+             basename(BigWig_filename), " file...")
 
         
         bins <- unlist(GenomicRanges::tileGenome(
@@ -266,6 +278,11 @@ rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
       match(names(GenomeInfoDb::seqlengths(bins)),
             names(GenomeInfoDb::seqlengths(canonical_chr)))]
     rtracklayer::export.bw(bins, BigWig_filename)
+    
+    peaks = bins[bins$score > quantile(bins$score, quantile_for_peak_calling)]
+    peaks = GenomicRanges::reduce(peaks, min.gapwidth = 1000, 
+                                  ignore.strand = TRUE)
+    rtracklayer::export.bed(peaks, gsub(".bw",".bed.gz", BigWig_filename))
 }
 
 #' Create a smoothed and normalized coverage track from a BAM file and
@@ -293,7 +310,7 @@ rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
 #' matrix.
 #' @importFrom Rsamtools ScanBamParam scanBam scanBamWhat
 #' @importFrom GenomicRanges tileGenome width seqnames findOverlaps
-#' GRanges
+#' GRanges reduce split
 #' @importFrom IRanges IRanges
 #' 
 #' 
@@ -341,6 +358,7 @@ count_coverage <-function(input, format = "BAM", bins, canonical_chr, norm_facto
     bins$score = smoothBin(bins$score, n_smoothBin)
     bins = bins[-which(bins$score==0)]
     bins$score = 10^6 * bins$score / norm_factor
+    
     gc()
     return(bins)
 }

@@ -185,23 +185,25 @@ call_macs2_merge_peaks <- function(affectation, odir, p.value,
 
 #' Merge peak files from MACS2 peak caller
 #'
-#' @param odir Output directory
-#' @param class Cell cluster
+#' @param peak_file A character specifying the path towards the peak file (BED
+#' or bedGraph format)
 #' @param peak_distance_to_merge Maximum distance to merge two peaks 
+#' @param min_peak_size An integer specifying the minimum size of peaks
 #' @param ref Reference genome
 #'
 #' @return Peaks as GRanges
 #'
 #' @importFrom IRanges subsetByOverlaps
 #' @importFrom GenomicRanges GRanges reduce ranges
-merge_MACS2_peaks <- function(odir, class, peak_distance_to_merge, ref){
+merge_MACS2_peaks <- function(peak_file, peak_distance_to_merge, 
+                              min_peak_size = 200, ref){
     merged_peaks = list()
     peaks = read.table(
-        file = file.path(odir, paste0(class, "_peaks.broadPeak")),
+        file = peak_file,
         colClasses = c("character", "integer", "integer", rep("NULL", 6)))
     colnames(peaks) = c("chr", "start", "end")
     peaks = GenomicRanges::GRanges(peaks)
-    peaks = peaks[which(width(GenomicRanges::ranges(peaks)) >= 500), ]
+    peaks = peaks[which(width(GenomicRanges::ranges(peaks)) >= min_peak_size), ]
     peaks = GenomicRanges::reduce(peaks, min.gapwidth = peak_distance_to_merge, 
                                 ignore.strand = TRUE)
     
@@ -228,6 +230,7 @@ merge_MACS2_peaks <- function(odir, class, peak_distance_to_merge, ref){
 #' @importFrom S4Vectors mcols queryHits subjectHits
 #' @importFrom IRanges findOverlapPairs
 #' @importFrom rtracklayer export.bed
+#' @export
 annotation_from_merged_peaks <- function(scExp, odir,
                                         merged_peaks,
                                         geneTSS_annotation){
@@ -244,7 +247,7 @@ annotation_from_merged_peaks <- function(scExp, odir,
             GenomicRanges::union(merged_peak, merged_peaks[[i]], 
                                 ignore.strand = TRUE))
     }
-    rtracklayer::export.bed(merged_peak, file.path(odir, "merged_peaks.bed"))
+    rtracklayer::export.bed(merged_peak, file.path(odir, "consensus_peaks.bed"))
     pairs <- IRanges::findOverlapPairs(
         segmentation, merged_peak, ignore.strand = TRUE)
     refined_annotation = GenomicRanges::pintersect(pairs, ignore.strand = TRUE)
