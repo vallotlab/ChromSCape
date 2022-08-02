@@ -1468,6 +1468,11 @@ create_scExp <- function(
     if (length(match(c("cell_id", "sample_id"), colnames(annot))) < 2) 
         stop("ChromSCape::create_scExp - annot should contain cell_id &
             sample_id as column names")
+    if (length(intersect(colnames(datamatrix), annot$cell_id)) < 
+        ncol(datamatrix)) 
+        stop("ChromSCape::create_scExp - annot$cell_id and colnames do",
+                " not match perfectly !")
+    annot = annot[,match(colnames(datamatrix), annot$cell_id)]
     if (is(datamatrix, "data.frame")) datamatrix <- as.matrix(datamatrix)
     message("ChromSCape::create_scExp - the matrix has ",
         dim(datamatrix)[2], " cells and ", dim(datamatrix)[1], " features.")
@@ -2504,15 +2509,17 @@ subsample_scExp <- function(scExp, n_cell_per_sample = 500, n_cell_total = NULL)
     samples = as.character(unique(annot$sample_id))
     counts. = NULL
     annot. = NULL
+
     
     if(is.numeric(n_cell_total)){
       message("ChromSCape::subsample_scExp - Subsampling cells to a total of ",
               n_cell_total)
       cells = as.character(annot$cell_id)
-      cells = sample(cells, min(n_cell_total, length(cells)), replace = FALSE)
-      counts. = counts[, cells]
-      annot. = annot[cells,]
 
+      cells = sample(cells, min(n_cell_total, length(cells)), replace = FALSE)
+    
+      counts. = counts[, cells]
+      annot. = annot[match(cells, annot$cell_id),]
     } else{
       message("ChromSCape::subsample_scExp - Subsampling each sample to ", n_cell_per_sample)
       for (samp in samples) {
@@ -2523,14 +2530,15 @@ subsample_scExp <- function(scExp, n_cell_per_sample = 500, n_cell_total = NULL)
         else
           counts. = Matrix::cbind2(counts., counts[, cells])
         if (is.null(annot.))
-          annot. = annot[cells,]
+          annot. = annot[match(cells, annot$cell_id),]
         else
-          annot. = Matrix::rbind2(annot., annot[cells,])
+          annot. = Matrix::rbind2(annot., annot[match(cells, annot$cell_id),])
       }
     }
     
     ord = order(colnames(counts.))
     ord2 = order(rownames(annot.))
+
     counts. = counts.[, ord]
     annot. = annot.[ord2,]
     scExp. = create_scExp(

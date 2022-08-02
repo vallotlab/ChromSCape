@@ -885,7 +885,7 @@ shinyServer(function(input, output, session) {
         subsample_n <- if(input$do_subsample){input$subsample_n}
         
         annotationId <- annotation_id_norm()
-        
+        print(annotationId)
         if(input$exclude_regions) {
             if(!is.null(input$exclude_file) && file.exists(as.character(input$exclude_file$datapath))){
                 tmp_file = tempfile(fileext = ".bed.gz")

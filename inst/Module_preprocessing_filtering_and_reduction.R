@@ -53,7 +53,7 @@ Module_preprocessing_filtering_and_reduction <- function(
             gc()
         } else {
             incProgress(amount = 0.2, detail = paste("Keeping same cells as in main scExp..."))
-            scExp = scExp[ ,match(colnames(main_scExp()), colnames(scExp))]
+            scExp = scExp[ , match(colnames(main_scExp()), colnames(scExp))]
         }
         ### 2.bis Finding top features ###
         
@@ -80,7 +80,7 @@ Module_preprocessing_filtering_and_reduction <- function(
         
         ### 3. Normalizing ###
         incProgress(amount = 0.1, detail = paste("Normalization..."))
-        print(paste0("Normalizing with method ",norm_type(),"..."))
+        print(paste0("Normalizing with method ", norm_type(),"..."))
         print(system.time({
             scExp = normalize_scExp(scExp, type = as.character(norm_type()))}))
         gc()
