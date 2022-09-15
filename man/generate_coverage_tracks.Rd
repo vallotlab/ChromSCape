@@ -14,6 +14,7 @@ generate_coverage_tracks(
   n_smoothBin = 5,
   read_size = 101,
   quantile_for_peak_calling = 0.85,
+  by = "cell_cluster",
   progress = NULL
 )
 }
@@ -48,15 +49,18 @@ signal on. Default to 5.}
 \item{quantile_for_peak_calling}{The quantile to define the threshold above
 which signal is considered as a peak.}
 
+\item{by}{A character specifying a categoricla column of scExp_cf metadata
+by which to group cells and generate coverage tracks and peaks.}
+
 \item{progress}{A Progress object for Shiny. Default to NULL.}
 }
 \value{
-Generate coverage tracks (.bigwig) for each cluster in the
-SingleCellExperiment ("cell_cluster" column).
+Generate coverage tracks (.bigwig) for each group in the
+SingleCellExperiment "by" column.
 }
 \description{
 Generate cell cluster pseudo-bulk coverage tracks. First, scBED
-files are concatenated into cell clusters contained in the 'cell_cluster'
+files are concatenated into cell clusters contained in the 'by'
 column of your SingleCellExperiment object. To do so, for each sample in the
 given list, the barcodes of each cluster are grepped and BED files are
 merged into pseudo-bulk of clusters (C1,C2...). Two cells from different can

@@ -1472,7 +1472,7 @@ create_scExp <- function(
         ncol(datamatrix)) 
         stop("ChromSCape::create_scExp - annot$cell_id and colnames do",
                 " not match perfectly !")
-    annot = annot[,match(colnames(datamatrix), annot$cell_id)]
+    annot = annot[match(colnames(datamatrix), annot$cell_id),]
     if (is(datamatrix, "data.frame")) datamatrix <- as.matrix(datamatrix)
     message("ChromSCape::create_scExp - the matrix has ",
         dim(datamatrix)[2], " cells and ", dim(datamatrix)[1], " features.")

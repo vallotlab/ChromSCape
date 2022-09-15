@@ -11,6 +11,7 @@ preprocessing_filtering_and_reduction(
   max_quantile_read_per_cell = 95,
   n_top_features = 40000,
   norm_type = "CPM",
+  n_dims = 10,
   remove_PC = NULL,
   subsample_n = NULL,
   ref_genome = "hg38",
@@ -31,6 +32,8 @@ preprocessing_filtering_and_reduction(
 \item{n_top_features}{Number of features to keep}
 
 \item{norm_type}{Normalization type c("CPM", "TFIDF", "RPKM", "TPM", "feature_size_only")}
+
+\item{n_dims}{An integer specifying the number of dimensions to keep for PCA}
 
 \item{remove_PC}{A vector of string indicating which principal components to
 remove before downstream analysis as probably correlated to
