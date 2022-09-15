@@ -543,6 +543,7 @@ create_project_folder <- function(output_directory,
 #' @param max_quantile_read_per_cell Upper count quantile threshold above which cells are removed
 #' @param n_top_features Number of features to keep
 #' @param norm_type Normalization type c("CPM", "TFIDF", "RPKM", "TPM", "feature_size_only")
+#' @param n_dims An integer specifying the number of dimensions to keep for PCA
 #' @param subsample_n Number of cells to subsample.
 #' @param ref_genome Reference genome ("hg38" or "mm10").
 #' @param exclude_regions GenomicRanges with regions to remove from the object.
@@ -566,6 +567,7 @@ preprocessing_filtering_and_reduction <- function(
     max_quantile_read_per_cell = 95,
     n_top_features = 40000,
     norm_type = "CPM",
+    n_dims = 10,
     remove_PC = NULL,
     subsample_n = NULL,
     ref_genome = "hg38",
@@ -616,7 +618,8 @@ preprocessing_filtering_and_reduction <- function(
     print("Running Dimensionality Reduction...")
     
     scExp = reduce_dims_scExp(
-        scExp, dimension_reductions = c("PCA","UMAP"),
+        scExp, n = n_dims,
+        dimension_reductions = c("PCA","UMAP"),
         batch_correction = doBatchCorr, batch_list = batch_sels,  
         remove_PC = remove_PC,
         verbose = FALSE)
