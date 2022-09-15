@@ -309,10 +309,11 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                                              column(width=4, uiOutput("clustering_method_UI")),
                                                              column(width=4, uiOutput("clustering_UI")),
                                                              column(width=3, br(),br(), uiOutput("consensus_clustering_UI")),
-                                                             column(width=3, br(),br(),actionButton(inputId = "choose_cluster", label = "Choose Cluster"))
+                                                             column(width=3, br(),br(),actionButton(inputId = "choose_cluster", label = "Launch clustering"))
                                          ),
                                          uiOutput("contingency_table_cluster"),
                                          uiOutput("UMAP_box"),
+                                         uiOutput("IDclust_box"),
                                          uiOutput("tsne_box_cf"),
                                          uiOutput("color_box_cf"),
                                          shinydashboard::box(title=tagList(shiny::icon("cube")," Hierarchical Clustering with cluster annotation"), width=NULL,

@@ -1414,6 +1414,9 @@ shinyServer(function(input, output, session) {
         if("batch_name" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
             cols = c(cols,"batch_name")
         } 
+        if("IDcluster" %in% colnames(SummarizedExperiment::colData(scExp_cf()))){
+            cols = c(cols,"IDcluster")
+        }
         cols = c(cols, counts_cols)
         cols
     })
@@ -1470,26 +1473,38 @@ shinyServer(function(input, output, session) {
     
     output$clustering_method_UI <- renderUI({
         req(scExp_cf())
-        if("Cor" %in% SingleCellExperiment::reducedDimNames(scExp_cf())) {
-            selectInput("clustering_method", br("Clustering:"), choices=c("louvain", "hierarchical"))
-            
-        } else{
-            selectInput("clustering_method", br("Clustering:"), choices=c("louvain"))
+        choices = c("louvain")
+        if("Cor" %in% SingleCellExperiment::reducedDimNames(scExp_cf())) choices = c(choices, "hierarchical")
+        if(requireNamespace("IDclust", quietly=TRUE)) {
+            choices = c(choices, "IDclust")
         }
+        selectInput("clustering_method", br("Clustering:"), choices = choices)
     })
     
     output$clustering_UI = renderUI({
         req(input$clustering_method)
         if(input$clustering_method == "hierarchical") {
             selectInput("nclust", br("Number of Clusters:"), choices=c(2:30))
-            
-        } else{
+
+        } else if(input$clustering_method == "louvain"){
             column(12,
                    shinyWidgets::sliderTextInput(inputId = "resolution", label = "Resolution:",
                                                  choices =  c(1e-5, 1e-4, 1e-3, 0.0001, 0.001, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.20, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2),
                                                  selected = 1, grid = TRUE),
                    sliderInput("k_SNN", br("Number of neighbors:"), min = 2, max = 500, step = 1, value = 10)
             )
+        } else if(input$clustering_method == "IDclust"){
+            column(12,
+                   shinyWidgets::sliderTextInput(inputId = "IDclust_qvalue", label = "q.value:",
+                                                 choices =  c(1e-10,1e-9,1e-8,1e-7,1e-6,1e-5, 1e-4, 1e-3, 0.0001, 0.001, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.20, 0.25),
+                                                 selected = 0.001, grid = TRUE),
+                   sliderInput(inputId = "IDclust_logFC", label = "logFC:",
+                               min = 0, max = 5, value = 1, step = 0.1),
+                   sliderInput(inputId = "IDclust_min.pct", label = "Min percent of activation:",
+                                                 min = 0, max = 1, value = 0.1, step = 0.001),
+                   sliderInput(inputId = "IDclust_limit", label = "Minimum number of differential features per cluster:",
+                                                 min = 1, max = 100, value = 5, step = 1)
+                   )
         }
     })
     
@@ -1528,13 +1543,50 @@ shinyServer(function(input, output, session) {
                 shiny::showNotification(paste0("Found ", length(unique(scExp_cf()$cell_cluster))," clusters with Louvain clustering."),
                                         duration = 10, closeButton = TRUE, type="message")
             })
-        } else {
+        } else if(input$clustering_method == "hierarchical") {
             if(input$nclust != ""){
                 scExp_cf(choose_cluster_scExp(scExp_cf(), nclust = as.numeric(input$nclust),
                                               consensus = cluster_type()))
             } else{
                 return(NULL)
             }
+        } else if(input$clustering_method == "IDclust"){
+            IDclust_dir = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "IDclust", paste0(selected_filtered_dataset(), "_k", length(unique(scExp_cf()$cell_cluster))))
+            if(!dir.exists(IDclust_dir)) dir.create(IDclust_dir, recursive = TRUE, showWarnings = FALSE)
+            withProgress(message='Running IDclust, this might take a long time...', value = 0.1, {
+            incProgress(amount=0.2, detail= "Check your console for more information !")
+            scExp_IDC = IDclust::iterative_differential_clustering(
+                object = scExp_cf(),
+                output_dir = IDclust_dir,
+                plotting = TRUE,
+                saving = TRUE,
+                n_dims = 10,
+                dim_red = "PCA",
+                vizualization_dim_red = "UMAP",
+                processing_function = IDclust::processing_ChromSCape,
+                differential_function = IDclust::differential_ChromSCape,
+                logFC.th = as.numeric(input$IDclust_logFC),
+                qval.th = as.numeric(input$IDclust_qvalue),
+                min.pct = as.numeric(input$IDclust_min.pct),
+                limit =  as.numeric(input$IDclust_limit),
+                FP_linear_model = NULL,
+                k = 50,
+                swapExperiment = NULL,
+                verbose = TRUE
+            )
+            tmp = scExp_cf()
+            tmp$IDcluster = scExp_IDC$IDcluster
+            scExp_cf(tmp)
+            scExp_cf(colors_scExp(scExp_cf(), annotCol = "IDcluster"))
+            
+            rm(scExp_IDC)
+            rm(tmp)
+            gc()
+            incProgress(amount=0.4, message = paste("Finished running IDclust, found ", length(unique(scExp_cf()$IDcluster))),
+                                                    detail= "")
+            shiny::showNotification(paste0("Found ", length(unique(scExp_cf()$IDcluster))," clusters with IDclust."),
+                                    duration = 10, closeButton = TRUE, type="message")
+            })
         }
         odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "coverage", paste0(selected_filtered_dataset(), "_k", length(unique(scExp_cf()$cell_cluster))))
         
@@ -1748,7 +1800,7 @@ shinyServer(function(input, output, session) {
     
     output$num_cell_after_cor_filt <- renderTable(
         {
-            req(scExp(),scExp_cf())
+            req(scExp(), scExp_cf())
             num_cell_after_cor_filt_scExp(scExp(),scExp_cf())
         })
     
@@ -2005,6 +2057,41 @@ shinyServer(function(input, output, session) {
                                                                            label = "Save HQ plots",
                                                                            icon = icon("fas fa-image"))),
                                     column(12, align="left", plotOutput("plot_CF_UMAP")))
+            }
+        }
+    })
+    
+    IDclust_p <- reactive({
+        req(scExp_cf(), annotCol_cf(), input$color_by_IDclust)
+        if(input$color_by_IDclust %in% colnames(SingleCellExperiment::colData(scExp_cf())) ){
+            IDclust_dir = file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "IDclust", paste0(selected_filtered_dataset(), "_k", length(unique(scExp_cf()$cell_cluster))))
+            IDC_summary = read.csv(file.path(IDclust_dir, "IDC_summary.csv"))
+            annot = SingleCellExperiment::colData(scExp_cf())
+            IDclust::plot_cluster_network(
+                scExp_cf(),
+                IDC_summary = IDC_summary,
+                color_by = input$color_by_IDclust, 
+                colors = unique(annot[,paste0(input$color_by_IDclust, "_color")][order(annot[,input$color_by_IDclust])]),
+                legend = FALSE)
+        }
+    })
+    
+    output$plot_IDclust <- renderPlot({
+        IDclust_p()
+    })
+    
+    
+    output$IDclust_box <- renderUI({
+        if(!is.null(scExp_cf())){
+            if("IDcluster" %in% colnames(SummarizedExperiment::colData(scExp_cf())) ){
+              choices = annotCol_cf()
+              choices = choices[-grep("count", choices)]
+                shinydashboard::box(title= tagList(shiny::icon("fas fa-image"), " IDclust Tree"), width = NULL, status="success", solidHeader = TRUE,
+                                    column(4, align="left",
+                                           selectInput("color_by_IDclust", "Color by",
+                                                       selected = choices[max(grep("cluster",choices)[1],1)],
+                                                       choices = choices)),
+                                    column(12, align="left", plotOutput("plot_IDclust", width = "100%")))
             }
         }
     })
@@ -2332,17 +2419,23 @@ shinyServer(function(input, output, session) {
     })
     output$top_genes = renderText({paste0("Top contributing genes: ", top_genes())})
     
+    observe({
+        req(input$select_cov_gene)
+                if(input$select_cov_gene != "Enter Gene..."){
+                    eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
+                    gene_annot = eval(parse(text = paste0(annotation_id(), ".GeneTSS")))
+                    updateSelectInput(session, "cov_chr", selected = gene_annot$chr[which(gene_annot$Gene == input$select_cov_gene)])
+                    updateSelectInput(session, "cov_start", selected = gene_annot$start[which(gene_annot$Gene == input$select_cov_gene)] - 25000)
+                    updateSelectInput(session, "cov_end", selected = gene_annot$end[which(gene_annot$Gene == input$select_cov_gene)] + 25000)
+                    updateSelectInput(session, "select_cov_gene", selected = "Enter Gene...")
+                }
+                
+            })
+    
     observeEvent(input$make_plot_coverage, { # load reduced data set to work with on next pages
         req(input$cov_chr, has_available_coverage(),
             scExp_cf(), coverages(), annotation_id())
-        if(input$select_cov_gene != "Enter Gene..."){
-            eval(parse(text = paste0("data(", annotation_id(), ".GeneTSS)")))
-            gene_annot = eval(parse(text = paste0(annotation_id(), ".GeneTSS")))
-            updateSelectInput(session, "cov_chr", selected = gene_annot$chr[which(gene_annot$Gene == input$select_cov_gene)])
-            updateSelectInput(session, "cov_start", selected = gene_annot$start[which(gene_annot$Gene == input$select_cov_gene)] - 25000)
-            updateSelectInput(session, "cov_end", selected = gene_annot$end[which(gene_annot$Gene == input$select_cov_gene)] + 25000)
-            updateSelectInput(session, "select_cov_gene", selected = "Enter Gene...")
-        }
+        
         label_color_list = setNames(unique(scExp_cf()$cell_cluster_color), unique(scExp_cf()$cell_cluster))
         nclust = set_numclust()
         odir <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),
