@@ -2,7 +2,7 @@
 #' Generate cell cluster pseudo-bulk coverage tracks
 #' 
 #' @description  Generate cell cluster pseudo-bulk coverage tracks. First, scBED
-#' files are concatenated into cell clusters contained in the 'cell_cluster' 
+#' files are concatenated into cell clusters contained in the 'by' 
 #' column of your SingleCellExperiment object. To do so, for each sample in the 
 #' given list, the barcodes of each cluster are grepped and BED files are 
 #' merged into pseudo-bulk of clusters (C1,C2...). Two cells from different can
@@ -34,10 +34,12 @@
 #' @param read_size The estimated size of reads. Default to 101.
 #' @param quantile_for_peak_calling The quantile to define the threshold above 
 #' which signal is considered as a peak.
+#' @param by A character specifying a categoricla column of scExp_cf metadata
+#'  by which to group cells and generate coverage tracks and peaks.
 #' @param progress A Progress object for Shiny. Default to NULL.
 #'
-#' @return Generate coverage tracks (.bigwig) for each cluster in the 
-#' SingleCellExperiment ("cell_cluster" column).
+#' @return Generate coverage tracks (.bigwig) for each group in the 
+#' SingleCellExperiment "by" column.
 #' @export
 #'
 #' @examples \dontrun{
@@ -55,65 +57,67 @@ generate_coverage_tracks <- function(scExp_cf, input, odir,
                                      bin_width = 150,  n_smoothBin = 5,
                                      read_size = 101,
                                      quantile_for_peak_calling = 0.85,
+                                     by = "cell_cluster",
                                      progress = NULL){
-    stopifnot(is(scExp_cf,"SingleCellExperiment"), is.character(format),
-              dir.exists(odir), ref_genome %in% c("hg38","mm10"), 
-              is.numeric(bin_width), is.numeric(n_smoothBin),
-              is.numeric(read_size))
-    
-    if(format == "scBED") stopifnot(length(intersect(scExp_cf$sample_id, names(input))) > 0)
-    
-    nclust = length(unique(scExp_cf$cell_cluster))
-    if (!is.null(progress)) progress$set(message=paste0('Generating coverage tracks for k= ', nclust,' clusters ...'), value = 0.1)
-    
-    affectation = SingleCellExperiment::colData(scExp_cf)
-    affectation$cell_cluster = as.factor(affectation$cell_cluster)
-    
-    if (!is.null(progress)) progress$set(detail = "Generating pseudo-bulk...", value = 0.2)
+  stopifnot(is(scExp_cf,"SingleCellExperiment"), is.character(format),
+            dir.exists(odir), ref_genome %in% c("hg38","mm10"), 
+            is.numeric(bin_width), is.numeric(n_smoothBin),
+            is.numeric(read_size))
+  
+  if(format == "scBED") stopifnot(length(intersect(scExp_cf$sample_id, names(input))) > 0)
+  
+  affectation = SingleCellExperiment::colData(scExp_cf)
+  affectation[,by] = as.factor(affectation[,by])
+  
+  nclust = length(unique(affectation[,by]))
+  if (!is.null(progress)) progress$set(message=paste0('Generating coverage tracks for k= ', nclust,' group ...'), value = 0.1)
+  
+  
+  if (!is.null(progress)) progress$set(detail = "Generating pseudo-bulk...", value = 0.2)
+  if(format == "scBED") {
+    concatenate_scBed_into_clusters(affectation, input, odir)
+  } 
+  
+  if (!is.null(progress)) progress$set(detail = "Creating coverage files for each cluster...", value = 0.40)
+  
+  if(format == "raw_mat"){
+    original_bins = rownames(input)
+    original_bins =  strsplit(original_bins, "_", fixed = T)
+    original_bins_chr = as.character(lapply(original_bins, function(x) x[1]))
+    original_bins_start = as.numeric(lapply(original_bins, function(x) x[2]))
+    original_bins_end = as.numeric(lapply(original_bins, function(x) x[3]))
+    gc()
+    original_bins = GenomicRanges::GRanges(
+      seqnames = original_bins_chr, ranges = IRanges::IRanges(original_bins_start, original_bins_end))
+    input = input[,match(colnames(scExp_cf), colnames(input))]
+  }
+  suffix = ".bed"
+  n = 0
+  for(class in unique(affectation[,by])) {
+    n = n + 1
+    if (!is.null(progress)) progress$set(detail = paste0("Coverage ",class,"..."),
+                                         value = 0.4 + n * (0.6/length(unique(affectation[, by]))) )
+    out_bw = file.path(odir, paste0(class,".bw"))
+    norm_factor = sum(affectation$total_counts[affectation[, by] == class])
     if(format == "scBED") {
-        concatenate_scBed_into_clusters(affectation, input, odir)
-    } 
-    
-    if (!is.null(progress)) progress$set(detail = "Creating coverage files for each cluster...", value = 0.40)
-    
-    if(format == "raw_mat"){
-        original_bins = rownames(input)
-        original_bins =  strsplit(original_bins, "_", fixed = T)
-        original_bins_chr = as.character(lapply(original_bins, function(x) x[1]))
-        original_bins_start = as.numeric(lapply(original_bins, function(x) x[2]))
-        original_bins_end = as.numeric(lapply(original_bins, function(x) x[3]))
-        gc()
-        original_bins = GenomicRanges::GRanges(
-            seqnames = original_bins_chr, ranges = IRanges::IRanges(original_bins_start, original_bins_end))
-        input = input[,match(colnames(scExp_cf), colnames(input))]
+      input = file.path(odir, paste0(class,suffix))
+      rawfile_ToBigWig(input, out_bw, "BED", bin_width = bin_width,
+                       norm_factor = norm_factor,
+                       n_smoothBin = n_smoothBin,  ref = ref_genome,
+                       read_size = read_size,
+                       quantile_for_peak_calling = quantile_for_peak_calling)
+    } else{
+      input. = input[,which(affectation[, by] %in% class)]
+      rawfile_ToBigWig(input = input., BigWig_filename = out_bw,
+                       format = "raw_mat", bin_width = bin_width,
+                       norm_factor = norm_factor,
+                       n_smoothBin = n_smoothBin,  ref = ref_genome,
+                       read_size = read_size,
+                       original_bins = original_bins,
+                       quantile_for_peak_calling = quantile_for_peak_calling)
     }
-    suffix = ".bed"
-    n = 0
-    for(class in unique(scExp_cf$cell_cluster)) {
-        n = n + 1
-        if (!is.null(progress)) progress$set(detail = paste0("Coverage ",class,"..."),
-                                             value = 0.4 + n * (0.6/length(unique(scExp_cf$cell_cluster))) )
-        out_bw = file.path(odir, paste0(class,".bw"))
-        norm_factor = sum(scExp_cf$total_counts[scExp_cf$cell_cluster == class])
-        if(format == "scBED") {
-            input = file.path(odir, paste0(class,suffix))
-            rawfile_ToBigWig(input, out_bw, "BED", bin_width = bin_width,
-                             norm_factor = norm_factor,
-                             n_smoothBin = n_smoothBin,  ref = ref_genome,
-                             read_size = read_size,
-                             quantile_for_peak_calling = quantile_for_peak_calling)
-        } else{
-            input. = input[,which(scExp_cf$cell_cluster %in% class)]
-            rawfile_ToBigWig(input = input., BigWig_filename = out_bw,
-                             format = "raw_mat", bin_width = bin_width,
-                             norm_factor = norm_factor,
-                             n_smoothBin = n_smoothBin,  ref = ref_genome,
-                             read_size = read_size,
-                             original_bins = original_bins,
-                             quantile_for_peak_calling = quantile_for_peak_calling)
-        }
-        }
-    if (!is.null(progress)) progress$set(detail = "Done !", value = 0.95)
+  }
+  if (!is.null(progress)) progress$set(detail = "Done !", value = 0.95)
 }
 
 #' Concatenate single-cell BED into clusters
@@ -128,55 +132,55 @@ generate_coverage_tracks <- function(scExp_cf, input, odir,
 #' BED is gzipped.
 #'
 concatenate_scBed_into_clusters <- function(affectation, files_list, odir){
-    unlink(file.path(odir, "C*.bed"))
-    gzipped = grepl(".gz", files_list[[1]][1])
-    suffix = ""
-    if(gzipped) suffix = ".gz"
-    for(sample in names(files_list)){
-        message("ChromSCape:::concatenate_scBed_into_clusters - concatenating ",
-                "files for ", sample, " files...")
-        file_pool = files_list[[sample]]
-        for (class in levels(factor(affectation$cell_cluster)))
-        {
-            message("ChromSCape:::concatenate_scBed_into_clusters - concatenating ", class,"...")
-            class_barcodes <- affectation$barcode[which(affectation$cell_cluster == as.character(class) &
-                                                            affectation$sample_id == sample)]
-   
-            files_class = c()
-            if(length(class_barcodes)>500){
-                
-                while(length(class_barcodes)>500){
-                    class_barcodes_chunk = class_barcodes[1:500]
-                    files_class = c(files_class,
-                                    file_pool[grep(paste(class_barcodes_chunk, collapse="|"),
-                                                   file_pool,useBytes = TRUE, perl = TRUE)])
-                    class_barcodes = class_barcodes[-c(1:500)]
-                }
-                files_class = c(files_class,
-                                file_pool[grep(paste(class_barcodes, collapse="|"),
-                                               file_pool,useBytes = TRUE, perl = TRUE)])
-                
-            } else {
-                files_class = file_pool[grep(paste(class_barcodes, collapse="|"),
-                                             file_pool,useBytes = TRUE, perl = TRUE)]
-            }
-            if(length(class_barcodes)>0){
-                for(file in files_class){
-                    command = paste0("cat '", file, "' >> '",
-                                     file.path(odir, paste0(class, ".bed",suffix,"'")))
-                    system(command)
-                }
-            }
+  unlink(file.path(odir, "*.bed"))
+  gzipped = grepl(".gz", files_list[[1]][1])
+  suffix = ""
+  if(gzipped) suffix = ".gz"
+  for(sample in names(files_list)){
+    message("ChromSCape:::concatenate_scBed_into_clusters - concatenating ",
+            "files for ", sample, " files...")
+    file_pool = files_list[[sample]]
+    for (class in levels(factor(affectation[,by])))
+    {
+      message("ChromSCape:::concatenate_scBed_into_clusters - concatenating ", class, "...")
+      class_barcodes <- affectation$barcode[which(affectation[,by] == as.character(class) &
+                                                    affectation$sample_id == sample)]
+      
+      files_class = c()
+      if(length(class_barcodes)>500){
+        
+        while(length(class_barcodes)>500){
+          class_barcodes_chunk = class_barcodes[1:500]
+          files_class = c(files_class,
+                          file_pool[grep(paste(class_barcodes_chunk, collapse="|"),
+                                         file_pool,useBytes = TRUE, perl = TRUE)])
+          class_barcodes = class_barcodes[-c(1:500)]
         }
-    }
-    for(class in levels(factor(affectation$cell_cluster))){
-        if(gzipped) {
-            command = paste0("gzip -cd '", file.path(
-                odir,paste0(class,".bed", suffix)),
-                "' > '", file.path(odir,paste0(class, ".bed'")))
-            system(command)
+        files_class = c(files_class,
+                        file_pool[grep(paste(class_barcodes, collapse="|"),
+                                       file_pool,useBytes = TRUE, perl = TRUE)])
+        
+      } else {
+        files_class = file_pool[grep(paste(class_barcodes, collapse="|"),
+                                     file_pool,useBytes = TRUE, perl = TRUE)]
+      }
+      if(length(class_barcodes)>0){
+        for(file in files_class){
+          command = paste0("cat '", file, "' >> '",
+                           file.path(odir, paste0(class, ".bed",suffix,"'")))
+          system(command)
         }
+      }
     }
+  }
+  for(class in levels(factor(affectation[,by]))){
+    if(gzipped) {
+      command = paste0("gzip -cd '", file.path(
+        odir,paste0(class,".bed", suffix)),
+        "' > '", file.path(odir,paste0(class, ".bed'")))
+      system(command)
+    }
+  }
 }
 
 
@@ -189,18 +193,18 @@ concatenate_scBed_into_clusters <- function(affectation, files_list, odir){
 #' @return A smooth vector of the same size 
 #' 
 smoothBin <- function(bin_score, nb_bins = 10){
-    bin_original = bin_score
-    fun <-function(v){
-        v_or = v
-        start = nb_bins + 1
-        end = length(v) - nb_bins -1
-        for(i in start:end){
-            v[i] = mean(v_or[(i-nb_bins):(i+nb_bins)])
-        }
-        return(v)
+  bin_original = bin_score
+  fun <-function(v){
+    v_or = v
+    start = nb_bins + 1
+    end = length(v) - nb_bins -1
+    for(i in start:end){
+      v[i] = mean(v_or[(i-nb_bins):(i+nb_bins)])
     }
-    bin_score = unlist(BiocParallel::bpvec(bin_score, fun))
-    return(bin_score)
+    return(v)
+  }
+  bin_score = unlist(BiocParallel::bpvec(bin_score, fun))
+  return(bin_score)
 }
 
 #' rawfile_ToBigWig : reads in BAM file and write out BigWig coverage file, 
@@ -238,51 +242,53 @@ rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
                              n_smoothBin = 5, ref = "hg38",
                              read_size = 101, original_bins = NULL,
                              quantile_for_peak_calling = 0.85){
-    bins = NULL
-    eval(parse(text = paste0("data(",ref, ".chromosomes)")))
-    canonical_chr <-  eval(parse(text = paste0(ref, ".chromosomes")))
-    canonical_chr$start = 1
-    canonical_chr <- GenomicRanges::GRanges(seqnames = canonical_chr$chr,
-                                            ranges = IRanges::IRanges(
-                                              start = canonical_chr$start,
-                                              end = canonical_chr$end
-                                              ))
-    GenomeInfoDb::seqlengths(canonical_chr) = end(canonical_chr)
-    if(format != "raw_mat") {
-        message("ChromSCape:::rawfile_ToBigWig - generating bigwig for  ",
-             basename(BigWig_filename), " file...")
-
-        
-        bins <- unlist(GenomicRanges::tileGenome(
-            setNames(
-                GenomicRanges::width(canonical_chr),
-                GenomicRanges::seqnames(canonical_chr)
-            ),
-            tilewidth = bin_width
-        ))
-        gc()
-    } else if(format == "raw_mat")  {
-        stopifnot(!is.null(original_bins), is(original_bins, "GRanges"))
-           message("ChromSCape:::rawfile_ToBigWig - generating bigwig from the ",
-                                     "raw matrix...")
-    } else{
-        message("ChromSCape:::rawfile_ToBigWig - format must be either 'raw_mat'",
-                ", 'BAM' or 'BED'. Returning.")
-        return()
-    }
+  bins = NULL
+  eval(parse(text = paste0("data(",ref, ".chromosomes)")))
+  canonical_chr <-  eval(parse(text = paste0(ref, ".chromosomes")))
+  canonical_chr$start = 1
+  canonical_chr <- GenomicRanges::GRanges(seqnames = canonical_chr$chr,
+                                          ranges = IRanges::IRanges(
+                                            start = canonical_chr$start,
+                                            end = canonical_chr$end
+                                          ))
+  GenomeInfoDb::seqlengths(canonical_chr) = end(canonical_chr)
+  if(format != "raw_mat") {
+    message("ChromSCape:::rawfile_ToBigWig - generating bigwig for  ",
+            basename(BigWig_filename), " file...")
     
-    bins <- count_coverage(input, format, bins, canonical_chr, norm_factor, 
-                           n_smoothBin, ref, read_size, original_bins)
-    ## export as bigWig
-    GenomeInfoDb::seqlengths(bins) = GenomeInfoDb::seqlengths(canonical_chr)[
-      match(names(GenomeInfoDb::seqlengths(bins)),
-            names(GenomeInfoDb::seqlengths(canonical_chr)))]
-    rtracklayer::export.bw(bins, BigWig_filename)
     
-    peaks = bins[bins$score > quantile(bins$score, quantile_for_peak_calling)]
-    peaks = GenomicRanges::reduce(peaks, min.gapwidth = 1000, 
-                                  ignore.strand = TRUE)
-    rtracklayer::export.bed(peaks, gsub(".bw",".bed.gz", BigWig_filename))
+    bins <- unlist(GenomicRanges::tileGenome(
+      setNames(
+        GenomicRanges::width(canonical_chr),
+        GenomicRanges::seqnames(canonical_chr)
+      ),
+      tilewidth = bin_width
+    ))
+    gc()
+  } else if(format == "raw_mat")  {
+    stopifnot(!is.null(original_bins), is(original_bins, "GRanges"))
+    message("ChromSCape:::rawfile_ToBigWig - generating bigwig from the ",
+            "raw matrix...")
+  } else{
+    message("ChromSCape:::rawfile_ToBigWig - format must be either 'raw_mat'",
+            ", 'BAM' or 'BED'. Returning.")
+    return()
+  }
+  
+  bins <- count_coverage(input, format, bins, canonical_chr, norm_factor, 
+                         n_smoothBin, ref, read_size, original_bins)
+  ## export as bigWig
+  GenomeInfoDb::seqlengths(bins) = GenomeInfoDb::seqlengths(canonical_chr)[
+    match(names(GenomeInfoDb::seqlengths(bins)),
+          names(GenomeInfoDb::seqlengths(canonical_chr)))]
+  
+  print(BigWig_filename)
+  rtracklayer::export.bw(bins, BigWig_filename)
+  
+  peaks = bins[bins$score > quantile(bins$score, quantile_for_peak_calling)]
+  peaks = GenomicRanges::reduce(peaks, min.gapwidth = 1000, 
+                                ignore.strand = TRUE)
+  rtracklayer::export.bed(peaks, gsub(".bw",".bed.gz", BigWig_filename))
 }
 
 #' Create a smoothed and normalized coverage track from a BAM file and
@@ -321,44 +327,44 @@ count_coverage <-function(input, format = "BAM", bins, canonical_chr, norm_facto
                           n_smoothBin = 5, ref = "hg38", read_size = 101,
                           original_bins = NULL)
 {
-    if(format == "BAM"){
-        param = Rsamtools::ScanBamParam(which = canonical_chr,
-                                        what = Rsamtools::scanBamWhat()[c(3,5)])
-        gr <- Rsamtools::scanBam(file = input, param = param)
-        chr = unlist(lapply(1:length(canonical_chr), function(i){gr[[i]]$rname}))
-        start = unlist(lapply(1:length(canonical_chr), function(i){gr[[i]]$pos}))
-        end = start + 101
-        gr = GenomicRanges::GRanges(seqnames = chr,
-                                    ranges = IRanges::IRanges("start" = start,
-                                                              "end" = end))
-    } else if(format == "BED") {
-        gr <- rtracklayer::import(input)
-    } else if(format == "raw_mat"){
-        bins <- original_bins
-    } else {
-        message("ChromSCape::count_coverage - format must be either 'BAM', 'BED',",
-             " or 'raw_mat'. Returning.")
-        return()
-    }
-    
-    if(format != "raw_mat"){
-        hits <- GenomicRanges::findOverlaps(
-            bins, gr, minoverlap = 1, ignore.strand = TRUE)
-        hits = as.matrix(hits)
-        hits_agg = table(hits[,1])
-        bins$score = 0
-        bins$score[as.numeric(names(hits_agg))] = hits_agg
-        rm(hits_agg)
-        gc()
-    } else{
-        bins$score = rowSums(input)
-    }
-   
-    bins$score = 10^6* bins$score / length(bins)
-    bins$score = smoothBin(bins$score, n_smoothBin)
-    bins = bins[-which(bins$score==0)]
-    bins$score = 10^6 * bins$score / norm_factor
-    
+  if(format == "BAM"){
+    param = Rsamtools::ScanBamParam(which = canonical_chr,
+                                    what = Rsamtools::scanBamWhat()[c(3,5)])
+    gr <- Rsamtools::scanBam(file = input, param = param)
+    chr = unlist(lapply(1:length(canonical_chr), function(i){gr[[i]]$rname}))
+    start = unlist(lapply(1:length(canonical_chr), function(i){gr[[i]]$pos}))
+    end = start + 101
+    gr = GenomicRanges::GRanges(seqnames = chr,
+                                ranges = IRanges::IRanges("start" = start,
+                                                          "end" = end))
+  } else if(format == "BED") {
+    gr <- rtracklayer::import(input)
+  } else if(format == "raw_mat"){
+    bins <- original_bins
+  } else {
+    message("ChromSCape::count_coverage - format must be either 'BAM', 'BED',",
+            " or 'raw_mat'. Returning.")
+    return()
+  }
+  
+  if(format != "raw_mat"){
+    hits <- GenomicRanges::findOverlaps(
+      bins, gr, minoverlap = 1, ignore.strand = TRUE)
+    hits = as.matrix(hits)
+    hits_agg = table(hits[,1])
+    bins$score = 0
+    bins$score[as.numeric(names(hits_agg))] = hits_agg
+    rm(hits_agg)
     gc()
-    return(bins)
+  } else{
+    bins$score = rowSums(input)
+  }
+  
+  bins$score = 10^6* bins$score / length(bins)
+  bins$score = smoothBin(bins$score, n_smoothBin)
+  bins = bins[-which(bins$score==0)]
+  bins$score = 10^6 * bins$score / norm_factor
+  
+  gc()
+  return(bins)
 }
