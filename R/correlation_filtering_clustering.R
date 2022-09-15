@@ -85,7 +85,7 @@ find_clusters_louvain_scExp <- function(scExp, k = 10, resolution = 1,
                 "Run install.packages('igraph') in console. Exiting.")
         return()
     }
-  g = bluster::makeSNNGraph(reducedDim(scExp,"PCA"),
+  g = bluster::makeSNNGraph(reducedDim(scExp, use.dimred),
                             k = k,
                             type = type,
                             BPPARAM = BPPARAM)
