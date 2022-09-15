@@ -841,14 +841,16 @@ plot_coverage_BigWig <- function(
     genebed$strand = "."
     colnames(genebed)[5:6] = c("score", "strand")
     
+    bin_width = floor(mean(width(coverages[[1]])))
+    
     #Select region of interest
     roi = GenomicRanges::GRanges(
         chrom, ranges = IRanges::IRanges(start, end))
-    
+
     coverage_list = list()
     if(!is(coverages, "list")) {
         coverage_list[[1]] = coverages[S4Vectors::subjectHits(
-            GenomicRanges::findOverlaps(roi,coverages)),]
+            GenomicRanges::findOverlaps(roi, coverages)),]
     } else{
         for(i in seq_along(coverages)){
             coverage_list[[i]] = coverages[[i]][S4Vectors::subjectHits(
@@ -859,7 +861,6 @@ plot_coverage_BigWig <- function(
     if(sum(sapply(coverage_list, length)) >0){
         
         # Tile on region
-        bin_width = floor(mean(width(coverage_list[[1]])))
         bins <- unlist(GenomicRanges::tile(roi, width = bin_width))
         
         for(i in seq_along(coverage_list)){
