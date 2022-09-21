@@ -1321,6 +1321,7 @@ plot_violin_feature_scExp <- function(
 #' @param by Color violin by cell_cluster or sample_id  ("cell_cluster")
 #' @param max_distanceToTSS Numeric. Maximum distance to a gene's TSS to consider
 #' a region linked to a gene. (1000)
+#' @param highlight A specific group to highlight in a one vs all fashion
 #' @param downsample Downsample for plotting (5000)
 #' 
 #' @return A violin plot of intra-correlation
@@ -1395,68 +1396,6 @@ plot_percent_active_feature_scExp <- function(
 }
 
 
-#' Get pathway matrix 
-#'
-#' @param scExp A SingleCellExperiment
-#' @param pathways A character vector specifying the pathways to retrieve the
-#' cell count for.
-#' @param max_distanceToTSS Numeric. Maximum distance to a gene's TSS to consider
-#' a region linked to a gene. (1000)#' @param ref 
-#' @param ref Reference genome, either mm10 or hg38
-#' @param GeneSetClasses Which classes of MSIGdb to load
-#' @param progress A shiny Progress instance to display progress bar. 
-#'
-#' @return A matrix of cell to pathway
-#' @export 
-#'
-#' @examples
-#' data(scExp)
-#' mat = get_pathway_mat_scExp(scExp, pathways = "KEGG_T_CELL_RECEPTOR_SIGNALING_PATHWAY")
-#' summary(mat)
-get_pathway_mat_scExp <- function(
-    scExp, pathways, max_distanceToTSS = 1000, 
-    ref = "hg38", 
-    MSIG.classes = c("c1_positional", "c2_curated", "c3_motif", 
-                     "c4_computational", "c5_GO", "c6_oncogenic",
-                     "c7_immunologic", "hallmark"),
-    progress = NULL
-){
-  if(!is.null(progress)) progress$set(message='Loading Pathways for visualization...', value = 0.05)
-  if(!is.null(progress))  progress$set(detail='Initialization...', value = 0.15)
-  
-    normcounts = SingleCellExperiment::normcounts(scExp)
-    regions = SummarizedExperiment::rowRanges(scExp)
-    regions = regions[which(regions$distanceToTSS <= 1000)]
-    database <- ChromSCape:::load_MSIGdb(ref, MSIG.classes)
-    
-    if(!is.null(progress)) progress$set(message='Finished loading...', value = 0.65)
-    if(!is.null(progress)) progress$set(detail='Creating Pathways x Region mat...', value = 0.70)
-    
-    pathways_to_regions = lapply(seq_along(pathways),
-                                 function(i){
-                                   genes = database$GeneSets[[pathways[i]]]
-                                   reg = unique(regions$ID[grep(paste(genes, collapse="|"),regions$Gene)])
-                                 })
-    
-    names(pathways_to_regions) = pathways
-    
-    pathways_mat. =  sapply(seq_along(pathways),
-                            function(i){
-                              if(length(pathways_to_regions[[i]])>1) {
-                                r = colSums(normcounts[pathways_to_regions[[i]],])
-                              } else{
-                                r = rep(0, ncol(normcounts))
-                              }
-                              r = as.matrix(r)
-                              colnames(r) = pathways[i]
-                              r
-                            })
-    colnames(pathways_mat.) = pathways
-    rownames(pathways_mat.) = colnames(normcounts)
-    if(!is.null(progress)) progress$set(detail='Done !', value = 0.90)
-    
-    return(pathways_mat.)
-}
 
 
 

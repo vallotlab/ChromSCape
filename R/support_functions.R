@@ -172,7 +172,7 @@ CompareWilcox <- function(dataMat = NULL, annot = NULL, ref_group = NULL,
             dataMat[,c(refidx, gpidx)],
             groups = as.factor(c(rep(1, length(refidx)),
                                  rep(2, length(gpidx)))),
-            block = annot.$batch_id[c(refidx, gpidx)],
+            block = annot$batch_id[c(refidx, gpidx)],
             BPPARAM = BPPARAM)
         
         pval.gpsamp <- testWilc$statistics[[1]]$p.value

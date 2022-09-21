@@ -20,6 +20,8 @@ plot_percent_active_feature_scExp(
 
 \item{by}{Color violin by cell_cluster or sample_id  ("cell_cluster")}
 
+\item{highlight}{A specific group to highlight in a one vs all fashion}
+
 \item{downsample}{Downsample for plotting (5000)}
 
 \item{max_distanceToTSS}{Numeric. Maximum distance to a gene's TSS to consider

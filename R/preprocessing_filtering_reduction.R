@@ -921,7 +921,7 @@ rebin_matrix <- function(mat,
     }
     
     original_bins = rownames(mat)
-    original_bins =  strsplit(original_bins, "_", fixed = T)
+    original_bins =  strsplit(original_bins, "_", fixed = TRUE)
     original_bins_chr = as.character(lapply(original_bins, function(x) x[1]))
     original_bins_start = as.numeric(lapply(original_bins, function(x) x[2]))
     original_bins_end = as.numeric(lapply(original_bins, function(x) x[3]))
@@ -954,8 +954,7 @@ rebin_matrix <- function(mat,
     
     if(length(which(is.na(match_hits)))>0){
         message("ChromSCape::rebin_matrix - Warning ! ", length(unique((mat@i+1)[which(is.na(match_hits))])),
-                " original features were not found in the new bins, e.g.:\n",
-                paste(head(mat@Dimnames[[1]][unique((mat@i+1)[which(is.na(match_hits))])],3),collapse = " "),
+                " original features were not found in the new bins",
                 ".\nContinuing without these features...\n")
         mat_df = mat_df[-which(is.na(match_hits)),]
         gc()

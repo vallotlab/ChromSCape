@@ -82,7 +82,7 @@ generate_coverage_tracks <- function(scExp_cf, input, odir,
   
   if(format == "raw_mat"){
     original_bins = rownames(input)
-    original_bins =  strsplit(original_bins, "_", fixed = T)
+    original_bins =  strsplit(original_bins, "_", fixed = TRUE)
     original_bins_chr = as.character(lapply(original_bins, function(x) x[1]))
     original_bins_start = as.numeric(lapply(original_bins, function(x) x[2]))
     original_bins_end = as.numeric(lapply(original_bins, function(x) x[3]))
@@ -251,7 +251,7 @@ rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
                                             start = canonical_chr$start,
                                             end = canonical_chr$end
                                           ))
-  GenomeInfoDb::seqlengths(canonical_chr) = end(canonical_chr)
+  GenomicRanges::seqinfo(canonical_chr)@seqlengths  = end(canonical_chr)
   if(format != "raw_mat") {
     message("ChromSCape:::rawfile_ToBigWig - generating bigwig for  ",
             basename(BigWig_filename), " file...")
@@ -278,9 +278,10 @@ rawfile_ToBigWig <- function(input, BigWig_filename, format = "BAM",
   bins <- count_coverage(input, format, bins, canonical_chr, norm_factor, 
                          n_smoothBin, ref, read_size, original_bins)
   ## export as bigWig
-  GenomeInfoDb::seqlengths(bins) = GenomeInfoDb::seqlengths(canonical_chr)[
-    match(names(GenomeInfoDb::seqlengths(bins)),
-          names(GenomeInfoDb::seqlengths(canonical_chr)))]
+  GenomicRanges::seqinfo(bins)@seqlengths = 
+      GenomicRanges::seqinfo(canonical_chr)@seqlengths[
+          match(GenomicRanges::seqinfo(bins)@seqnames,
+                GenomicRanges::seqinfo(canonical_chr)@seqnames)]
   
   print(BigWig_filename)
   rtracklayer::export.bw(bins, BigWig_filename)

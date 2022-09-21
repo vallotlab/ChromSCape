@@ -3357,7 +3357,7 @@ shinyServer(function(input, output, session) {
             normcounts = SingleCellExperiment::normcounts(scExp_cf())
             regions = SummarizedExperiment::rowRanges(scExp_cf())
             regions = regions[which(regions$distanceToTSS <= 1000)]
-            database <- ChromSCape:::load_MSIGdb(annotation_id(), MSIG.classes())
+            database <- load_MSIGdb(annotation_id(), MSIG.classes())
             progress$set(message='Finished loading...', value = 0.65)
             progress$set(detail='Creating Pathways x Region mat...', value = 0.70)
             pathways_to_regions = sapply(seq_along(pathways()),
