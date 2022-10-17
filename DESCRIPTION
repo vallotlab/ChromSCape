@@ -1,6 +1,6 @@
 Package: ChromSCape
 Title: Analysis of single-cell epigenomics datasets with a Shiny App
-Version: 1.7.42
+Version: 1.7.43
 Authors@R: c(person(given = "Pacome",
            family = "Prompsy",
            role = c("aut", "cre"),
@@ -13,7 +13,7 @@ Authors@R: c(person(given = "Pacome",
            comment = c(ORCID = "0000-0003-1601-2359")))	
 Description: ChromSCape - Chromatin landscape profiling for Single Cells - is a ready-to-launch user-friendly Shiny Application for the analysis of single-cell epigenomics datasets (scChIP-seq, scATAC-seq, scCUT&Tag, ...) from aligned data to differential analysis & gene set enrichment analysis. It is highly interactive, enables users to save their analysis and covers a wide range of analytical steps: QC, preprocessing, filtering, batch correction, dimensionality reduction, vizualisation, clustering, differential analysis and gene set analysis. 
 License: GPL-3
-biocViews: Software, SingleCell, ChIPSeq, ATACSeq, MethylSeq, Classification, Clustering, Epigenetics, PrincipalComponent, SingleCell, ATACSeq, ChIPSeq, Annotation, BatchEffect, MultipleComparison, Normalization, Pathways, Preprocessing, QualityControl, ReportWriting, Visualization, GeneSetEnrichment, DifferentialPeakCalling
+biocViews: ShinyApps, Software, SingleCell, ChIPSeq, ATACSeq, MethylSeq, Classification, Clustering, Epigenetics, PrincipalComponent, SingleCell, ATACSeq, ChIPSeq, Annotation, BatchEffect, MultipleComparison, Normalization, Pathways, Preprocessing, QualityControl, ReportWriting, Visualization, GeneSetEnrichment, DifferentialPeakCalling
 VignetteBuilder: knitr
 URL: https://github.com/vallotlab/ChromSCape
 BugReports: https://github.com/vallotlab/ChromSCape/issues
@@ -58,6 +58,7 @@ Imports:
     gridExtra,
     qualV,
     stringdist,
+    stringr,
     fs,
     qs,
     DT,

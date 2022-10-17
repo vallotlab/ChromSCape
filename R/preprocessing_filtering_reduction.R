@@ -886,6 +886,7 @@ beds_to_matrix_indexes <- function(dir, which,
 #' @importFrom dplyr group_by summarise
 #' @importFrom GenomicRanges GRanges tileGenome width seqnames findOverlaps start
 #' end
+#' @importFrom stringr str_split_fixed
 #'
 #' @examples
 #' mat = create_scDataset_raw()$mat
@@ -920,11 +921,21 @@ rebin_matrix <- function(mat,
         "custom_annotation must be a GenomicRanges object.")
     }
     
-    original_bins = rownames(mat)
-    original_bins =  strsplit(original_bins, "_", fixed = TRUE)
-    original_bins_chr = as.character(lapply(original_bins, function(x) x[1]))
-    original_bins_start = as.numeric(lapply(original_bins, function(x) x[2]))
-    original_bins_end = as.numeric(lapply(original_bins, function(x) x[3]))
+    # original_bins = rownames(mat)
+    # original_bins =  strsplit(original_bins, "_", fixed = TRUE)
+    # original_bins_chr = as.character(lapply(original_bins, function(x) x[1]))
+    # original_bins_start = as.numeric(lapply(original_bins, function(x) x[2]))
+    # original_bins_end = as.numeric(lapply(original_bins, function(x) x[3]))
+    
+    t1 = system.time({
+      original_bins = rownames(mat)
+    original_bins = stringr::str_split_fixed(original_bins, pattern = "_", n = 3)
+    original_bins_chr = as.character(original_bins[,1])
+    original_bins_start = as.numeric(original_bins[,2])
+    original_bins_end = as.numeric(original_bins[,3])
+    })
+    message("ChromSCape::rebin_matrix - ",
+            "Read the original bins in ", round(t1[3],4), " sec.")
     
     if (anyNA(original_bins_start) | anyNA(original_bins_end))
         stop("The rows of mat should be regions in format chr_start_end or",
@@ -2270,6 +2281,7 @@ reduce_dims_scExp <-
                 perplexity = choose_perplexity(pca), verbose = verbose,
                 max_iter = 1000)
             tsne <- as.data.frame(tsne$Y)
+            rownames(tsne) <- rownames(pca)
             colnames(tsne) <- c("Component_1", "Component_2")
         }
         if ("UMAP" %in% dimension_reductions){

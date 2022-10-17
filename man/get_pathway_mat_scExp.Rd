@@ -38,5 +38,5 @@ Get pathway matrix
 \examples{
 data(scExp)
 mat = get_pathway_mat_scExp(scExp, pathways = "KEGG_T_CELL_RECEPTOR_SIGNALING_PATHWAY")
-summary(mat)
+
 }

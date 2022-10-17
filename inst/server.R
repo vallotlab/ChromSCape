@@ -530,7 +530,7 @@ shinyServer(function(input, output, session) {
                 datamatrix = out$datamatrix
                 annot_raw = out$annot_raw
                 
-                scExp. = create_scExp(datamatrix[1:min(nrow(datamatrix),100),1:10], annot_raw[1:10,], FALSE, FALSE, FALSE, FALSE,verbose = FALSE)
+                scExp. = create_scExp(datamatrix[1:min(nrow(datamatrix),100),1:10], annot_raw[1:10,], FALSE, FALSE, FALSE, FALSE, verbose = FALSE)
                 original_bin_size = mean(GenomicRanges::width(get_genomic_coordinates(scExp.)))
                 rm(scExp.)
                 
