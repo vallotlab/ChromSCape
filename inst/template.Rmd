@@ -404,6 +404,7 @@ Coverage
     Column
 -----------------------------------------------------------------------
 ```{r include=FALSE}
+out_coverage = NULL
 if(any(c("coverage") %in% run)){
     if(length(coverages)>0){
         features = SummarizedExperiment::rowData(scExp_cf)
