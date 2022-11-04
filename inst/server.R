@@ -562,6 +562,9 @@ shinyServer(function(input, output, session) {
                         end = as.numeric(gsub(".*_","", regions))
                         overlap = ceiling(mean((end - start) / 2))
                         
+                        message("Rebinning the sparse matrix with an overlap of ", overlap)
+                        message("Saving raw matrix for later usage for coverage or additional feature engineering...")
+                        
                         datamatrix = rebin_matrix(mat = datamatrix,
                                                   bin_width = as.numeric(input$rebin_bin_size),
                                                   custom_annotation = rebin_custom_annotation,
