@@ -304,19 +304,31 @@ generate_analysis <- function(input_data_folder,
             
             sample_folders = list.dirs(input_data_folder, full.names = TRUE,
                                        recursive = FALSE)
-            input_files_coverage = sapply(sample_folders, function(i)
+            if(input_data_type == "scBED"){
+              input = sapply(sample_folders, function(i)
                 list.files(i, full.names = TRUE, pattern = ".bed|.bed.gz"))
-            names(input_files_coverage) = basename(sample_folders)
-            
+            names(input) = basename(sample_folders)
+            } else {
+              
+            }
             coverage_dir_nclust = file.path(ChromSCape_directory,
                                             "coverage", paste0(prefix, "_k", nclust))
             if(!dir.exists(coverage_dir_nclust)) dir.create(coverage_dir_nclust)
             
-            system.time({generate_coverage_tracks(scExp_cf,
-                                                  input_files_coverage,
-                                                  odir = coverage_dir_nclust,
-                                                  ref_genome = ref_genome
-            )
+            system.time({
+              generate_coverage_tracks(
+                scExp_cf,
+                input = input,
+                odir = coverage_dir_nclust,
+                format = input_data_type,
+                ref_genome = ref_genome,
+                bin_width = 150,
+                n_smoothBin = 5,
+                read_size = 101,
+                quantile_for_peak_calling = 0.85,
+                by = "cell_cluster"
+              )
+              
             })
         }
     }
