@@ -51,6 +51,9 @@ cells.}
 'feature_count_on' parameter. E.g. for 'bins' must be a numeric, e.g. 50000,
 for 'peaks' must be a character containing path towards a BED peak file.}
 
+\item{rebin_sparse_matrix}{A boolean specifying if the SparseMatrix should
+be rebinned on features (see feature_count_on and feature_count_parameter).}
+
 \item{ref_genome}{The genome of reference.}
 
 \item{run}{What steps to run. By default runs everything. Some steps are

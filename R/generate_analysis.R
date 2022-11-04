@@ -41,6 +41,8 @@
 #' @param feature_count_parameter Additional parameter corresponding to the 
 #' 'feature_count_on' parameter. E.g. for 'bins' must be a numeric, e.g. 50000, 
 #' for 'peaks' must be a character containing path towards a BED peak file.
+#' @param rebin_sparse_matrix A boolean specifying if the SparseMatrix should
+#' be rebinned on features (see feature_count_on and feature_count_parameter).
 #' @param ref_genome The genome of reference.
 #' @param run What steps to run. By default runs everything. Some steps are
 #' required in order to run downstream steps.
@@ -90,9 +92,10 @@ generate_analysis <- function(input_data_folder,
                                       "scBAM")[1],
                   feature_count_on = c("bins","genebody","peaks")[1],
                   feature_count_parameter = 50000,
+                  rebin_sparse_matrix = FALSE,
                   ref_genome = c("hg38","mm10")[1],
-                  run = c("filter", "CNA","cluster", "consensus","peak_call", "coverage", 
-                          "DA", "GSA", "report")[c(1,3,6,7,8,9)],
+                  run = c("filter", "CNA","cluster", "consensus", "coverage", 
+                          "DA", "GSA", "report")[c(1,3,5,6,7,8)],
                   min_reads_per_cell = 1000,
                   max_quantile_read_per_cell = 99,
                   n_top_features = 40000,
@@ -158,7 +161,7 @@ generate_analysis <- function(input_data_folder,
       start = as.numeric(gsub(".*_","", gsub("_\\d*$","", regions)))
       end = as.numeric(gsub(".*_","", regions))
       overlap = ceiling(mean((end - start) / 2))
-      message("Rebinning the sparse matrix into", feature_count_on, " with parameter ", feature_count_parameter, " and overlap of ", overlap)
+      message("Rebinning the sparse matrix into ", feature_count_on, " with parameter ", feature_count_parameter, " and overlap of ", overlap)
       message("Saving raw matrix for later usage for coverage or additional feature engineering...")
       qs::qsave(datamatrix, file.path(ChromSCape_directory, "raw_mat.qs"))
 
@@ -298,6 +301,7 @@ generate_analysis <- function(input_data_folder,
     #### Coverage #####
     if("coverage" %in% run) {
         coverages = NULL
+        format = input_data_type
         if(input_data_type %in% c("scBED", "SparseMatrix")){
             message("ChromSCape::generate_analysis - Creating pseudo-bulk cluster ",
                     "coverage tracks...")
@@ -309,6 +313,7 @@ generate_analysis <- function(input_data_folder,
                 list.files(i, full.names = TRUE, pattern = ".bed|.bed.gz"))
             names(input) = basename(sample_folders)
             } else {
+              format = "raw_mat"
               input = qs::qread(file.path(ChromSCape_directory, "raw_mat.qs"))
             }
             coverage_dir_nclust = file.path(ChromSCape_directory,
@@ -320,7 +325,7 @@ generate_analysis <- function(input_data_folder,
                 scExp_cf,
                 input = input,
                 odir = coverage_dir_nclust,
-                format = input_data_type,
+                format = format,
                 ref_genome = ref_genome,
                 bin_width = 150,
                 n_smoothBin = 5,
@@ -332,34 +337,7 @@ generate_analysis <- function(input_data_folder,
             })
         }
     }
-    
-    #### Peak Calling #####
-    if("peak_call" %in% run) {
-        if(input_data_type %in% c("scBED")){
-            message("ChromSCape::generate_analysis - Calling peaks on pseudo-bulk ",
-                    "clusters ...")
-            
-            sample_folders = list.dirs(input_data_folder, full.names = TRUE,
-                                       recursive = FALSE)
-            input_files = sapply(
-                sample_folders, function(i) list.files(
-                    i, full.names = TRUE, pattern = ".bed|.bed.gz"))
-            names(input_files) = basename(sample_folders)
-            
-            peak_dir_nclust = file.path(ChromSCape_directory, "peaks",
-                                        paste0(prefix, "_k", nclust))
-            if(!dir.exists(peak_dir_nclust)) dir.create(peak_dir_nclust)
-            
-            scExp_cf = subset_bam_call_peaks(scExp_cf, odir = peak_dir_nclust,
-                                             input = input_files, format = "scBED",
-                                             p.value = 0.05, ref =  ref_genome, 
-                                             peak_distance_to_merge = 10000)
-            refined_annotation = scExp_cf@metadata$refined_annotation
-            qs::qsave(refined_annotation, file = file.path(peak_dir_nclust,
-                                                           "refined_annotation.qs"))
-            
-        }
-    }
+   
     #### Differential Analysis #####
     if("DA" %in% run) {
         message("ChromSCape::generate_analysis - Running one vs rest differential  ",
