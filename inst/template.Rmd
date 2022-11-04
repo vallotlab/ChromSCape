@@ -408,44 +408,47 @@ out_coverage = NULL
 if(any(c("coverage") %in% run)){
     if(length(coverages)>0){
         features = SummarizedExperiment::rowData(scExp_cf)
+        message(head(features))
+        message(head(genes_to_plot))
+        message(any(genes_to_plot %in% features$Gene))
         if(any(genes_to_plot %in% features$Gene)){
-            if(!is.null()){
-                plot_list = coverage_chr = coverage_start = coverage_end = list()
-                coverage_color = setNames(unique(scExp_cf$cell_cluster_color), unique(scExp_cf$cell_cluster))
-                
-                for(i in seq_along(genes_to_plot)){
-                    Gene = genes_to_plot[i]
-                    eval(parse(text = paste0("data(", ref_genome, ".GeneTSS)")))
-                    gene_annot = eval(parse(text = paste0(ref_genome, ".GeneTSS")))
-                    if(grepl(":", Gene) ){
-                        coverage_chr[[i]] = gsub(":.*","",Gene)
-                        coverage_start[[i]] = as.numeric(gsub(".*:","",gsub("-.*","",Gene)))
-                        coverage_end[[i]] = as.numeric(gsub(".*-","",Gene))
-                    } else{
-                        if(Gene %in% gene_annot$gene){
-                            coverage_chr[[i]] = gene_annot$chr[which(gene_annot$gene == Gene)]
-                            coverage_start[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] - 25000
-                            coverage_end[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] + 25000
-                        }
-                    }
-                    if(length(coverage_chr)>=i && !is.null(coverage_chr[[i]])){
-                        plot_coverage_BigWig(coverages, coverage_color, chrom = coverage_chr[[i]], start = coverage_start[[i]], end = coverage_end[[i]], ref = ref_genome)
-                        plot_list[[i]] <- grDevices::recordPlot()
-                        plot.new() ## clean up device
-                    }
-                }
-                
-                out_coverage <- lapply(seq_along(genes_to_plot), function(i) {
-                    
-                    if(length(coverage_chr)>=i && !is.null(coverage_chr[[i]])){
-                        a1 <- knitr::knit_expand(text = sprintf("### Coverage - %s \n", genes_to_plot[i]))
-                        a2 <- knitr::knit_expand(text = "\n```{r fig.width=15, echo = FALSE, eval = TRUE}") # start r chunk
-                        a3 <- knitr::knit_expand(text = sprintf("\nprint(plot_list[[%d]])", i))
-                        a4 <- knitr::knit_expand(text = "\n```\n")
-                        paste(a1, a2, a3, a4, collapse = '\n')
-                    }
-                })
+          
+          plot_list = coverage_chr = coverage_start = coverage_end = list()
+          coverage_color = setNames(unique(scExp_cf$cell_cluster_color), unique(scExp_cf$cell_cluster))
+          
+          for(i in seq_along(genes_to_plot)){
+            Gene = genes_to_plot[i]
+            eval(parse(text = paste0("data(", ref_genome, ".GeneTSS)")))
+            gene_annot = eval(parse(text = paste0(ref_genome, ".GeneTSS")))
+            if(grepl(":", Gene) ){
+              coverage_chr[[i]] = gsub(":.*","",Gene)
+              coverage_start[[i]] = as.numeric(gsub(".*:","",gsub("-.*","",Gene)))
+              coverage_end[[i]] = as.numeric(gsub(".*-","",Gene))
+            } else{
+              if(Gene %in% gene_annot$gene){
+                coverage_chr[[i]] = gene_annot$chr[which(gene_annot$gene == Gene)]
+                coverage_start[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] - 25000
+                coverage_end[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] + 25000
+              }
             }
+            if(length(coverage_chr)>=i && !is.null(coverage_chr[[i]])){
+              plot_coverage_BigWig(coverages, coverage_color, chrom = coverage_chr[[i]], start = coverage_start[[i]], end = coverage_end[[i]], ref = ref_genome)
+              plot_list[[i]] <- grDevices::recordPlot()
+              plot.new() ## clean up device
+            }
+          }
+          
+          out_coverage <- lapply(seq_along(genes_to_plot), function(i) {
+            
+            if(length(coverage_chr)>=i && !is.null(coverage_chr[[i]])){
+              a1 <- knitr::knit_expand(text = sprintf("### Coverage - %s \n", genes_to_plot[i]))
+              a2 <- knitr::knit_expand(text = "\n```{r fig.width=15, echo = FALSE, eval = TRUE}") # start r chunk
+              a3 <- knitr::knit_expand(text = sprintf("\nprint(plot_list[[%d]])", i))
+              a4 <- knitr::knit_expand(text = "\n```\n")
+              paste(a1, a2, a3, a4, collapse = '\n')
+            }
+          })
+
         }
     }
 }
