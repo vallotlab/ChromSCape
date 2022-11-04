@@ -4,8 +4,8 @@
 #' @usage generate_analysis(input_data_folder,
 #' analysis_name = "Analysis_1",
 #' output_directory = "./",
-#' input_data_type = c("scBED", "DenseMatrix", "SparseMatrix",
-#'                    "scBAM")[1],
+#' input_data_type = c("scBED", "DenseMatrix", "SparseMatrix", "scBAM")[1],
+#' rebin_sparse_matrix = FALSE,
 #' feature_count_on = c("bins","genebody","peaks")[1],
 #' feature_count_parameter = 50000,
 #' ref_genome = c("hg38","mm10")[1],
@@ -153,6 +153,27 @@ generate_analysis <- function(input_data_folder,
         
     
     datamatrix = out$datamatrix
+    if(input_data_type == "SparseMatrix" & rebin_sparse_matrix ){
+      regions = head(rownames(datamatrix), 1000)
+      start = as.numeric(gsub(".*_","", gsub("_\\d*$","", regions)))
+      end = as.numeric(gsub(".*_","", regions))
+      overlap = ceiling(mean((end - start) / 2))
+      message("Rebinning the sparse matrix into", feature_count_on, " with parameter ", feature_count_parameter, " and overlap of ", overlap)
+      message("Saving raw matrix for later usage for coverage or additional feature engineering...")
+      qs::qsave(datamatrix, file.path(ChromSCape_directory, "raw_mat.qs"))
+
+      if(feature_count_on == "bins") {
+        datamatrix = rebin_matrix(datamatrix,
+                                  bin_width = feature_count_parameter,
+                                  minoverlap = overlap, ref = ref_genome)
+      } else{
+        custom_feature = rtracklayer::import(feature_count_parameter)
+        datamatrix = rebin_matrix(datamatrix,
+                                  custom_annotation = custom_feature,
+                                  minoverlap = overlap, ref = ref_genome)
+      }
+
+    }
     annot_raw = out$annot_raw
     qs::qsave(datamatrix, file = file.path(ChromSCape_directory, "datamatrix.qs"))
     qs::qsave(annot_raw, file = file.path(ChromSCape_directory, "annot_raw.qs"))
@@ -277,7 +298,7 @@ generate_analysis <- function(input_data_folder,
     #### Coverage #####
     if("coverage" %in% run) {
         coverages = NULL
-        if(input_data_type %in% c("scBED")){
+        if(input_data_type %in% c("scBED", "SparseMatrix")){
             message("ChromSCape::generate_analysis - Creating pseudo-bulk cluster ",
                     "coverage tracks...")
             
