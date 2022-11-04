@@ -341,8 +341,7 @@ shinyServer(function(input, output, session) {
         req(input$rebin_matrices)
         if(isTRUE(input$rebin_matrices)){
             column(6, textInput("rebin_bin_size", label = "Re-count on genomic bins (bp)", value = 50000),
-                   fileInput("rebin_custom_annotation", label = "Re-count on features (BED)"),  multiple = FALSE, accept = c(".bed",".txt", ".bed.gz"),
-                   textInput("minoverlap", label = "Minimum Overlap (bp)", value = 500))
+                   fileInput("rebin_custom_annotation", label = "Re-count on features (BED)"),  multiple = FALSE, accept = c(".bed",".txt", ".bed.gz")
         }
     })
     
@@ -540,14 +539,8 @@ shinyServer(function(input, output, session) {
                 }
                 if(input$rebin_matrices == TRUE){
                     
-                    if(!is.na(as.numeric(input$rebin_bin_size)) & !is.na(as.numeric(input$minoverlap))){
-                        if(as.numeric(input$minoverlap) > as.numeric(input$rebin_bin_size) | as.numeric(input$minoverlap) > original_bin_size) {
-                            showNotification(paste0("Warning : To rebin the matrices, 
-                                      'The minimum overlap of original matrices should be smaller than both
-                                      the original and new bin sizes."),
-                                             duration = 10, closeButton = TRUE, type="warning")
-                            return()
-                        } 
+                    if(!is.na(as.numeric(input$rebin_bin_size))){
+
                         if(as.numeric(input$rebin_bin_size) < original_bin_size){
                             showNotification(paste0("Warning : To rebin the matrices, 
                                       'The new bin size must be larger than the
@@ -563,11 +556,16 @@ shinyServer(function(input, output, session) {
                             rebin_custom_annotation = NULL
                         }
                         progress$set(message='Rebinning data set into new bins..', detail = "", value = 0.3)
-                        print(input$rebin_bin_size)
+                        
+                        regions = head(rownames(datamatrix), 1000)
+                        start = as.numeric(gsub(".*_","", gsub("_\\d*$","", regions)))
+                        end = as.numeric(gsub(".*_","", regions))
+                        overlap = ceiling(mean((end - start) / 2))
+                        
                         datamatrix = rebin_matrix(mat = datamatrix,
                                                   bin_width = as.numeric(input$rebin_bin_size),
                                                   custom_annotation = rebin_custom_annotation,
-                                                  minoverlap = as.numeric(input$minoverlap),
+                                                  minoverlap = as.numeric(overlap),
                                                   ref = input$annotation,
                                                   verbose = T)
                         progress$set(message='Finished rebinning data set..', value = 0.8)
