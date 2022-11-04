@@ -309,7 +309,7 @@ generate_analysis <- function(input_data_folder,
                 list.files(i, full.names = TRUE, pattern = ".bed|.bed.gz"))
             names(input) = basename(sample_folders)
             } else {
-              
+              input = qs::qread(file.path(ChromSCape_directory, "raw_mat.qs"))
             }
             coverage_dir_nclust = file.path(ChromSCape_directory,
                                             "coverage", paste0(prefix, "_k", nclust))
