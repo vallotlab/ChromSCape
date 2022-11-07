@@ -251,6 +251,7 @@ Column
 ##  Differential Volcano plots 
 
 ```{r, echo = FALSE, eval = TRUE}
+out = NULL
 if(any(c("DA") %in% run)){
   if(any(grepl("qval",colnames(SingleCellExperiment::rowData(scExp_cf)))) & "enr" %in% names(scExp_cf@metadata)){
     diff_list = list()
@@ -318,7 +319,7 @@ Column
 ```{r }
 options(DT.options = list(scrollY="300px",scrollX="300px", pageLength = 10, autoWidth = TRUE))
 
-
+out = NULL
 gsa_over = gsa_under = list()
 if(any(c("GSA") %in% run)){
   if(!is.null(scExp_cf@metadata$enr)){
@@ -407,8 +408,6 @@ Coverage
 out_coverage = NULL
 if(any(c("coverage") %in% run)){
     if(length(coverages)>0){
-        features = SummarizedExperiment::rowData(scExp_cf)
-
           plot_list = coverage_chr = coverage_start = coverage_end = list()
           coverage_color = setNames(unique(scExp_cf$cell_cluster_color), unique(scExp_cf$cell_cluster))
           
