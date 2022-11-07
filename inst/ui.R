@@ -41,11 +41,10 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                           shinydashboard::menuItem("Visualize Cells", tabName = "vizualize_dim_red", icon=icon("fas fa-image")),
                                           shinydashboard::menuItem("Cluster Cells", tabName = "cons_clustering", icon=icon("th")),
                                           shinydashboard::menuItem("Coverage & Peak Calling", tabName = "coverage", icon=icon("chart-area")),
-                                          # shinydashboard::menuItem("Peak Calling", tabName = "peak_calling", icon=icon("fab fa-mountain", verify_fa = FALSE)), #mountain
                                           shinydashboard::menuItem("Differential Analysis", tabName = "diff_analysis", icon=icon("sort-amount-up")),
                                           shinydashboard::menuItem("Gene Set Analysis", tabName = "enrich_analysis", icon=icon("code-branch")),
                                           shinydashboard::menuItem("TF analysis", tabName = "TF_analysis", icon=icon("bezier-curve")),
-                                          shinydashboard::menuItem("Close App & Save Analysis", tabName = "close_and_save", icon=icon("close", verify_fa = FALSE)),
+                                          shinydashboard::menuItem("Generate Report & Close App", tabName = "close_and_save", icon=icon("close", verify_fa = FALSE)),
                                           shinydashboard::menuItem(
                                             badgeColor = "green",
                                             expandedName = "hello",
