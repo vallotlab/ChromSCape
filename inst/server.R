@@ -341,7 +341,7 @@ shinyServer(function(input, output, session) {
         req(input$rebin_matrices)
         if(isTRUE(input$rebin_matrices)){
             column(6, textInput("rebin_bin_size", label = "Re-count on genomic bins (bp)", value = 50000),
-                   fileInput("rebin_custom_annotation", label = "Re-count on features (BED)"),  multiple = FALSE, accept = c(".bed",".txt", ".bed.gz")
+                   fileInput("rebin_custom_annotation", label = "Re-count on features (BED)"),  multiple = FALSE, accept = c(".bed",".txt", ".bed.gz"))
         }
     })
     

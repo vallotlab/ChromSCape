@@ -728,9 +728,11 @@ generate_report <- function(ChromSCape_directory,
     if(shiny::is.reactive(scExp)) scExp = shiny::isolate(scExp())
     if(shiny::is.reactive(scExp_cf)) scExp = shiny::isolate(scExp_cf())
     
+    input_rmd = normalizePath(file.path(system.file(package="ChromSCape","template.Rmd")))
+    output_file = file.path(normalizePath(ChromSCape_directory), paste0(analysis_name, "_report.html"))
     rmarkdown::render(
-        input = normalizePath(file.path(system.file(package="ChromSCape","template.Rmd"))),
-        output_file = normalizePath(file.path(ChromSCape_directory, paste0(analysis_name, "_report.html"))),
+        input = input_rmd,
+        output_file = output_file,
         params = list(
             analysis_name = analysis_name,
             datamatrix = datamatrix,

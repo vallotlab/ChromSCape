@@ -83,13 +83,13 @@ if("filter" %in% run) flexdashboard::gauge(100*round(nrow(scExp)/ nrow(datamatri
 
 ```{r}
 df = data.frame(coverage = sort(unname(Matrix::colSums(datamatrix)))) 
-ggplot(df, aes(x = coverage)) + 
-      geom_histogram(color="black", fill="steelblue", bins = 75) +
-      labs(x="Log10(Reads per cell)", y = "nCells")  + 
-      theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), 
-            panel.background=element_blank(), axis.line=element_line(colour="black"),
-            panel.border=element_rect(colour="black", fill=NA)) +
-      scale_x_log10()
+ggplot2::ggplot(df, ggplot2::aes(x = coverage)) + 
+      ggplot2::geom_histogram(color="black", fill="steelblue", bins = 75) +
+      ggplot2::labs(x="Log10(Reads per cell)", y = "nCells")  + 
+      ggplot2::theme(panel.grid.major = ggplot2::element_blank(), panel.grid.minor= ggplot2::element_blank(), 
+            panel.background = ggplot2::element_blank(), axis.line = ggplot2::element_line(colour="black"),
+            panel.border = ggplot2::element_rect(colour="black", fill=NA)) +
+      ggplot2::scale_x_log10()
 ```
 
 
@@ -408,11 +408,7 @@ out_coverage = NULL
 if(any(c("coverage") %in% run)){
     if(length(coverages)>0){
         features = SummarizedExperiment::rowData(scExp_cf)
-        message(head(features))
-        message(head(genes_to_plot))
-        message(any(genes_to_plot %in% features$Gene))
-        if(any(genes_to_plot %in% features$Gene)){
-          
+
           plot_list = coverage_chr = coverage_start = coverage_end = list()
           coverage_color = setNames(unique(scExp_cf$cell_cluster_color), unique(scExp_cf$cell_cluster))
           
@@ -425,10 +421,10 @@ if(any(c("coverage") %in% run)){
               coverage_start[[i]] = as.numeric(gsub(".*:","",gsub("-.*","",Gene)))
               coverage_end[[i]] = as.numeric(gsub(".*-","",Gene))
             } else{
-              if(Gene %in% gene_annot$gene){
-                coverage_chr[[i]] = gene_annot$chr[which(gene_annot$gene == Gene)]
-                coverage_start[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] - 25000
-                coverage_end[[i]] = gene_annot$start[which(gene_annot$gene == Gene)] + 25000
+              if(Gene %in% gene_annot$Gene){
+                coverage_chr[[i]] = gene_annot$chr[which(gene_annot$Gene == Gene)]
+                coverage_start[[i]] = gene_annot$start[which(gene_annot$Gene == Gene)] - 25000
+                coverage_end[[i]] = gene_annot$start[which(gene_annot$Gene == Gene)] + 25000
               }
             }
             if(length(coverage_chr)>=i && !is.null(coverage_chr[[i]])){
@@ -448,8 +444,6 @@ if(any(c("coverage") %in% run)){
               paste(a1, a2, a3, a4, collapse = '\n')
             }
           })
-
-        }
     }
 }
 
