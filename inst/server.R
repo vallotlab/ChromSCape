@@ -3638,7 +3638,10 @@ shinyServer(function(input, output, session) {
         withProgress(message='Creating HTML report', value = 0, {
             incProgress(amount=0.5, detail=paste("..."))
             print(file.path(init$data_folder, "ChromSCape_analyses", analysis_name()))
-            generate_report(ChromSCape_directory = file.path(init$data_folder, "ChromSCape_analyses", analysis_name()))
+            genes_to_plot = c("Hoxa1","Hoxb1","Tgfb1", "Foxq1", "Cdkn2b", "Cdkn2a")
+            if(annotation_id() == "hg38") genes_to_plot = toupper(genes_to_plot)
+            generate_report(ChromSCape_directory = file.path(init$data_folder, "ChromSCape_analyses", analysis_name()),
+                            genes_to_plot = genes_to_plot)
             incProgress(amount=0.5, detail=paste("... finished"))
         })
         showNotification("Data set successfully deleted.", duration=5, closeButton=TRUE, type="warning")
