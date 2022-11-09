@@ -570,7 +570,8 @@ shinyServer(function(input, output, session) {
                                                   custom_annotation = rebin_custom_annotation,
                                                   minoverlap = as.numeric(overlap),
                                                   ref = input$annotation,
-                                                  verbose = T)
+                                                  verbose = T, 
+                                                  nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
                         progress$set(message='Finished rebinning data set..', value = 0.8)
                     }
                 }

@@ -851,6 +851,20 @@ beds_to_matrix_indexes <- function(dir, which,
     return(out)
 }
 
+
+
+#' Rebin Helper for rebin_matrix function
+#'
+#' @param mat_df A data.frame corresponding to sparse matrix indexes & values.
+#'
+#' @return a data.frame grouped mean-summarised  by col and new_row
+#' 
+rebin_helper = function(mat_df){
+  library(dplyr)
+  mat_df_grouped = mat_df %>% dplyr::group_by(col, new_row) %>%
+    dplyr::summarise(new_value = sum(origin_value))
+}
+
 #' Transforms a bins x cells count matrix into a larger bins x cells count matrix.
 #' 
 #' 
@@ -878,12 +892,13 @@ beds_to_matrix_indexes <- function(dir, which,
 #' to count the matrix on instead of recounting on genomic bins. If not NULL,
 #' takes predecency over bin_width.
 #' @param verbose Verbose
+#' @param nthreads Number of threads to use for paralell processing
 #'
 #' @return A sparse matrix of larger bins or peaks.
 #' @export
 #'
 #' @importFrom IRanges IRanges
-#' @importFrom dplyr group_by summarise
+#' @importFrom dplyr group_by summarise group_split mutate bind_rows
 #' @importFrom GenomicRanges GRanges tileGenome width seqnames findOverlaps start
 #' end
 #' @importFrom stringr str_split_fixed
@@ -894,100 +909,129 @@ beds_to_matrix_indexes <- function(dir, which,
 #' dim(binned_mat)
 #' 
 rebin_matrix <- function(mat,
-                  bin_width = 50000,
-                  custom_annotation = NULL,
-                  minoverlap = 500,
-                  verbose = TRUE,
-                  ref = "hg38"){
-    
-    stopifnot(!is.null(mat), ref %in% c("mm10", "hg38"))
-    
-    if (is.matrix(mat)) mat = as(mat, "dgCMatrix")
-    mat = as(mat, "CsparseMatrix")
-    
-    if (is.null(bin_width) & is.null(custom_annotation)) stop("One of bin_width or custom_annotation must be set")
-    
-    eval(parse(text = paste0("data(", ref, ".chromosomes)")))
-    chr <- eval(parse(text = paste0("", ref, ".chromosomes")))
-    chr <- GenomicRanges::GRanges(chr)
-    
-    if(is.null(custom_annotation)){
-        bin_ranges <- unlist(GenomicRanges::tileGenome(
-            setNames( GenomicRanges::width(chr), GenomicRanges::seqnames(chr)),
-            tilewidth = bin_width )) 
-    } else{
-        bin_ranges <- custom_annotation
-        if(!is(bin_ranges, "GenomicRanges")) stop("ChromSCape::rebin_matrix",
-        "custom_annotation must be a GenomicRanges object.")
-    }
-    
-    # original_bins = rownames(mat)
-    # original_bins =  strsplit(original_bins, "_", fixed = TRUE)
-    # original_bins_chr = as.character(lapply(original_bins, function(x) x[1]))
-    # original_bins_start = as.numeric(lapply(original_bins, function(x) x[2]))
-    # original_bins_end = as.numeric(lapply(original_bins, function(x) x[3]))
-    
-    t1 = system.time({
-      original_bins = rownames(mat)
+                         bin_width = 50000,
+                         custom_annotation = NULL,
+                         minoverlap = 500,
+                         verbose = TRUE,
+                         ref = "hg38",
+                         nthreads = 1,
+                         rebin_function = rebin_helper
+                         ){
+  
+  stopifnot(!is.null(mat), ref %in% c("mm10", "hg38"))
+  
+  if (is.matrix(mat)) mat = as(mat, "CsparseMatrix")
+  mat = as(mat, "CsparseMatrix")
+  
+  if (is.null(bin_width) & is.null(custom_annotation)) stop("One of bin_width or custom_annotation must be set")
+  
+  eval(parse(text = paste0("data(", ref, ".chromosomes)")))
+  chr <- eval(parse(text = paste0("", ref, ".chromosomes")))
+  chr <- GenomicRanges::GRanges(chr)
+  
+  if(is.null(custom_annotation)){
+    bin_ranges <- unlist(GenomicRanges::tileGenome(
+      setNames( GenomicRanges::width(chr), GenomicRanges::seqnames(chr)),
+      tilewidth = bin_width )) 
+  } else{
+    bin_ranges <- custom_annotation
+    if(!is(bin_ranges, "GenomicRanges")) stop("ChromSCape::rebin_matrix",
+                                              "custom_annotation must be a GenomicRanges object.")
+  }
+  
+  t1 = system.time({
+    original_bins = rownames(mat)
     original_bins = stringr::str_split_fixed(original_bins, pattern = "_", n = 3)
     original_bins_chr = as.character(original_bins[,1])
     original_bins_start = as.numeric(original_bins[,2])
     original_bins_end = as.numeric(original_bins[,3])
-    })
-    message("ChromSCape::rebin_matrix - ",
-            "Read the original bins in ", round(t1[3],4), " sec.")
-    
-    if (anyNA(original_bins_start) | anyNA(original_bins_end))
-        stop("The rows of mat should be regions in format chr_start_end or",
-             "chr:start-end, without non canonical chromosomes")
-    if (verbose) {
-        message("ChromSCape::rebin_matrix - converting ", dim(mat)[1],
-                " original_bins into ", length(bin_ranges)[1], " bins of ",
-                floor(mean(bin_ranges@ranges@width)), " bp in average.") }
-    
-    original_bins = GenomicRanges::GRanges(
-        seqnames = original_bins_chr, ranges = IRanges::IRanges(original_bins_start, original_bins_end))
-    
-    hits <- GenomicRanges::findOverlaps(
-        bin_ranges, original_bins, minoverlap = minoverlap)
-    
-    bins_names = paste0(bin_ranges@seqnames, "_", 
-                        GenomicRanges::start(bin_ranges), "_",
-                        GenomicRanges::end(bin_ranges))
-    hits = as.data.frame(hits)
-    hits$bins_names = bins_names[hits$queryHits]
-    
-    mat_df = data.frame(origin_row = mat@i+1, col = 0, origin_value = mat@x)
-    sizes = mat@p[2:length(mat@p)] - mat@p[1:(length(mat@p)-1)]
-    mat_df$col = as.numeric(unlist(lapply(1:(length(mat@p)-1), function(i) rep(i,sizes[i]))))
-    
-    match_hits = match(mat_df$origin_row, hits$subjectHits)
-    
-    if(length(which(is.na(match_hits)))>0){
-        message("ChromSCape::rebin_matrix - Warning ! ", length(unique((mat@i+1)[which(is.na(match_hits))])),
-                " original features were not found in the new bins",
-                ".\nContinuing without these features...\n")
-        mat_df = mat_df[-which(is.na(match_hits)),]
-        gc()
-    }
-    mat_df$bins_names = hits$bins_names[match(mat_df$origin_row, hits$subjectHits)]
-    mat_df$new_row = hits$queryHits[match(mat_df$origin_row, hits$subjectHits)]
-    mat_df$new_row= seq_along(unique(mat_df$new_row))[match(mat_df$new_row, sort(unique(mat_df$new_row)))]
-    
-    mat_df_grouped = mat_df %>% dplyr::group_by(col, new_row) %>%
-        dplyr::summarise(new_value = sum(origin_value))
+  })
+  message("ChromSCape::rebin_matrix - ",
+          "Read the original bins in ", round(t1[3],4), " sec.")
+  
+  if (anyNA(original_bins_start) | anyNA(original_bins_end))
+    stop("The rows of mat should be regions in format chr_start_end or",
+         "chr:start-end, without non canonical chromosomes")
+  
+  if (verbose) {
+    message("ChromSCape::rebin_matrix - converting ", dim(mat)[1],
+            " original_bins into ", length(bin_ranges)[1], " bins of ",
+            floor(mean(bin_ranges@ranges@width)), " bp in average.") }
+  
+  original_bins = GenomicRanges::GRanges(
+    seqnames = original_bins_chr, ranges = IRanges::IRanges(original_bins_start, original_bins_end))
+  
+  hits <- GenomicRanges::findOverlaps(
+    bin_ranges, original_bins, minoverlap = minoverlap)
+  
+  bins_names = paste0(bin_ranges@seqnames, "_", 
+                      GenomicRanges::start(bin_ranges), "_",
+                      GenomicRanges::end(bin_ranges))
+  hits = as.data.frame(hits)
+  hits$bins_names = bins_names[hits$queryHits]
+  
+  mat_df = data.frame(origin_row = mat@i+1, col = 0, origin_value = mat@x)
+  sizes = mat@p[2:length(mat@p)] - mat@p[1:(length(mat@p)-1)]
+  mat_df$col = as.numeric(unlist(lapply(1:(length(mat@p)-1), function(i) rep(i,sizes[i]))))
+  
+  match_hits = match(mat_df$origin_row, hits$subjectHits)
+  
+  if(length(which(is.na(match_hits)))>0){
+    message("ChromSCape::rebin_matrix - Warning ! ", length(unique((mat@i+1)[which(is.na(match_hits))])),
+            " original features were not found in the new bins",
+            ".\nContinuing without these features...\n")
+    mat_df = mat_df[-which(is.na(match_hits)),]
     gc()
-
-    bins_names = mat_df$bins_names[match(sort(unique(mat_df$new_row)), mat_df$new_row)]
-    new_mat = Matrix::sparseMatrix(i = mat_df_grouped$new_row, j = mat_df_grouped$col, 
-                           x = mat_df_grouped$new_value,
-                           dimnames = list(bins_names, colnames(mat)))
-    
-    gc()
-    if (verbose) message("ChromSCape::rebin_matrix - Generated ",
-                         nrow(new_mat) ," new non-zero features from ", length(original_bins),
-                         " original features.")
-    return(new_mat)  
+  }
+  
+  mat_df$bins_names = hits$bins_names[match(mat_df$origin_row, hits$subjectHits)]
+  mat_df$new_row = hits$queryHits[match(mat_df$origin_row, hits$subjectHits)]
+  mat_df$new_row= seq_along(unique(mat_df$new_row))[match(mat_df$new_row, sort(unique(mat_df$new_row)))]
+  bins_names = mat_df$bins_names[match(sort(unique(mat_df$new_row)), mat_df$new_row)]
+  
+  message("Finished matching original feature to new features...")
+  
+  mat_df$bins_names = NULL
+  gc()
+  
+  
+  # Transform mat_df into chunks of cells
+  message("Splitting matrix in chunks of 500 cells...")
+  mat_df = mat_df %>% dplyr::mutate(group = ceiling(col / 500))
+  list_mat_df = mat_df %>% dplyr::group_split(group, .keep = FALSE)
+  rm(mat_df)
+  gc()
+  
+  # Starting Parallelization - sending chunks of mat by columns
+  message("Starting parallelization, nthreads = ", nthreads, "...")
+  message("Length list_mat_df", length(list_mat_df), "...")
+  message("Ncell list_mat_df[[1]]", max(list_mat_df[[1]]$col), "...")
+  
+  cl <- parallel::makeCluster(nthreads)
+  list_rebinned_mat = parallel::clusterApply(cl = cl, x = list_mat_df, fun = rebin_function)
+  
+  # Stopping multithreading
+  message("Finished parallel rebinning...")
+  parallel::stopCluster(cl)
+  gc()
+  
+  # Regrouping
+  message("Regrouping chunks...")
+  mat_df_grouped = dplyr::bind_rows(list_rebinned_mat)
+  gc()
+  
+  message("Creating new matrix...")
+  # Creating the matrix with correct names
+  new_mat = Matrix::sparseMatrix(i = mat_df_grouped$new_row, j = mat_df_grouped$col, 
+                                 x = mat_df_grouped$new_value,
+                                 dimnames = list(bins_names, colnames(mat)))
+  
+  
+  gc()
+  if (verbose) message("ChromSCape::rebin_matrix - Generated ",
+                       nrow(new_mat) ," new non-zero features from ", length(original_bins),
+                       " original features.")
+  return(new_mat)  
 }
 
 #' Create a simulated single cell datamatrix & cell annotation

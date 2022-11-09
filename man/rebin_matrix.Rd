@@ -10,7 +10,9 @@ rebin_matrix(
   custom_annotation = NULL,
   minoverlap = 500,
   verbose = TRUE,
-  ref = "hg38"
+  ref = "hg38",
+  nthreads = 1,
+  rebin_function = rebin_helper
 )
 }
 \arguments{
@@ -30,6 +32,8 @@ size of 1000bp) so that no original bins are counted twice. (500)}
 \item{verbose}{Verbose}
 
 \item{ref}{Reference genome to use (hg38)}
+
+\item{nthreads}{Number of threads to use for paralell processing}
 }
 \value{
 A sparse matrix of larger bins or peaks.
