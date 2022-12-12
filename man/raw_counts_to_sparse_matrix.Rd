@@ -3,9 +3,6 @@
 \name{raw_counts_to_sparse_matrix}
 \alias{raw_counts_to_sparse_matrix}
 \title{Create a sparse count matrix from various format of input data.}
-\source{
-
-}
 \usage{
 raw_counts_to_sparse_matrix(
   files_dir_list,

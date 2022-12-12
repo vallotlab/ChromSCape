@@ -7,8 +7,8 @@
 generate_report(
   ChromSCape_directory,
   prefix = NULL,
-  run = c("filter", "CNA", "cluster", "consensus", "peak_call", "coverage", "DA",
-    "GSA", "report")[c(1, 3, 6, 7, 8, 9)],
+  run = c("filter", "CNA", "cluster", "consensus", "peak_call", "coverage", "DA", "GSA",
+    "report")[c(1, 3, 6, 7, 8, 9)],
   genes_to_plot = c("Krt8", "Krt5", "Tgfb1", "Foxq1", "Cdkn2b", "Cdkn2a",
     "chr7:15000000-20000000"),
   control_samples_CNA = NULL

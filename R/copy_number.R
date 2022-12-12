@@ -310,7 +310,6 @@ calculate_CNA <- function(scExp, control_samples = unique(scExp$sample_id)[1],
 
 #' @title Plot Gain or Loss of cytobands of the most variables cytobands
 #' 
-#' 
 #' @param scExp A SingleCellExperiment with "gainOrLoss_cytoBand" reducedDim slot 
 #' filled. See  \code{\link{calculate_gain_or_loss}}
 #' @param cells Cell IDs of the tumor samples to 
@@ -354,7 +353,6 @@ plot_gain_or_loss_barplots <- function(scExp, cells = NULL, top = 20){
 
 #' @title Plot Gain or Loss of cytobands of the most variables cytobands 
 #' 
-#' 
 #' @param scExp A SingleCellExperiment with "logRatio_cytoBand" reducedDim slot 
 #' filled. See  \code{\link{calculate_logRatio_CNA}}
 #' @param cells Cell IDs of the tumor samples to 
@@ -396,7 +394,6 @@ plot_gain_or_loss_barplots <- function(scExp, cells = NULL, top = 20){
 
 
 #' @title Plot UMAP colored by Gain or Loss of cytobands
-#' 
 #' 
 #' @param scExp A SingleCellExperiment with "gainOrLoss_cytoBand" reducedDim 
 #' slot filled. See  \code{\link{calculate_gain_or_loss}}
