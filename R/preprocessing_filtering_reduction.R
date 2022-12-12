@@ -194,7 +194,7 @@ read_sparse_matrix <- function(files_dir_list,
                 } else{
                     which = read.table(feature_file,
                                        sep = separator,
-                                       header = FALSE,
+                                       header = FALSE
                                        )
                     if(ncol(which) > 3 ){
                         which = as(
@@ -1323,15 +1323,31 @@ import_scExp <- function(file_paths,
 #' @return A character separator
 #'
 separator_count_mat <- function(path_to_matrix){
+  format_test = as.character(
+    read.table(path_to_matrix, header = TRUE, sep = "\t", nrows = 5,
+               comment.char = "#")[4, ])
+  if (length(format_test) >= 3 & !is.na(as.numeric(format_test[2])) &
+      !is.na(as.numeric(format_test[3]))) return("\t")
+    
     format_test = as.character(
-        read.table(path_to_matrix, header = TRUE, sep = "\t", nrows = 5)[4, ])
+      read.table(path_to_matrix, header = TRUE, sep = ",", nrows = 5,
+                 comment.char = "#")[4, ])
+    if (length(format_test) >= 3 & !is.na(as.numeric(format_test[2])) &
+        !is.na(as.numeric(format_test[3]))) return(",")
     
-    if (length(format_test) > 3)
-        separator = "\t"
-    else
-        separator = ","
+    format_test = as.character(
+      read.table(path_to_matrix, header = TRUE, sep = "-", nrows = 5,
+                 comment.char = "#")[4, ])
+    if (length(format_test) >= 3 & !is.na(as.numeric(format_test[2])) &
+        !is.na(as.numeric(format_test[3]))) return("-")
     
-    return(separator)
+    format_test = as.character(
+      read.table(path_to_matrix, header = TRUE, sep = "_", nrows = 5,
+                 comment.char = "#")[4, ])
+    if (length(format_test) >= 3 & !is.na(as.numeric(format_test[2])) &
+        !is.na(as.numeric(format_test[3]))) return("_")
+    
+    return("\t")
 }
 
 #' Read a count matrix with three first columns (chr,start,end)
