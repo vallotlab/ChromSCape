@@ -2543,7 +2543,7 @@ num_cell_after_QC_filt_scExp <- function(scExp, annot, datamatrix)
             "#Cells" = sum(table_both[,2]),
             "Median"= round(median(annot$total_counts),0),
             "Std"= round(stats::sd(annot$total_counts),0),
-            "#Cells (filt.)" = sum(table_both[, 4]),
+            "#Cells (filt.)" = sum(table_both[, 5]),
             "Median (filt.)"= round(median(scExp$total_counts),0),
             "Std (filt.)"= round(stats::sd(scExp$total_counts),0)))
     table_both %>% kableExtra::kable(escape = FALSE, align = "c") %>%
