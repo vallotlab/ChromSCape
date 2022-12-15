@@ -1544,7 +1544,7 @@ create_scExp <- function(
                 " not match perfectly !")
     annot = annot[match(colnames(datamatrix), annot$cell_id),]
     if (is(datamatrix, "data.frame")) datamatrix <- as.matrix(datamatrix)
-    message("ChromSCape::create_scExp - the matrix has ",
+    if(verbose) message("ChromSCape::create_scExp - the matrix has ",
         dim(datamatrix)[2], " cells and ", dim(datamatrix)[1], " features.")
     scExp <- SingleCellExperiment::SingleCellExperiment(
         assays = list(counts = datamatrix), colData = annot)
@@ -1552,7 +1552,7 @@ create_scExp <- function(
     # If rownames is formatted as gene:chr_start_end, put genes into rowRanges
     contains_genes = all(grepl(":chr",rownames(scExp)[1:5]))
     if(contains_genes){
-        message("ChromSCape::create_scExp - Genes detected in rownames...")
+      if(verbose) message("ChromSCape::create_scExp - Genes detected in rownames...")
         Genes = gsub(":.*","",rownames(scExp))
         rownames(scExp) = gsub(".*:","",rownames(scExp))
         SummarizedExperiment::rowRanges(scExp) = get_genomic_coordinates(scExp)
@@ -1572,11 +1572,11 @@ create_scExp <- function(
         scExp <- scExp[, (Matrix::colSums(
             SingleCellExperiment::counts(scExp) > 0) > 0)]
     if (dim(scExp)[2] != dim_b[2]){
-        message("ChromSCape::create_scExp - ", dim_b[2] - dim(scExp)[2],
+      if(verbose) message("ChromSCape::create_scExp - ", dim_b[2] - dim(scExp)[2],
             " cells with 0 signals were removed.")
     }
     if (dim(scExp)[1] != dim_b[1]){
-        message("ChromSCape::create_scExp - ",
+      if(verbose) message("ChromSCape::create_scExp - ",
             dim_b[1] - dim(scExp)[1], " features with 0 signals were removed.")
     }
     if (has_genomic_coordinates(scExp) && !contains_genes){
@@ -2626,7 +2626,8 @@ subsample_scExp <- function(scExp, n_cell_per_sample = 500, n_cell_total = NULL)
         remove_zero_cells = FALSE,
         remove_zero_features = FALSE,
         remove_non_canonical = FALSE,
-        remove_chr_M = FALSE
+        remove_chr_M = FALSE,
+        verbose = FALSE
     )
     
     return(scExp.)
