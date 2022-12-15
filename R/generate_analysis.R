@@ -688,6 +688,13 @@ generate_report <- function(ChromSCape_directory,
                             control_samples_CNA = NULL
                             ){
     
+  if( !requireNamespace("flexdashboard", quietly=TRUE) ){
+    warning("ChromSCape::generate_report - 'flexdashboard package not",
+         " found but required for generating report.",
+         "Please install and try again.")
+    return()
+  }
+  
     ChromSCape_directory = ChromSCape_directory
     filt_dir <- file.path(ChromSCape_directory,"Filtering_Normalize_Reduce") 
     coverage_dir <- file.path(ChromSCape_directory,"coverage")
