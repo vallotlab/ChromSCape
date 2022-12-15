@@ -2215,6 +2215,14 @@ feature_annotation_scExp <- function(scExp, ref = "hg38",
                             "distanceToTSS" = max(.data$distanceToTSS)) %>%
         as.data.frame()
     annotFeat <- annotFeat[match(rownames(scExp), annotFeat$ID), ]
+    duplicated_features = which(duplicated(annotFeat$ID))
+    if(length(duplicated_features) > 0){
+      message("ChromSCape::feature_annotation_scExp - ",
+              length(duplicated_features), " features",
+              " are duplicated, unifying theses features...")
+      annotFeat = annotFeat[-duplicated_features,]
+      scExp = scExp[-duplicated_features,]
+    } 
     rownames(annotFeat) <- annotFeat$ID
     if(all(c("ID","Gene","distanceToTSS") %in%
            colnames(SummarizedExperiment::rowData(scExp)))){
