@@ -478,7 +478,8 @@ shinyServer(function(input, output, session) {
                                             "Run install.packages('Signac') in console. "), duration = 20, closeButton = TRUE, type="error")
                 }
                 if(type_file == "SparseMatrix") {
-                    combin = expand.grid(c(".*features", ".*barcodes", ".*matrix"), c(".mtx",".tsv",".txt",".bed",".*.gz"))[-c(1,2,6,9,11,12),]
+                    combin = expand.grid(c(".*genes",".*peaks",".*features", ".*barcodes", ".*matrix"), c(".mtx",".tsv",".txt",".bed",".*.gz"))
+                    combin = combin[-c(1:4,10,15,19,20),]
                     pattern = paste(combin$Var1,combin$Var2, sep="", collapse = "|")
                     if(length(list.files(selected_sample_folders[1],
                                          pattern = pattern))!=3) send_warning = TRUE
