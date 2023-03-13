@@ -196,103 +196,89 @@ plot_reduced_dim_scExp <- function(
     annotate_clusters = "cell_cluster" %in% colnames(colData(scExp)),
     min_quantile = 0.01, max_quantile = 0.99)
 {
-    warning_plot_reduced_dim_scExp(scExp, color_by , reduced_dim,
-                                   downsample, transparency,
-                                   size, max_distanceToTSS,
-                                   annotate_clusters,
-                                   min_quantile, max_quantile)
-    
-    if(ncol(scExp) > downsample) scExp = scExp[,sample(ncol(scExp),
-                                                       downsample,
-                                                       replace = FALSE)]
+  if (ncol(scExp) > downsample) 
+    scExp = scExp[, sample(ncol(scExp), downsample, replace = FALSE)]
+  annot = SingleCellExperiment::colData(scExp)
+  
+  if (!color_by %in% colnames(annot)) {
+    annot_feature = as.data.frame(SummarizedExperiment::rowRanges(scExp))
+    annot_feature = annot_feature[grep(color_by, annot_feature$Gene),]
+    if(nrow(annot_feature) == 0)
+      stop("ChromSCape::plot_reduced_dim_scExp - The gene chosen, ", 
+           color_by, ", is not closer than ", max_distanceToTSS, 
+           " to any", "loci. Consider increasing max_distanceToTSS to take in account ", 
+           "this gene.")
+    annot_feature = annot_feature %>% tidyr::separate_rows(.data[["Gene"]], 
+                                                           sep = ", ") %>% dplyr::group_by(.data[["Gene"]]) %>% 
+      dplyr::slice_min(.data[["distanceToTSS"]], with_ties = TRUE)
+    annot_feature = annot_feature %>% dplyr::filter(.data[["distanceToTSS"]] < 
+                                                      max_distanceToTSS)
+    if (!color_by %in% annot_feature$Gene) 
+      stop("ChromSCape::plot_reduced_dim_scExp - The gene chosen, ", 
+           color_by, ", is not closer than ", max_distanceToTSS, 
+           " to any", "loci. Consider increasing max_distanceToTSS to take in account ", 
+           "this gene.")
+    counts = SingleCellExperiment::normcounts(scExp[annot_feature$ID[which(annot_feature$Gene == 
+                                                                             color_by)], ])
+    if (!is.null(counts) & nrow(counts) > 1) {
+      counts = Matrix::colSums(counts)
+    }
+    annot[, color_by] = as.numeric(counts)
+  } else if (!paste0(color_by, "_color") %in% colnames(annot)) {
+    scExp = colors_scExp(scExp, annotCol = color_by)
     annot = SingleCellExperiment::colData(scExp)
-    if(!color_by %in% colnames(annot)) {
-        annot_feature = as.data.frame(SummarizedExperiment::rowRanges(scExp))
-        annot_feature = annot_feature %>% 
-            tidyr::separate_rows(.data[["Gene"]], sep = ", ") %>% 
-            dplyr::group_by(.data[["Gene"]]) %>%
-            dplyr::slice_min(.data[["distanceToTSS"]])
-        annot_feature = annot_feature %>%
-            dplyr::filter( .data[["distanceToTSS"]] < max_distanceToTSS)
-        
-        if(!color_by %in% annot_feature$Gene) stop(
-            "ChromSCape::plot_reduced_dim_scExp - The gene chosen, ",
-            color_by, ", is not closer than ", max_distanceToTSS, " to any", 
-            "loci. Consider increasing max_distanceToTSS to take in account ",
-            "this gene.")
-        
-        counts = SingleCellExperiment::normcounts(scExp[annot_feature$ID[which(
-            annot_feature$Gene == color_by)],])
-        if(!is.null(counts) & nrow(counts) > 1 ){
-            counts = Matrix::rowSums(counts)
-        }
-        annot[,color_by] = as.numeric(counts)
-
-    } else if(!paste0(color_by,"_color") %in% colnames(annot)){
-        scExp = colors_scExp(scExp, annotCol = color_by)
-        annot = SingleCellExperiment::colData(scExp)
-    }
-    
-    plot_df = as.data.frame(
-        cbind(SingleCellExperiment::reducedDim(scExp, reduced_dim[1]), 
-              annot))
-    if(is.null(select_x)) select_x = colnames(plot_df)[1]
-    if(is.null(select_y)) select_y = colnames(plot_df)[2]
-    
-    plot_df = plot_df %>% dplyr::mutate("transparency" = transparency) %>%
-        dplyr::mutate("transparency" = base::I(.data[["transparency"]]))
-    plot_df = plot_df %>% 
-        dplyr::filter(.data[[select_x]] > quantile(plot_df[,select_x], min_quantile),
-                      .data[[select_x]] < quantile(plot_df[,select_x], max_quantile)) 
-    plot_df = plot_df %>% 
-        dplyr::filter(.data[[select_y]] > quantile(plot_df[,select_y], min_quantile),
-                      .data[[select_y]] < quantile(plot_df[,select_y], max_quantile)) 
-    annot = annot[match(rownames(plot_df), rownames(annot)),]
-
-    
-    if(!color_by %in% colnames(SingleCellExperiment::colData(scExp)) |
-       is.numeric(annot[,color_by])){
-        plot_df = plot_df %>% 
-            dplyr::mutate("transparency"= ifelse(
-                annot[,color_by] == min(annot[,color_by]),0.15,1)) %>%
-            dplyr::mutate("transparency" = I(.data[["transparency"]]))
-    }
-        
-    p <- ggplot(plot_df, aes_string(x = select_x, y = select_y)) + 
-        geom_point(size = size, aes(alpha = plot_df[,"transparency"],
-                                    color = annot[, color_by])) +
-        labs(color = color_by) + 
-        theme(
-            panel.grid.major = element_blank(),
-            panel.grid.minor = element_blank(),
-            panel.background = element_blank(),
-            axis.line = element_line(colour = "black"),
-            panel.border = element_rect(colour = "black", fill = NA))
-    
-    if (is.numeric(annot[,color_by]))
-    {
-        p <- p + scale_color_gradientn(
-            colours = c("grey75",rev(viridis::inferno(100)))) #+
-            #guides(alpha=FALSE)
-    } else
-    {
-        cols = unique(as.character(annot[,paste0(color_by, "_color")]))
-        names(cols) = unique(as.character(annot[,color_by]))
-        p <- p + scale_color_manual(values = cols) #+ guides(alpha=FALSE)
-    }
-    
-    if(annotate_clusters){
-        centroids = as.data.frame(t(sapply(unique(annot$cell_cluster), function(clust){
-            cells = annot$cell_id[which(annot$cell_cluster == clust)]
-            centroid = c(mean(plot_df[cells, select_x]),
-                         mean(plot_df[cells, select_y]))
-            return(centroid)
-        }))) %>% tibble::rownames_to_column("cluster")
-        p <- p + geom_label(data=centroids, aes( x=V1, y=V2, label=cluster),
-                       size=4, label.padding = unit(0.15, "lines"),
-                       label.size = 0.2)  
-    }
-    return(p)
+  }
+  plot_df = as.data.frame(cbind(SingleCellExperiment::reducedDim(scExp, 
+                                                                 reduced_dim[1]), annot))
+  if (is.null(select_x)) 
+    select_x = colnames(plot_df)[1]
+  if (is.null(select_y)) 
+    select_y = colnames(plot_df)[2]
+  plot_df = plot_df %>% dplyr::mutate(transparency = transparency) %>% 
+    dplyr::mutate(transparency = base::I(.data[["transparency"]]))
+  plot_df = plot_df %>% dplyr::filter(.data[[select_x]] > quantile(plot_df[, 
+                                                                           select_x], min_quantile), .data[[select_x]] < quantile(plot_df[, 
+                                                                                                                                          select_x], max_quantile))
+  plot_df = plot_df %>% dplyr::filter(.data[[select_y]] > quantile(plot_df[, 
+                                                                           select_y], min_quantile), .data[[select_y]] < quantile(plot_df[, 
+                                                                                                                                          select_y], max_quantile))
+  annot = annot[match(rownames(plot_df), rownames(annot)), 
+  ]
+  if (!color_by %in% colnames(SingleCellExperiment::colData(scExp)) | 
+      is.numeric(annot[, color_by])) {
+    plot_df = plot_df %>% dplyr::mutate(transparency = ifelse(annot[, 
+                                                                    color_by] == min(annot[, color_by]), 0.15, 1)) %>% 
+      dplyr::mutate(transparency = I(.data[["transparency"]]))
+  }
+  p <- ggplot(plot_df, aes_string(x = select_x, y = select_y)) + 
+    geom_point(size = size, aes(alpha = plot_df[, "transparency"], 
+                                color = annot[, color_by])) + labs(color = color_by) + 
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_blank(), axis.line = element_line(colour = "black"), 
+          panel.border = element_rect(colour = "black", fill = NA))
+  if (is.numeric(annot[, color_by])) {
+    p <- p + scale_color_gradientn(colours = c("grey75", 
+                                                       rev(viridis::inferno(100))))
+  } else {
+    cols = unique(as.character(annot[, paste0(color_by, "_color")]))
+    names(cols) = unique(as.character(annot[, color_by]))
+    p <- p + scale_color_manual(values = cols)
+  }
+  if (annotate_clusters) {
+    centroids = as.data.frame(t(sapply(unique(annot$cell_cluster), 
+                                       function(clust) {
+                                         cells = annot$cell_id[which(annot$cell_cluster == 
+                                                                       clust)]
+                                         centroid = c(mean(plot_df[cells, select_x]), 
+                                                      mean(plot_df[cells, select_y]))
+                                         return(centroid)
+                                       }))) %>% tibble::rownames_to_column("cluster")
+    p <- p + geom_label(data = centroids, aes(x = V1, y = V2, 
+                                              label = cluster), size = 4, label.padding = unit(0.15, 
+                                                                                               "lines"), label.size = 0.2)
+  }
+  
+  return(p)
 }
 
 #' A warning helper for plot_reduced_dim_scExp
@@ -1279,6 +1265,12 @@ plot_violin_feature_scExp <- function(
   
   annot = as.data.frame(SingleCellExperiment::colData(scExp))
   annot_feature = as.data.frame(SummarizedExperiment::rowRanges(scExp))
+  if(nrow(annot_feature) == 0)
+    stop("ChromSCape::plot_reduced_dim_scExp - The gene chosen, ", 
+         gene, ", is not closer than ", max_distanceToTSS, 
+         " to any", "loci. Consider increasing max_distanceToTSS to take in account ", 
+         "this gene.")
+  annot_feature =  annot_feature[grep(gene, annot_feature$Gene),]
   annot_feature = annot_feature %>% 
     tidyr::separate_rows(.data[["Gene"]], sep = ", ") %>% 
     dplyr::group_by(.data[["Gene"]]) %>%
@@ -1296,7 +1288,7 @@ plot_violin_feature_scExp <- function(
     annot_feature$Gene == gene)],])
   
   if(!is.null(counts) & nrow(counts) > 1 ){
-    counts = Matrix::rowSums(counts)
+    counts = Matrix::colSums(counts)
   }
   annot[,gene] = as.numeric(counts)
 
@@ -1341,6 +1333,12 @@ plot_percent_active_feature_scExp <- function(
     
     annot = as.data.frame(SingleCellExperiment::colData(scExp))
     annot_feature = as.data.frame(SummarizedExperiment::rowRanges(scExp))
+    annot_feature =  annot_feature[grep(gene, annot_feature$Gene),]
+    if(nrow(annot_feature) == 0)
+      stop("ChromSCape::plot_reduced_dim_scExp - The gene chosen, ", 
+           gene, ", is not closer than ", max_distanceToTSS, 
+           " to any", "loci. Consider increasing max_distanceToTSS to take in account ", 
+           "this gene.")
     annot_feature = annot_feature %>% 
         tidyr::separate_rows(.data[["Gene"]], sep = ", ") %>% 
         dplyr::group_by(.data[["Gene"]]) %>%
@@ -1358,7 +1356,7 @@ plot_percent_active_feature_scExp <- function(
     bin_counts = bin_counts[annot_feature$ID[which(annot_feature$Gene == gene)],]
     
     if(!is.null(bin_counts) & !is.null(dim(bin_counts))){
-      bin_counts = Matrix::rowSums(bin_counts)
+      bin_counts = Matrix::colSums(bin_counts)
     }
     annot[,gene] = as.numeric(bin_counts)
     
