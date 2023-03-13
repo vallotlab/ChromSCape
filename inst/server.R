@@ -46,7 +46,7 @@ shinyServer(function(input, output, session) {
     #Global Functions
     init <- reactiveValues(data_folder =  getwd(), datamatrix = data.frame(), annot_raw = data.frame(),
                            available_analyses = list.dirs(path = file.path(getwd(), "ChromSCape_analyses"), full.names = FALSE, recursive = FALSE),
-                           available_reduced_datasets = NULL, available_DA_GSA_datasets = NULL)
+                           available_reduced_datasets = NULL, reload_reduced = 0, available_DA_GSA_datasets = NULL)
     
     CS_options.BPPARAM = reactive({
         req(input$options.bpparam_class, input$options.nb_workers)
@@ -816,12 +816,22 @@ shinyServer(function(input, output, session) {
     of cells to remove (potential doublets), min percentage of cells to support a window,
     quantile of cell read counts to keep and batch correction type."})
     
+    cell_count_raw = reactive({
+      req(init$datamatrix)
+      sort(unname(Matrix::colSums(init$datamatrix)))
+      })
+    
+    feature_count_raw = reactive({
+      req(init$datamatrix)
+      sort(unname(Matrix::rowSums(init$datamatrix)),decreasing = TRUE)
+    })
+    
     output$min_coverage_cell_ui <- renderUI({
         req(input$feature_select)
         req(init$datamatrix)
         if(input$feature_select == "main"){
             sliderInput("min_coverage_cell", shiny::HTML("<p><span style='color: green'>Select minimum number of reads per cell :</span></p>"),
-                        min=min(nrow(init$datamatrix),50), max=nrow(init$datamatrix), value=min(200,nrow(init$datamatrix)), step=50) %>%
+                        min=min(min(cell_count_raw()),50), max=quantile(cell_count_raw(),0.95), value=min(200,min(cell_count_raw())), step=50) %>%
                 shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                                     content = "filtering_parameters")
         }
@@ -879,6 +889,7 @@ shinyServer(function(input, output, session) {
     
     output$do_subsample <- renderUI({ if(input$do_subsample){
         sliderInput("subsample_n", "Select number of cells to subsample for each sample:", min=100, max=5000, value=500, step=10) }})
+    
     
     observeEvent(input$filter_normalize_reduce, {  # perform QC filtering and dim. reduction
         num_batches <- if(is.null(input$num_batches)) 0 else input$num_batches
@@ -945,6 +956,13 @@ shinyServer(function(input, output, session) {
             scExp(swapAltExp_sameColData(scExp(), input$feature_select))
         } else {
             init$available_reduced_datasets <- get.available.reduced.datasets(analysis_name())
+            new_analysis_name = paste(input$selected_analysis, input$min_coverage_cell, input$n_top_features, input$quant_removal, ifelse(input$do_batch_corr, "batchCorrected", "uncorrected"), sep = "_")
+            updateSelectInput(session = session, inputId = "selected_reduced_dataset",
+                              label =  "Select filtered & normalized set :",
+                              choices = reduced_datasets(),
+                              selected =  new_analysis_name)
+            init$reload_reduced = init$reload_reduced + 1
+
         }
         updateActionButton(session, "filter_normalize_reduce", label="Processed and saved successfully", icon = icon("check-circle"))
     })
@@ -953,7 +971,15 @@ shinyServer(function(input, output, session) {
         input$min_coverage_cell
         input$quant_removal
         input$n_top_features
-        input$do_batch_corr}, {
+        input$do_batch_corr
+        input$norm_type
+        input$remove_PC
+        input$exclude_regions
+        input$do_batch_corr 
+        input$batch_sels
+        input$run_tsne
+        input$subsample_n
+        }, {
             updateActionButton(session, "filter_normalize_reduce", label="Filter, Normalize & Reduce", icon = character(0))
         })
     
@@ -968,32 +994,35 @@ shinyServer(function(input, output, session) {
         }
     })
     
-    observeEvent(input$selected_reduced_dataset, { # load reduced data set to work with on next pages
-        req(input$selected_reduced_dataset)
-        
+    observe({ # load reduced data set to work with on next pages
+        req(input$selected_reduced_dataset, init$reload_reduced)
+        print("Observing selected_reduced_dataset & reload_reduced")
+        print(input$selected_reduced_dataset)
+        print(init$reload_reduced)
         if(file.exists(file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering","Plots"))) 
             addResourcePath('Plots', file.path(init$data_folder, "ChromSCape_analyses", analysis_name(), "correlation_clustering","Plots"))
         
         file_index <- match(c(input$selected_reduced_dataset), reduced_datasets())
         filename_sel <- file.path(init$data_folder, "ChromSCape_analyses", analysis_name(),"Filtering_Normalize_Reduce",init$available_reduced_datasets[file_index])
-        
-        scExp(NULL)
-        t1 = system.time({
+        if(!is.na(file_index)){
+          scExp(NULL)
+          t1 = system.time({
             scExp. = qs::qread(filename_sel, nthreads = as.numeric(BiocParallel::bpworkers(CS_options.BPPARAM())))
             if(is.reactive(scExp.)) {
-                scExp. = isolate(scExp.())
+              scExp. = isolate(scExp.())
             }
             scExp(scExp.) # retrieve filtered scExp
             rm(scExp.)
             gc()
-        })
-        cat("Loaded reduced data in ",t1[3]," secs\n")
+          })
+          cat("Loaded reduced data in ",t1[3]," secs\n")
+        }
     })
     
     
     cell_cov_df <- reactive ({
-        req(init$datamatrix)
-        df = data.frame(coverage = sort(unname(Matrix::colSums(init$datamatrix)))) 
+        req(cell_count_raw())
+        df = data.frame(coverage = cell_count_raw()) 
         df
     })  # used for plotting cell coverage on first page
     
@@ -1027,7 +1056,7 @@ shinyServer(function(input, output, session) {
     
     feature_cov_df <- reactive ({
         req(init$datamatrix)
-        df = data.frame(coverage = sort(unname(Matrix::rowSums(init$datamatrix)),decreasing = TRUE))
+        df = data.frame(coverage = feature_count_raw())
         df = df[which(df$coverage>10),,drop=FALSE]
         df
     })  # used for plotting feature coverage on first page
