@@ -821,7 +821,7 @@ shinyServer(function(input, output, session) {
         req(init$datamatrix)
         if(input$feature_select == "main"){
             sliderInput("min_coverage_cell", shiny::HTML("<p><span style='color: green'>Select minimum number of reads per cell :</span></p>"),
-                        min=min(ncol(init$datamatrix),50), max=ncol(init$datamatrix), value=min(200,ncol(init$datamatrix)), step=50) %>%
+                        min=min(nrow(init$datamatrix),50), max=nrow(init$datamatrix), value=min(200,nrow(init$datamatrix)), step=50) %>%
                 shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                                     content = "filtering_parameters")
         }
