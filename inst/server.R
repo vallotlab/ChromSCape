@@ -3671,6 +3671,7 @@ shinyServer(function(input, output, session) {
             print(file.path(init$data_folder, "ChromSCape_analyses", analysis_name()))
             genes_to_plot = c("Hoxa1","Hoxb1","Tgfb1", "Foxq1", "Cdkn2b", "Cdkn2a")
             if(annotation_id() == "hg38") genes_to_plot = toupper(genes_to_plot)
+            if(annotation_id() == "ce11") genes_to_plot = c("hen-1", "gst-30", "ugt-53", "rgs-2", "gst-28", "str-187")
             generate_report(ChromSCape_directory = file.path(init$data_folder, "ChromSCape_analyses", analysis_name()),
                             genes_to_plot = genes_to_plot)
             incProgress(amount=0.5, detail=paste("... finished"))

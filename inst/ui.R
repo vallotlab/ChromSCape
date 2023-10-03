@@ -149,7 +149,7 @@ shinyUI(shinydashboardPlus::dashboardPage(freshTheme = mytheme,
                                                                                      content = "HistoneMark_recommandations"), 
                                                                column(12, align="left",
                                                                       column(12, align="left",textInput("new_analysis_name", "Enter a name for the new analysis :", value = "Analysis_1"),
-                                                                      selectInput("annotation","Select reference genome:", choices=c("hg38", "mm10")),
+                                                                      selectInput("annotation","Select reference genome:", choices=c("hg38", "mm10", "ce11")),
                                                                       textOutput("data_matrices_info") %>%
                                                                           shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                                                                                               content = "datamatrix_input")),
