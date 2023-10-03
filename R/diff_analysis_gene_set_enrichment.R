@@ -571,7 +571,7 @@ differential_activation <- function(scExp, by = c("cell_cluster","sample_id")[1]
 #'
 #' @param scExp A SingleCellExperiment object containing list of differential
 #'   features.
-#' @param ref A reference annotation, either 'hg38' or 'mm10'. ('hg38')
+#' @param ref A reference annotation, either 'hg38', 'mm10', 'ce11'. ('hg38')
 #' @param enrichment_qval Adjusted p-value threshold for gene set enrichment.
 #'   (0.1)
 #' @param GeneSets A named list of gene sets. If NULL will automatically load
@@ -641,7 +641,7 @@ gene_set_enrichment_analysis_scExp = function(
     refined_annotation = NULL
     if(use_peaks) refined_annotation = scExp@metadata$refined_annotation
     
-    database_MSIG <- load_MSIGdb(ref,GeneSetClasses)
+    database_MSIG <- load_MSIGdb(ref, GeneSetClasses)
     GeneSets = database_MSIG$GeneSets
     GeneSetsDf = database_MSIG$GeneSetsDf
     GenePool = database_MSIG$GenePool
@@ -692,6 +692,8 @@ load_MSIGdb <- function(ref,
         GeneSetsDf = msigdbr::msigdbr("Homo sapiens")[, columns]
     if (ref == "mm10")
         GeneSetsDf = msigdbr::msigdbr("Mus musculus")[, columns]
+    if (ref == "ce11")
+      GeneSetsDf = msigdbr::msigdbr("Caenorhabditis elegans")[, columns]
     colnames(GeneSetsDf) = c("Gene.Set", "Class", "Genes")
     system.time({
         GeneSetsDf <- GeneSetsDf %>% dplyr::group_by(
@@ -954,7 +956,6 @@ table_enriched_genes_scExp <- function(
 #'
 #' @param scExp A SingleCellExperiment object containing list of differential
 #'   features.
-#' @param ref A reference annotation, either 'hg38' or 'mm10'. ('hg38')
 #' @param qval.th Adjusted p-value threshold to define differential features.
 #'   (0.01)
 #' @param logFC.th Fold change threshold to define differential features. (1)
@@ -981,17 +982,16 @@ table_enriched_genes_scExp <- function(
 #' 
 #' scExp = enrich_TF_ChEA3_scExp(
 #'  scExp,
-#'  ref = "hg38",
 #'  qval.th = 0.01,
 #'  logFC.th = 1,
 #'  min.percent = 0.01)
 #' 
 #' 
 enrich_TF_ChEA3_scExp = function(
-    scExp, ref = "hg38", qval.th = 0.01, logFC.th = 1,
+    scExp, qval.th = 0.01, logFC.th = 1,
     min.percent = 0.01, peak_distance = 1000, use_peaks = FALSE,
     progress=NULL, verbose = TRUE){
-  stopifnot(is(scExp, "SingleCellExperiment"), is.character(ref),
+  stopifnot(is(scExp, "SingleCellExperiment"),
             is.numeric(peak_distance), is.numeric(qval.th),
             is.numeric(logFC.th), is.numeric(min.percent))
   if (!is.null(progress)) progress$inc(

@@ -32,7 +32,7 @@ single-end.}
 \item{p.value}{a p-value to use for MACS2 to determine significant peaks.
 (0.05)}
 
-\item{ref}{A reference genome, either hg38 or mm10. ('hg38')}
+\item{ref}{A reference genome, either hg38, mm10 or ce11. ('hg38')}
 
 \item{peak_distance_to_merge}{Maximal distance to merge peaks together after
 peak calling , in bp. (10000)}

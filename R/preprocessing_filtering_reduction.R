@@ -231,7 +231,6 @@ read_sparse_matrix <- function(files_dir_list,
               round(percent_in_common,2), " % common features.")
       if(percent_in_common < 5) stop("ChromSCape::read_sparse_matrix - ",
                                      "Not enough features in common.")
-      c
     } else{
         common_features = rownames(feature_indexes[[1]])
     }
@@ -2139,7 +2138,7 @@ normalize_scExp <- function(scExp,
 #' Add gene annotations to features
 #'
 #' @param scExp A SingleCellExperiment object.
-#' @param ref Reference genome. Either 'hg38' or 'mm10'. ('hg38')
+#' @param ref Reference genome. Either 'hg38', 'mm10' or 'ce11'. ('hg38')
 #' @param reference_annotation A data.frame containing gene (or else) annotation
 #'   with genomic coordinates.
 #'

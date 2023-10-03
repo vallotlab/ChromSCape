@@ -6,7 +6,6 @@
 \usage{
 enrich_TF_ChEA3_scExp(
   scExp,
-  ref = "hg38",
   qval.th = 0.01,
   logFC.th = 1,
   min.percent = 0.01,
@@ -19,8 +18,6 @@ enrich_TF_ChEA3_scExp(
 \arguments{
 \item{scExp}{A SingleCellExperiment object containing list of differential
 features.}
-
-\item{ref}{A reference annotation, either 'hg38' or 'mm10'. ('hg38')}
 
 \item{qval.th}{Adjusted p-value threshold to define differential features.
 (0.01)}
@@ -53,7 +50,6 @@ data("scExp")
 
 scExp = enrich_TF_ChEA3_scExp(
  scExp,
- ref = "hg38",
  qval.th = 0.01,
  logFC.th = 1,
  min.percent = 0.01)

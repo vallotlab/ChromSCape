@@ -9,7 +9,7 @@ feature_annotation_scExp(scExp, ref = "hg38", reference_annotation = NULL)
 \arguments{
 \item{scExp}{A SingleCellExperiment object.}
 
-\item{ref}{Reference genome. Either 'hg38' or 'mm10'. ('hg38')}
+\item{ref}{Reference genome. Either 'hg38', 'mm10' or 'ce11'. ('hg38')}
 
 \item{reference_annotation}{A data.frame containing gene (or else) annotation
 with genomic coordinates.}

@@ -48,7 +48,7 @@
 #' @param format Format of the input data, either "BAM" or "scBED".
 #' @param p.value a p-value to use for MACS2 to determine significant peaks.
 #'   (0.05)
-#' @param ref A reference genome, either hg38 or mm10. ('hg38')
+#' @param ref A reference genome, either hg38, mm10 or ce11. ('hg38')
 #' @param peak_distance_to_merge Maximal distance to merge peaks together after
 #'   peak calling , in bp. (10000)
 #' @param geneTSS_annotation A data.frame annotation of genes TSS. If NULL will
