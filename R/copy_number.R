@@ -25,7 +25,7 @@
 #' data("scExp")
 #' matching_cyto = get_cyto_features(scExp, ref_genome="hg38")
 #'  
-get_cyto_features <- function(scExp, ref_genome = c("hg38", "mm10")[1] ){
+get_cyto_features <- function(scExp, ref_genome = c("hg38", "mm10", "ce11")[1] ){
     
     eval(parse(text = paste0("data(",ref_genome, ".chromosomes)")))
     canonical_chr <- eval(parse(text = paste0(ref_genome, ".chromosomes")))
@@ -81,7 +81,7 @@ get_cyto_features <- function(scExp, ref_genome = c("hg38", "mm10")[1] ){
 #' scExp = calculate_cyto_mat(scExp, ref_genome="hg38")
 #' SingleCellExperiment::reducedDim(scExp, "cytoBand") 
 #' 
-calculate_cyto_mat <- function(scExp, ref_genome = c("hg38","mm10")[1]){
+calculate_cyto_mat <- function(scExp, ref_genome = c("hg38","mm10", "ce11")[1]){
     matching_cyto = get_cyto_features(scExp,ref_genome)
     mat = counts(scExp)[match(matching_cyto$ID, rownames(scExp)),]
     gc()
@@ -298,7 +298,7 @@ calculate_gain_or_loss <- function(scExp, controls, quantiles = c(0.05, 0.95)){
 #' SingleCellExperiment::reducedDim(scExp, "gainOrLoss_cytoBand")
 #'
 calculate_CNA <- function(scExp, control_samples = unique(scExp$sample_id)[1],
-                          ref_genome = c("hg38","mm10")[1],
+                          ref_genome = c("hg38","mm10", "ce11")[1],
                           quantiles_to_define_gol = c(0.05,0.95)
                           ){
     scExp = calculate_cyto_mat(scExp, ref_genome = ref_genome)

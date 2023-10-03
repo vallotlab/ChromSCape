@@ -130,7 +130,7 @@ create_sample_name_mat <- function(nb_samples, samples_names){
 #' }
 #' 
 read_sparse_matrix <- function(files_dir_list,
-                               ref = c("hg38","mm10")[1],
+                               ref = c("hg38","mm10", "ce11")[1],
                                verbose = TRUE
                               ){
     feature_file <- barcode_file <- matrix_file <- NULL
@@ -299,7 +299,7 @@ read_sparse_matrix <- function(files_dir_list,
 raw_counts_to_sparse_matrix <- function(
     files_dir_list, file_type = c("scBED", "scBAM", "FragmentFile"), use_Signac = TRUE,
     peak_file = NULL, n_bins = NULL, bin_width = NULL, genebody = NULL,
-    extendPromoter = 2500, verbose = TRUE, ref = c("hg38","mm10")[1],
+    extendPromoter = 2500, verbose = TRUE, ref = c("hg38","mm10", "ce11")[1],
     progress = NULL, BPPARAM = BiocParallel::bpparam()) {
     warning_raw_counts_to_sparse_matrix(
         files_dir_list, file_type, peak_file, n_bins, bin_width, genebody,
@@ -394,7 +394,7 @@ warning_raw_counts_to_sparse_matrix <- function(
     peak_file = NULL, n_bins = NULL, bin_width = NULL, genebody = NULL,
     extendPromoter = 2500, verbose = TRUE, ref = "hg38"){
         stopifnot(any(dir.exists(files_dir_list)), is.numeric(extendPromoter),
-                ref %in% c("mm10", "hg38"))
+                ref %in% c("hg38", "mm10", "ce11"))
         
         if (!is.null(peak_file) && !file.exists(peak_file))
             stop("ChromSCape::raw_counts_to_sparse_matrix - 
@@ -416,7 +416,7 @@ warning_raw_counts_to_sparse_matrix <- function(
 
 #' Define the features on which reads will be counted
 #' 
-#' @usage define_feature(ref = c("hg38","mm10")[1],
+#' @usage define_feature(ref = c("hg38","mm10", "ce11")[1],
 #'  peak_file = NULL,
 #'  bin_width  = NULL,
 #'  genebody = FALSE,
@@ -440,7 +440,7 @@ warning_raw_counts_to_sparse_matrix <- function(
 #' gr_bins = define_feature("hg38", bin_width = 50000)
 #' gr_genes = define_feature("hg38", genebody = TRUE, extendPromoter = 5000)
 #' 
-define_feature <- function(ref = c("hg38","mm10")[1], peak_file = NULL,
+define_feature <- function(ref = c("hg38","mm10", "ce11")[1], peak_file = NULL,
                            bin_width  = NULL, genebody = FALSE,
                            extendPromoter = 2500){
     eval(parse(text = paste0("data(", ref, ".chromosomes)")))
@@ -918,7 +918,7 @@ rebin_matrix <- function(mat,
                          rebin_function = rebin_helper
                          ){
   
-  stopifnot(!is.null(mat), ref %in% c("mm10", "hg38"))
+  stopifnot(!is.null(mat), ref %in% c("hg38", "mm10", "ce11"))
   
   if (is.matrix(mat)) mat = as(mat, "CsparseMatrix")
   mat = as(mat, "CsparseMatrix")
@@ -1080,7 +1080,7 @@ create_scDataset_raw <- function(
     cells = 300, features = 600, featureType = c("window", "peak", "gene"),
     sparse = TRUE, nsamp = 4, ref = "hg38", batch_id = factor(rep(1, nsamp))){
     stopifnot( featureType %in% c("window", "peak", "gene"),
-            ref %in% c("mm10", "hg38"), nsamp >= 1, cells >= nsamp,
+            ref %in% c("hg38", "mm10", "ce11"), nsamp >= 1, cells >= nsamp,
             features >= 1, length(batch_id) == nsamp)
     stopifnot(is.factor(batch_id))
     # Create cell names
@@ -2168,11 +2168,11 @@ feature_annotation_scExp <- function(scExp, ref = "hg38",
     if (is.null(SummarizedExperiment::rowRanges(scExp)))
         stop("ChromSCape::feature_annotation_scExp - The object doesn't have
             ranges of coordinates as rowData")
-    if (is.null(reference_annotation) & !(ref %in% c("hg38", "mm10")))
+    if (is.null(reference_annotation) & !(ref %in% c("hg38", "mm10", "ce11")))
         stop("ChromSCape::feature_annotation_scExp - If reference_annotation is
             null, ref must be either 'hg38' or 'mm10' to automatically load
             reference gene annotation.")
-    if (is.null(reference_annotation) & (ref %in% c("hg38", "mm10")))
+    if (is.null(reference_annotation) & (ref %in% c("hg38", "mm10", "ce11")))
     {
         message("ChromSCape::feature_annotation_scExp - Selecting ",
                 ref, " genes from Gencode.")

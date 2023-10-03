@@ -675,7 +675,7 @@ load_MSIGdb <- function(ref,
                         GeneSetClasses = c("c1_positional", "c2_curated", "c3_motif", 
                                            "c4_computational", "c5_GO", "c6_oncogenic",
                                            "c7_immunologic", "hallmark") ){
-  if ((!ref %in% c("hg38", "mm10")) ) 
+  if ((!ref %in% c("hg38", "mm10", "ce11")) ) 
     stop("ChromSCape::gene_set_enrichment_analysis_scExp - ",
                     "Reference genome (ref) must be ",
                 "'hg38' or 'mm10' if gene sets not specified.")

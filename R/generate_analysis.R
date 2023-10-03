@@ -8,7 +8,7 @@
 #' rebin_sparse_matrix = FALSE,
 #' feature_count_on = c("bins","genebody","peaks")[1],
 #' feature_count_parameter = 50000,
-#' ref_genome = c("hg38","mm10")[1],
+#' ref_genome = c("hg38","mm10", "ce11")[1],
 #' run = c("filter", "CNA","cluster", "consensus","peak_call", "coverage", 
 #'        "DA", "GSA", "report")[c(1,3,6,7,8,9)],
 #' min_reads_per_cell = 1000,
@@ -93,7 +93,7 @@ generate_analysis <- function(input_data_folder,
                   feature_count_on = c("bins","genebody","peaks")[1],
                   feature_count_parameter = 50000,
                   rebin_sparse_matrix = FALSE,
-                  ref_genome = c("hg38","mm10")[1],
+                  ref_genome = c("hg38","mm10", "ce11")[1],
                   run = c("filter", "CNA","cluster", "consensus", "coverage", 
                           "DA", "GSA", "report")[c(1,3,5,6,7,8)],
                   min_reads_per_cell = 1000,
@@ -123,7 +123,7 @@ generate_analysis <- function(input_data_folder,
     stopifnot(dir.exists(input_data_folder), is.character(analysis_name),
               is.character(output_directory),
               input_data_type %in% c("DenseMatrix", "SparseMatrix", "scBED", "scBAM"),
-              ref_genome %in% c("hg38","mm10"), is.numeric(min_reads_per_cell),
+              ref_genome %in% c("hg38","mm10", "ce11"), is.numeric(min_reads_per_cell),
               is.numeric(max_quantile_read_per_cell),
               is.numeric(n_top_features),
               is.numeric(qval.th),
@@ -414,7 +414,7 @@ rawData_to_datamatrix_annot <- function(input_data_folder,
                                         input_data_type = c("DenseMatrix", "SparseMatrix", "scBED", "scBAM")[1],
                                         feature_count_on = c("bins","genebody","peaks")[1],
                                         feature_count_parameter = 50000,
-                                        ref_genome = c("hg38","mm10")[1])
+                                        ref_genome = c("hg38","mm10", "ce11")[1])
     {
     if(input_data_type == "DenseMatrix"){
         file_list = list.files(input_data_folder, pattern =  ".gz|.txt|.tsv")
@@ -510,10 +510,10 @@ rawData_to_datamatrix_annot <- function(input_data_folder,
 #' list.dirs(file.path(dir))
 create_project_folder <- function(output_directory,
                                   analysis_name = "Analysis_1",
-                                  ref_genome = c("hg38","mm10")[1]){
+                                  ref_genome = c("hg38","mm10", "ce11")[1]){
     stopifnot(is.character(output_directory), dir.exists(output_directory),
               is.character(analysis_name), is.character(ref_genome),
-              ref_genome %in% c("hg38","mm10"))
+              ref_genome %in% c("hg38","mm10", "ce11"))
 
     if(!grepl("^[A-Za-z0-9_]+$", analysis_name))
         stop("ChromSCape::create_project_folder - The analysis name must ",

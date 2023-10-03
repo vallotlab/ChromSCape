@@ -83,7 +83,7 @@ subset_bam_call_peaks <- function(scExp, odir, input, format = "BAM", p.value = 
             is.numeric(p.value), is.character(ref),
             is.numeric(peak_distance_to_merge))
     if (!is.null(progress)) progress$set(detail = "Checking for annotation...", value = 0.15)
-    if (!ref %in% c("hg38", "mm10")) 
+    if (!ref %in% c("hg38", "mm10", "ce11")) 
         stop("ChromSCape::subset_bam_call_peaks - 
             Reference genome (ref) must be 'hg38' or 'mm10'.")
     if (!"barcode" %in% colnames(SingleCellExperiment::colData(scExp))) 

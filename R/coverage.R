@@ -53,14 +53,14 @@
 #' }
 generate_coverage_tracks <- function(scExp_cf, input, odir, 
                                      format = "scBED",
-                                     ref_genome = c("hg38","mm10")[1],
+                                     ref_genome = c("hg38","mm10", "ce11")[1],
                                      bin_width = 150,  n_smoothBin = 5,
                                      read_size = 101,
                                      quantile_for_peak_calling = 0.85,
                                      by = "cell_cluster",
                                      progress = NULL){
   stopifnot(is(scExp_cf,"SingleCellExperiment"), is.character(format),
-            dir.exists(odir), ref_genome %in% c("hg38","mm10"), 
+            dir.exists(odir), ref_genome %in% c("hg38","mm10", "ce11"), 
             is.numeric(bin_width), is.numeric(n_smoothBin),
             is.numeric(read_size))
   
