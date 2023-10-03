@@ -14,7 +14,7 @@ raw_counts_to_sparse_matrix(
   genebody = NULL,
   extendPromoter = 2500,
   verbose = TRUE,
-  ref = c("hg38", "mm10")[1],
+  ref = c("hg38", "mm10", "ce11")[1],
   progress = NULL,
   BPPARAM = BiocParallel::bpparam()
 )

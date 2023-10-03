@@ -24,6 +24,6 @@ raw <- create_scDataset_raw()
 scExp = create_scExp(raw$mat, raw$annot)
 scExp_filtered = filter_scExp(scExp)
 \dontrun{ num_cell_after_QC_filt_scExp(
-scExp_filtered,SingleCellExperiment::colData(scExp))}
+scExp_filtered,as.data.frame(SingleCellExperiment::colData(scExp)), counts(scExp))}
 
 }

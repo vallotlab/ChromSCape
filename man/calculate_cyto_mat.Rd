@@ -4,7 +4,7 @@
 \alias{calculate_cyto_mat}
 \title{Calculate Fraction of reads in each cytobands}
 \usage{
-calculate_cyto_mat(scExp, ref_genome = c("hg38", "mm10")[1])
+calculate_cyto_mat(scExp, ref_genome = c("hg38", "mm10", "ce11")[1])
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment with genomic coordinate as features

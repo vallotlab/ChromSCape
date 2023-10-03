@@ -4,7 +4,7 @@
 \alias{get_cyto_features}
 \title{Map features onto cytobands}
 \usage{
-get_cyto_features(scExp, ref_genome = c("hg38", "mm10")[1])
+get_cyto_features(scExp, ref_genome = c("hg38", "mm10", "ce11")[1])
 }
 \arguments{
 \item{scExp}{A SingleCellExperiment with genomic coordinate as features

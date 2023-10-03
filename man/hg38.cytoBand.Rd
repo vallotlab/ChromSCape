@@ -5,7 +5,7 @@
 \alias{hg38.cytoBand}
 \title{Data.frame of cytoBandlocation - hg38}
 \format{
-hg38.cytoBand - a data frame with 862 rows and 4 variables:
+hg38.cytoBand - a data frame with 862 cytobands and 4 variables:
 \describe{
 \item{chr}{Chromosome - character}
 \item{start}{Start of the chromosome (bp) - integer}

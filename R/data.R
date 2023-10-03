@@ -20,7 +20,7 @@
 #'
 #' @usage data("hg38.cytoBand")
 #'
-#' @format hg38.cytoBand - a data frame with 862 rows and 4 variables:
+#' @format hg38.cytoBand - a data frame with 862 cytobands and 4 variables:
 #' \describe{
 #'   \item{chr}{Chromosome - character}
 #'   \item{start}{Start of the chromosome (bp) - integer}
@@ -36,7 +36,7 @@
 #'
 #' @usage data("mm10.cytoBand")
 #'
-#' @format mm10.cytoBand - a data frame with 862 rows and 4 variables:
+#' @format mm10.cytoBand - a data frame with 403 cytobands and 4 variables:
 #' \describe{
 #'   \item{chr}{Chromosome - character}
 #'   \item{start}{Start of the chromosome (bp) - integer}
@@ -52,7 +52,7 @@
 #'
 #' @usage data("mm10.chromosomes")
 #'
-#' @format mm10.chromosomes - a data frame with 24 rows and 3 variables:
+#' @format mm10.chromosomes - a data frame with 24 chromosomes and 3 variables:
 #' \describe{
 #'   \item{chr}{Chromosome - character}
 #'   \item{start}{Start of the chromosome (bp) - integer}
@@ -67,12 +67,13 @@
 #' 
 #' @usage data("hg38.GeneTSS")
 #' 
-#' @format hg38.GeneTSS - a data frame with 24 rows and 3 variables:
+#' @format hg38.GeneTSS - a data frame with 32,937 genes and 5 variables:
 #' \describe{
 #'   \item{chr}{Chromosome - character}
 #'   \item{start}{Start of the gene (TSS) - integer}
 #'   \item{end}{End of the gene - integer}
-#'   \item{gene}{Gene symbol - character}
+#'   \item{Gene}{Gene symbol - character}
+#'   \item{Strand}{Strand - character}
 #' }
 "hg38.GeneTSS"
 
@@ -83,14 +84,47 @@
 #' 
 #' @usage data("mm10.GeneTSS")
 #' 
-#' @format mm10.GeneTSS - a data frame with 24 rows and 3 variables:
+#' @format mm10.GeneTSS - a data frame with 27,916 genes and 5 variables:
 #' \describe{
 #'   \item{chr}{Chromosome name - character}
 #'   \item{start}{Start of the gene (TSS) - integer}
 #'   \item{end}{End of the gene - integer}
-#'   \item{gene}{Gene symbol - character}
+#'   \item{Gene}{Gene symbol - character}
+#'   \item{Strand}{Strand - character}
 #' }
 "mm10.GeneTSS"
+
+#' Data.frame of chromosome length - ce11
+#' 
+#' This data frame provides the length of each "canonical" chromosomes of
+#'  Homo Sapiens genome build ce11. 
+#'
+#' @usage data("ce11.chromosomes")
+#'
+#' @format ce11.chromosomes - a data frame with 7 chromosomes and 3 variables:
+#' \describe{
+#'   \item{chr}{Chromosome - character}
+#'   \item{start}{Start of the chromosome (bp) - integer}
+#'   \item{end}{End of the chromosome (bp) - integer}
+#' }
+"ce11.chromosomes"
+
+#' Data.frame of gene TSS - ce11
+#'
+#' This dataframe was extracted from Gencode v25 and report the Transcription
+#' Start Site of each gene in the Homo Sapiens genome build ce11
+#' 
+#' @usage data("ce11.GeneTSS")
+#' 
+#' @format ce11.GeneTSS - a data frame with 20,051 genes and 5 variables:
+#' \describe{
+#'   \item{chr}{Chromosome - character}
+#'   \item{start}{Start of the gene (TSS) - integer}
+#'   \item{end}{End of the gene - integer}
+#'   \item{Gene}{Gene symbol - character}
+#'   \item{strand}{Srand - character}
+#' }
+"ce11.GeneTSS"
 
 #' A SingleCellExperiment outputed by ChromSCape
 #' 

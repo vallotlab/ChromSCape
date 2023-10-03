@@ -4,7 +4,7 @@
 \alias{define_feature}
 \title{Define the features on which reads will be counted}
 \usage{
-define_feature(ref = c("hg38","mm10")[1],
+define_feature(ref = c("hg38","mm10", "ce11")[1],
  peak_file = NULL,
  bin_width  = NULL,
  genebody = FALSE,

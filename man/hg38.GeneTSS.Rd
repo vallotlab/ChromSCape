@@ -5,12 +5,13 @@
 \alias{hg38.GeneTSS}
 \title{Data.frame of gene TSS - hg38}
 \format{
-hg38.GeneTSS - a data frame with 24 rows and 3 variables:
+hg38.GeneTSS - a data frame with 32,937 genes and 5 variables:
 \describe{
 \item{chr}{Chromosome - character}
 \item{start}{Start of the gene (TSS) - integer}
 \item{end}{End of the gene - integer}
-\item{gene}{Gene symbol - character}
+\item{Gene}{Gene symbol - character}
+\item{Strand}{Strand - character}
 }
 }
 \usage{

@@ -7,7 +7,7 @@
 create_project_folder(
   output_directory,
   analysis_name = "Analysis_1",
-  ref_genome = c("hg38", "mm10")[1]
+  ref_genome = c("hg38", "mm10", "ce11")[1]
 )
 }
 \arguments{

@@ -5,7 +5,7 @@
 \alias{mm10.cytoBand}
 \title{Data.frame of cytoBandlocation - mm10}
 \format{
-mm10.cytoBand - a data frame with 862 rows and 4 variables:
+mm10.cytoBand - a data frame with 403 cytobands and 4 variables:
 \describe{
 \item{chr}{Chromosome - character}
 \item{start}{Start of the chromosome (bp) - integer}

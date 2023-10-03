@@ -7,7 +7,7 @@
 calculate_CNA(
   scExp,
   control_samples = unique(scExp$sample_id)[1],
-  ref_genome = c("hg38", "mm10")[1],
+  ref_genome = c("hg38", "mm10", "ce11")[1],
   quantiles_to_define_gol = c(0.05, 0.95)
 )
 }

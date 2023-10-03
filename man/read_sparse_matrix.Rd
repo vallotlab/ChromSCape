@@ -4,7 +4,11 @@
 \alias{read_sparse_matrix}
 \title{Read in one or multiple sparse matrices (10X format)}
 \usage{
-read_sparse_matrix(files_dir_list, ref = c("hg38", "mm10")[1], verbose = TRUE)
+read_sparse_matrix(
+  files_dir_list,
+  ref = c("hg38", "mm10", "ce11")[1],
+  verbose = TRUE
+)
 }
 \arguments{
 \item{files_dir_list}{A named character vector containing the full path
