@@ -144,7 +144,7 @@ read_sparse_matrix <- function(files_dir_list,
     for(i in seq_along(files_dir_list)){
         
         
-        pattern = ".*features.tsv|.*features.txt|.*features.bed|.*features.*.gz"
+        pattern = ".*features.tsv|.*features.txt|.*features.bed|.*features.*.gz|.*peaks.bed|.*peaks.bed.gz"
         feature_file = list.files(path = files_dir_list[i], full.names = TRUE,
                                   pattern = pattern)
         pattern = ".*barcodes.tsv|.*barcodes.txt|.*barcodes.*.gz"
@@ -155,10 +155,14 @@ read_sparse_matrix <- function(files_dir_list,
                                  pattern = pattern)
         
         if (length(c(feature_file, matrix_file, barcode_file)) != 3)
-            stop(paste0(
+            stop(
                 "ChromSCape::read_sparse_matrix - For ",
-                "SparseMatrix Count type, the folder must contain exactly two files ",
-                "matching respectively *index.txt, peaks.bed, barcodes.txt"))
+                "SparseMatrix Count type, the folder must contain exactly three files ",
+                "matching respectively :\n",
+                "- Matrix:  .*matrix.mtx|.*matrix.*.gz\n",
+                "- Features: .*features.tsv|.*features.txt|.*features.bed|.*features.*.gz|.*peaks.bed|.*peaks.bed.gz\n",
+                "- Barcodes: .*barcodes.tsv|.*barcodes.txt|.*barcodes.*.gz"
+                )
         
         t1 = system.time({
             sample_id = names(files_dir_list)[i]
@@ -566,12 +570,14 @@ wrapper_Signac_FeatureMatrix <- function(files_dir_list, which, ref = "hg38",
         
         fragment_file = fragment_files[[sample_name]]
         dir = dirname(fragment_file)
+        
         # if needed index file using samtools tabix
         if(!file.exists(file.path(dir, paste0(basename(fragment_file),".tbi")))){
             message("ChromSCape::wrapper_Signac_FeatureMatrix - creating tabix ",
                     "index...")
             idx = Rsamtools::indexTabix(fragment_file, format="bed")
         }
+        
         # create Signac Fragment 
         fragments = Signac::CreateFragmentObject(fragment_file)
        
@@ -607,7 +613,7 @@ wrapper_Signac_FeatureMatrix <- function(files_dir_list, which, ref = "hg38",
     eval(parse(text = paste0("data(", ref, ".chromosomes)")))
     chr <- eval(parse(text = paste0("", ref, ".chromosomes")))
 
-    mat = mat[which(as.character(which@seqnames) %in% chr$chr),]
+    mat = mat[which(gsub("_.*","", rownames(mat)) %in% chr$chr),]
     
     annot_raw = data.frame(barcode = barcodes,
                            cell_id = colnames(mat),
