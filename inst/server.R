@@ -831,7 +831,7 @@ shinyServer(function(input, output, session) {
         req(init$datamatrix)
         if(input$feature_select == "main"){
             sliderInput("min_coverage_cell", shiny::HTML("<p><span style='color: green'>Select minimum number of reads per cell :</span></p>"),
-                        min=min(min(cell_count_raw()),50), max=quantile(cell_count_raw(),0.95), value=min(200,min(cell_count_raw())), step=50) %>%
+                        min=min(min(cell_count_raw()),50), max=max(cell_count_raw()), value=min(200,min(cell_count_raw())), step=50) %>%
                 shinyhelper::helper(type = 'markdown', colour = "#434C5E", icon ="info-circle",
                                     content = "filtering_parameters")
         }
@@ -2328,7 +2328,7 @@ shinyServer(function(input, output, session) {
             updateActionButton(session, "do_coverage", label="Finished successfully", icon = icon("check-circle"))
         } else{
             if(is.null(input$coverage_selection) | length(input$coverage_selection) ==0 ) {
-                warning("Can't find any input BED files.")
+                warning("Can't find any input BED files in the folder or any raw matrix automatically generated (Fragment files, SparseMatrix with < 250bp bins).")
                 return()
             }
             input_files_coverage = lapply(list_dirs_coverage()[input$coverage_selection], function(i) list.files(i, full.names = TRUE, pattern = ".bed|.bed.gz"))
