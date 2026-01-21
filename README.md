@@ -37,7 +37,7 @@ On this demo application, you can follow analysis of Jurkat & Ramos scChIP H3K4m
 ## User guide
 
 Take a look at the user guide before starting: 
-[User guide](https://vallotlab.github.io/ChromSCape/ChromSCape_guide.html)
+[User guide](https://vallotlab.github.io/ChromSCape/articles/vignette.html)
 
 ## Test datasets
 
